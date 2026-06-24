@@ -90,13 +90,31 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmap) | | |
+| PHOTO-01 | Phase 2 | Pending |
+| PHOTO-02 | Phase 2 | Pending |
+| AI-01 | Phase 1 | Pending |
+| AI-02 | Phase 1 | Pending |
+| AI-03 | Phase 2 | Pending |
+| UX-01 | Phase 3 | Pending |
+| UX-02 | Phase 3 | Pending |
+| UX-03 | Phase 3 | Pending |
+| UX-04 | Phase 3 | Pending |
+| UX-05 | Phase 3 | Pending |
+| DIARY-01 | Phase 4 | Pending |
+| DIARY-02 | Phase 4 | Pending |
+| DIARY-03 | Phase 4 | Pending |
+| DIARY-04 | Phase 4 | Pending |
+| DIARY-05 | Phase 4 | Pending |
+| ERR-01 | Phase 5 | Pending |
+| ERR-02 | Phase 5 | Pending |
+| ERR-03 | Phase 1 | Pending |
+| NAV-01 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 19 total
-- Mapped to phases: pending roadmap
-- Unmapped: 19 ⚠️
+- Mapped to phases: 19/19 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-06-24*
-*Last updated: 2026-06-24 after initial definition*
+*Last updated: 2026-06-24 after roadmap creation*
