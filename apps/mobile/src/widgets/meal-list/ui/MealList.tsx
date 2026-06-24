@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useDiaryStore } from '@/features/save-meal';
+import { useDiaryStore } from '@/entities/meal';
 import { MealCard } from '@/entities/meal';
 import { Button } from '@/shared/ui';
 

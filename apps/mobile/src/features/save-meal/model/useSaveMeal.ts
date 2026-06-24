@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useDiaryStore } from './useDiaryStore';
+import { useDiaryStore } from '@/entities/meal';
 import { useImageStore } from '@/features/add-food';
 import type { NutritionResult, Meal, FoodItem } from '@ai-food/shared-types';
 

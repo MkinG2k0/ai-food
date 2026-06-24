@@ -1,4 +1,4 @@
-import { useDiaryStore } from '@/features/save-meal';
+import { useDiaryStore } from '@/entities/meal';
 import { formatCalories } from '@/shared/lib';
 
 const DAILY_GOAL = 2000;
