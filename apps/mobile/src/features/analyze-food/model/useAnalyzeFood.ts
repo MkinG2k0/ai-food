@@ -7,7 +7,7 @@ export function useAnalyzeFood(image: File | null) {
     queryKey: ['analyze-food', image?.name, image?.size, image?.lastModified],
     queryFn: () => analyzeFoodApi(image!),
     enabled: image !== null,
-    staleTime: 30_000,
+    staleTime: 0,
     retry: 2,
     gcTime: 5 * 60 * 1000,
   });

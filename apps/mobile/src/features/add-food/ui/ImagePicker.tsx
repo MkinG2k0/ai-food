@@ -7,7 +7,8 @@ interface ImagePickerProps {
 }
 
 export function ImagePicker({ onImageSelect }: ImagePickerProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -17,14 +18,12 @@ export function ImagePicker({ onImageSelect }: ImagePickerProps) {
     }
   };
 
-  const openPicker = () => fileInputRef.current?.click();
-
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-sm">
       <button
         type="button"
         className="w-full h-64 border-2 border-dashed border-muted-foreground/30 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-emerald-500 hover:bg-emerald-50 transition-colors"
-        onClick={openPicker}
+        onClick={() => galleryInputRef.current?.click()}
       >
         <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center">
           <ImageIcon className="h-8 w-8 text-emerald-600" />
@@ -35,28 +34,37 @@ export function ImagePicker({ onImageSelect }: ImagePickerProps) {
         </div>
       </button>
 
+      {/* Gallery input — no capture */}
       <input
-        ref={fileInputRef}
+        ref={galleryInputRef}
         type="file"
         accept="image/*"
         className="hidden"
         onChange={handleFileChange}
       />
 
+      {/* Camera input — capture environment */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
       <div className="flex gap-3 w-full">
-        <Button variant="outline" className="flex-1" onClick={openPicker}>
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={() => galleryInputRef.current?.click()}
+        >
           <ImageIcon className="h-4 w-4 mr-2" />
           Gallery
         </Button>
         <Button
           className="flex-1"
-          onClick={() => {
-            if (fileInputRef.current) {
-              fileInputRef.current.setAttribute('capture', 'environment');
-              fileInputRef.current.click();
-              fileInputRef.current.removeAttribute('capture');
-            }
-          }}
+          onClick={() => cameraInputRef.current?.click()}
         >
           <Camera className="h-4 w-4 mr-2" />
           Camera
