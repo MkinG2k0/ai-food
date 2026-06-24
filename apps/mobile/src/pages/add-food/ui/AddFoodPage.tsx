@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { ImagePicker } from '@/features/add-food/ui/ImagePicker';
-import { useImageStore } from '@/features/add-food/model/useImageStore';
+import { ImagePicker, useImageStore } from '@/features/add-food';
 import { Button } from '@/shared/ui';
 
 export function AddFoodPage() {

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import { DailyHeader } from '@/widgets/daily-header/ui/DailyHeader';
-import { MealList } from '@/widgets/meal-list/ui/MealList';
+import { DailyHeader } from '@/widgets/daily-header';
+import { MealList } from '@/widgets/meal-list';
 import { Button } from '@/shared/ui';
 
 export function HomePage() {

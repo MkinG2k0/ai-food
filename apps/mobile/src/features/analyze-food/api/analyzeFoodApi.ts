@@ -1,4 +1,4 @@
-import { apiClient } from '@/shared/api/client';
+import { apiClient } from '@/shared/api';
 import type { AnalyzeFoodResponse } from '@ai-food/shared-types';
 
 export async function analyzeFoodApi(image: File): Promise<AnalyzeFoodResponse> {

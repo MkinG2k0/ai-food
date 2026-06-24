@@ -1,7 +1,7 @@
 import { Utensils } from 'lucide-react';
 import type { Meal } from '@ai-food/shared-types';
 import { Card, CardContent } from '@/shared/ui';
-import { formatCalories } from '@/shared/lib/formatters';
+import { formatCalories } from '@/shared/lib';
 
 interface MealCardProps {
   meal: Meal;

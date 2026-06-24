@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useImageStore } from '@/features/add-food/model/useImageStore';
-import { useAnalyzeFood } from '@/features/analyze-food/model/useAnalyzeFood';
-import { useSaveMeal } from '@/features/save-meal/model/useSaveMeal';
-import { NutritionCard } from '@/widgets/nutrition-card/ui/NutritionCard';
+import { useImageStore } from '@/features/add-food';
+import { useAnalyzeFood } from '@/features/analyze-food';
+import { useSaveMeal } from '@/features/save-meal';
+import { NutritionCard } from '@/widgets/nutrition-card';
 import { Button, Skeleton } from '@/shared/ui';
 
 export function ResultPage() {

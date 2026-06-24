@@ -1,7 +1,7 @@
 import type { NutritionResult } from '@ai-food/shared-types';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/shared/ui';
-import { NutritionRow } from '@/entities/nutrition/ui/NutritionRow';
-import { formatCalories } from '@/shared/lib/formatters';
+import { NutritionRow } from '@/entities/nutrition';
+import { formatCalories } from '@/shared/lib';
 
 interface NutritionCardProps {
   result: NutritionResult;

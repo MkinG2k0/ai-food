@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useDiaryStore } from './useDiaryStore';
-import { useImageStore } from '../../add-food/model/useImageStore';
+import { useImageStore } from '@/features/add-food';
 import type { NutritionResult, Meal, FoodItem } from '@ai-food/shared-types';
 
 export function useSaveMeal() {

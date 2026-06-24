@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useDiaryStore } from '@/features/save-meal/model/useDiaryStore';
-import { MealCard } from '@/entities/meal/ui/MealCard';
+import { useDiaryStore } from '@/features/save-meal';
+import { MealCard } from '@/entities/meal';
 import { Button } from '@/shared/ui';
-import { formatDate } from '@/shared/lib/formatters';
+import { formatDate } from '@/shared/lib';
 import type { Meal } from '@ai-food/shared-types';
 
 export function DiaryPage() {

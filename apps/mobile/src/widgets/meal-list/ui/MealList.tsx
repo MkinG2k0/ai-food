@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { useDiaryStore } from '@/features/save-meal/model/useDiaryStore';
-import { MealCard } from '@/entities/meal/ui/MealCard';
+import { useDiaryStore } from '@/features/save-meal';
+import { MealCard } from '@/entities/meal';
 import { Button } from '@/shared/ui';
 
 export function MealList() {

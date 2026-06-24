@@ -1,5 +1,5 @@
-import { useDiaryStore } from '@/features/save-meal/model/useDiaryStore';
-import { formatCalories } from '@/shared/lib/formatters';
+import { useDiaryStore } from '@/features/save-meal';
+import { formatCalories } from '@/shared/lib';
 
 const DAILY_GOAL = 2000;
 
