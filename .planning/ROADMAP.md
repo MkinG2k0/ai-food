@@ -27,7 +27,11 @@ Brownfield web-MVP: заменить mock-бэкенд на OpenAI Vision proxy,
   1. User's food photo triggers real OpenAI Vision analysis instead of a hardcoded mock response
   2. User receives structured nutrition data (food name, calories, protein, carbs, fat, fiber, confidence) from the backend
   3. When analysis cannot complete (timeout, invalid image, rate limit, service error), backend returns distinguishable typed error codes the app can surface
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Install packages, Vitest scaffold, Wave 0 failing test stubs
+- [ ] 01-02-PLAN.md — Load dotenv, replace mock route with real OpenAI Vision proxy
 
 ### Phase 2: Photo Capture & Analysis Loading
 **Goal**: Пользователь выбирает фото и видит понятный процесс анализа без зависшего интерфейса
