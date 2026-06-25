@@ -10,7 +10,7 @@ Brownfield web-MVP: заменить mock-бэкенд на OpenAI Vision proxy,
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Backend OpenAI Vision Proxy** — Реальный анализ еды через OpenAI на бэкенде с типизированными ошибками
+- [x] **Phase 1: Backend OpenAI Vision Proxy** — Реальный анализ еды через OpenAI на бэкенде с типизированными ошибками
 - [ ] **Phase 2: Photo Capture & Analysis Loading** — Выбор фото, превью и loading state при реальном AI-запросе
 - [ ] **Phase 3: Result Review & Confirmation** — Просмотр КБЖУ, правка порции, явное подтверждение сохранения
 - [ ] **Phase 4: Diary & Persistence** — Дневник с localStorage, сводка на Home, редактирование записей
@@ -30,8 +30,8 @@ Brownfield web-MVP: заменить mock-бэкенд на OpenAI Vision proxy,
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Install packages, Vitest scaffold, Wave 0 failing test stubs
-- [ ] 01-02-PLAN.md — Load dotenv, replace mock route with real OpenAI Vision proxy
+- [x] 01-01-PLAN.md — Install packages, Vitest scaffold, Wave 0 failing test stubs
+- [x] 01-02-PLAN.md — Load dotenv, replace mock route with real OpenAI Vision proxy
 
 ### Phase 2: Photo Capture & Analysis Loading
 **Goal**: Пользователь выбирает фото и видит понятный процесс анализа без зависшего интерфейса
@@ -99,7 +99,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Backend OpenAI Vision Proxy | 0/TBD | Not started | - |
+| 1. Backend OpenAI Vision Proxy | 2/2 | Complete | 2026-06-25 |
 | 2. Photo Capture & Analysis Loading | 0/TBD | Not started | - |
 | 3. Result Review & Confirmation | 0/TBD | Not started | - |
 | 4. Diary & Persistence | 0/TBD | Not started | - |
