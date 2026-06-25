@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import analyzeFoodRouter from './routes/analyze-food';
@@ -15,5 +18,5 @@ app.get('/health', (_req, res) => {
 
 const PORT = process.env.PORT ?? 3001;
 app.listen(PORT, () => {
-  console.log(`Mock backend running on http://localhost:${PORT}`);
+  console.log(`Backend running on http://localhost:${PORT}`);
 });
