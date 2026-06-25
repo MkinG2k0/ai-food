@@ -140,7 +140,7 @@ describe('POST /analyze-food', () => {
       429,
       { error: { message: 'Rate limited', type: 'rate_limit_error' } },
       'Rate limit exceeded',
-      {} as Parameters<typeof OpenAI.RateLimitError>[2],
+      {} as ConstructorParameters<typeof OpenAI.RateLimitError>[3],
     );
 
     const mockCreate = vi.fn().mockRejectedValue(rateLimitError);
