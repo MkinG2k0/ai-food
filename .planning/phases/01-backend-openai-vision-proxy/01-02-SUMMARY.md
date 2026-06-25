@@ -24,7 +24,7 @@ decisions:
 metrics:
   duration: "~15 minutes"
   completed: "2026-06-25"
-  tasks-completed: 2
+  tasks-completed: 3
   tasks-total: 3
   files-modified: 3
 requirements: [AI-01, AI-02, ERR-03]
@@ -40,7 +40,7 @@ Real OpenAI Vision proxy via gpt-4o-mini with Zod validation and typed error map
 |------|------|--------|-------|
 | 1 | Load dotenv as first statement in index.ts | f15b810 | apps/backend/src/index.ts |
 | 2 | Replace mock route with real OpenAI Vision implementation | fad01e2 | apps/backend/src/routes/analyze-food.ts, analyze-food.test.ts |
-| 3 | Human verify real AI analysis end-to-end | — | CHECKPOINT (awaiting) |
+| 3 | Human verify real AI analysis end-to-end | — | CHECKPOINT (approved 2026-06-25) |
 
 ## What Was Built
 
