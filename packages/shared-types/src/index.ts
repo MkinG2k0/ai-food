@@ -39,3 +39,23 @@ export interface ApiError {
   code: string;
   status: number;
 }
+
+export type ActivityLevel = 'low' | 'medium' | 'high';
+
+export type Goal = 'lose' | 'maintain' | 'gain';
+
+export interface UserProfile {
+  gender: 'male' | 'female';
+  age: number;
+  height: number;
+  weight: number;
+  activity: ActivityLevel;
+  goal: Goal;
+}
+
+export interface DailyTargets {
+  kcal: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+}
