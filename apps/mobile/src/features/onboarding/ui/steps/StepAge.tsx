@@ -13,6 +13,7 @@ export function StepAge({ onNext }: StepAgeProps) {
   const [value, setValue] = useState(25);
 
   function handleChange(raw: number) {
+    if (isNaN(raw)) return;
     setValue(Math.min(MAX, Math.max(MIN, raw)));
   }
 

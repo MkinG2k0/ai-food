@@ -13,6 +13,7 @@ export function StepWeight({ onNext }: StepWeightProps) {
   const [value, setValue] = useState(70);
 
   function handleChange(raw: number) {
+    if (isNaN(raw)) return;
     setValue(Math.min(MAX, Math.max(MIN, raw)));
   }
 

@@ -13,6 +13,7 @@ export function StepHeight({ onNext }: StepHeightProps) {
   const [value, setValue] = useState(170);
 
   function handleChange(raw: number) {
+    if (isNaN(raw)) return;
     setValue(Math.min(MAX, Math.max(MIN, raw)));
   }
 

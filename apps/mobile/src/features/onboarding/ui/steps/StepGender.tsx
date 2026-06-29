@@ -21,7 +21,7 @@ export function StepGender({ onNext }: StepGenderProps) {
             className={cn(
               'flex-1 rounded-xl border-2 py-6 text-base font-medium transition-colors',
               selected === g
-                ? 'border-primary bg-primary/10 text-primary'
+                ? 'border-primary bg-primary/10'
                 : 'border-border bg-background text-foreground',
             )}
           >
