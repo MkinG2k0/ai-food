@@ -1,18 +1,20 @@
 import { useDiaryStore } from '@/entities/meal';
+import { useProfileStore } from '@/features/onboarding';
 import { formatCalories } from '@/shared/lib';
-
-const DAILY_GOAL = 2000;
 
 export function DailyHeader() {
   const meals = useDiaryStore((s) => s.meals);
+  const targets = useProfileStore((s) => s.targets);
+
+  const dailyGoal = targets?.kcal ?? 2000;
 
   const today = new Date().toDateString();
   const todayCalories = meals
     .filter((m) => new Date(m.timestamp).toDateString() === today)
     .reduce((sum, m) => sum + m.totalCalories, 0);
 
-  const remaining = DAILY_GOAL - todayCalories;
-  const progress = Math.min((todayCalories / DAILY_GOAL) * 100, 100);
+  const remaining = dailyGoal - todayCalories;
+  const progress = Math.min((todayCalories / dailyGoal) * 100, 100);
 
   return (
     <header className="bg-emerald-500 text-white px-4 pt-12 pb-6">
