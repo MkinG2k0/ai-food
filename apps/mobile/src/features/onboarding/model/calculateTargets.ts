@@ -1,12 +1,12 @@
-import type { UserProfile, DailyTargets } from '@ai-food/shared-types';
+import type { UserProfile, DailyTargets, ActivityLevel, Goal } from '@ai-food/shared-types';
 
-const ACTIVITY_MULTIPLIER: Record<string, number> = {
+const ACTIVITY_MULTIPLIER: Record<ActivityLevel, number> = {
   low: 1.2,
   medium: 1.55,
   high: 1.725,
 };
 
-const GOAL_DELTA: Record<string, number> = {
+const GOAL_DELTA: Record<Goal, number> = {
   lose: -300,
   maintain: 0,
   gain: 300,

@@ -3,7 +3,10 @@ import { renderHook, act } from '@testing-library/react';
 import { useOnboarding } from './useOnboarding';
 import { useProfileStore } from './useProfileStore';
 
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigate,
+}));
 
 beforeEach(() => {
   useProfileStore.setState({ profile: null, targets: null });
@@ -52,5 +55,6 @@ describe('useOnboarding', () => {
     });
     act(() => result.current.finish());
     expect(setProfileSpy).toHaveBeenCalledOnce();
+    expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 });
