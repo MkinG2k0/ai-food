@@ -15,7 +15,7 @@ export function HomePage() {
       </main>
       <div className="fixed bottom-6 right-6">
         <Button
-          size="lg"
+          size="icon"
           className="rounded-full h-14 w-14 shadow-lg"
           onClick={() => navigate('/add')}
           aria-label="Add food"
