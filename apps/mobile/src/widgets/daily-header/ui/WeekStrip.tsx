@@ -1,4 +1,4 @@
-import { motion, useMotionValue, useAnimation } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 import type { Meal } from '@ai-food/shared-types';
 import { getWeekDays, isSameDay, formatDayLabel } from '@/shared/lib';
 
@@ -18,7 +18,6 @@ export function WeekStrip({
   onWeekChange,
 }: WeekStripProps) {
   const days = getWeekDays(weekOffset);
-  const offsetX = useMotionValue(0);
   const controls = useAnimation();
 
   function hasMeals(date: Date): boolean {
@@ -43,7 +42,6 @@ export function WeekStrip({
     } else {
       controls.start({ x: 0, transition: { type: 'spring', stiffness: 400, damping: 30 } });
     }
-    offsetX.set(0);
   }
 
   return (
@@ -51,7 +49,6 @@ export function WeekStrip({
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.2}
-      style={{ x: offsetX }}
       animate={controls}
       onDragEnd={handleDragEnd}
       className="flex justify-between mt-4 cursor-grab active:cursor-grabbing select-none"
@@ -64,7 +61,7 @@ export function WeekStrip({
 
         return (
           <button
-            key={date.toISOString()}
+            key={date.toDateString()}
             onClick={() => onDaySelect(date)}
             className="flex flex-col items-center gap-1 min-w-[36px]"
           >
