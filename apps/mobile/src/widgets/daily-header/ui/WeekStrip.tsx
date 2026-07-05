@@ -1,4 +1,5 @@
-import { motion, useAnimation } from 'framer-motion';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import { motion, useMotionValue, animate, type PanInfo } from 'framer-motion';
 import type { Meal } from '@ai-food/shared-types';
 import { getWeekDays, isSameDay, formatDayLabel } from '@/shared/lib';
 
@@ -10,6 +11,9 @@ interface WeekStripProps {
   onWeekChange: (delta: 1 | -1) => void;
 }
 
+const SWIPE_OFFSET_THRESHOLD = 80;
+const SWIPE_VELOCITY_THRESHOLD = 500;
+
 export function WeekStrip({
   weekOffset,
   selectedDate,
@@ -17,82 +21,120 @@ export function WeekStrip({
   onDaySelect,
   onWeekChange,
 }: WeekStripProps) {
-  const days = getWeekDays(weekOffset);
-  const controls = useAnimation();
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
 
   function hasMeals(date: Date): boolean {
     return meals.some((m) => isSameDay(new Date(m.timestamp), date));
   }
 
-  async function handleDragEnd(
+  function recenter() {
+    const slotWidth = viewportRef.current?.getBoundingClientRect().width ?? 0;
+    if (!slotWidth) return;
+    x.set(-slotWidth);
+  }
+
+  useLayoutEffect(() => {
+    recenter();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekOffset]);
+
+  useEffect(() => {
+    window.addEventListener('resize', recenter);
+    return () => window.removeEventListener('resize', recenter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleDragEnd(
     _event: MouseEvent | TouchEvent | PointerEvent,
-    info: { offset: { x: number }; velocity: { x: number } },
+    info: PanInfo,
   ) {
-    const { offset, velocity } = info;
-    if (offset.x < -80 || velocity.x < -500) {
-      await controls.start({ x: -40, opacity: 0, transition: { duration: 0.15 } });
-      onWeekChange(1);
-      controls.set({ x: 40, opacity: 0 });
-      controls.start({ x: 0, opacity: 1, transition: { duration: 0.15 } });
-    } else if (offset.x > 80 || velocity.x > 500) {
-      await controls.start({ x: 40, opacity: 0, transition: { duration: 0.15 } });
-      onWeekChange(-1);
-      controls.set({ x: -40, opacity: 0 });
-      controls.start({ x: 0, opacity: 1, transition: { duration: 0.15 } });
+    const slotWidth = viewportRef.current?.getBoundingClientRect().width ?? 0;
+    if (!slotWidth) return;
+
+    if (info.offset.x < -SWIPE_OFFSET_THRESHOLD || info.velocity.x < -SWIPE_VELOCITY_THRESHOLD) {
+      animate(x, -2 * slotWidth, { type: 'tween', duration: 0.2, ease: 'easeOut' }).then(() => {
+        onWeekChange(1);
+      });
+    } else if (info.offset.x > SWIPE_OFFSET_THRESHOLD || info.velocity.x > SWIPE_VELOCITY_THRESHOLD) {
+      animate(x, 0, { type: 'tween', duration: 0.2, ease: 'easeOut' }).then(() => {
+        onWeekChange(-1);
+      });
     } else {
-      controls.start({ x: 0, transition: { type: 'spring', stiffness: 400, damping: 30 } });
+      animate(x, -slotWidth, { type: 'spring', stiffness: 400, damping: 30 });
     }
   }
 
-  return (
-    <motion.div
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.2}
-      animate={controls}
-      onDragEnd={handleDragEnd}
-      className="flex justify-between mt-4 cursor-grab active:cursor-grabbing select-none"
-    >
-      {days.map((date) => {
-        const isSelected = isSameDay(date, selectedDate);
-        const hasFood = hasMeals(date);
-        const label = formatDayLabel(date);
-        const dayNum = date.getDate();
+  const weekOffsets = [weekOffset - 1, weekOffset, weekOffset + 1];
 
-        return (
-          <button
-            key={date.toDateString()}
-            onClick={() => onDaySelect(date)}
-            className="flex flex-col items-center gap-1 min-w-[36px]"
-          >
-            <span
-              className={`text-xs font-medium ${
-                isSelected ? 'text-white' : 'text-emerald-100'
-              }`}
+  return (
+    <div
+      ref={viewportRef}
+      data-testid="week-strip-viewport"
+      className="overflow-hidden touch-pan-y overscroll-x-contain mt-4"
+    >
+      <motion.div
+        drag="x"
+        style={{ x, width: '300%' }}
+        dragConstraints={viewportRef}
+        dragElastic={0.15}
+        dragMomentum={false}
+        onDragEnd={handleDragEnd}
+        className="flex cursor-grab active:cursor-grabbing select-none"
+      >
+        {weekOffsets.map((offset, i) => {
+          const days = getWeekDays(offset);
+
+          return (
+            <div
+              key={['prev', 'current', 'next'][i]}
+              className="flex justify-between"
+              style={{ width: '33.3333%' }}
             >
-              {label}
-            </span>
-            <span
-              className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${
-                isSelected
-                  ? 'bg-white text-emerald-600'
-                  : 'text-white hover:bg-emerald-400'
-              }`}
-            >
-              {dayNum}
-            </span>
-            <span
-              className={`w-1 h-1 rounded-full transition-colors ${
-                hasFood
-                  ? isSelected
-                    ? 'bg-emerald-400'
-                    : 'bg-emerald-200'
-                  : 'bg-transparent'
-              }`}
-            />
-          </button>
-        );
-      })}
-    </motion.div>
+              {days.map((date) => {
+                const isSelected = isSameDay(date, selectedDate);
+                const hasFood = hasMeals(date);
+                const label = formatDayLabel(date);
+                const dayNum = date.getDate();
+
+                return (
+                  <button
+                    key={date.toDateString()}
+                    onClick={() => onDaySelect(date)}
+                    className="flex flex-col items-center gap-1 min-w-[36px]"
+                  >
+                    <span
+                      className={`text-xs font-medium ${
+                        isSelected ? 'text-white' : 'text-emerald-100'
+                      }`}
+                    >
+                      {label}
+                    </span>
+                    <span
+                      className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${
+                        isSelected
+                          ? 'bg-white text-emerald-600'
+                          : 'text-white hover:bg-emerald-400'
+                      }`}
+                    >
+                      {dayNum}
+                    </span>
+                    <span
+                      className={`w-1 h-1 rounded-full transition-colors ${
+                        hasFood
+                          ? isSelected
+                            ? 'bg-emerald-400'
+                            : 'bg-emerald-200'
+                          : 'bg-transparent'
+                      }`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </motion.div>
+    </div>
   );
 }
