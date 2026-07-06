@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-05 - Completed quick task 260705-psq: Fix WeekStrip swipe scrollbar + rewrite as 3-week virtualized carousel (pending human verification)
+Last activity: 2026-07-07 - Completed quick task 260706-x79: Show detailed meal info on MealCard click (clickable MealCard + /meal/:id detail page)
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -75,6 +75,7 @@ None yet.
 | 260624-l39 | configure Capacitor in mobile app | 2026-06-24 | eec0222 | [260624-l39-configure-capacitor-in-mobile-app](./quick/260624-l39-configure-capacitor-in-mobile-app/) |
 | 260627-29b | Generate Claude Design prompt for ai-food app | 2026-06-27 | — | [260627-29b-generate-claude-design-prompt-for-ai-foo](./quick/260627-29b-generate-claude-design-prompt-for-ai-foo/) |
 | 260705-psq | Fix WeekStrip swipe: scrollbar glitch + 3-week virtualized carousel (pending human verify) | 2026-07-05 | 59d495c, 98c237c | [260705-psq-fix-weekstrip-swipe-scrollbar-appears-du](./quick/260705-psq-fix-weekstrip-swipe-scrollbar-appears-du/) |
+| 260706-x79 | Show detailed meal info on MealCard click: clickable MealCard + /meal/:id detail page | 2026-07-07 | fb13801, 538fd60 | [260706-x79-show-detailed-meal-info-on-mealcard-clic](./quick/260706-x79-show-detailed-meal-info-on-mealcard-clic/) |
 
 ### Blockers/Concerns
 
