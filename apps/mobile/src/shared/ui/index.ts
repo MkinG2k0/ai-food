@@ -10,3 +10,4 @@ export {
 export { Skeleton } from './skeleton';
 export { Badge, type BadgeProps } from './badge';
 export { Textarea, type TextareaProps } from './textarea';
+export { BottomSheet, type BottomSheetProps } from './bottom-sheet';
