@@ -1,2 +1,2 @@
-export { ImagePicker } from './ui/ImagePicker';
+export { AddFoodSheet } from './ui/AddFoodSheet';
 export { useImageStore } from './model/useImageStore';
