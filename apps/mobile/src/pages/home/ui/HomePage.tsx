@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
+import { AddFoodSheet } from '@/features/add-food';
 import { DailyHeader } from '@/widgets/daily-header';
 import { MealList } from '@/widgets/meal-list';
 import { Button } from '@/shared/ui';
 import { getWeekDays, isSameDay } from '@/shared/lib';
 
 export function HomePage() {
-  const navigate = useNavigate();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   function handleWeekChange(delta: 1 | -1) {
     const newOffset = weekOffset + delta;
@@ -34,12 +34,13 @@ export function HomePage() {
         <Button
           size="icon"
           className="rounded-full h-14 w-14 shadow-lg"
-          onClick={() => navigate('/add')}
+          onClick={() => setIsAddOpen(true)}
           aria-label="Add food"
         >
           <Plus className="h-6 w-6" />
         </Button>
       </div>
+      <AddFoodSheet open={isAddOpen} onClose={() => setIsAddOpen(false)} />
     </div>
   );
 }
