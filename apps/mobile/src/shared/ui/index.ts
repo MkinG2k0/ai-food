@@ -9,3 +9,4 @@ export {
 } from './card';
 export { Skeleton } from './skeleton';
 export { Badge, type BadgeProps } from './badge';
+export { Textarea, type TextareaProps } from './textarea';
