@@ -625,6 +625,7 @@ git commit -m "feat(shared-types): AnalyzeFoodRequest accepts image or descripti
 **Files:**
 - Modify: `apps/mobile/src/features/analyze-food/api/analyzeFoodApi.ts`
 - Modify: `apps/mobile/src/features/analyze-food/model/useAnalyzeFood.ts`
+- Modify: `apps/mobile/src/features/analyze-food/model/useAnalyzeFood.test.ts` (existing file, not covered by the original spec — found during baseline verification; calls the old single-argument `useAnalyzeFood(image)` / `analyzeFoodApi(file)` signatures and must be updated in this task or it will fail after Step 1-2)
 
 **Interfaces:**
 - Consumes: `AnalyzeFoodResponse` from `@ai-food/shared-types` (unchanged).
@@ -691,15 +692,101 @@ export function useAnalyzeFood(input: UseAnalyzeFoodInput) {
 }
 ```
 
-- [ ] **Step 3: Type-check**
+- [ ] **Step 3: Update `useAnalyzeFood.test.ts`**
+
+Replace the full contents of `apps/mobile/src/features/analyze-food/model/useAnalyzeFood.test.ts` with:
+
+```ts
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
+import { useAnalyzeFood } from './useAnalyzeFood';
+import * as analyzeFoodApiModule from '../api/analyzeFoodApi';
+import type { AnalyzeFoodResponse } from '@ai-food/shared-types';
+
+vi.mock('../api/analyzeFoodApi');
+
+const mockResponse: AnalyzeFoodResponse = {
+  result: {
+    foodName: 'Test Food',
+    calories: 300,
+    protein: 20,
+    carbs: 30,
+    fat: 10,
+    fiber: 5,
+    confidence: 0.92,
+  },
+  processingTime: 2000,
+};
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
+}
+
+describe('useAnalyzeFood', () => {
+  beforeEach(() => {
+    vi.mocked(analyzeFoodApiModule.analyzeFoodApi).mockResolvedValue(mockResponse);
+  });
+
+  it('is in idle state when image and description are both null', () => {
+    const { result } = renderHook(() => useAnalyzeFood({ image: null, description: null }), {
+      wrapper: createWrapper(),
+    });
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(result.current.data).toBeUndefined();
+  });
+
+  it('fetches nutrition data when image is provided', async () => {
+    const file = new File(['data'], 'food.jpg', { type: 'image/jpeg' });
+    const { result } = renderHook(() => useAnalyzeFood({ image: file, description: null }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toEqual(mockResponse);
+    expect(analyzeFoodApiModule.analyzeFoodApi).toHaveBeenCalledWith({
+      image: file,
+      description: null,
+    });
+  });
+
+  it('fetches nutrition data when only a description is provided', async () => {
+    const { result } = renderHook(
+      () => useAnalyzeFood({ image: null, description: 'a cheeseburger with fries' }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toEqual(mockResponse);
+    expect(analyzeFoodApiModule.analyzeFoodApi).toHaveBeenCalledWith({
+      image: null,
+      description: 'a cheeseburger with fries',
+    });
+  });
+});
+```
+
+- [ ] **Step 4: Run the analyze-food tests to verify they pass**
+
+Run: `pnpm --filter @ai-food/mobile test -- useAnalyzeFood.test.ts`
+Expected: PASS (3 tests)
+
+- [ ] **Step 5: Type-check**
 
 Run: `pnpm --filter @ai-food/mobile type-check`
 Expected: errors now surface only from `apps/mobile/src/pages/result/ui/ResultPage.tsx` calling `useAnalyzeFood(selectedImage)` with the old single-argument signature — fixed in Task 9.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add apps/mobile/src/features/analyze-food/api/analyzeFoodApi.ts apps/mobile/src/features/analyze-food/model/useAnalyzeFood.ts
+git add apps/mobile/src/features/analyze-food/api/analyzeFoodApi.ts apps/mobile/src/features/analyze-food/model/useAnalyzeFood.ts apps/mobile/src/features/analyze-food/model/useAnalyzeFood.test.ts
 git commit -m "feat(analyze-food): accept image or text description in the analyze request"
 ```
 
