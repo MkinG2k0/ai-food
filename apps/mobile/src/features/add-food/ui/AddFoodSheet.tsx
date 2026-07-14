@@ -41,6 +41,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
     const file = e.currentTarget.files?.[0];
     if (file) {
       handleImageSelect(file);
+      e.currentTarget.value = '';
     }
   };
 
@@ -48,6 +49,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
     const file = e.currentTarget.files?.[0];
     if (file) {
       handleImageSelect(file);
+      e.currentTarget.value = '';
     }
   };
 
