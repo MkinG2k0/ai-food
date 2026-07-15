@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, PenLine, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDiaryStore, useMealImage } from '@/entities/meal';
 import {
@@ -13,6 +13,7 @@ import {
   FoodItemDisplayCard,
   MealSummaryEditor,
 } from '@/features/edit-meal';
+import { RefineMealSheet } from '@/features/refine-meal';
 import { Button } from '@/shared/ui';
 
 export function MealDetailPage() {
@@ -21,6 +22,7 @@ export function MealDetailPage() {
   const meals = useDiaryStore((s) => s.meals);
   const meal = meals.find((m) => m.id === id);
   const imageSrc = useMealImage(meal?.imageUri);
+  const [refineOpen, setRefineOpen] = useState(false);
   const {
     isOpen: isMealDeleteOpen,
     openConfirm: openMealDelete,
@@ -87,6 +89,15 @@ export function MealDetailPage() {
 
         <MealSummaryEditor meal={meal} />
 
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => setRefineOpen(true)}
+        >
+          <PenLine className="h-4 w-4 mr-2" />
+          Дополнить
+        </Button>
+
         <div className="space-y-3">
           <h2 className="font-semibold text-foreground">Состав</h2>
           {meal.items.length === 0 ? (
@@ -124,6 +135,11 @@ export function MealDetailPage() {
         open={isItemDeleteOpen}
         onClose={closeItemDelete}
         onConfirm={handleConfirmItemDelete}
+      />
+      <RefineMealSheet
+        open={refineOpen}
+        onClose={() => setRefineOpen(false)}
+        mealId={meal.id}
       />
     </div>
   );
