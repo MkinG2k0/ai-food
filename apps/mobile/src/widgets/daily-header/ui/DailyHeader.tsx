@@ -1,4 +1,5 @@
-import { User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart2, User } from 'lucide-react';
 import { useDiaryStore } from '@/entities/meal';
 import { useProfileStore } from '@/features/onboarding';
 import { isSameDay } from '@/shared/lib';
@@ -25,6 +26,7 @@ export function DailyHeader({
   onDaySelect,
   onWeekChange,
 }: DailyHeaderProps) {
+  const navigate = useNavigate();
   const meals = useDiaryStore((s) => s.meals);
   const targets = useProfileStore((s) => s.targets);
 
@@ -56,6 +58,14 @@ export function DailyHeader({
   return (
     <header className="px-4 pt-12 pb-2">
       <div className="relative flex items-center justify-center">
+        <button
+          type="button"
+          className="absolute left-0 p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors"
+          aria-label="Статистика"
+          onClick={() => navigate('/stats')}
+        >
+          <BarChart2 className="h-5 w-5" />
+        </button>
         <h1 className="text-lg font-semibold tracking-tight">AI Food</h1>
         <button
           type="button"
