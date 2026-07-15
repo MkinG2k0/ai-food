@@ -49,5 +49,8 @@ export function sanitizeFoodItemPatch(
       next[key] = sanitizeNutrient(next[key] as number);
     }
   }
+  if ('grams' in next && typeof next.grams === 'number') {
+    next.grams = sanitizeNutrient(next.grams);
+  }
   return next;
 }

@@ -29,7 +29,7 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food 
       "protein": number,
       "carbs": number,
       "fat": number,
-      "portion": string (optional, например «1 шт» или «1 порция»),
+      "grams": number (optional, оценка веса видимого количества этого ингредиента в граммах; только число, без единиц шт/порция),
       "fiber": number (optional)
     }
   ]
@@ -82,7 +82,7 @@ function isNutritionItem(value: unknown): boolean {
   if (typeof item.protein !== 'number') return false;
   if (typeof item.carbs !== 'number') return false;
   if (typeof item.fat !== 'number') return false;
-  if (item.portion !== undefined && typeof item.portion !== 'string') return false;
+  if (item.grams !== undefined && typeof item.grams !== 'number') return false;
   if (item.fiber !== undefined && typeof item.fiber !== 'number') return false;
   return true;
 }

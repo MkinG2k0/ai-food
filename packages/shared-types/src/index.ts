@@ -5,7 +5,7 @@ export interface FoodItem {
   protein: number;
   carbs: number;
   fat: number;
-  portion: string;
+  grams: number;
 }
 
 export type MealStatus = 'analyzing' | 'ready' | 'error';
@@ -27,7 +27,7 @@ export interface NutritionItem {
   protein: number;
   carbs: number;
   fat: number;
-  portion?: string;
+  grams?: number;
   fiber?: number;
 }
 
