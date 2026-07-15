@@ -66,21 +66,39 @@ export function useSaveMeal() {
         queryFn: () => analyzeFoodApi(image),
       });
       const { result } = response;
-      updateMeal(mealId, {
-        status: 'ready',
-        totalCalories: result.calories,
-        items: [
-          {
-            id: itemId,
-            name: result.foodName,
-            calories: result.calories,
-            protein: result.protein,
-            carbs: result.carbs,
-            fat: result.fat,
-            portion: '1 порция',
-          },
-        ],
-      });
+      if (result.items.length > 0) {
+        const items: FoodItem[] = result.items.map((item) => ({
+          id: crypto.randomUUID(),
+          name: item.name,
+          calories: item.calories,
+          protein: item.protein,
+          carbs: item.carbs,
+          fat: item.fat,
+          portion: item.portion ?? '1 порция',
+        }));
+        const totalCalories = items.reduce((sum, item) => sum + item.calories, 0);
+        updateMeal(mealId, {
+          status: 'ready',
+          totalCalories,
+          items,
+        });
+      } else {
+        updateMeal(mealId, {
+          status: 'ready',
+          totalCalories: result.calories,
+          items: [
+            {
+              id: itemId,
+              name: result.foodName,
+              calories: result.calories,
+              protein: result.protein,
+              carbs: result.carbs,
+              fat: result.fat,
+              portion: '1 порция',
+            },
+          ],
+        });
+      }
     } catch {
       updateMeal(mealId, { status: 'error' });
     }

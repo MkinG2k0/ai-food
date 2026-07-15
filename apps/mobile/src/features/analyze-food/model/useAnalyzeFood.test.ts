@@ -17,6 +17,7 @@ const mockResponse: AnalyzeFoodResponse = {
     fat: 10,
     fiber: 5,
     confidence: 0.92,
+    items: [],
   },
   processingTime: 2000,
 };
