@@ -140,7 +140,7 @@ describe('useSaveMeal', () => {
             protein: 28,
             carbs: 40,
             fat: 28,
-            portion: '1 шт',
+            grams: 150,
           },
           {
             name: 'Картофель фри',
@@ -166,10 +166,10 @@ describe('useSaveMeal', () => {
     expect(meal.items).toHaveLength(2);
     expect(meal.items[0].name).toBe('Бургер');
     expect(meal.items[0].calories).toBe(550);
-    expect(meal.items[0].portion).toBe('1 шт');
+    expect(meal.items[0].grams).toBe(150);
     expect(meal.items[1].name).toBe('Картофель фри');
     expect(meal.items[1].calories).toBe(300);
-    expect(meal.items[1].portion).toBe('1 порция');
+    expect(meal.items[1].grams).toBe(100);
     expect(meal.items[0].id).not.toBe(meal.items[1].id);
     expect(meal.totalCalories).toBe(850);
     expect(meal.name).toBe('Бургер с картошкой');
@@ -203,7 +203,7 @@ describe('useSaveMeal', () => {
     expect(meal.items[0].name).toBe('Овсянка с ягодами');
     expect(meal.items[0].calories).toBe(350);
     expect(meal.items[0].protein).toBe(12);
-    expect(meal.items[0].portion).toBe('1 порция');
+    expect(meal.items[0].grams).toBe(100);
     expect(meal.totalCalories).toBe(350);
     expect(meal.name).toBe('Овсянка с ягодами');
   });
@@ -218,6 +218,7 @@ describe('useSaveMeal', () => {
     const meal = useDiaryStore.getState().meals[0];
     expect(meal.name).toBe('Домашний салат');
     expect(meal.status).toBe('ready');
+    expect(meal.items[0].grams).toBe(100);
   });
 
   it('sets meal.name to Без названия when no-image description is empty', async () => {
