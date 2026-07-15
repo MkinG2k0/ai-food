@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
 last_updated: "2026-07-16T00:00:00.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-0hj: meal delete (detail + swipe confirm)
+last_activity: 2026-07-16 - Completed quick task 260716-0vb: split meal composition КБЖУ
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-0hj: meal delete (detail + swipe confirm)
+Last activity: 2026-07-16 - Completed quick task 260716-0vb: split meal composition КБЖУ
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -66,6 +66,7 @@ Recent decisions affecting current work:
 - USER OVERRIDE 260716-05y: mobile analyze uses client-side VITE_AI_GATEWAY_API_KEY against deployed AI Gateway (backend untouched)
 - 260716-0f7: selectedDate in diary store (ephemeral); useSaveMeal timestamp via timestampForSelectedDate
 - 260716-0hj: meal delete via BottomSheet confirm (detail button + list swipe); removeMeal only after confirm
+- 260716-0vb: NutritionResult.items per-component КБЖУ; useSaveMeal maps to Meal.items; empty items → foodName fallback
 
 ### Pending Todos
 
@@ -83,6 +84,7 @@ None yet.
 | 260716-05y | Switch analyzeFoodApi to AI Gateway (ai-app chat/completions) | 2026-07-16 | e5151b9, 78025a9 | [260716-05y-analyze-food-ai-gateway-ai-app-api-vite-](./quick/260716-05y-analyze-food-ai-gateway-ai-app-api-vite-/) |
 | 260716-0f7 | Fix meal timestamp to use selected calendar date | 2026-07-16 | 3ec20f1, 39d8da2, cc48ce5, 6fbf615 | [260716-0f7-fix-meal-selected-calendar-date](./quick/260716-0f7-fix-meal-selected-calendar-date/) |
 | 260716-0hj | Meal delete: detail button + swipe confirm (framer-motion) | 2026-07-16 | 9ea28e0, 1893781, 93da285, d12ce03 | [260716-0hj-meal-id-motion-for-react-motion-react-ht](./quick/260716-0hj-meal-id-motion-for-react-motion-react-ht/) |
+| 260716-0vb | Split meal composition КБЖУ (items[] from AI → FoodItem[]) | 2026-07-16 | c4ae029, b565a0a, 1b20699, 306ce93 | [260716-0vb-split-meal-composition-kbzhu](./quick/260716-0vb-split-meal-composition-kbzhu/) |
 
 ### Blockers/Concerns
 
