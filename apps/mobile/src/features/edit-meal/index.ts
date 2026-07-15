@@ -4,9 +4,9 @@ export {
   type DeleteItemConfirmSheetProps,
 } from './ui/DeleteItemConfirmSheet';
 export {
-  EditableFoodItemCard,
-  type EditableFoodItemCardProps,
-} from './ui/EditableFoodItemCard';
+  FoodItemDisplayCard,
+  type FoodItemDisplayCardProps,
+} from './ui/FoodItemDisplayCard';
 export {
   MealSummaryEditor,
   type MealSummaryEditorProps,

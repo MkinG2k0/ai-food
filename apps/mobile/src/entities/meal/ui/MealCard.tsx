@@ -1,10 +1,10 @@
 import { Utensils, Loader2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Meal } from '@ai-food/shared-types';
-import { Badge, Card, CardContent, Skeleton } from '@/shared/ui';
-import { formatCalories, formatMacro } from '@/shared/lib';
+import { Card, CardContent, Skeleton } from '@/shared/ui';
 import { useMealImage } from '../model/useMealImage';
 import { mealDisplayName } from '../model/mealDisplayName';
+import { FoodMacrosBadges } from './FoodMacrosBadges';
 
 interface MealCardProps {
   meal: Meal;
@@ -104,32 +104,12 @@ export function MealCard({ meal }: MealCardProps) {
                   {time}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-1">
-                <Badge
-                  variant="secondary"
-                  className="bg-emerald-50 text-emerald-700 border-emerald-100 font-semibold"
-                >
-                  {formatCalories(meal.totalCalories)}
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="bg-blue-50 text-blue-700 border-blue-100 font-semibold"
-                >
-                  Б {formatMacro(totals.protein)}
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="bg-red-50 text-red-700 border-red-100 font-semibold"
-                >
-                  Ж {formatMacro(totals.fat)}
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="bg-amber-50 text-amber-700 border-amber-100 font-semibold"
-                >
-                  У {formatMacro(totals.carbs)}
-                </Badge>
-              </div>
+              <FoodMacrosBadges
+                calories={meal.totalCalories}
+                protein={totals.protein}
+                fat={totals.fat}
+                carbs={totals.carbs}
+              />
             </>
           )}
         </div>

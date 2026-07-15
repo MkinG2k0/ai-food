@@ -10,7 +10,7 @@ import {
 import {
   useConfirmDeleteMealItem,
   DeleteItemConfirmSheet,
-  EditableFoodItemCard,
+  FoodItemDisplayCard,
   MealSummaryEditor,
 } from '@/features/edit-meal';
 import { Button } from '@/shared/ui';
@@ -95,7 +95,7 @@ export function MealDetailPage() {
             </p>
           ) : (
             meal.items.map((item) => (
-              <EditableFoodItemCard
+              <FoodItemDisplayCard
                 key={item.id}
                 mealId={meal.id}
                 item={item}
