@@ -8,6 +8,11 @@ import {
   sumItemCalories,
   type NutrientKey,
 } from './mealNutritionMath';
+import {
+  normalizePortions,
+  resolveMealPortions,
+  scaleMealByPortionRatio,
+} from './mealPortions';
 
 export interface MealNutritionPatch {
   calories?: number;
@@ -29,6 +34,7 @@ interface DiaryState {
   ) => void;
   removeMealItem: (mealId: string, itemId: string) => void;
   updateMealNutrition: (mealId: string, nutrition: MealNutritionPatch) => void;
+  setMealPortions: (mealId: string, portions: number) => void;
   clearDiary: () => void;
   setSelectedDate: (date: Date) => void;
 }
@@ -108,6 +114,30 @@ export const useDiaryStore = create<DiaryState>()(
             ...meal,
             items,
             totalCalories: sumItemCalories(items),
+          };
+          return { meals };
+        }),
+      setMealPortions: (mealId, portions) =>
+        set((state) => {
+          const mealIndex = state.meals.findIndex((m) => m.id === mealId);
+          if (mealIndex === -1) return state;
+
+          const meal = state.meals[mealIndex];
+          const current = resolveMealPortions(meal);
+          const next = normalizePortions(portions);
+          if (next === current) return state;
+
+          const { items, totalCalories } = scaleMealByPortionRatio(
+            meal.items,
+            next / current,
+          );
+
+          const meals = [...state.meals];
+          meals[mealIndex] = {
+            ...meal,
+            portions: next,
+            items,
+            totalCalories,
           };
           return { meals };
         }),

@@ -46,6 +46,7 @@ export function useSaveMeal() {
           },
         ],
         totalCalories: 0,
+        portions: 1,
         status: 'ready',
       });
       return;
@@ -57,6 +58,7 @@ export function useSaveMeal() {
       name: trimmedDescription || undefined,
       items: [placeholderItem],
       totalCalories: 0,
+      portions: 1,
       imageUri,
       status: 'analyzing',
     };

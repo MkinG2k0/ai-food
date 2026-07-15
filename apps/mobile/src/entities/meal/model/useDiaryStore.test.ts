@@ -285,4 +285,41 @@ describe('useDiaryStore', () => {
     });
     expect(result.current.meals[0]).toEqual(emptyMeal);
   });
+
+  it('setMealPortions scales items, grams and totalCalories by 0.5 steps', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal({ ...multiItemMeal, portions: 1 });
+      result.current.setMealPortions('m1', 1.5);
+    });
+    const meal = result.current.meals[0];
+    expect(meal.portions).toBe(1.5);
+    expect(meal.items[0].calories).toBe(300);
+    expect(meal.items[0].grams).toBe(120);
+    expect(meal.items[1].calories).toBe(450);
+    expect(meal.totalCalories).toBe(750);
+  });
+
+  it('setMealPortions treats missing portions as 1 and clamps to min 0.5', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal(multiItemMeal);
+      result.current.setMealPortions('m1', 0.5);
+    });
+    const meal = result.current.meals[0];
+    expect(meal.portions).toBe(0.5);
+    expect(meal.items[0].calories).toBe(100);
+    expect(meal.items[1].calories).toBe(150);
+    expect(meal.totalCalories).toBe(250);
+  });
+
+  it('setMealPortions is no-op when portions unchanged after normalize', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal({ ...multiItemMeal, portions: 1 });
+      result.current.setMealPortions('m1', 1.1);
+    });
+    expect(result.current.meals[0].portions).toBe(1);
+    expect(result.current.meals[0].totalCalories).toBe(500);
+  });
 });

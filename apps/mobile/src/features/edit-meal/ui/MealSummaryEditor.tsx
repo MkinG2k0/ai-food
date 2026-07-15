@@ -1,6 +1,15 @@
+import { Minus, Plus } from 'lucide-react';
 import type { Meal } from '@ai-food/shared-types';
-import { mealDisplayName, useDiaryStore } from '@/entities/meal';
-import { Card, CardContent, CardHeader } from '@/shared/ui';
+import {
+  formatPortions,
+  MAX_PORTIONS,
+  mealDisplayName,
+  MIN_PORTIONS,
+  PORTION_STEP,
+  resolveMealPortions,
+  useDiaryStore,
+} from '@/entities/meal';
+import { Button, Card, CardContent, CardHeader } from '@/shared/ui';
 import { cn, formatDate } from '@/shared/lib';
 
 const inputClassName = cn(
@@ -32,10 +41,11 @@ export interface MealSummaryEditorProps {
 }
 
 export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
-  const updateMeal = useDiaryStore((s) => s.updateMeal);
   const updateMealNutrition = useDiaryStore((s) => s.updateMealNutrition);
+  const setMealPortions = useDiaryStore((s) => s.setMealPortions);
 
   const dishName = mealDisplayName(meal);
+  const portions = resolveMealPortions(meal);
   const time = new Date(meal.timestamp).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -53,37 +63,68 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
   return (
     <Card>
       <CardHeader className="space-y-2">
-        <input
-          type="text"
-          aria-label="Название блюда"
-          className={cn(inputClassName, 'text-base font-semibold')}
-          value={dishName}
-          onChange={(e) => updateMeal(meal.id, { name: e.target.value })}
-        />
+        <h2 className="text-base font-semibold text-foreground">{dishName}</h2>
         <p className="text-sm text-muted-foreground">
           {formatDate(meal.timestamp)} в {time}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <label className="block space-y-1">
-          <span className="text-xs text-muted-foreground">Калории, ккал</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            aria-label="Калории блюда"
-            className={cn(
-              inputClassName,
-              'text-2xl font-semibold text-emerald-600',
-            )}
-            value={Math.round(meal.totalCalories)}
-            onChange={(e) =>
-              updateMealNutrition(meal.id, {
-                calories: parseNutrient(e.target.value),
-              })
-            }
-          />
-        </label>
+        <div className="flex items-end gap-3">
+          <label className="block min-w-0 flex-1 space-y-1">
+            <span className="text-xs text-muted-foreground">Калории, ккал</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              aria-label="Калории блюда"
+              className={cn(
+                inputClassName,
+                'text-2xl font-semibold text-emerald-600',
+              )}
+              value={Math.round(meal.totalCalories)}
+              onChange={(e) =>
+                updateMealNutrition(meal.id, {
+                  calories: parseNutrient(e.target.value),
+                })
+              }
+            />
+          </label>
+          <div className="shrink-0 space-y-1">
+            <span className="block text-xs text-muted-foreground text-center">
+              Порции
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                aria-label="Уменьшить порции"
+                disabled={portions <= MIN_PORTIONS}
+                onClick={() => setMealPortions(meal.id, portions - PORTION_STEP)}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span
+                className="min-w-[2.25rem] text-center text-base font-semibold tabular-nums"
+                aria-live="polite"
+              >
+                {formatPortions(portions)}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                aria-label="Увеличить порции"
+                disabled={portions >= MAX_PORTIONS}
+                onClick={() => setMealPortions(meal.id, portions + PORTION_STEP)}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
         <div className="grid grid-cols-3 gap-3">
           {(
             [

@@ -19,6 +19,8 @@ export interface Meal {
   name?: string;
   imageUri?: string;
   status?: MealStatus;
+  /** Servings multiplier; omitted on legacy meals → treat as 1 */
+  portions?: number;
 }
 
 export interface NutritionItem {
