@@ -52,9 +52,34 @@ describe('useOnboarding', () => {
       result.current.next({ weight: 75 });
       result.current.next({ activity: 'medium' });
       result.current.next({ goal: 'maintain' });
+      result.current.next({ dietType: 'none' });
     });
     act(() => result.current.finish());
     expect(setProfileSpy).toHaveBeenCalledOnce();
+    expect(setProfileSpy.mock.calls[0][0]).toMatchObject({ dietType: 'none' });
     expect(mockNavigate).toHaveBeenCalledWith('/');
+  });
+
+  it('finish() does not call setProfile without dietType', () => {
+    const setProfileSpy = vi.fn();
+    useProfileStore.setState({
+      profile: null,
+      targets: null,
+      setProfile: setProfileSpy,
+      isComplete: () => false,
+    });
+
+    const { result } = renderHook(() => useOnboarding());
+    act(() => {
+      result.current.next({ gender: 'male' });
+      result.current.next({ age: 30 });
+      result.current.next({ height: 175 });
+      result.current.next({ weight: 75 });
+      result.current.next({ activity: 'medium' });
+      result.current.next({ goal: 'maintain' });
+    });
+    act(() => result.current.finish());
+    expect(setProfileSpy).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

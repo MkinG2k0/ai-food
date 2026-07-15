@@ -18,6 +18,7 @@ const mockProfile = {
   weight: 78,
   activity: 'medium' as const,
   goal: 'maintain' as const,
+  dietType: 'none' as const,
 };
 
 const mockTargets = { kcal: 2500, protein: 140, fat: 69, carbs: 288 };
@@ -72,5 +73,40 @@ describe('useProfileStore', () => {
     expect(useProfileStore.getState().profile).toEqual(mockProfile);
     expect(useProfileStore.getState().targets).toEqual(mockTargets);
     expect(useProfileStore.getState().isComplete()).toBe(true);
+  });
+
+  it('updateDietType patches profile.dietType when profile exists', async () => {
+    await act(async () => {
+      useProfileStore.getState().setProfile(mockProfile, mockTargets);
+      useProfileStore.getState().updateDietType('halal');
+    });
+    expect(useProfileStore.getState().profile?.dietType).toBe('halal');
+    expect(useProfileStore.getState().isComplete()).toBe(true);
+  });
+
+  it('updateDietType is a no-op when profile is null', async () => {
+    await act(async () => {
+      useProfileStore.getState().updateDietType('vegan');
+    });
+    expect(useProfileStore.getState().profile).toBeNull();
+  });
+
+  it('isComplete stays true for legacy profile missing dietType', async () => {
+    const legacyProfile = {
+      gender: 'female' as const,
+      age: 25,
+      height: 165,
+      weight: 60,
+      activity: 'low' as const,
+      goal: 'lose' as const,
+    };
+    await act(async () => {
+      useProfileStore.setState({
+        profile: legacyProfile as typeof mockProfile,
+        targets: mockTargets,
+      });
+    });
+    expect(useProfileStore.getState().isComplete()).toBe(true);
+    expect(useProfileStore.getState().profile?.dietType).toBeUndefined();
   });
 });
