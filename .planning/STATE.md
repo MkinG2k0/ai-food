@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
 last_updated: "2026-07-16T00:00:00.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-3g0: settings custom instructions
+last_activity: 2026-07-16 - Completed quick task 260716-3nq: settings redo onboarding
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-3g0: settings custom instructions
+Last activity: 2026-07-16 - Completed quick task 260716-3nq: settings redo onboarding
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -75,6 +75,7 @@ Recent decisions affecting current work:
 - 260716-2dw: MealDetail «Дополнить» → refineMealApi (client gateway) → updateMeal; features/refine-meal
 - 260716-3d2: features/stats — getWeeklyCalorieSeries + WeeklyCaloriesChart; StatsPage `/stats`; DailyHeader nav
 - 260716-3g0: useSettingsStore (ai-food-settings) customInstructions → analyze/refine system prompts; `/settings`
+- 260716-3nq: Settings profile summary + resetProfile redo onboarding (diary/customInstructions kept)
 
 ### Pending Todos
 
@@ -102,6 +103,7 @@ None yet.
 | fast | Show dish macros Б/У/Ж in one horizontal row | 2026-07-16 | d604193 | — |
 | fast | Refine loading on Дополнить button; remove bottom Удалить | 2026-07-16 | e50c59e | — |
 | 260716-3g0 | Settings: persisted custom instructions in AI prompts | 2026-07-16 | fcda000, 9d4ce65, 882fdcb, 5ce71af | [260716-3g0-settings-custom-instructions](./quick/260716-3g0-settings-custom-instructions/) |
+| 260716-3nq | Settings: profile summary + redo onboarding | 2026-07-16 | 80e9192, 33f5b2f, 6ebad18 | [260716-3nq-settings-redo-onboarding](./quick/260716-3nq-settings-redo-onboarding/) |
 | 260716-3d2 | модуль статистики — недельный график калорий (сумма по дням) | 2026-07-15 | a90f01b, 026da04, 08a7dac | [260716-3d2-stats-weekly-kcal](./quick/260716-3d2-stats-weekly-kcal/) |
 
 ### Blockers/Concerns
