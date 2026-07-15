@@ -20,13 +20,33 @@ const GATEWAY_URL = 'https://gateway.test.example';
 const GATEWAY_KEY = 'test-gateway-key';
 
 const validNutrition: NutritionResult = {
-  foodName: 'Овсянка с ягодами',
-  calories: 350,
-  protein: 12,
-  carbs: 55,
-  fat: 8,
-  fiber: 6,
+  foodName: 'Бургер с картошкой',
+  calories: 850,
+  protein: 35,
+  carbs: 78,
+  fat: 42,
+  fiber: 7,
   confidence: 0.91,
+  items: [
+    {
+      name: 'Бургер',
+      calories: 550,
+      protein: 28,
+      carbs: 40,
+      fat: 28,
+      portion: '1 шт',
+      fiber: 3,
+    },
+    {
+      name: 'Картофель фри',
+      calories: 300,
+      protein: 7,
+      carbs: 38,
+      fat: 14,
+      portion: '1 порция',
+      fiber: 4,
+    },
+  ],
 };
 
 function gatewaySuccessBody(content: string) {
@@ -56,7 +76,71 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     const result = await analyzeFoodApi(file);
 
     expect(result.result).toEqual(validNutrition);
+    expect(result.result.items).toHaveLength(2);
     expect(result.processingTime).toBeGreaterThanOrEqual(0);
+  });
+
+  it('accepts empty items array when top-level NutritionResult fields are valid', async () => {
+    const withEmptyItems: NutritionResult = {
+      foodName: 'Овсянка с ягодами',
+      calories: 350,
+      protein: 12,
+      carbs: 55,
+      fat: 8,
+      fiber: 6,
+      confidence: 0.91,
+      items: [],
+    };
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(withEmptyItems)),
+    });
+
+    const file = new File(['fake-image'], 'food.jpg', { type: 'image/jpeg' });
+    const result = await analyzeFoodApi(file);
+
+    expect(result.result.items).toEqual([]);
+    expect(result.result.foodName).toBe('Овсянка с ягодами');
+  });
+
+  it('rejects ANALYSIS_FAILED when an item is missing name or has non-number calories', async () => {
+    const invalidItems = {
+      foodName: 'Тарелка',
+      calories: 500,
+      protein: 20,
+      carbs: 40,
+      fat: 15,
+      fiber: 5,
+      confidence: 0.8,
+      items: [{ name: 'Суп', calories: 'много', protein: 10, carbs: 20, fat: 5 }],
+    };
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(invalidItems)),
+    });
+
+    const file = new File(['x'], 'food.jpg', { type: 'image/jpeg' });
+    await expect(analyzeFoodApi(file)).rejects.toMatchObject({
+      code: 'ANALYSIS_FAILED',
+    } satisfies Partial<ApiError>);
+  });
+
+  it('rejects ANALYSIS_FAILED when items is missing', async () => {
+    const withoutItems = {
+      foodName: 'Суп',
+      calories: 200,
+      protein: 10,
+      carbs: 20,
+      fat: 5,
+      fiber: 2,
+      confidence: 0.7,
+    };
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(withoutItems)),
+    });
+
+    const file = new File(['x'], 'food.jpg', { type: 'image/jpeg' });
+    await expect(analyzeFoodApi(file)).rejects.toMatchObject({
+      code: 'ANALYSIS_FAILED',
+    } satisfies Partial<ApiError>);
   });
 
   it('POSTs to /v1/chat/completions with Bearer key and vision body', async () => {
