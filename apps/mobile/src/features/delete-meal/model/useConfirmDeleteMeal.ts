@@ -1,24 +1,24 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useDiaryStore } from '@/entities/meal';
 
 export function useConfirmDeleteMeal() {
   const [pendingId, setPendingId] = useState<string | null>(null);
 
-  const openConfirm = useCallback((id: string) => {
+  function openConfirm(id: string) {
     setPendingId(id);
-  }, []);
+  }
 
-  const closeConfirm = useCallback(() => {
+  function closeConfirm() {
     setPendingId(null);
-  }, []);
+  }
 
-  const confirmDelete = useCallback((): string | null => {
+  function confirmDelete(): string | null {
     if (!pendingId) return null;
     const id = pendingId;
     useDiaryStore.getState().removeMeal(id);
     setPendingId(null);
     return id;
-  }, [pendingId]);
+  }
 
   return {
     pendingId,
