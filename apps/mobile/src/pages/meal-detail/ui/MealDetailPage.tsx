@@ -1,8 +1,13 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useDiaryStore, useMealImage } from '@/entities/meal';
 import { NutritionRow } from '@/entities/nutrition';
+import {
+  useConfirmDeleteMeal,
+  DeleteMealConfirmSheet,
+} from '@/features/delete-meal';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/shared/ui';
 import { formatCalories, formatMacro, formatDate } from '@/shared/lib';
 
@@ -12,6 +17,8 @@ export function MealDetailPage() {
   const meals = useDiaryStore((s) => s.meals);
   const meal = meals.find((m) => m.id === id);
   const imageSrc = useMealImage(meal?.imageUri);
+  const { isOpen, openConfirm, closeConfirm, confirmDelete } =
+    useConfirmDeleteMeal();
 
   useEffect(() => {
     if (!meal || meal.status === 'analyzing') {
@@ -28,6 +35,14 @@ export function MealDetailPage() {
     minute: '2-digit',
   });
 
+  function handleConfirmDelete() {
+    const deletedId = confirmDelete();
+    if (deletedId) {
+      toast.success('Приём пищи удалён');
+      navigate('/', { replace: true });
+    }
+  }
+
   const totals = meal.items.reduce(
     (acc, item) => ({
       protein: acc.protein + item.protein,
@@ -43,7 +58,15 @@ export function MealDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-semibold ml-2">Детали приёма</h1>
+        <h1 className="text-lg font-semibold ml-2 flex-1">Детали приёма</h1>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => openConfirm(meal.id)}
+          aria-label="Удалить приём пищи"
+        >
+          <Trash2 className="h-5 w-5 text-destructive" />
+        </Button>
       </header>
 
       <main className="flex-1 px-4 py-4 space-y-4">
@@ -92,7 +115,22 @@ export function MealDetailPage() {
             </Card>
           ))}
         </div>
+
+        <Button
+          variant="destructive"
+          className="w-full"
+          onClick={() => openConfirm(meal.id)}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Удалить
+        </Button>
       </main>
+
+      <DeleteMealConfirmSheet
+        open={isOpen}
+        onClose={closeConfirm}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
