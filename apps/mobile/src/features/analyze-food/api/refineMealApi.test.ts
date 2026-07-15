@@ -212,4 +212,53 @@ describe('refineMealApi (AI Gateway)', () => {
       status: 429,
     } satisfies Partial<ApiError>);
   });
+
+  it('appends non-empty trimmed customInstructions to system message', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await refineMealApi({
+      correction: 'съел половину',
+      mealContext,
+      customInstructions: '  Безглютеновая диета  ',
+    });
+
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const body = rawBody as { messages: Array<{ role: string; content: string }> };
+    const systemContent = body.messages[0].content;
+
+    expect(systemContent).toContain(FOOD_NAME_PROMPT_RULE);
+    expect(systemContent).toContain('Безглютеновая диета');
+    expect(systemContent).toMatch(/custom instructions|кастомн|user preferences|предпочтен/i);
+  });
+
+  it('leaves system prompt unchanged for empty customInstructions', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await refineMealApi({ correction: 'съел половину', mealContext });
+    const [, bodyWithout] = vi.mocked(axios.post).mock.calls[0];
+    const baseSystem = (
+      bodyWithout as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    vi.mocked(axios.post).mockClear();
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await refineMealApi({
+      correction: 'съел половину',
+      mealContext,
+      customInstructions: '',
+    });
+    const [, bodyEmpty] = vi.mocked(axios.post).mock.calls[0];
+    const emptySystem = (
+      bodyEmpty as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    expect(emptySystem).toBe(baseSystem);
+  });
 });

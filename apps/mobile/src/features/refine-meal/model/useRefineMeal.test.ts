@@ -95,6 +95,7 @@ describe('useRefineMeal', () => {
     expect(refineMealApi).toHaveBeenCalledWith(
       expect.objectContaining({
         correction: 'съел половину',
+        customInstructions: '',
         imageDataUrl: 'data:image/jpeg;base64,base64img',
         mealContext: expect.objectContaining({
           name: 'Бургер',

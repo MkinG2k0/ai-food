@@ -344,4 +344,51 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     expect(systemContent).not.toMatch(/"portion"/);
     expect(systemContent).not.toMatch(/1 шт|1 порция|piece-count|serving-count|шт»|порция»/i);
   });
+
+  it('appends non-empty trimmed customInstructions to system message', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi(file, {
+      customInstructions: '  Веган, всегда в граммах  ',
+    });
+
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const body = rawBody as { messages: Array<{ role: string; content: string }> };
+    const systemContent = body.messages[0].content;
+
+    expect(systemContent).toContain(FOOD_NAME_PROMPT_RULE);
+    expect(systemContent).toContain('Веган, всегда в граммах');
+    expect(systemContent).toMatch(/custom instructions|кастомн|user preferences|предпочтен/i);
+    expect(systemContent).not.toMatch(/ {2}Веган/);
+  });
+
+  it('leaves system prompt unchanged for empty or whitespace-only customInstructions', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi(file);
+    const [, bodyWithout] = vi.mocked(axios.post).mock.calls[0];
+    const baseSystem = (
+      bodyWithout as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    vi.mocked(axios.post).mockClear();
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await analyzeFoodApi(file, { customInstructions: '   ' });
+    const [, bodyBlank] = vi.mocked(axios.post).mock.calls[0];
+    const blankSystem = (
+      bodyBlank as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    expect(blankSystem).toBe(baseSystem);
+    expect(blankSystem).not.toMatch(/custom instructions|кастомн|user preferences|предпочтен/i);
+  });
 });
