@@ -38,7 +38,7 @@ const validNutrition: NutritionResult = {
       protein: 28,
       carbs: 40,
       fat: 28,
-      portion: '1 шт',
+      grams: 150,
       fiber: 3,
     },
     {
@@ -47,7 +47,7 @@ const validNutrition: NutritionResult = {
       protein: 7,
       carbs: 38,
       fat: 14,
-      portion: '1 порция',
+      grams: 100,
       fiber: 4,
     },
   ],
@@ -125,6 +125,53 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     await expect(analyzeFoodApi(file)).rejects.toMatchObject({
       code: 'ANALYSIS_FAILED',
     } satisfies Partial<ApiError>);
+  });
+
+  it('rejects ANALYSIS_FAILED when item.grams is a non-number', async () => {
+    const invalidGrams = {
+      ...validNutrition,
+      items: [
+        {
+          name: 'Булка',
+          calories: 200,
+          protein: 6,
+          carbs: 40,
+          fat: 2,
+          grams: '150 г',
+        },
+      ],
+    };
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(invalidGrams)),
+    });
+
+    const file = new File(['x'], 'food.jpg', { type: 'image/jpeg' });
+    await expect(analyzeFoodApi(file)).rejects.toMatchObject({
+      code: 'ANALYSIS_FAILED',
+    } satisfies Partial<ApiError>);
+  });
+
+  it('accepts NutritionResult when item.grams is an optional number', async () => {
+    const withGrams = {
+      ...validNutrition,
+      items: [
+        {
+          name: 'Булка',
+          calories: 200,
+          protein: 6,
+          carbs: 40,
+          fat: 2,
+          grams: 85,
+        },
+      ],
+    };
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(withGrams)),
+    });
+
+    const file = new File(['x'], 'food.jpg', { type: 'image/jpeg' });
+    const result = await analyzeFoodApi(file);
+    expect(result.result.items[0].grams).toBe(85);
   });
 
   it('rejects ANALYSIS_FAILED when items is missing', async () => {
@@ -292,5 +339,9 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     expect(systemContent).toContain(FOOD_NAME_PROMPT_RULE);
     expect(systemContent).toContain(COMPOSITION_PROMPT_RULE);
     expect(systemContent).toMatch(/атомарн.*ингредиент|атомарн.*слой|видимого ингредиента\/слоя/i);
+    expect(systemContent).toMatch(/grams/i);
+    expect(systemContent).toMatch(/items\[\]\.grams|"grams".*number|grams.*estimate|оценки.*вес|вес.*грамм/i);
+    expect(systemContent).not.toMatch(/"portion"/);
+    expect(systemContent).not.toMatch(/1 шт|1 порция|piece-count|serving-count|шт»|порция»/i);
   });
 });
