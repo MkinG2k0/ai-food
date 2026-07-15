@@ -52,4 +52,25 @@ describe('useProfileStore', () => {
     });
     expect(useProfileStore.getState().isComplete()).toBe(true);
   });
+
+  it('resetProfile clears profile and targets', async () => {
+    await act(async () => {
+      useProfileStore.getState().setProfile(mockProfile, mockTargets);
+      useProfileStore.getState().resetProfile();
+    });
+    expect(useProfileStore.getState().profile).toBeNull();
+    expect(useProfileStore.getState().targets).toBeNull();
+    expect(useProfileStore.getState().isComplete()).toBe(false);
+  });
+
+  it('setProfile works after a prior reset', async () => {
+    await act(async () => {
+      useProfileStore.getState().setProfile(mockProfile, mockTargets);
+      useProfileStore.getState().resetProfile();
+      useProfileStore.getState().setProfile(mockProfile, mockTargets);
+    });
+    expect(useProfileStore.getState().profile).toEqual(mockProfile);
+    expect(useProfileStore.getState().targets).toEqual(mockTargets);
+    expect(useProfileStore.getState().isComplete()).toBe(true);
+  });
 });
