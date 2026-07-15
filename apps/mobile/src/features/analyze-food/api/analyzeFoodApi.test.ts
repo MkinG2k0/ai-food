@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ApiError, NutritionResult } from '@ai-food/shared-types';
 import axios from 'axios';
-import { analyzeFoodApi, FOOD_NAME_PROMPT_RULE } from './analyzeFoodApi';
+import {
+  analyzeFoodApi,
+  COMPOSITION_PROMPT_RULE,
+  FOOD_NAME_PROMPT_RULE,
+} from './analyzeFoodApi';
 
 vi.mock('axios', () => {
   const post = vi.fn();
@@ -261,5 +265,32 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     expect(FOOD_NAME_PROMPT_RULE).toMatch(
       /never.*comma-separated|запрещено.*перечень|не перечисляй|not.*ingredient list|не пиши.*список|не.*перечень состава/i,
     );
+  });
+
+  it('COMPOSITION_PROMPT_RULE forces compound dishes into ingredient-level items', () => {
+    expect(COMPOSITION_PROMPT_RULE).toMatch(/items|состав|разбив|слой|ингредиент/i);
+    expect(COMPOSITION_PROMPT_RULE).toMatch(/булка/i);
+    expect(COMPOSITION_PROMPT_RULE).toMatch(/котлета/i);
+    expect(COMPOSITION_PROMPT_RULE).toMatch(
+      /не оставляй|не склеивай|запрещ.*Гамбургер|запрещ.*Бургер|не.*единственн.*(Гамбургер|Бургер)/i,
+    );
+    expect(COMPOSITION_PROMPT_RULE).toMatch(/фри|один item|однородн|один элемент/i);
+  });
+
+  it('SYSTEM_PROMPT embeds COMPOSITION_PROMPT_RULE alongside FOOD_NAME_PROMPT_RULE', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi(file);
+
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const body = rawBody as { messages: Array<{ role: string; content: string }> };
+    const systemContent = body.messages[0].content;
+
+    expect(systemContent).toContain(FOOD_NAME_PROMPT_RULE);
+    expect(systemContent).toContain(COMPOSITION_PROMPT_RULE);
+    expect(systemContent).toMatch(/атомарн.*ингредиент|атомарн.*слой|видимого ингредиента\/слоя/i);
   });
 });
