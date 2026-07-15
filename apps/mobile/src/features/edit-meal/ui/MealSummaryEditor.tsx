@@ -84,64 +84,49 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
             }
           />
         </label>
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm text-muted-foreground">Белки, г</span>
+        <div className="grid grid-cols-3 gap-3">
+          {(
+            [
+              {
+                label: 'Белки',
+                ariaLabel: 'Белки блюда',
+                value: totals.protein,
+                field: 'protein' as const,
+              },
+              {
+                label: 'Углеводы',
+                ariaLabel: 'Углеводы блюда',
+                value: totals.carbs,
+                field: 'carbs' as const,
+              },
+              {
+                label: 'Жиры',
+                ariaLabel: 'Жиры блюда',
+                value: totals.fat,
+                field: 'fat' as const,
+              },
+            ] as const
+          ).map((macro) => (
+            <div key={macro.field} className="space-y-1.5 min-w-0">
+              <span className="block text-xs text-muted-foreground truncate">
+                {macro.label}, г
+              </span>
               <input
                 type="number"
                 inputMode="decimal"
                 min={0}
-                aria-label="Белки блюда"
-                className={cn(inputClassName, 'w-24 text-right')}
-                value={Number(totals.protein.toFixed(1))}
+                aria-label={macro.ariaLabel}
+                className={cn(inputClassName, 'text-center tabular-nums')}
+                value={Number(macro.value.toFixed(1))}
                 onChange={(e) =>
                   updateMealNutrition(meal.id, {
-                    protein: parseNutrient(e.target.value),
+                    [macro.field]: parseNutrient(e.target.value),
                   })
                 }
               />
+              <MacroBar value={macro.value} />
             </div>
-            <MacroBar value={totals.protein} />
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm text-muted-foreground">Углеводы, г</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                min={0}
-                aria-label="Углеводы блюда"
-                className={cn(inputClassName, 'w-24 text-right')}
-                value={Number(totals.carbs.toFixed(1))}
-                onChange={(e) =>
-                  updateMealNutrition(meal.id, {
-                    carbs: parseNutrient(e.target.value),
-                  })
-                }
-              />
-            </div>
-            <MacroBar value={totals.carbs} />
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm text-muted-foreground">Жиры, г</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                min={0}
-                aria-label="Жиры блюда"
-                className={cn(inputClassName, 'w-24 text-right')}
-                value={Number(totals.fat.toFixed(1))}
-                onChange={(e) =>
-                  updateMealNutrition(meal.id, {
-                    fat: parseNutrient(e.target.value),
-                  })
-                }
-              />
-            </div>
-            <MacroBar value={totals.fat} />
-          </div>
+          ))}
         </div>
       </CardContent>
     </Card>
