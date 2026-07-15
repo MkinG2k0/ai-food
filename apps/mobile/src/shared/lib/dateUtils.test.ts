@@ -6,6 +6,7 @@ import {
   isFutureDay,
   formatDayLabel,
   formatHeaderDate,
+  timestampForSelectedDate,
 } from './dateUtils';
 
 describe('getWeekStart', () => {
@@ -142,5 +143,27 @@ describe('formatHeaderDate', () => {
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
     expect(result).not.toBe('Сегодня');
+  });
+});
+
+describe('timestampForSelectedDate', () => {
+  it('uses selected calendar day with time from now for a past date', () => {
+    const selected = new Date(2026, 5, 10, 0, 0, 0, 0); // June 10 local
+    const now = new Date(2026, 6, 16, 14, 30, 45, 123); // July 16 14:30:45.123
+    const result = timestampForSelectedDate(selected, now);
+    const parsed = new Date(result);
+    expect(isSameDay(parsed, selected)).toBe(true);
+    expect(parsed.getHours()).toBe(14);
+    expect(parsed.getMinutes()).toBe(30);
+    expect(parsed.getSeconds()).toBe(45);
+    expect(parsed.getMilliseconds()).toBe(123);
+  });
+
+  it('keeps today as today when selectedDate is today', () => {
+    const now = new Date(2026, 6, 16, 9, 15, 0, 0);
+    const selected = new Date(2026, 6, 16, 0, 0, 0, 0);
+    const result = timestampForSelectedDate(selected, now);
+    expect(isSameDay(new Date(result), selected)).toBe(true);
+    expect(isSameDay(new Date(result), now)).toBe(true);
   });
 });
