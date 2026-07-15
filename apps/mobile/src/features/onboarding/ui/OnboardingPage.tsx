@@ -1,4 +1,8 @@
+import { Navigate } from 'react-router-dom';
+import type { UserProfile } from '@ai-food/shared-types';
 import { useOnboarding } from '../model/useOnboarding';
+import { useProfileStore } from '../model/useProfileStore';
+import { useProfileHydrated } from '../model/useProfileHydrated';
 import { calculateTargets } from '../model/calculateTargets';
 import { StepGender } from './steps/StepGender';
 import { StepAge } from './steps/StepAge';
@@ -7,12 +11,16 @@ import { StepWeight } from './steps/StepWeight';
 import { StepActivity } from './steps/StepActivity';
 import { StepGoal } from './steps/StepGoal';
 import { OnboardingResult } from './OnboardingResult';
-import type { UserProfile } from '@ai-food/shared-types';
 
 const TOTAL_STEPS = 6;
 
 export function OnboardingPage() {
+  const hydrated = useProfileHydrated();
+  const isComplete = useProfileStore((s) => s.isComplete());
   const { step, draft, next, back, finish } = useOnboarding();
+
+  if (!hydrated) return null;
+  if (isComplete) return <Navigate to="/" replace />;
 
   const isResult = step > TOTAL_STEPS;
   const targets = isResult ? calculateTargets(draft as UserProfile) : null;

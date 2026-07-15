@@ -11,3 +11,4 @@ export {
   timestampForSelectedDate,
 } from './dateUtils';
 export { saveMealImage, getMealImageSrc } from './mealImage';
+export { capacitorStorage } from './capacitorStorage';

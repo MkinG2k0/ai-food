@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Meal } from '@ai-food/shared-types';
+import { capacitorStorage } from '@/shared/lib';
 
 interface DiaryState {
   meals: Meal[];
@@ -31,6 +32,7 @@ export const useDiaryStore = create<DiaryState>()(
     }),
     {
       name: 'ai-food-diary',
+      storage: createJSONStorage(() => capacitorStorage),
       partialize: (state) => ({ meals: state.meals }),
     }
   )
