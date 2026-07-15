@@ -7,6 +7,7 @@ interface ProfileState {
   profile: UserProfile | null;
   targets: DailyTargets | null;
   setProfile: (profile: UserProfile, targets: DailyTargets) => void;
+  resetProfile: () => void;
   isComplete: () => boolean;
 }
 
@@ -16,6 +17,7 @@ export const useProfileStore = create<ProfileState>()(
       profile: null,
       targets: null,
       setProfile: (profile, targets) => set({ profile, targets }),
+      resetProfile: () => set({ profile: null, targets: null }),
       isComplete: () => get().profile !== null,
     }),
     {
