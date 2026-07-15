@@ -79,18 +79,11 @@ export function EditableFoodItemCard({
         className="relative touch-pan-y bg-background"
       >
         <Card>
-          <CardContent className="py-3 space-y-3">
+          <CardContent className="py-3 space-y-2">
             <div className="flex items-center gap-2">
-              <input
-                type="text"
-                aria-label="Название ингредиента"
-                className={cn(inputClassName, 'flex-1 min-w-0')}
-                value={item.name}
-                onChange={(e) =>
-                  updateMealItem(mealId, item.id, { name: e.target.value })
-                }
-                onPointerDown={stopDrag}
-              />
+              <p className="flex-1 min-w-0 text-sm font-medium truncate">
+                {item.name}
+              </p>
               <Badge variant="outline" className="shrink-0">
                 {item.portion}
               </Badge>
@@ -106,58 +99,50 @@ export function EditableFoodItemCard({
             </div>
 
             <div className="grid grid-cols-4 gap-2">
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Ккал</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  aria-label="Калории"
-                  className={inputClassName}
-                  value={item.calories}
-                  onChange={(e) => patchNumber('calories', e.target.value)}
-                  onPointerDown={stopDrag}
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Б</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  aria-label="Белки"
-                  className={inputClassName}
-                  value={item.protein}
-                  onChange={(e) => patchNumber('protein', e.target.value)}
-                  onPointerDown={stopDrag}
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">У</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  aria-label="Углеводы"
-                  className={inputClassName}
-                  value={item.carbs}
-                  onChange={(e) => patchNumber('carbs', e.target.value)}
-                  onPointerDown={stopDrag}
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Ж</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  aria-label="Жиры"
-                  className={inputClassName}
-                  value={item.fat}
-                  onChange={(e) => patchNumber('fat', e.target.value)}
-                  onPointerDown={stopDrag}
-                />
-              </label>
+              {(
+                [
+                  {
+                    label: 'Ккал',
+                    ariaLabel: 'Калории',
+                    field: 'calories' as const,
+                    value: item.calories,
+                  },
+                  {
+                    label: 'Б',
+                    ariaLabel: 'Белки',
+                    field: 'protein' as const,
+                    value: item.protein,
+                  },
+                  {
+                    label: 'У',
+                    ariaLabel: 'Углеводы',
+                    field: 'carbs' as const,
+                    value: item.carbs,
+                  },
+                  {
+                    label: 'Ж',
+                    ariaLabel: 'Жиры',
+                    field: 'fat' as const,
+                    value: item.fat,
+                  },
+                ] as const
+              ).map((macro) => (
+                <label key={macro.field} className="min-w-0 space-y-1">
+                  <span className="block text-xs text-muted-foreground">
+                    {macro.label}
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    aria-label={macro.ariaLabel}
+                    className={cn(inputClassName, 'text-center tabular-nums')}
+                    value={macro.value}
+                    onChange={(e) => patchNumber(macro.field, e.target.value)}
+                    onPointerDown={stopDrag}
+                  />
+                </label>
+              ))}
             </div>
           </CardContent>
         </Card>
