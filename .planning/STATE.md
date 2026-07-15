@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
-last_updated: "2026-06-25T16:30:00.000Z"
-last_activity: 2026-06-25 -- Phase 1 complete (verified PASS)
+last_updated: "2026-07-16T00:00:00.000Z"
+last_activity: 2026-07-16 - Completed quick task 260716-05y: analyzeFoodApi → AI Gateway
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-15 - Completed quick task 260715-wwb: Translate app to Russian (UI + OpenAI foodName prompt)
+Last activity: 2026-07-16 - Completed quick task 260716-05y: analyzeFoodApi → AI Gateway chat/completions
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -63,6 +63,7 @@ Recent decisions affecting current work:
 - OpenAI Vision via backend proxy (API key server-only)
 - Web-MVP without auth, DB, or Capacitor in this cycle
 - localStorage for diary persistence
+- USER OVERRIDE 260716-05y: mobile analyze uses client-side VITE_AI_GATEWAY_API_KEY against deployed AI Gateway (backend untouched)
 
 ### Pending Todos
 
@@ -77,6 +78,7 @@ None yet.
 | 260705-psq | Fix WeekStrip swipe: scrollbar glitch + 3-week virtualized carousel (pending human verify) | 2026-07-05 | 59d495c, 98c237c | [260705-psq-fix-weekstrip-swipe-scrollbar-appears-du](./quick/260705-psq-fix-weekstrip-swipe-scrollbar-appears-du/) |
 | 260706-x79 | Show detailed meal info on MealCard click: clickable MealCard + /meal/:id detail page | 2026-07-07 | fb13801, 538fd60 | [260706-x79-show-detailed-meal-info-on-mealcard-clic](./quick/260706-x79-show-detailed-meal-info-on-mealcard-clic/) |
 | 260715-wwb | Translate app to Russian (UI + OpenAI foodName prompt) | 2026-07-15 | 8ceb39b, 7d72997, 189da97 | [260715-wwb-translate-app-to-russian](./quick/260715-wwb-translate-app-to-russian/) |
+| 260716-05y | Switch analyzeFoodApi to AI Gateway (ai-app chat/completions) | 2026-07-16 | e5151b9, 78025a9 | [260716-05y-analyze-food-ai-gateway-ai-app-api-vite-](./quick/260716-05y-analyze-food-ai-gateway-ai-app-api-vite-/) |
 
 ### Blockers/Concerns
 
