@@ -4,7 +4,11 @@ import type {
   ApiError,
   NutritionResult,
 } from '@ai-food/shared-types';
-import { COMPOSITION_PROMPT_RULE, FOOD_NAME_PROMPT_RULE } from './analyzeFoodApi';
+import {
+  appendCustomInstructions,
+  COMPOSITION_PROMPT_RULE,
+  FOOD_NAME_PROMPT_RULE,
+} from './analyzeFoodApi';
 
 export interface RefineMealContextItem {
   name: string;
@@ -22,6 +26,7 @@ export interface RefineMealInput {
     items: RefineMealContextItem[];
   };
   imageDataUrl?: string;
+  customInstructions?: string;
 }
 
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
@@ -178,6 +183,10 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
           { type: 'text' as const, text: userText },
         ]
       : userText;
+  const systemContent = appendCustomInstructions(
+    SYSTEM_PROMPT,
+    input.customInstructions,
+  );
 
   const startTime = Date.now();
 
@@ -189,7 +198,7 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
         model: 'gpt-4o-mini',
         response_format: { type: 'json_object' },
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemContent },
           { role: 'user', content: userContent },
         ],
       },

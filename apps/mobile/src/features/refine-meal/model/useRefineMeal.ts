@@ -2,6 +2,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import type { ApiError, FoodItem, Meal } from '@ai-food/shared-types';
 import { resolveItemGrams, useDiaryStore } from '@/entities/meal';
 import { refineMealApi } from '@/features/analyze-food';
+import { useSettingsStore } from '@/features/settings';
 
 function rejectApiError(message: string, code: string, status: number): never {
   const apiError: ApiError = { message, code, status };
@@ -91,6 +92,7 @@ export function useRefineMeal() {
 
     const response = await refineMealApi({
       correction: trimmed,
+      customInstructions: useSettingsStore.getState().customInstructions,
       mealContext: {
         name: meal.name,
         items: meal.items.map((item) => ({

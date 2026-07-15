@@ -40,6 +40,20 @@ Top-level calories/protein/carbs/fat/fiber должны совпадать с с
 Все текстовые значения полей (foodName и items[].name) пиши на русском языке.
 Do not include any text outside the JSON object.`;
 
+export interface AnalyzeFoodOptions {
+  customInstructions?: string;
+}
+
+/** Append non-empty trimmed user prefs to a system prompt. */
+export function appendCustomInstructions(
+  systemPrompt: string,
+  customInstructions?: string,
+): string {
+  const trimmed = customInstructions?.trim();
+  if (!trimmed) return systemPrompt;
+  return `${systemPrompt}\n\n## User custom instructions\nFollow these user preferences for diet, units, and response style:\n${trimmed}`;
+}
+
 const APP_ERROR_CODES = new Set([
   'INVALID_IMAGE',
   'RATE_LIMITED',
@@ -152,7 +166,10 @@ function mapGatewayError(error: unknown): never {
   );
 }
 
-export async function analyzeFoodApi(image: File): Promise<AnalyzeFoodResponse> {
+export async function analyzeFoodApi(
+  image: File,
+  options?: AnalyzeFoodOptions,
+): Promise<AnalyzeFoodResponse> {
   const gatewayUrl = import.meta.env.VITE_AI_GATEWAY_URL;
   const apiKey = import.meta.env.VITE_AI_GATEWAY_API_KEY;
 
@@ -169,6 +186,10 @@ export async function analyzeFoodApi(image: File): Promise<AnalyzeFoodResponse> 
   }
 
   const dataUrl = await fileToDataUrl(image);
+  const systemContent = appendCustomInstructions(
+    SYSTEM_PROMPT,
+    options?.customInstructions,
+  );
   const startTime = Date.now();
 
   let response;
@@ -179,7 +200,7 @@ export async function analyzeFoodApi(image: File): Promise<AnalyzeFoodResponse> 
         model: 'gpt-4o-mini',
         response_format: { type: 'json_object' },
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemContent },
           {
             role: 'user',
             content: [
