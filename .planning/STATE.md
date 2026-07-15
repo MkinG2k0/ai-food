@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
 last_updated: "2026-07-16T00:00:00.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-1ml: edit/delete composition KBJU
+last_activity: 2026-07-16 - Completed quick task 260716-1zl: composition display + item edit page
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-1ml: edit/delete composition KBJU
+Last activity: 2026-07-16 - Completed quick task 260716-1zl: composition display + item edit page
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -70,6 +70,7 @@ Recent decisions affecting current work:
 - 260716-16d: Meal.name from foodName; mealDisplayName for legacy; UI title ≠ composition list
 - 260716-1ew: COMPOSITION_PROMPT_RULE — compound dishes → ingredient/layer items (burger ≠ single item)
 - 260716-1ml: Meal.items[] SoT; updateMealItem/removeMealItem/updateMealNutrition; edit-meal on MealDetailPage
+- 260716-1zl: composition display-only + FoodItemEditPage; FoodMacrosBadges shared with MealCard
 
 ### Pending Todos
 
@@ -91,6 +92,7 @@ None yet.
 | 260716-16d | Dish name separate from composition (Meal.name + mealDisplayName) | 2026-07-16 | 1a58d23, 99885da, 33f8211, 2133b26 | [260716-16d-sdelat-nazvanie-bluda-otdelno-ot-perechi](./quick/260716-16d-sdelat-nazvanie-bluda-otdelno-ot-perechi/) |
 | 260716-1ew | Stronger composition breakdown (бургер → булка/котлета/сыр…) | 2026-07-16 | 39a3aa3, 23dcdbc | [260716-1ew-silnee-razdelenie-sostava](./quick/260716-1ew-silnee-razdelenie-sostava/) |
 | 260716-1ml | Edit/delete composition KBJU on meal detail | 2026-07-16 | f9e579d, b8bc52f, b26f07a | [260716-1ml-edit-delete-composition-kbzhu](./quick/260716-1ml-edit-delete-composition-kbzhu/) |
+| 260716-1zl | Composition display + food item edit page | 2026-07-16 | 1dbadd4, 7cb65af | [260716-1zl-composition-display-edit-page](./quick/260716-1zl-composition-display-edit-page/) |
 | fast | Show dish macros Б/У/Ж in one horizontal row | 2026-07-16 | d604193 | — |
 
 ### Blockers/Concerns
