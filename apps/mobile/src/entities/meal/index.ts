@@ -6,3 +6,4 @@ export {
 export { useDiaryStore } from './model/useDiaryStore';
 export { useMealImage } from './model/useMealImage';
 export { mealDisplayName } from './model/mealDisplayName';
+export { sanitizeNutrient } from './model/mealNutritionMath';
