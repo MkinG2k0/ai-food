@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import type { DietType, UserProfile } from '@ai-food/shared-types';
+import type { UserProfile } from '@ai-food/shared-types';
 import { useProfileStore } from '@/features/onboarding';
 import { useSettingsStore } from '@/features/settings';
 import { BottomSheet, Button, Textarea } from '@/shared/ui';
-import { cn } from '@/shared/lib';
 
 const GENDER_LABELS: Record<UserProfile['gender'], string> = {
   male: 'Мужской',
@@ -24,29 +23,6 @@ const GOAL_LABELS: Record<UserProfile['goal'], string> = {
   gain: 'Набрать массу',
 };
 
-const DIET_OPTIONS: { value: DietType; label: string; description: string }[] = [
-  {
-    value: 'none',
-    label: 'Без ограничений',
-    description: 'Нет специальных диетических ограничений',
-  },
-  {
-    value: 'halal',
-    label: 'Халяль',
-    description: 'Только халяль-продукты, без свинины и запрещённого мяса',
-  },
-  {
-    value: 'vegan',
-    label: 'Веган',
-    description: 'Без продуктов животного происхождения',
-  },
-  {
-    value: 'vegetarian',
-    label: 'Вегетарианство',
-    description: 'Без мяса и рыбы; молочные продукты и яйца допустимы',
-  },
-];
-
 export function SettingsPage() {
   const navigate = useNavigate();
   const [redoOpen, setRedoOpen] = useState(false);
@@ -57,9 +33,6 @@ export function SettingsPage() {
   const profile = useProfileStore((s) => s.profile);
   const targets = useProfileStore((s) => s.targets);
   const resetProfile = useProfileStore((s) => s.resetProfile);
-  const updateDietType = useProfileStore((s) => s.updateDietType);
-
-  const selectedDiet: DietType = profile?.dietType ?? 'none';
 
   const handleRedoConfirm = () => {
     resetProfile();
@@ -136,6 +109,10 @@ export function SettingsPage() {
                     <dt className="text-muted-foreground">Углеводы</dt>
                     <dd className="font-medium text-right">{targets.carbs} г</dd>
                   </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Клетчатка</dt>
+                    <dd className="font-medium text-right">{targets.fiber} г</dd>
+                  </div>
                 </dl>
               )}
             </>
@@ -151,34 +128,6 @@ export function SettingsPage() {
           >
             Пройти анбординг заново
           </Button>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium leading-none">Тип питания</h2>
-          <p className="text-sm text-muted-foreground">
-            Учитывается при анализе фото еды. Можно изменить без повторного
-            онбординга.
-          </p>
-          <div className="flex flex-col gap-2">
-            {DIET_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                disabled={!profile}
-                onClick={() => updateDietType(opt.value)}
-                className={cn(
-                  'rounded-xl border-2 px-4 py-3 text-left transition-colors',
-                  selectedDiet === opt.value
-                    ? 'border-primary bg-primary/10'
-                    : 'border-border bg-background',
-                  !profile && 'opacity-50 cursor-not-allowed',
-                )}
-              >
-                <div className="font-medium text-sm">{opt.label}</div>
-                <div className="text-xs text-muted-foreground">{opt.description}</div>
-              </button>
-            ))}
-          </div>
         </section>
 
         <div className="space-y-2">

@@ -102,7 +102,7 @@ describe('useProfileStore', () => {
     };
     await act(async () => {
       useProfileStore.setState({
-        profile: legacyProfile as typeof mockProfile,
+        profile: legacyProfile as unknown as typeof mockProfile,
         targets: mockTargets,
       });
     });

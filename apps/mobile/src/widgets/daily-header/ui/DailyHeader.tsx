@@ -18,6 +18,7 @@ const FALLBACK_TARGETS = {
   protein: 150,
   fat: 70,
   carbs: 250,
+  fiber: 30,
 } as const;
 
 export function DailyHeader({
@@ -34,6 +35,7 @@ export function DailyHeader({
   const goalProtein = targets?.protein ?? FALLBACK_TARGETS.protein;
   const goalFat = targets?.fat ?? FALLBACK_TARGETS.fat;
   const goalCarbs = targets?.carbs ?? FALLBACK_TARGETS.carbs;
+  const goalFiber = targets?.fiber ?? FALLBACK_TARGETS.fiber;
 
   const dayMeals = meals.filter(
     (m) =>
@@ -52,6 +54,10 @@ export function DailyHeader({
   );
   const consumedCarbs = dayMeals.reduce(
     (sum, m) => sum + m.items.reduce((s, i) => s + i.carbs, 0),
+    0,
+  );
+  const consumedFiber = dayMeals.reduce(
+    (sum, m) => sum + m.items.reduce((s, i) => s + (i.fiber ?? 0), 0),
     0,
   );
 
@@ -90,10 +96,12 @@ export function DailyHeader({
         consumedProtein={consumedProtein}
         consumedFat={consumedFat}
         consumedCarbs={consumedCarbs}
+        consumedFiber={consumedFiber}
         goalKcal={goalKcal}
         goalProtein={goalProtein}
         goalFat={goalFat}
         goalCarbs={goalCarbs}
+        goalFiber={goalFiber}
       />
     </header>
   );

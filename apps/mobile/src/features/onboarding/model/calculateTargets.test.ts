@@ -10,6 +10,7 @@ describe('calculateTargets', () => {
       weight: 75,
       activity: 'medium',
       goal: 'maintain',
+      dietType: 'none',
     });
     // BMR = 10*75 + 6.25*175 - 5*30 + 5 = 750 + 1093.75 - 150 + 5 = 1698.75
     // TDEE = 1698.75 * 1.55 = 2633.06 → 2633
@@ -24,6 +25,7 @@ describe('calculateTargets', () => {
       weight: 60,
       activity: 'low',
       goal: 'lose',
+      dietType: 'none',
     });
     // BMR = 10*60 + 6.25*165 - 5*25 - 161 = 600 + 1031.25 - 125 - 161 = 1345.25
     // TDEE = 1345.25 * 1.2 = 1614.3 → 1614
@@ -39,6 +41,7 @@ describe('calculateTargets', () => {
       weight: 80,
       activity: 'low',
       goal: 'maintain',
+      dietType: 'none',
     });
     const gain = calculateTargets({
       gender: 'male',
@@ -47,6 +50,7 @@ describe('calculateTargets', () => {
       weight: 80,
       activity: 'low',
       goal: 'gain',
+      dietType: 'none',
     });
     expect(gain.kcal).toBe(base.kcal + 300);
   });
@@ -59,6 +63,7 @@ describe('calculateTargets', () => {
       weight: 75,
       activity: 'medium',
       goal: 'maintain',
+      dietType: 'none',
     });
     expect(result.protein).toBe(Math.round(75 * 1.8));
   });
@@ -71,6 +76,7 @@ describe('calculateTargets', () => {
       weight: 65,
       activity: 'high',
       goal: 'maintain',
+      dietType: 'none',
     });
     expect(Number.isInteger(result.kcal)).toBe(true);
     expect(Number.isInteger(result.protein)).toBe(true);
@@ -87,6 +93,7 @@ describe('calculateTargets', () => {
       weight: 75,
       activity: 'medium',
       goal: 'maintain',
+      dietType: 'none',
     });
     const female = calculateTargets({
       gender: 'female',
@@ -95,6 +102,7 @@ describe('calculateTargets', () => {
       weight: 60,
       activity: 'low',
       goal: 'lose',
+      dietType: 'none',
     });
     expect(male.fiber).toBe(30);
     expect(female.fiber).toBe(30);

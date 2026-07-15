@@ -27,6 +27,10 @@ export function OnboardingResult({ targets, onStart }: OnboardingResultProps) {
           <span className="text-muted-foreground">Углеводы</span>
           <span className="font-medium">{targets.carbs} г</span>
         </li>
+        <li className="flex justify-between">
+          <span className="text-muted-foreground">Клетчатка</span>
+          <span className="font-medium">{targets.fiber} г</span>
+        </li>
       </ul>
       <Button onClick={onStart}>Начать</Button>
     </div>

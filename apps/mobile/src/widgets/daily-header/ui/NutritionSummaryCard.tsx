@@ -5,10 +5,12 @@ interface NutritionSummaryCardProps {
   consumedProtein: number;
   consumedFat: number;
   consumedCarbs: number;
+  consumedFiber: number;
   goalKcal: number;
   goalProtein: number;
   goalFat: number;
   goalCarbs: number;
+  goalFiber: number;
 }
 
 const RING_SIZE = 72;
@@ -55,10 +57,12 @@ export function NutritionSummaryCard({
   consumedProtein,
   consumedFat,
   consumedCarbs,
+  consumedFiber,
   goalKcal,
   goalProtein,
   goalFat,
   goalCarbs,
+  goalFiber,
 }: NutritionSummaryCardProps) {
   const remaining = Math.max(0, Math.round(goalKcal - consumedKcal));
   const overGoal = consumedKcal > goalKcal;
@@ -124,7 +128,7 @@ export function NutritionSummaryCard({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-3">
         <MacroColumn
           label="Белки"
           consumed={consumedProtein}
@@ -142,6 +146,12 @@ export function NutritionSummaryCard({
           consumed={consumedCarbs}
           goal={goalCarbs}
           barClassName="bg-sky-500"
+        />
+        <MacroColumn
+          label="Клетчатка"
+          consumed={consumedFiber}
+          goal={goalFiber}
+          barClassName="bg-emerald-500"
         />
       </div>
     </div>
