@@ -1,7 +1,9 @@
+import { User } from 'lucide-react';
 import { useDiaryStore } from '@/entities/meal';
 import { useProfileStore } from '@/features/onboarding';
-import { formatCalories, isSameDay, formatHeaderDate } from '@/shared/lib';
+import { isSameDay } from '@/shared/lib';
 import { WeekStrip } from './WeekStrip';
+import { NutritionSummaryCard } from './NutritionSummaryCard';
 
 interface DailyHeaderProps {
   selectedDate: Date;
@@ -9,6 +11,13 @@ interface DailyHeaderProps {
   onDaySelect: (date: Date) => void;
   onWeekChange: (delta: 1 | -1) => void;
 }
+
+const FALLBACK_TARGETS = {
+  kcal: 2000,
+  protein: 150,
+  fat: 70,
+  carbs: 250,
+} as const;
 
 export function DailyHeader({
   selectedDate,
@@ -19,40 +28,61 @@ export function DailyHeader({
   const meals = useDiaryStore((s) => s.meals);
   const targets = useProfileStore((s) => s.targets);
 
-  const dailyGoal = targets?.kcal ?? 2000;
+  const goalKcal = targets?.kcal ?? FALLBACK_TARGETS.kcal;
+  const goalProtein = targets?.protein ?? FALLBACK_TARGETS.protein;
+  const goalFat = targets?.fat ?? FALLBACK_TARGETS.fat;
+  const goalCarbs = targets?.carbs ?? FALLBACK_TARGETS.carbs;
 
-  const dayCalories = meals
-    .filter(
-      (m) =>
-        isSameDay(new Date(m.timestamp), selectedDate) &&
-        (m.status ?? 'ready') === 'ready'
-    )
-    .reduce((sum, m) => sum + m.totalCalories, 0);
+  const dayMeals = meals.filter(
+    (m) =>
+      isSameDay(new Date(m.timestamp), selectedDate) &&
+      (m.status ?? 'ready') === 'ready',
+  );
 
-  const remaining = dailyGoal - dayCalories;
-  const progress = Math.min((dayCalories / dailyGoal) * 100, 100);
+  const consumedKcal = dayMeals.reduce((sum, m) => sum + m.totalCalories, 0);
+  const consumedProtein = dayMeals.reduce(
+    (sum, m) => sum + m.items.reduce((s, i) => s + i.protein, 0),
+    0,
+  );
+  const consumedFat = dayMeals.reduce(
+    (sum, m) => sum + m.items.reduce((s, i) => s + i.fat, 0),
+    0,
+  );
+  const consumedCarbs = dayMeals.reduce(
+    (sum, m) => sum + m.items.reduce((s, i) => s + i.carbs, 0),
+    0,
+  );
 
   return (
-    <header className="bg-emerald-500 text-white px-4 pt-12 pb-6">
-      <p className="text-emerald-100 text-sm font-medium">{formatHeaderDate(selectedDate)}</p>
-      <p className="text-4xl font-bold mt-1">{formatCalories(dayCalories)}</p>
-      <p className="text-emerald-100 text-sm mt-1">
-        {remaining > 0
-          ? `${Math.round(remaining)} ккал осталось`
-          : `${Math.round(Math.abs(remaining))} ккал сверх нормы`}
-      </p>
-      <div className="mt-4 h-1.5 bg-emerald-400 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-white rounded-full transition-all duration-500"
-          style={{ width: `${progress}%` }}
-        />
+    <header className="px-4 pt-12 pb-2">
+      <div className="relative flex items-center justify-center">
+        <h1 className="text-lg font-semibold tracking-tight">AI Food</h1>
+        <button
+          type="button"
+          className="absolute right-0 p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors"
+          aria-label="Профиль"
+        >
+          <User className="h-5 w-5" />
+        </button>
       </div>
+
       <WeekStrip
         weekOffset={weekOffset}
         selectedDate={selectedDate}
         meals={meals}
         onDaySelect={onDaySelect}
         onWeekChange={onWeekChange}
+      />
+
+      <NutritionSummaryCard
+        consumedKcal={consumedKcal}
+        consumedProtein={consumedProtein}
+        consumedFat={consumedFat}
+        consumedCarbs={consumedCarbs}
+        goalKcal={goalKcal}
+        goalProtein={goalProtein}
+        goalFat={goalFat}
+        goalCarbs={goalCarbs}
       />
     </header>
   );
