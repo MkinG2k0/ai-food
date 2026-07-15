@@ -76,5 +76,27 @@ describe('calculateTargets', () => {
     expect(Number.isInteger(result.protein)).toBe(true);
     expect(Number.isInteger(result.fat)).toBe(true);
     expect(Number.isInteger(result.carbs)).toBe(true);
+    expect(Number.isInteger(result.fiber)).toBe(true);
+  });
+
+  it('always returns fiber goal of 30 g', () => {
+    const male = calculateTargets({
+      gender: 'male',
+      age: 30,
+      height: 175,
+      weight: 75,
+      activity: 'medium',
+      goal: 'maintain',
+    });
+    const female = calculateTargets({
+      gender: 'female',
+      age: 25,
+      height: 165,
+      weight: 60,
+      activity: 'low',
+      goal: 'lose',
+    });
+    expect(male.fiber).toBe(30);
+    expect(female.fiber).toBe(30);
   });
 });

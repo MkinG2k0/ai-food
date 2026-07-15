@@ -15,6 +15,7 @@ const items: FoodItem[] = [
     protein: 2,
     carbs: 8,
     fat: 0,
+    fiber: 4,
     grams: 50,
   },
   {
@@ -24,6 +25,7 @@ const items: FoodItem[] = [
     protein: 0,
     carbs: 4,
     fat: 0,
+    fiber: 2,
     grams: 25,
   },
 ];
@@ -50,8 +52,26 @@ describe('mealPortions', () => {
     const { items: scaled, totalCalories } = scaleMealByPortionRatio(items, 1.5);
     expect(scaled[0].calories).toBe(150);
     expect(scaled[0].grams).toBe(75);
+    expect(scaled[0].fiber).toBe(6);
     expect(scaled[1].calories).toBe(60);
+    expect(scaled[1].fiber).toBe(3);
     expect(totalCalories).toBe(210);
+  });
+
+  it('treats missing legacy fiber as 0 before scale', () => {
+    const legacy = [
+      {
+        id: 'legacy',
+        name: 'Legacy',
+        calories: 100,
+        protein: 1,
+        carbs: 1,
+        fat: 1,
+        grams: 50,
+      } as FoodItem,
+    ];
+    const { items: scaled } = scaleMealByPortionRatio(legacy, 2);
+    expect(scaled[0].fiber).toBe(0);
   });
 
   it('returns same items when ratio is 1', () => {
