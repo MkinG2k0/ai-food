@@ -63,6 +63,8 @@ export type ActivityLevel = 'low' | 'medium' | 'high';
 
 export type Goal = 'lose' | 'maintain' | 'gain';
 
+export type DietType = 'none' | 'halal' | 'vegan' | 'vegetarian';
+
 export interface UserProfile {
   gender: 'male' | 'female';
   age: number;
@@ -70,6 +72,7 @@ export interface UserProfile {
   weight: number;
   activity: ActivityLevel;
   goal: Goal;
+  dietType: DietType;
 }
 
 export interface DailyTargets {

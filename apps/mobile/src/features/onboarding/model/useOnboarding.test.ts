@@ -9,6 +9,7 @@ vi.mock('react-router-dom', () => ({
 }));
 
 beforeEach(() => {
+  mockNavigate.mockClear();
   useProfileStore.setState({ profile: null, targets: null });
 });
 

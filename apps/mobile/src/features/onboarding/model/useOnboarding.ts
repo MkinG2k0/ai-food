@@ -20,7 +20,15 @@ export function useOnboarding() {
   }
 
   function finish() {
-    const required: (keyof UserProfile)[] = ['gender', 'age', 'height', 'weight', 'activity', 'goal'];
+    const required: (keyof UserProfile)[] = [
+      'gender',
+      'age',
+      'height',
+      'weight',
+      'activity',
+      'goal',
+      'dietType',
+    ];
     if (required.some((k) => draft[k] === undefined)) return;
     const profile = draft as UserProfile;
     const targets = calculateTargets(profile);
