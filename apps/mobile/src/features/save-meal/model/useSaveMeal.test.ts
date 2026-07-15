@@ -5,6 +5,7 @@ import React from 'react';
 import { useSaveMeal } from './useSaveMeal';
 import { useDiaryStore } from '@/entities/meal';
 import { isSameDay } from '@/shared/lib';
+import { analyzeFoodApi } from '@/features/analyze-food';
 
 vi.mock('@/features/analyze-food', () => ({
   analyzeFoodApi: vi.fn().mockResolvedValue({
@@ -16,6 +17,15 @@ vi.mock('@/features/analyze-food', () => ({
       fat: 10,
       fiber: 5,
       confidence: 0.9,
+      items: [
+        {
+          name: 'Test Food',
+          calories: 300,
+          protein: 20,
+          carbs: 30,
+          fat: 10,
+        },
+      ],
     },
     processingTime: 100,
   }),
@@ -41,6 +51,27 @@ function createWrapper() {
 describe('useSaveMeal', () => {
   beforeEach(() => {
     useDiaryStore.setState({ meals: [], selectedDate: new Date() });
+    vi.mocked(analyzeFoodApi).mockResolvedValue({
+      result: {
+        foodName: 'Test Food',
+        calories: 300,
+        protein: 20,
+        carbs: 30,
+        fat: 10,
+        fiber: 5,
+        confidence: 0.9,
+        items: [
+          {
+            name: 'Test Food',
+            calories: 300,
+            protein: 20,
+            carbs: 30,
+            fat: 10,
+          },
+        ],
+      },
+      processingTime: 100,
+    });
   });
 
   it('uses past selectedDate for text meal timestamp', async () => {
@@ -90,5 +121,88 @@ describe('useSaveMeal', () => {
     const meal = useDiaryStore.getState().meals[0];
     expect(meal).toBeDefined();
     expect(isSameDay(new Date(meal.timestamp), past)).toBe(true);
+  });
+
+  it('maps multiple analyze items to FoodItem[] with unique ids', async () => {
+    vi.mocked(analyzeFoodApi).mockResolvedValue({
+      result: {
+        foodName: 'Бургер с картошкой',
+        calories: 850,
+        protein: 35,
+        carbs: 78,
+        fat: 42,
+        fiber: 7,
+        confidence: 0.91,
+        items: [
+          {
+            name: 'Бургер',
+            calories: 550,
+            protein: 28,
+            carbs: 40,
+            fat: 28,
+            portion: '1 шт',
+          },
+          {
+            name: 'Картофель фри',
+            calories: 300,
+            protein: 7,
+            carbs: 38,
+            fat: 14,
+          },
+        ],
+      },
+      processingTime: 100,
+    });
+
+    const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
+    const file = new File(['fake'], 'burger.jpg', { type: 'image/jpeg' });
+
+    await act(async () => {
+      await result.current({ image: file });
+    });
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.status).toBe('ready');
+    expect(meal.items).toHaveLength(2);
+    expect(meal.items[0].name).toBe('Бургер');
+    expect(meal.items[0].calories).toBe(550);
+    expect(meal.items[0].portion).toBe('1 шт');
+    expect(meal.items[1].name).toBe('Картофель фри');
+    expect(meal.items[1].calories).toBe(300);
+    expect(meal.items[1].portion).toBe('1 порция');
+    expect(meal.items[0].id).not.toBe(meal.items[1].id);
+    expect(meal.totalCalories).toBe(850);
+  });
+
+  it('falls back to single FoodItem from foodName when items is empty', async () => {
+    vi.mocked(analyzeFoodApi).mockResolvedValue({
+      result: {
+        foodName: 'Овсянка с ягодами',
+        calories: 350,
+        protein: 12,
+        carbs: 55,
+        fat: 8,
+        fiber: 6,
+        confidence: 0.9,
+        items: [],
+      },
+      processingTime: 100,
+    });
+
+    const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
+    const file = new File(['fake'], 'oats.jpg', { type: 'image/jpeg' });
+
+    await act(async () => {
+      await result.current({ image: file });
+    });
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.status).toBe('ready');
+    expect(meal.items).toHaveLength(1);
+    expect(meal.items[0].name).toBe('Овсянка с ягодами');
+    expect(meal.items[0].calories).toBe(350);
+    expect(meal.items[0].protein).toBe(12);
+    expect(meal.items[0].portion).toBe('1 порция');
+    expect(meal.totalCalories).toBe(350);
   });
 });
