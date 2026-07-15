@@ -3,6 +3,7 @@ import {
   getWeekStart,
   getWeekDays,
   isSameDay,
+  isFutureDay,
   formatDayLabel,
   formatHeaderDate,
 } from './dateUtils';
@@ -80,6 +81,24 @@ describe('isSameDay', () => {
     const a = new Date('2026-06-24T23:59:59');
     const b = new Date('2026-06-25T00:00:00');
     expect(isSameDay(a, b)).toBe(false);
+  });
+});
+
+describe('isFutureDay', () => {
+  it('returns false for today', () => {
+    expect(isFutureDay(new Date())).toBe(false);
+  });
+
+  it('returns false for yesterday', () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    expect(isFutureDay(yesterday)).toBe(false);
+  });
+
+  it('returns true for tomorrow', () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    expect(isFutureDay(tomorrow)).toBe(true);
   });
 });
 

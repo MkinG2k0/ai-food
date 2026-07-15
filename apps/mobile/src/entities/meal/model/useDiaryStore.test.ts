@@ -52,4 +52,24 @@ describe('useDiaryStore', () => {
     act(() => result.current.clearDiary());
     expect(result.current.meals).toHaveLength(0);
   });
+
+  it('updates a meal by id', () => {
+    const { result } = renderHook(() => useDiaryStore());
+    act(() => result.current.addMeal(mockMeal));
+    act(() =>
+      result.current.updateMeal('1', {
+        status: 'ready',
+        totalCalories: 400,
+      })
+    );
+    expect(result.current.meals[0].totalCalories).toBe(400);
+    expect(result.current.meals[0].status).toBe('ready');
+  });
+
+  it('removes a meal by id', () => {
+    const { result } = renderHook(() => useDiaryStore());
+    act(() => result.current.addMeal(mockMeal));
+    act(() => result.current.removeMeal('1'));
+    expect(result.current.meals).toHaveLength(0);
+  });
 });

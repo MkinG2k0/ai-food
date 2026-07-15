@@ -1,5 +1,5 @@
 export { cn } from './utils';
 export { formatCalories, formatMacro, formatDate } from './formatters';
 export { queryClient } from './queryClient';
-export { getWeekStart, getWeekDays, isSameDay, formatDayLabel, formatHeaderDate } from './dateUtils';
+export { getWeekStart, getWeekDays, isSameDay, isFutureDay, formatDayLabel, formatHeaderDate } from './dateUtils';
 export { saveMealImage, getMealImageSrc } from './mealImage';

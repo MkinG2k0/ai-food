@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, useMotionValue, animate, type PanInfo } from 'framer-motion';
 import type { Meal } from '@ai-food/shared-types';
-import { getWeekDays, isSameDay, formatDayLabel } from '@/shared/lib';
+import { getWeekDays, isSameDay, isFutureDay, formatDayLabel } from '@/shared/lib';
 
 interface WeekStripProps {
   weekOffset: number;
@@ -93,6 +93,7 @@ export function WeekStrip({
             >
               {days.map((date) => {
                 const isSelected = isSameDay(date, selectedDate);
+                const isFuture = isFutureDay(date);
                 const hasFood = hasMeals(date);
                 const label = formatDayLabel(date);
                 const dayNum = date.getDate();
@@ -103,14 +104,20 @@ export function WeekStrip({
                     onClick={() => onDaySelect(date)}
                     className="flex flex-col items-center gap-1 min-w-[36px]"
                   >
-                    <span className="text-xs font-medium text-muted-foreground">
+                    <span
+                      className={`text-xs font-medium ${
+                        isFuture ? 'text-muted-foreground/60' : 'text-muted-foreground'
+                      }`}
+                    >
                       {label}
                     </span>
                     <span
                       className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${
                         isSelected
                           ? 'bg-foreground text-background'
-                          : 'text-foreground hover:bg-muted'
+                          : isFuture
+                            ? 'text-muted-foreground hover:bg-muted'
+                            : 'text-foreground hover:bg-muted'
                       }`}
                     >
                       {dayNum}

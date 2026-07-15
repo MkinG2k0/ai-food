@@ -8,12 +8,15 @@ export interface FoodItem {
   portion: string;
 }
 
+export type MealStatus = 'analyzing' | 'ready' | 'error';
+
 export interface Meal {
   id: string;
   timestamp: string;
   items: FoodItem[];
   totalCalories: number;
   imageUri?: string;
+  status?: MealStatus;
 }
 
 export interface NutritionResult {

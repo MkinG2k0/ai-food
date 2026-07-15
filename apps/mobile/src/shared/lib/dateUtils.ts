@@ -22,6 +22,15 @@ export function isSameDay(a: Date, b: Date): boolean {
   return a.toDateString() === b.toDateString();
 }
 
+/** Calendar day after today (local timezone). */
+export function isFutureDay(date: Date): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime() > today.getTime();
+}
+
 export function formatDayLabel(date: Date): string {
   return DAY_LABELS[date.getDay()];
 }

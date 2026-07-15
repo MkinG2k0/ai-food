@@ -56,9 +56,9 @@ export function MealCard({ meal }: MealCardProps) {
             : `${foodNames} в ${time}`
       }
       aria-busy={isAnalyzing}
-      className={isAnalyzing ? '' : 'cursor-pointer'}
+      className={isAnalyzing ? '' : 'cursor-pointer '}
     >
-      <CardContent className="flex items-center gap-3 py-3">
+      <CardContent className="flex justify-between flex-auto gap-3 p-2 ">
         <div className="h-16 w-16 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
           {imageSrc ? (
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
@@ -71,7 +71,7 @@ export function MealCard({ meal }: MealCardProps) {
           )}
         </div>
 
-        <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex flex-col flex-1 min-w-0 space-y-1.5 justify-between">
           {isAnalyzing ? (
             <>
               <div className="flex items-center gap-2">
@@ -103,7 +103,6 @@ export function MealCard({ meal }: MealCardProps) {
 
                     <div>
                     {item.name}
-
                     </div>
 
                     
@@ -122,9 +121,24 @@ export function MealCard({ meal }: MealCardProps) {
                 >
                   {formatCalories(meal.totalCalories)}
                 </Badge>
-                <Badge variant="secondary">Б {formatMacro(totals.protein)}</Badge>
-                <Badge variant="secondary">Ж {formatMacro(totals.fat)}</Badge>
-                <Badge variant="secondary">У {formatMacro(totals.carbs)}</Badge>
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-50 text-blue-700 border-blue-100 font-semibold"
+                >
+                  Б {formatMacro(totals.protein)}
+                </Badge>
+                <Badge
+                  variant="secondary"
+                  className="bg-red-50 text-red-700 border-red-100 font-semibold"
+                >
+                  Ж {formatMacro(totals.fat)}
+                </Badge>
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-50 text-amber-700 border-amber-100 font-semibold"
+                >
+                  У {formatMacro(totals.carbs)}
+                </Badge>
               </div>
             </>
           )}

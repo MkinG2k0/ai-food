@@ -1,1 +1,1 @@
-export { useSaveMeal } from './model/useSaveMeal';
+export { useSaveMeal, type SubmitFoodInput } from './model/useSaveMeal';
