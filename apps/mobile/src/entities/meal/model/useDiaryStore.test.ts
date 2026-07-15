@@ -227,9 +227,21 @@ describe('useDiaryStore', () => {
     const meal = result.current.meals[0];
     const sumCal = meal.items.reduce((s, i) => s + i.calories, 0);
     const sumPro = meal.items.reduce((s, i) => s + i.protein, 0);
-    expect(sumCal).toBeCloseTo(1000);
-    expect(sumPro).toBeCloseTo(60);
-    expect(meal.totalCalories).toBeCloseTo(1000);
+    // Integer rounding may drift sum by ±items.length
+    expect(sumCal).toBeGreaterThanOrEqual(1000 - meal.items.length);
+    expect(sumCal).toBeLessThanOrEqual(1000 + meal.items.length);
+    expect(sumPro).toBeGreaterThanOrEqual(60 - meal.items.length);
+    expect(sumPro).toBeLessThanOrEqual(60 + meal.items.length);
+    expect(meal.totalCalories).toBe(sumCal);
+    expect(
+      meal.items.every(
+        (i) =>
+          Number.isInteger(i.calories) &&
+          Number.isInteger(i.protein) &&
+          Number.isInteger(i.carbs) &&
+          Number.isInteger(i.fat),
+      ),
+    ).toBe(true);
     // carbs/fat unchanged when not passed
     expect(meal.items.reduce((s, i) => s + i.carbs, 0)).toBe(40);
     expect(meal.items.reduce((s, i) => s + i.fat, 0)).toBe(22);

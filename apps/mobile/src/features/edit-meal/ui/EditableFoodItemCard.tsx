@@ -18,7 +18,7 @@ const inputClassName = cn(
 function parseNutrient(raw: string): number {
   const n = Number(raw);
   if (!Number.isFinite(n)) return 0;
-  return Math.max(0, n);
+  return Math.max(0, Math.round(n));
 }
 
 export interface EditableFoodItemCardProps {
@@ -137,7 +137,7 @@ export function EditableFoodItemCard({
                     min={0}
                     aria-label={macro.ariaLabel}
                     className={cn(inputClassName, 'text-center tabular-nums')}
-                    value={macro.value}
+                    value={Math.round(macro.value)}
                     onChange={(e) => patchNumber(macro.field, e.target.value)}
                     onPointerDown={stopDrag}
                   />

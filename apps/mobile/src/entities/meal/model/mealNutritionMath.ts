@@ -4,7 +4,7 @@ export type NutrientKey = 'calories' | 'protein' | 'carbs' | 'fat';
 
 export function sanitizeNutrient(value: number): number {
   if (!Number.isFinite(value)) return 0;
-  return Math.max(0, value);
+  return Math.max(0, Math.round(value));
 }
 
 export function sumItemCalories(items: FoodItem[]): number {

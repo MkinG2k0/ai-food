@@ -12,7 +12,7 @@ const inputClassName = cn(
 function parseNutrient(raw: string): number {
   const n = Number(raw);
   if (!Number.isFinite(n)) return 0;
-  return Math.max(0, n);
+  return Math.max(0, Math.round(n));
 }
 
 function MacroBar({ value, max = 100 }: { value: number; max?: number }) {
@@ -76,7 +76,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
               inputClassName,
               'text-2xl font-semibold text-emerald-600',
             )}
-            value={meal.totalCalories}
+            value={Math.round(meal.totalCalories)}
             onChange={(e) =>
               updateMealNutrition(meal.id, {
                 calories: parseNutrient(e.target.value),
@@ -117,7 +117,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
                 min={0}
                 aria-label={macro.ariaLabel}
                 className={cn(inputClassName, 'text-center tabular-nums')}
-                value={Number(macro.value.toFixed(1))}
+                value={Math.round(macro.value)}
                 onChange={(e) =>
                   updateMealNutrition(meal.id, {
                     [macro.field]: parseNutrient(e.target.value),
