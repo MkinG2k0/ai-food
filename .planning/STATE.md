@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-07 - Completed quick task 260706-x79: Show detailed meal info on MealCard click (clickable MealCard + /meal/:id detail page)
+Last activity: 2026-07-15 - Completed quick task 260715-wwb: Translate app to Russian (UI + OpenAI foodName prompt)
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -76,6 +76,7 @@ None yet.
 | 260627-29b | Generate Claude Design prompt for ai-food app | 2026-06-27 | — | [260627-29b-generate-claude-design-prompt-for-ai-foo](./quick/260627-29b-generate-claude-design-prompt-for-ai-foo/) |
 | 260705-psq | Fix WeekStrip swipe: scrollbar glitch + 3-week virtualized carousel (pending human verify) | 2026-07-05 | 59d495c, 98c237c | [260705-psq-fix-weekstrip-swipe-scrollbar-appears-du](./quick/260705-psq-fix-weekstrip-swipe-scrollbar-appears-du/) |
 | 260706-x79 | Show detailed meal info on MealCard click: clickable MealCard + /meal/:id detail page | 2026-07-07 | fb13801, 538fd60 | [260706-x79-show-detailed-meal-info-on-mealcard-clic](./quick/260706-x79-show-detailed-meal-info-on-mealcard-clic/) |
+| 260715-wwb | Translate app to Russian (UI + OpenAI foodName prompt) | 2026-07-15 | 8ceb39b, 7d72997, 189da97 | [260715-wwb-translate-app-to-russian](./quick/260715-wwb-translate-app-to-russian/) |
 
 ### Blockers/Concerns
 
