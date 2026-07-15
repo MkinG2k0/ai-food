@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
 last_updated: "2026-07-16T00:00:00.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-16d: dish name separate from composition
+last_activity: 2026-07-16 - Completed quick task 260716-1ew: stronger composition breakdown
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-16d: dish name separate from composition
+Last activity: 2026-07-16 - Completed quick task 260716-1ew: stronger composition breakdown
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -68,6 +68,7 @@ Recent decisions affecting current work:
 - 260716-0hj: meal delete via BottomSheet confirm (detail button + list swipe); removeMeal only after confirm
 - 260716-0vb: NutritionResult.items per-component КБЖУ; useSaveMeal maps to Meal.items; empty items → foodName fallback
 - 260716-16d: Meal.name from foodName; mealDisplayName for legacy; UI title ≠ composition list
+- 260716-1ew: COMPOSITION_PROMPT_RULE — compound dishes → ingredient/layer items (burger ≠ single item)
 
 ### Pending Todos
 
@@ -87,6 +88,7 @@ None yet.
 | 260716-0hj | Meal delete: detail button + swipe confirm (framer-motion) | 2026-07-16 | 9ea28e0, 1893781, 93da285, d12ce03 | [260716-0hj-meal-id-motion-for-react-motion-react-ht](./quick/260716-0hj-meal-id-motion-for-react-motion-react-ht/) |
 | 260716-0vb | Split meal composition КБЖУ (items[] from AI → FoodItem[]) | 2026-07-16 | c4ae029, b565a0a, 1b20699, 306ce93 | [260716-0vb-split-meal-composition-kbzhu](./quick/260716-0vb-split-meal-composition-kbzhu/) |
 | 260716-16d | Dish name separate from composition (Meal.name + mealDisplayName) | 2026-07-16 | 1a58d23, 99885da, 33f8211, 2133b26 | [260716-16d-sdelat-nazvanie-bluda-otdelno-ot-perechi](./quick/260716-16d-sdelat-nazvanie-bluda-otdelno-ot-perechi/) |
+| 260716-1ew | Stronger composition breakdown (бургер → булка/котлета/сыр…) | 2026-07-16 | 39a3aa3, 23dcdbc | [260716-1ew-silnee-razdelenie-sostava](./quick/260716-1ew-silnee-razdelenie-sostava/) |
 
 ### Blockers/Concerns
 
