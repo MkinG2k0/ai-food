@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
 last_updated: "2026-07-16T00:00:00.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-24h: ingredient grams instead of portions
+last_activity: 2026-07-16 - Completed quick task 260716-2dw: meal refine «Дополнить»
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-24h: ingredient grams instead of portions
+Last activity: 2026-07-16 - Completed quick task 260716-2dw: meal refine «Дополнить»
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -72,6 +72,7 @@ Recent decisions affecting current work:
 - 260716-1ml: Meal.items[] SoT; updateMealItem/removeMealItem/updateMealNutrition; edit-meal on MealDetailPage
 - 260716-1zl: composition display-only + FoodItemEditPage; FoodMacrosBadges shared with MealCard
 - 260716-24h: FoodItem.grams replaces portion; AI returns grams; UI badge «N г»
+- 260716-2dw: MealDetail «Дополнить» → refineMealApi (client gateway) → updateMeal; features/refine-meal
 
 ### Pending Todos
 
@@ -95,6 +96,7 @@ None yet.
 | 260716-1ml | Edit/delete composition KBJU on meal detail | 2026-07-16 | f9e579d, b8bc52f, b26f07a | [260716-1ml-edit-delete-composition-kbzhu](./quick/260716-1ml-edit-delete-composition-kbzhu/) |
 | 260716-1zl | Composition display + food item edit page | 2026-07-16 | 1dbadd4, 7cb65af | [260716-1zl-composition-display-edit-page](./quick/260716-1zl-composition-display-edit-page/) |
 | 260716-24h | Replace portion with grams on ingredients | 2026-07-16 | a1152f4, 9127dd3, 5d88035, a7d0674 | [260716-24h-ingredient-grams-not-portions](./quick/260716-24h-ingredient-grams-not-portions/) |
+| 260716-2dw | Meal refine «Дополнить» via AI Gateway | 2026-07-16 | d5d9e7c, ae6c22b, 40965ca | [260716-2dw-ai](./quick/260716-2dw-ai/) |
 | fast | Show dish macros Б/У/Ж in one horizontal row | 2026-07-16 | d604193 | — |
 
 ### Blockers/Concerns
