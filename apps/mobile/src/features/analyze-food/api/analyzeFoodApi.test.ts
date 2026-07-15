@@ -3,9 +3,15 @@ import type { ApiError, NutritionResult } from '@ai-food/shared-types';
 import axios from 'axios';
 import {
   analyzeFoodApi,
+  appendDietPreference,
   COMPOSITION_PROMPT_RULE,
   FOOD_NAME_PROMPT_RULE,
 } from './analyzeFoodApi';
+
+const PORK_TO_CHICKEN_BIAS =
+  /свинин.*куриц|похож.*свинин.*куриц|lookalike.*chicken|pork.*chicken|если мясо похоже на свинину/i;
+
+const DIET_SECTION = /## User diet preference/i;
 
 vi.mock('axios', () => {
   const post = vi.fn();
@@ -390,5 +396,100 @@ describe('analyzeFoodApi (AI Gateway)', () => {
 
     expect(blankSystem).toBe(baseSystem);
     expect(blankSystem).not.toMatch(/custom instructions|кастомн|user preferences|предпочтен/i);
+  });
+
+  describe('appendDietPreference', () => {
+    it('returns prompt unchanged for none, null, or undefined', () => {
+      const base = 'BASE_PROMPT';
+      expect(appendDietPreference(base, 'none')).toBe(base);
+      expect(appendDietPreference(base, null)).toBe(base);
+      expect(appendDietPreference(base, undefined)).toBe(base);
+    });
+
+    it('appends halal diet rules with pork→chicken bias', () => {
+      const result = appendDietPreference('BASE', 'halal');
+      expect(result).toMatch(DIET_SECTION);
+      expect(result).toMatch(/halal|халяль/i);
+      expect(result).toMatch(PORK_TO_CHICKEN_BIAS);
+    });
+
+    it('appends vegan constraints without pork→chicken bias', () => {
+      const result = appendDietPreference('BASE', 'vegan');
+      expect(result).toMatch(DIET_SECTION);
+      expect(result).toMatch(/vegan|веган/i);
+      expect(result).not.toMatch(PORK_TO_CHICKEN_BIAS);
+    });
+
+    it('appends vegetarian constraints without pork→chicken bias', () => {
+      const result = appendDietPreference('BASE', 'vegetarian');
+      expect(result).toMatch(DIET_SECTION);
+      expect(result).toMatch(/vegetarian|вегетариан/i);
+      expect(result).not.toMatch(PORK_TO_CHICKEN_BIAS);
+    });
+  });
+
+  it('includes halal diet section and pork→chicken bias in system message', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi(file, { dietType: 'halal' });
+
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const systemContent = (
+      rawBody as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    expect(systemContent).toMatch(DIET_SECTION);
+    expect(systemContent).toMatch(/halal|халяль/i);
+    expect(systemContent).toMatch(PORK_TO_CHICKEN_BIAS);
+  });
+
+  it.each(['vegan', 'vegetarian'] as const)(
+    'includes %s diet section without pork→chicken bias',
+    async (dietType) => {
+      vi.mocked(axios.post).mockResolvedValue({
+        data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+      });
+
+      const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
+      await analyzeFoodApi(file, { dietType });
+
+      const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+      const systemContent = (
+        rawBody as { messages: Array<{ role: string; content: string }> }
+      ).messages[0].content;
+
+      expect(systemContent).toMatch(DIET_SECTION);
+      expect(systemContent).not.toMatch(PORK_TO_CHICKEN_BIAS);
+    },
+  );
+
+  it('omits diet preference section when dietType is none or omitted', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi(file);
+    const [, bodyOmitted] = vi.mocked(axios.post).mock.calls[0];
+    const omittedSystem = (
+      bodyOmitted as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    vi.mocked(axios.post).mockClear();
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await analyzeFoodApi(file, { dietType: 'none' });
+    const [, bodyNone] = vi.mocked(axios.post).mock.calls[0];
+    const noneSystem = (
+      bodyNone as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    expect(omittedSystem).not.toMatch(DIET_SECTION);
+    expect(noneSystem).not.toMatch(DIET_SECTION);
   });
 });

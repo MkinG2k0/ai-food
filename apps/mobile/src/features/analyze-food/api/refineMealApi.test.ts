@@ -261,4 +261,82 @@ describe('refineMealApi (AI Gateway)', () => {
 
     expect(emptySystem).toBe(baseSystem);
   });
+
+  it('includes halal diet section and pork→chicken bias in system message', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await refineMealApi({
+      correction: 'съел половину',
+      mealContext,
+      dietType: 'halal',
+    });
+
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const systemContent = (
+      rawBody as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    expect(systemContent).toMatch(/## User diet preference/i);
+    expect(systemContent).toMatch(/halal|халяль/i);
+    expect(systemContent).toMatch(
+      /свинин.*куриц|похож.*свинин.*куриц|lookalike.*chicken|pork.*chicken|если мясо похоже на свинину/i,
+    );
+  });
+
+  it.each(['vegan', 'vegetarian'] as const)(
+    'includes %s diet without pork→chicken bias',
+    async (dietType) => {
+      vi.mocked(axios.post).mockResolvedValue({
+        data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+      });
+
+      await refineMealApi({
+        correction: 'съел половину',
+        mealContext,
+        dietType,
+      });
+
+      const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+      const systemContent = (
+        rawBody as { messages: Array<{ role: string; content: string }> }
+      ).messages[0].content;
+
+      expect(systemContent).toMatch(/## User diet preference/i);
+      expect(systemContent).not.toMatch(
+        /свинин.*куриц|похож.*свинин.*куриц|lookalike.*chicken|pork.*chicken|если мясо похоже на свинину/i,
+      );
+    },
+  );
+
+  it('omits diet preference section when dietType is none or omitted', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await refineMealApi({ correction: 'съел половину', mealContext });
+    const [, bodyOmitted] = vi.mocked(axios.post).mock.calls[0];
+    const omittedSystem = (
+      bodyOmitted as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    vi.mocked(axios.post).mockClear();
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await refineMealApi({
+      correction: 'съел половину',
+      mealContext,
+      dietType: 'none',
+    });
+    const [, bodyNone] = vi.mocked(axios.post).mock.calls[0];
+    const noneSystem = (
+      bodyNone as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    expect(omittedSystem).not.toMatch(/## User diet preference/i);
+    expect(noneSystem).not.toMatch(/## User diet preference/i);
+  });
 });
