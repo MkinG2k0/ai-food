@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useDiaryStore } from '@/entities/meal';
+import { resolveItemGrams, useDiaryStore } from '@/entities/meal';
 import { analyzeFoodApi } from '@/features/analyze-food';
 import { saveMealImage, timestampForSelectedDate } from '@/shared/lib';
 import type { Meal, FoodItem } from '@ai-food/shared-types';
@@ -28,7 +28,7 @@ export function useSaveMeal() {
       protein: 0,
       carbs: 0,
       fat: 0,
-      portion: '1 порция',
+      grams: 100,
     };
 
     const imageUri = image ? await saveMealImage(image) : undefined;
@@ -77,7 +77,7 @@ export function useSaveMeal() {
           protein: item.protein,
           carbs: item.carbs,
           fat: item.fat,
-          portion: item.portion ?? '1 порция',
+          grams: resolveItemGrams({ grams: item.grams ?? 100 }),
         }));
         const totalCalories = items.reduce((sum, item) => sum + item.calories, 0);
         updateMeal(mealId, {
@@ -99,7 +99,7 @@ export function useSaveMeal() {
               protein: result.protein,
               carbs: result.carbs,
               fat: result.fat,
-              portion: '1 порция',
+              grams: 100,
             },
           ],
         });

@@ -14,6 +14,16 @@ function getOpenAIClient(): OpenAI {
   });
 }
 
+const NutritionItemSchema = z.object({
+  name: z.string(),
+  calories: z.number(),
+  protein: z.number(),
+  carbs: z.number(),
+  fat: z.number(),
+  grams: z.number().optional(),
+  fiber: z.number().optional(),
+});
+
 const NutritionResultSchema = z.object({
   foodName: z.string(),
   calories: z.number(),
@@ -22,6 +32,7 @@ const NutritionResultSchema = z.object({
   fat: z.number(),
   fiber: z.number(),
   confidence: z.number().min(0).max(1),
+  items: z.array(NutritionItemSchema).default([]),
 });
 
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object with these exact fields:

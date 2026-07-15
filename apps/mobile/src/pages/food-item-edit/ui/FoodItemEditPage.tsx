@@ -2,12 +2,16 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { sanitizeNutrient, useDiaryStore } from '@/entities/meal';
+import {
+  resolveItemGrams,
+  sanitizeNutrient,
+  useDiaryStore,
+} from '@/entities/meal';
 import {
   useConfirmDeleteMealItem,
   DeleteItemConfirmSheet,
 } from '@/features/edit-meal';
-import { Badge, Button } from '@/shared/ui';
+import { Button } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 
 const inputClassName = cn(
@@ -81,7 +85,22 @@ export function FoodItemEditPage() {
       <main className="flex-1 px-4 py-4 space-y-4">
         <div className="space-y-2">
           <p className="text-base font-semibold text-foreground">{item.name}</p>
-          <Badge variant="outline">{item.portion}</Badge>
+          <label className="block space-y-1">
+            <span className="block text-xs text-muted-foreground">Граммы</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              aria-label="Граммы"
+              className={cn(inputClassName, 'text-center tabular-nums max-w-[8rem]')}
+              value={resolveItemGrams(item)}
+              onChange={(e) =>
+                updateMealItem(mealId, itemId, {
+                  grams: sanitizeNutrient(Number(e.target.value)),
+                })
+              }
+            />
+          </label>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
