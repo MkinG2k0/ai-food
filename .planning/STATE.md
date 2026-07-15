@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
 last_updated: "2026-07-16T00:00:00.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-2dw: meal refine «Дополнить»
+last_activity: 2026-07-16 - Fast: refine loading on Дополнить + remove bottom delete
 progress:
   total_phases: 6
   completed_phases: 1
@@ -98,6 +98,7 @@ None yet.
 | 260716-24h | Replace portion with grams on ingredients | 2026-07-16 | a1152f4, 9127dd3, 5d88035, a7d0674 | [260716-24h-ingredient-grams-not-portions](./quick/260716-24h-ingredient-grams-not-portions/) |
 | 260716-2dw | Meal refine «Дополнить» via AI Gateway | 2026-07-16 | d5d9e7c, ae6c22b, 40965ca | [260716-2dw-ai](./quick/260716-2dw-ai/) |
 | fast | Show dish macros Б/У/Ж in one horizontal row | 2026-07-16 | d604193 | — |
+| fast | Refine loading on Дополнить button; remove bottom Удалить | 2026-07-16 | e50c59e | — |
 
 ### Blockers/Concerns
 
