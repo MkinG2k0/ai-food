@@ -5,9 +5,13 @@ import type {
   NutritionResult,
 } from '@ai-food/shared-types';
 
+/** Prompt rule: dish-level foodName ≠ composition list in items[].name */
+export const FOOD_NAME_PROMPT_RULE =
+  'foodName — краткое название всего блюда/приёма (например «Свежий овощной салат»); никогда comma-separated ingredient list. Запрещено писать перечень состава в foodName. items[].name — отдельные видимые компоненты состава (Помидоры, Огурцы, …), не дублируй foodName как список.';
+
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object with these exact fields:
 {
-  "foodName": string (краткое общее название приёма на русском, например «Бургер с картошкой»),
+  "foodName": string (краткое название всего блюда/приёма на русском, например «Свежий овощной салат» — НЕ перечень ингредиентов через запятую),
   "calories": number (суммарные килокалории всего приёма),
   "protein": number (grams, сумма по составу),
   "carbs": number (grams, сумма по составу),
@@ -16,7 +20,7 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food 
   "confidence": number (0.0 to 1.0, your confidence in the estimate),
   "items": [
     {
-      "name": string (название отдельного продукта/компонента на русском),
+      "name": string (название отдельного видимого компонента состава на русском, например «Помидоры»),
       "calories": number,
       "protein": number,
       "carbs": number,
@@ -26,6 +30,7 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food 
     }
   ]
 }
+${FOOD_NAME_PROMPT_RULE}
 Выяви отдельные видимые продукты/компоненты на фото — не склеивай тарелку в одно имя, если видно несколько позиций.
 Если на фото один продукт — items из одного элемента.
 Top-level calories/protein/carbs/fat/fiber должны совпадать с суммой соответствующих полей items (и fiber items, где задан).

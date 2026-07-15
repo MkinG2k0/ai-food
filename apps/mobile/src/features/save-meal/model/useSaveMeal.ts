@@ -34,13 +34,15 @@ export function useSaveMeal() {
     const imageUri = image ? await saveMealImage(image) : undefined;
 
     if (!image) {
+      const dishName = trimmedDescription || 'Без названия';
       addMeal({
         id: mealId,
         timestamp,
+        name: dishName,
         items: [
           {
             ...placeholderItem,
-            name: trimmedDescription || 'Без названия',
+            name: dishName,
           },
         ],
         totalCalories: 0,
@@ -52,6 +54,7 @@ export function useSaveMeal() {
     const pendingMeal: Meal = {
       id: mealId,
       timestamp,
+      name: trimmedDescription || undefined,
       items: [placeholderItem],
       totalCalories: 0,
       imageUri,
@@ -79,12 +82,14 @@ export function useSaveMeal() {
         const totalCalories = items.reduce((sum, item) => sum + item.calories, 0);
         updateMeal(mealId, {
           status: 'ready',
+          name: result.foodName,
           totalCalories,
           items,
         });
       } else {
         updateMeal(mealId, {
           status: 'ready',
+          name: result.foodName,
           totalCalories: result.calories,
           items: [
             {

@@ -15,6 +15,8 @@ export interface Meal {
   timestamp: string;
   items: FoodItem[];
   totalCalories: number;
+  /** Short dish title; omitted on legacy persisted meals */
+  name?: string;
   imageUri?: string;
   status?: MealStatus;
 }
