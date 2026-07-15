@@ -13,6 +13,7 @@ export interface Meal {
   timestamp: string;
   items: FoodItem[];
   totalCalories: number;
+  imageUri?: string;
 }
 
 export interface NutritionResult {

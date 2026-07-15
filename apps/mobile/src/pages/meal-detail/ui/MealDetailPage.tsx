@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useDiaryStore } from '@/entities/meal';
+import { useDiaryStore, useMealImage } from '@/entities/meal';
 import { NutritionRow } from '@/entities/nutrition';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@/shared/ui';
 import { formatCalories, formatMacro, formatDate } from '@/shared/lib';
@@ -11,6 +11,7 @@ export function MealDetailPage() {
   const { id } = useParams<{ id: string }>();
   const meals = useDiaryStore((s) => s.meals);
   const meal = meals.find((m) => m.id === id);
+  const imageSrc = useMealImage(meal?.imageUri);
 
   useEffect(() => {
     if (!meal) {
@@ -39,13 +40,21 @@ export function MealDetailPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="flex items-center px-4 py-4 border-b">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/diary')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold ml-2">Meal Details</h1>
       </header>
 
       <main className="flex-1 px-4 py-4 space-y-4">
+        {imageSrc && (
+          <img
+            src={imageSrc}
+            alt={meal.items.map((item) => item.name).join(', ')}
+            className="w-full h-56 object-cover rounded-xl"
+          />
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">

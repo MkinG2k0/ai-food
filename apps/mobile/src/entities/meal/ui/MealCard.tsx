@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Meal } from '@ai-food/shared-types';
 import { Card, CardContent } from '@/shared/ui';
 import { formatCalories } from '@/shared/lib';
+import { useMealImage } from '../model/useMealImage';
 
 interface MealCardProps {
   meal: Meal;
@@ -10,6 +11,7 @@ interface MealCardProps {
 
 export function MealCard({ meal }: MealCardProps) {
   const navigate = useNavigate();
+  const imageSrc = useMealImage(meal.imageUri);
   const time = new Date(meal.timestamp).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -37,8 +39,12 @@ export function MealCard({ meal }: MealCardProps) {
       className="cursor-pointer"
     >
       <CardContent className="flex items-center gap-3 py-3">
-        <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-          <Utensils className="h-5 w-5 text-emerald-600" />
+        <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+          {imageSrc ? (
+            <img src={imageSrc} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <Utensils className="h-5 w-5 text-emerald-600" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           {meal.items.map((item) => (

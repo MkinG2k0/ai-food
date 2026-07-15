@@ -17,6 +17,7 @@
   "dependencies": {
     "@ai-food/shared-types": "workspace:*",
     "@capacitor/core": "^8.4.1",
+    "@capacitor/filesystem": "^8",
     "@capacitor/preferences": "^8.0.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@tanstack/react-query": "^5.51.1",

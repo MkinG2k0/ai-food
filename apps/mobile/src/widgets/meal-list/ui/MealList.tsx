@@ -1,7 +1,5 @@
-import { useNavigate } from 'react-router-dom';
 import { useDiaryStore } from '@/entities/meal';
 import { MealCard } from '@/entities/meal';
-import { Button } from '@/shared/ui';
 import { isSameDay } from '@/shared/lib';
 
 interface MealListProps {
@@ -9,7 +7,6 @@ interface MealListProps {
 }
 
 export function MealList({ selectedDate }: MealListProps) {
-  const navigate = useNavigate();
   const meals = useDiaryStore((s) => s.meals);
 
   const isToday = isSameDay(selectedDate, new Date());
@@ -30,14 +27,6 @@ export function MealList({ selectedDate }: MealListProps) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="font-semibold text-foreground">
-          {isToday ? "Today's Meals" : 'Meals'}
-        </h2>
-        <Button variant="ghost" size="sm" onClick={() => navigate('/diary')}>
-          View All
-        </Button>
-      </div>
       {filteredMeals.map((meal) => (
         <MealCard key={meal.id} meal={meal} />
       ))}
