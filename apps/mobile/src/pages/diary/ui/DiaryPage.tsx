@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useDiaryStore } from '@/entities/meal';
-import { MealCard } from '@/entities/meal';
+import { SwipeableMealCard } from '@/features/delete-meal';
 import { Button } from '@/shared/ui';
 import { formatDate } from '@/shared/lib';
 import type { Meal } from '@ai-food/shared-types';
@@ -41,7 +41,7 @@ export function DiaryPage() {
                 <h2 className="text-sm font-medium text-muted-foreground mb-3">{date}</h2>
                 <div className="space-y-3">
                   {dateMeals.map((meal) => (
-                    <MealCard key={meal.id} meal={meal} />
+                    <SwipeableMealCard key={meal.id} meal={meal} />
                   ))}
                 </div>
               </div>

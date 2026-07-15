@@ -1,5 +1,5 @@
 import { useDiaryStore } from '@/entities/meal';
-import { MealCard } from '@/entities/meal';
+import { SwipeableMealCard } from '@/features/delete-meal';
 import { isSameDay } from '@/shared/lib';
 
 interface MealListProps {
@@ -28,7 +28,7 @@ export function MealList({ selectedDate }: MealListProps) {
   return (
     <div className="space-y-3">
       {filteredMeals.map((meal) => (
-        <MealCard key={meal.id} meal={meal} />
+        <SwipeableMealCard key={meal.id} meal={meal} />
       ))}
     </div>
   );
