@@ -70,7 +70,8 @@ export function DailyHeader({
         <button
           type="button"
           className="absolute right-0 p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors"
-          aria-label="Профиль"
+          aria-label="Настройки"
+          onClick={() => navigate('/settings')}
         >
           <User className="h-5 w-5" />
         </button>
