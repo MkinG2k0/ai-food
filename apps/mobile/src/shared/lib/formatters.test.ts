@@ -3,25 +3,25 @@ import { formatCalories, formatMacro, formatDate } from './formatters';
 
 describe('formatCalories', () => {
   it('formats whole number', () => {
-    expect(formatCalories(320)).toBe('320 kcal');
+    expect(formatCalories(320)).toBe('320 ккал');
   });
 
   it('rounds decimals', () => {
-    expect(formatCalories(320.7)).toBe('321 kcal');
+    expect(formatCalories(320.7)).toBe('321 ккал');
   });
 
   it('formats zero', () => {
-    expect(formatCalories(0)).toBe('0 kcal');
+    expect(formatCalories(0)).toBe('0 ккал');
   });
 });
 
 describe('formatMacro', () => {
   it('formats whole grams', () => {
-    expect(formatMacro(35)).toBe('35g');
+    expect(formatMacro(35)).toBe('35 г');
   });
 
   it('rounds fractional grams', () => {
-    expect(formatMacro(35.9)).toBe('36g');
+    expect(formatMacro(35.9)).toBe('36 г');
   });
 });
 

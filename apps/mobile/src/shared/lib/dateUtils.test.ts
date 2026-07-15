@@ -114,14 +114,14 @@ describe('formatDayLabel', () => {
 });
 
 describe('formatHeaderDate', () => {
-  it('returns "Today" for today', () => {
-    expect(formatHeaderDate(new Date())).toBe('Today');
+  it('returns "Сегодня" for today', () => {
+    expect(formatHeaderDate(new Date())).toBe('Сегодня');
   });
 
   it('returns a non-empty string for a past date', () => {
     const result = formatHeaderDate(new Date('2026-06-22'));
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
-    expect(result).not.toBe('Today');
+    expect(result).not.toBe('Сегодня');
   });
 });
