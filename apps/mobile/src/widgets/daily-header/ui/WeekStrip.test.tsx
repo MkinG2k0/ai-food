@@ -58,7 +58,7 @@ describe('WeekStrip', () => {
     const dot = dayButton.querySelector('span:last-child');
 
     expect(dot).not.toBeNull();
-    expect(dot?.className).toMatch(/bg-emerald/);
+    expect(dot?.className).toMatch(/bg-primary/);
     expect(dot?.className).not.toMatch(/bg-transparent/);
   });
 });

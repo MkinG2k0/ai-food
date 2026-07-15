@@ -103,29 +103,21 @@ export function WeekStrip({
                     onClick={() => onDaySelect(date)}
                     className="flex flex-col items-center gap-1 min-w-[36px]"
                   >
-                    <span
-                      className={`text-xs font-medium ${
-                        isSelected ? 'text-white' : 'text-emerald-100'
-                      }`}
-                    >
+                    <span className="text-xs font-medium text-muted-foreground">
                       {label}
                     </span>
                     <span
                       className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${
                         isSelected
-                          ? 'bg-white text-emerald-600'
-                          : 'text-white hover:bg-emerald-400'
+                          ? 'bg-foreground text-background'
+                          : 'text-foreground hover:bg-muted'
                       }`}
                     >
                       {dayNum}
                     </span>
                     <span
                       className={`w-1 h-1 rounded-full transition-colors ${
-                        hasFood
-                          ? isSelected
-                            ? 'bg-emerald-400'
-                            : 'bg-emerald-200'
-                          : 'bg-transparent'
+                        hasFood ? 'bg-primary' : 'bg-transparent'
                       }`}
                     />
                   </button>
