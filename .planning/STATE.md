@@ -91,6 +91,7 @@ None yet.
 | 260716-16d | Dish name separate from composition (Meal.name + mealDisplayName) | 2026-07-16 | 1a58d23, 99885da, 33f8211, 2133b26 | [260716-16d-sdelat-nazvanie-bluda-otdelno-ot-perechi](./quick/260716-16d-sdelat-nazvanie-bluda-otdelno-ot-perechi/) |
 | 260716-1ew | Stronger composition breakdown (бургер → булка/котлета/сыр…) | 2026-07-16 | 39a3aa3, 23dcdbc | [260716-1ew-silnee-razdelenie-sostava](./quick/260716-1ew-silnee-razdelenie-sostava/) |
 | 260716-1ml | Edit/delete composition KBJU on meal detail | 2026-07-16 | f9e579d, b8bc52f, b26f07a | [260716-1ml-edit-delete-composition-kbzhu](./quick/260716-1ml-edit-delete-composition-kbzhu/) |
+| fast | Show dish macros Б/У/Ж in one horizontal row | 2026-07-16 | d604193 | — |
 
 ### Blockers/Concerns
 
