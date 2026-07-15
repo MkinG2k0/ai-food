@@ -20,7 +20,7 @@ function buildApp() {
 
 // Valid JSON string matching NutritionResult
 const VALID_NUTRITION_JSON = JSON.stringify({
-  foodName: 'Grilled Chicken',
+  foodName: 'Курица гриль',
   calories: 300,
   protein: 40,
   carbs: 5,
@@ -67,6 +67,11 @@ describe('POST /analyze-food', () => {
     expect(response.status).toBe(200);
     expect(typeof (response.body as AnalyzeFoodResponse).result.foodName).toBe('string');
     expect(typeof (response.body as AnalyzeFoodResponse).processingTime).toBe('number');
+
+    const systemMessage = mockCreate.mock.calls[0]?.[0]?.messages?.find(
+      (m: { role: string }) => m.role === 'system',
+    );
+    expect(systemMessage?.content).toMatch(/на русском/);
   });
 
   // AI-02: Response body conforms to AnalyzeFoodResponse contract

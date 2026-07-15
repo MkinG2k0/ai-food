@@ -26,7 +26,7 @@ const NutritionResultSchema = z.object({
 
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object with these exact fields:
 {
-  "foodName": string (name of the food in English),
+  "foodName": string (название блюда или продукта на русском языке, не на английском),
   "calories": number (total kilocalories for a typical serving),
   "protein": number (grams),
   "carbs": number (grams),
@@ -34,6 +34,7 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food 
   "fiber": number (grams),
   "confidence": number (0.0 to 1.0, your confidence in the estimate)
 }
+Все текстовые значения полей (в частности foodName) пиши на русском языке.
 Do not include any text outside the JSON object.`;
 
 function sendApiError(res: Response, status: number, code: string, message: string): void {
@@ -45,7 +46,7 @@ function sendApiError(res: Response, status: number, code: string, message: stri
 function uploadMiddleware(req: Request, res: Response, next: (err?: unknown) => void): void {
   upload.single('image')(req, res, (err) => {
     if (err) {
-      sendApiError(res, 400, 'INVALID_IMAGE', 'No image file provided.');
+      sendApiError(res, 400, 'INVALID_IMAGE', 'Файл изображения не передан.');
       return;
     }
     next();
@@ -54,7 +55,7 @@ function uploadMiddleware(req: Request, res: Response, next: (err?: unknown) => 
 
 router.post('/', uploadMiddleware, async (req: Request, res: Response) => {
   if (!req.file) {
-    sendApiError(res, 400, 'INVALID_IMAGE', 'No image file provided.');
+    sendApiError(res, 400, 'INVALID_IMAGE', 'Файл изображения не передан.');
     return;
   }
 
@@ -75,7 +76,10 @@ router.post('/', uploadMiddleware, async (req: Request, res: Response) => {
               type: 'image_url',
               image_url: { url: `data:${mimeType};base64,${base64Image}` },
             },
-            { type: 'text', text: 'Analyze this food image and return the nutrition data as JSON.' },
+            {
+              type: 'text',
+              text: 'Проанализируй это изображение еды и верни данные о питании в формате JSON.',
+            },
           ],
         },
       ],
@@ -85,7 +89,7 @@ router.post('/', uploadMiddleware, async (req: Request, res: Response) => {
     const rawContent = completion.choices[0]?.message?.content;
     if (!rawContent) {
       console.error('OpenAI returned empty content');
-      sendApiError(res, 500, 'ANALYSIS_FAILED', 'Analysis returned empty response.');
+      sendApiError(res, 500, 'ANALYSIS_FAILED', 'Анализ вернул пустой ответ.');
       return;
     }
 
@@ -94,7 +98,7 @@ router.post('/', uploadMiddleware, async (req: Request, res: Response) => {
       parsed = NutritionResultSchema.parse(JSON.parse(rawContent));
     } catch (validationError) {
       console.error('Zod/JSON parse error:', validationError);
-      sendApiError(res, 500, 'ANALYSIS_FAILED', 'Analysis response did not match expected schema.');
+      sendApiError(res, 500, 'ANALYSIS_FAILED', 'Ответ анализа не соответствует ожидаемой схеме.');
       return;
     }
 
@@ -104,18 +108,18 @@ router.post('/', uploadMiddleware, async (req: Request, res: Response) => {
     console.error('OpenAI API error:', error);
 
     if (error instanceof OpenAI.RateLimitError) {
-      sendApiError(res, 429, 'RATE_LIMITED', 'OpenAI rate limit exceeded. Please try again later.');
+      sendApiError(res, 429, 'RATE_LIMITED', 'Превышен лимит запросов OpenAI. Попробуйте позже.');
       return;
     }
     if (error instanceof OpenAI.APIConnectionTimeoutError) {
-      sendApiError(res, 504, 'ANALYSIS_TIMEOUT', 'Analysis timed out. Please try again.');
+      sendApiError(res, 504, 'ANALYSIS_TIMEOUT', 'Анализ превысил время ожидания. Попробуйте ещё раз.');
       return;
     }
     if (error instanceof OpenAI.BadRequestError) {
-      sendApiError(res, 400, 'INVALID_IMAGE', 'The image could not be processed. Please try a different photo.');
+      sendApiError(res, 400, 'INVALID_IMAGE', 'Не удалось обработать изображение. Попробуйте другое фото.');
       return;
     }
-    sendApiError(res, 500, 'ANALYSIS_FAILED', 'Analysis failed. Please try again.');
+    sendApiError(res, 500, 'ANALYSIS_FAILED', 'Анализ не удался. Попробуйте ещё раз.');
   }
 });
 
