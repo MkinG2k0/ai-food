@@ -172,6 +172,7 @@ describe('useSaveMeal', () => {
     expect(meal.items[1].portion).toBe('1 порция');
     expect(meal.items[0].id).not.toBe(meal.items[1].id);
     expect(meal.totalCalories).toBe(850);
+    expect(meal.name).toBe('Бургер с картошкой');
   });
 
   it('falls back to single FoodItem from foodName when items is empty', async () => {
@@ -204,5 +205,29 @@ describe('useSaveMeal', () => {
     expect(meal.items[0].protein).toBe(12);
     expect(meal.items[0].portion).toBe('1 порция');
     expect(meal.totalCalories).toBe(350);
+    expect(meal.name).toBe('Овсянка с ягодами');
+  });
+
+  it('sets meal.name from trimmed description for no-image meals', async () => {
+    const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current({ description: '  Домашний салат  ' });
+    });
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.name).toBe('Домашний салат');
+    expect(meal.status).toBe('ready');
+  });
+
+  it('sets meal.name to Без названия when no-image description is empty', async () => {
+    const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current({ description: '   ' });
+    });
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.name).toBe('Без названия');
   });
 });

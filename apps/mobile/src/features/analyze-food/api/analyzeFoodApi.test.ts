@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ApiError, NutritionResult } from '@ai-food/shared-types';
 import axios from 'axios';
-import { analyzeFoodApi } from './analyzeFoodApi';
+import { analyzeFoodApi, FOOD_NAME_PROMPT_RULE } from './analyzeFoodApi';
 
 vi.mock('axios', () => {
   const post = vi.fn();
@@ -253,5 +253,13 @@ describe('analyzeFoodApi (AI Gateway)', () => {
       code: 'ANALYSIS_FAILED',
     } satisfies Partial<ApiError>);
     expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it('FOOD_NAME_PROMPT_RULE distinguishes dish-level foodName from composition items', () => {
+    expect(FOOD_NAME_PROMPT_RULE).toMatch(/foodName/i);
+    expect(FOOD_NAME_PROMPT_RULE).toMatch(/items\[\]\.name|items\[\]\.name/i);
+    expect(FOOD_NAME_PROMPT_RULE).toMatch(
+      /never.*comma-separated|запрещено.*перечень|не перечисляй|not.*ingredient list|не пиши.*список|не.*перечень состава/i,
+    );
   });
 });
