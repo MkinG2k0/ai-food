@@ -43,3 +43,14 @@ export function formatHeaderDate(date: Date): string {
     month: 'short',
   });
 }
+
+/** Calendar Y/M/D from selectedDate, clock time from now → ISO string. */
+export function timestampForSelectedDate(selectedDate: Date, now: Date = new Date()): string {
+  const result = new Date(now);
+  result.setFullYear(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth(),
+    selectedDate.getDate(),
+  );
+  return result.toISOString();
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { AddFoodSheet } from '@/features/add-food';
+import { useDiaryStore } from '@/entities/meal';
 import { DailyHeader } from '@/widgets/daily-header';
 import { MealList } from '@/widgets/meal-list';
 import { Button } from '@/shared/ui';
@@ -8,7 +9,8 @@ import { getWeekDays, isSameDay } from '@/shared/lib';
 
 export function HomePage() {
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const selectedDate = useDiaryStore((s) => s.selectedDate);
+  const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   function handleWeekChange(delta: 1 | -1) {
