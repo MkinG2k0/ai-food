@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, PenLine, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, PenLine, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import type { ApiError } from '@ai-food/shared-types';
 import { useDiaryStore, useMealImage } from '@/entities/meal';
 import {
   useConfirmDeleteMeal,
@@ -13,7 +14,7 @@ import {
   FoodItemDisplayCard,
   MealSummaryEditor,
 } from '@/features/edit-meal';
-import { RefineMealSheet } from '@/features/refine-meal';
+import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
 import { Button } from '@/shared/ui';
 
 export function MealDetailPage() {
@@ -23,6 +24,8 @@ export function MealDetailPage() {
   const meal = meals.find((m) => m.id === id);
   const imageSrc = useMealImage(meal?.imageUri);
   const [refineOpen, setRefineOpen] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
+  const refine = useRefineMeal();
   const {
     isOpen: isMealDeleteOpen,
     openConfirm: openMealDelete,
@@ -46,6 +49,8 @@ export function MealDetailPage() {
     return null;
   }
 
+  const mealId = meal.id;
+
   function handleConfirmMealDelete() {
     const deletedId = confirmMealDelete();
     if (deletedId) {
@@ -61,6 +66,21 @@ export function MealDetailPage() {
     }
   }
 
+  async function handleRefine(correction: string) {
+    setIsRefining(true);
+    try {
+      await refine(mealId, correction);
+      toast.success('Приём обновлён');
+    } catch (error) {
+      const apiError = error as Partial<ApiError>;
+      toast.error(
+        apiError.message ?? 'Не удалось обновить приём. Попробуйте ещё раз.',
+      );
+    } finally {
+      setIsRefining(false);
+    }
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="flex items-center px-4 py-4 border-b">
@@ -71,7 +91,7 @@ export function MealDetailPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => openMealDelete(meal.id)}
+          onClick={() => openMealDelete(mealId)}
           aria-label="Удалить приём пищи"
         >
           <Trash2 className="h-5 w-5 text-destructive" />
@@ -92,10 +112,15 @@ export function MealDetailPage() {
         <Button
           variant="outline"
           className="w-full"
+          disabled={isRefining}
           onClick={() => setRefineOpen(true)}
         >
-          <PenLine className="h-4 w-4 mr-2" />
-          Дополнить
+          {isRefining ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <PenLine className="h-4 w-4 mr-2" />
+          )}
+          {isRefining ? 'Дополняем…' : 'Дополнить'}
         </Button>
 
         <div className="space-y-3">
@@ -108,22 +133,13 @@ export function MealDetailPage() {
             meal.items.map((item) => (
               <FoodItemDisplayCard
                 key={item.id}
-                mealId={meal.id}
+                mealId={mealId}
                 item={item}
-                onRequestDelete={(itemId) => openItemDelete(meal.id, itemId)}
+                onRequestDelete={(itemId) => openItemDelete(mealId, itemId)}
               />
             ))
           )}
         </div>
-
-        <Button
-          variant="destructive"
-          className="w-full"
-          onClick={() => openMealDelete(meal.id)}
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Удалить
-        </Button>
       </main>
 
       <DeleteMealConfirmSheet
@@ -139,7 +155,7 @@ export function MealDetailPage() {
       <RefineMealSheet
         open={refineOpen}
         onClose={() => setRefineOpen(false)}
-        mealId={meal.id}
+        onSubmit={(correction) => void handleRefine(correction)}
       />
     </div>
   );

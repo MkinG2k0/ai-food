@@ -1,42 +1,26 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
-import type { ApiError } from '@ai-food/shared-types';
 import { BottomSheet, Button, Textarea } from '@/shared/ui';
-import { useRefineMeal } from '../model/useRefineMeal';
 
 export interface RefineMealSheetProps {
   open: boolean;
   onClose: () => void;
-  mealId: string;
+  onSubmit: (correction: string) => void;
 }
 
-export function RefineMealSheet({ open, onClose, mealId }: RefineMealSheetProps) {
+export function RefineMealSheet({ open, onClose, onSubmit }: RefineMealSheetProps) {
   const [text, setText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const refine = useRefineMeal();
 
   const handleClose = () => {
-    if (isSubmitting) return;
     setText('');
     onClose();
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     const correction = text.trim();
-    if (!correction || isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      await refine(mealId, correction);
-      toast.success('Приём обновлён');
-      setText('');
-      onClose();
-    } catch (error) {
-      const apiError = error as Partial<ApiError>;
-      toast.error(apiError.message ?? 'Не удалось обновить приём. Попробуйте ещё раз.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    if (!correction) return;
+    setText('');
+    onClose();
+    onSubmit(correction);
   };
 
   return (
@@ -48,16 +32,15 @@ export function RefineMealSheet({ open, onClose, mealId }: RefineMealSheetProps)
           placeholder="Напр.: съел половину / котлета не куриная а мясная"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          disabled={isSubmitting}
           className="min-h-32 resize-none"
         />
 
         <Button
-          onClick={() => void handleSubmit()}
-          disabled={!text.trim() || isSubmitting}
+          onClick={handleSubmit}
+          disabled={!text.trim()}
           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
         >
-          {isSubmitting ? 'Применяем…' : 'Применить'}
+          Применить
         </Button>
       </div>
     </BottomSheet>
