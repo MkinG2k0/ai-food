@@ -6,6 +6,7 @@ export interface FoodMacrosBadgesProps {
   protein: number;
   fat: number;
   carbs: number;
+  fiber: number;
 }
 
 export function FoodMacrosBadges({
@@ -13,6 +14,7 @@ export function FoodMacrosBadges({
   protein,
   fat,
   carbs,
+  fiber,
 }: FoodMacrosBadgesProps) {
   return (
     <div className="flex flex-wrap gap-1">
@@ -39,6 +41,12 @@ export function FoodMacrosBadges({
         className="bg-amber-50 text-amber-700 border-amber-100 font-semibold"
       >
         У {formatMacro(carbs)}
+      </Badge>
+      <Badge
+        variant="secondary"
+        className="bg-teal-50 text-teal-700 border-teal-100 font-semibold"
+      >
+        Кл {formatMacro(fiber)}
       </Badge>
     </div>
   );

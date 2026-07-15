@@ -53,7 +53,7 @@ export function FoodItemEditPage() {
   }
 
   function patchNumber(
-    field: 'calories' | 'protein' | 'carbs' | 'fat',
+    field: 'calories' | 'protein' | 'carbs' | 'fat' | 'fiber',
     raw: string,
   ) {
     updateMealItem(mealId!, itemId!, {
@@ -129,6 +129,12 @@ export function FoodItemEditPage() {
                 ariaLabel: 'Жиры',
                 field: 'fat' as const,
                 value: item.fat,
+              },
+              {
+                label: 'Кл',
+                ariaLabel: 'Клетчатка',
+                field: 'fiber' as const,
+                value: item.fiber ?? 0,
               },
             ] as const
           ).map((macro) => (

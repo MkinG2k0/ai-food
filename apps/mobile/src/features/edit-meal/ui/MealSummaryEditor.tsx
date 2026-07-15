@@ -56,8 +56,9 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
       protein: acc.protein + item.protein,
       carbs: acc.carbs + item.carbs,
       fat: acc.fat + item.fat,
+      fiber: acc.fiber + (item.fiber ?? 0),
     }),
-    { protein: 0, carbs: 0, fat: 0 },
+    { protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
 
   return (
@@ -125,7 +126,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {(
             [
               {
@@ -145,6 +146,12 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
                 ariaLabel: 'Жиры блюда',
                 value: totals.fat,
                 field: 'fat' as const,
+              },
+              {
+                label: 'Клетчатка',
+                ariaLabel: 'Клетчатка блюда',
+                value: totals.fiber,
+                field: 'fiber' as const,
               },
             ] as const
           ).map((macro) => (

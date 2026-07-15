@@ -131,6 +131,7 @@ export function FoodItemDisplayCard({
               protein={item.protein}
               fat={item.fat}
               carbs={item.carbs}
+              fiber={item.fiber ?? 0}
             />
           </CardContent>
         </Card>

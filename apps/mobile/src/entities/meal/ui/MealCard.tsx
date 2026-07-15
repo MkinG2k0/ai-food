@@ -26,8 +26,9 @@ export function MealCard({ meal }: MealCardProps) {
       protein: acc.protein + item.protein,
       carbs: acc.carbs + item.carbs,
       fat: acc.fat + item.fat,
+      fiber: acc.fiber + (item.fiber ?? 0),
     }),
-    { protein: 0, carbs: 0, fat: 0 },
+    { protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
 
   function goToDetail() {
@@ -87,6 +88,7 @@ export function MealCard({ meal }: MealCardProps) {
                 <Skeleton className="h-5 w-12 rounded-full" />
                 <Skeleton className="h-5 w-12 rounded-full" />
                 <Skeleton className="h-5 w-12 rounded-full" />
+                <Skeleton className="h-5 w-12 rounded-full" />
               </div>
             </>
           ) : isError ? (
@@ -109,6 +111,7 @@ export function MealCard({ meal }: MealCardProps) {
                 protein={totals.protein}
                 fat={totals.fat}
                 carbs={totals.carbs}
+                fiber={totals.fiber}
               />
             </>
           )}
