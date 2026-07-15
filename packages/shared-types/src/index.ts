@@ -19,6 +19,16 @@ export interface Meal {
   status?: MealStatus;
 }
 
+export interface NutritionItem {
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  portion?: string;
+  fiber?: number;
+}
+
 export interface NutritionResult {
   foodName: string;
   calories: number;
@@ -27,6 +37,7 @@ export interface NutritionResult {
   fat: number;
   fiber: number;
   confidence: number;
+  items: NutritionItem[];
 }
 
 export interface AnalyzeFoodRequest {

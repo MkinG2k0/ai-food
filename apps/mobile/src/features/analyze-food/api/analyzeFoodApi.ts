@@ -7,15 +7,29 @@ import type {
 
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object with these exact fields:
 {
-  "foodName": string (название блюда или продукта на русском языке, не на английском),
-  "calories": number (total kilocalories for a typical serving),
-  "protein": number (grams),
-  "carbs": number (grams),
-  "fat": number (grams),
-  "fiber": number (grams),
-  "confidence": number (0.0 to 1.0, your confidence in the estimate)
+  "foodName": string (краткое общее название приёма на русском, например «Бургер с картошкой»),
+  "calories": number (суммарные килокалории всего приёма),
+  "protein": number (grams, сумма по составу),
+  "carbs": number (grams, сумма по составу),
+  "fat": number (grams, сумма по составу),
+  "fiber": number (grams, сумма по составу),
+  "confidence": number (0.0 to 1.0, your confidence in the estimate),
+  "items": [
+    {
+      "name": string (название отдельного продукта/компонента на русском),
+      "calories": number,
+      "protein": number,
+      "carbs": number,
+      "fat": number,
+      "portion": string (optional, например «1 шт» или «1 порция»),
+      "fiber": number (optional)
+    }
+  ]
 }
-Все текстовые значения полей (в частности foodName) пиши на русском языке.
+Выяви отдельные видимые продукты/компоненты на фото — не склеивай тарелку в одно имя, если видно несколько позиций.
+Если на фото один продукт — items из одного элемента.
+Top-level calories/protein/carbs/fat/fiber должны совпадать с суммой соответствующих полей items (и fiber items, где задан).
+Все текстовые значения полей (foodName и items[].name) пиши на русском языке.
 Do not include any text outside the JSON object.`;
 
 const APP_ERROR_CODES = new Set([
@@ -52,20 +66,37 @@ function fileToDataUrl(image: File): Promise<string> {
   });
 }
 
+function isNutritionItem(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Record<string, unknown>;
+  if (typeof item.name !== 'string') return false;
+  if (typeof item.calories !== 'number') return false;
+  if (typeof item.protein !== 'number') return false;
+  if (typeof item.carbs !== 'number') return false;
+  if (typeof item.fat !== 'number') return false;
+  if (item.portion !== undefined && typeof item.portion !== 'string') return false;
+  if (item.fiber !== undefined && typeof item.fiber !== 'number') return false;
+  return true;
+}
+
 function isNutritionResult(value: unknown): value is NutritionResult {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
-  return (
-    typeof v.foodName === 'string' &&
-    typeof v.calories === 'number' &&
-    typeof v.protein === 'number' &&
-    typeof v.carbs === 'number' &&
-    typeof v.fat === 'number' &&
-    typeof v.fiber === 'number' &&
-    typeof v.confidence === 'number' &&
-    v.confidence >= 0 &&
-    v.confidence <= 1
-  );
+  if (
+    typeof v.foodName !== 'string' ||
+    typeof v.calories !== 'number' ||
+    typeof v.protein !== 'number' ||
+    typeof v.carbs !== 'number' ||
+    typeof v.fat !== 'number' ||
+    typeof v.fiber !== 'number' ||
+    typeof v.confidence !== 'number' ||
+    v.confidence < 0 ||
+    v.confidence > 1 ||
+    !Array.isArray(v.items)
+  ) {
+    return false;
+  }
+  return v.items.every(isNutritionItem);
 }
 
 function mapGatewayError(error: unknown): never {
