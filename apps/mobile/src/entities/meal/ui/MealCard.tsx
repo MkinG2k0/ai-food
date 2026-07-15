@@ -4,6 +4,7 @@ import type { Meal } from '@ai-food/shared-types';
 import { Badge, Card, CardContent, Skeleton } from '@/shared/ui';
 import { formatCalories, formatMacro } from '@/shared/lib';
 import { useMealImage } from '../model/useMealImage';
+import { mealDisplayName } from '../model/mealDisplayName';
 
 interface MealCardProps {
   meal: Meal;
@@ -19,7 +20,7 @@ export function MealCard({ meal }: MealCardProps) {
     hour: '2-digit',
     minute: '2-digit',
   });
-  const foodNames = meal.items.map((item) => item.name).join(', ');
+  const title = mealDisplayName(meal);
   const totals = meal.items.reduce(
     (acc, item) => ({
       protein: acc.protein + item.protein,
@@ -53,7 +54,7 @@ export function MealCard({ meal }: MealCardProps) {
           ? 'Анализ еды'
           : isError
             ? `Ошибка анализа приёма пищи в ${time}`
-            : `${foodNames} в ${time}`
+            : `${title} в ${time}`
       }
       aria-busy={isAnalyzing}
       className={isAnalyzing ? '' : 'cursor-pointer '}
@@ -97,22 +98,11 @@ export function MealCard({ meal }: MealCardProps) {
             </>
           ) : (
             <>
-              <div className="min-w-0">
-                {meal.items.map((item, index) => (
-                  <div key={item.id} className="flex gap-2 justify-between text-sm font-medium truncate">
-
-                    <div>
-                    {item.name}
-                    </div>
-
-                    
-                    {index === meal.items.length - 1 && (
-                      <div className="ml-1.5 font-normal text-muted-foreground">
-                        {time}
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="flex gap-2 justify-between text-sm font-medium min-w-0">
+                <span className="truncate">{title}</span>
+                <span className="ml-1.5 shrink-0 font-normal text-muted-foreground">
+                  {time}
+                </span>
               </div>
               <div className="flex flex-wrap gap-1">
                 <Badge

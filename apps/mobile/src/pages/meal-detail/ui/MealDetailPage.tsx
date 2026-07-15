@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useDiaryStore, useMealImage } from '@/entities/meal';
+import { mealDisplayName, useDiaryStore, useMealImage } from '@/entities/meal';
 import { NutritionRow } from '@/entities/nutrition';
 import {
   useConfirmDeleteMeal,
@@ -34,6 +34,7 @@ export function MealDetailPage() {
     hour: '2-digit',
     minute: '2-digit',
   });
+  const dishName = mealDisplayName(meal);
 
   function handleConfirmDelete() {
     const deletedId = confirmDelete();
@@ -73,16 +74,17 @@ export function MealDetailPage() {
         {imageSrc && (
           <img
             src={imageSrc}
-            alt={meal.items.map((item) => item.name).join(', ')}
+            alt={dishName}
             className="w-full h-56 object-cover rounded-xl"
           />
         )}
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
+            <CardTitle className="text-base">{dishName}</CardTitle>
+            <p className="text-sm text-muted-foreground">
               {formatDate(meal.timestamp)} в {time}
-            </CardTitle>
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-2xl font-semibold text-emerald-600">
