@@ -9,6 +9,10 @@ import type {
 export const FOOD_NAME_PROMPT_RULE =
   'foodName — краткое название всего блюда/приёма (например «Свежий овощной салат»); никогда comma-separated ingredient list. Запрещено писать перечень состава в foodName. items[].name — отдельные видимые компоненты состава (Помидоры, Огурцы, …), не дублируй foodName как список.';
 
+/** Prompt rule: compound dishes → ingredient/layer items, not a single dish-level item */
+export const COMPOSITION_PROMPT_RULE =
+  'Состав (items[]): составные/слойные блюда (бургер, сэндвич, ролл, шаурма, пицца с начинкой, салат-сборка) всегда разбивай на видимые ингредиенты/слои. Пример: бургер → отдельные items «Булка», «Котлета», «Сыр», «Салат», «Помидор» — не оставляй один item «Гамбургер»/«Бургер», когда на фото видны слои. Простые однородные продукты (картофель фри, яблоко, стакан сока) — один item допустим. foodName = название всего приёма; items[].name = атомарные компоненты — не дублируй название составного блюда как единственный item, если видны части.';
+
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object with these exact fields:
 {
   "foodName": string (краткое название всего блюда/приёма на русском, например «Свежий овощной салат» — НЕ перечень ингредиентов через запятую),
@@ -20,7 +24,7 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food 
   "confidence": number (0.0 to 1.0, your confidence in the estimate),
   "items": [
     {
-      "name": string (название отдельного видимого компонента состава на русском, например «Помидоры»),
+      "name": string (название атомарного видимого ингредиента/слоя составного блюда на русском, например «Помидоры» или «Булка»),
       "calories": number,
       "protein": number,
       "carbs": number,
@@ -31,8 +35,7 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food 
   ]
 }
 ${FOOD_NAME_PROMPT_RULE}
-Выяви отдельные видимые продукты/компоненты на фото — не склеивай тарелку в одно имя, если видно несколько позиций.
-Если на фото один продукт — items из одного элемента.
+${COMPOSITION_PROMPT_RULE}
 Top-level calories/protein/carbs/fat/fiber должны совпадать с суммой соответствующих полей items (и fiber items, где задан).
 Все текстовые значения полей (foodName и items[].name) пиши на русском языке.
 Do not include any text outside the JSON object.`;
