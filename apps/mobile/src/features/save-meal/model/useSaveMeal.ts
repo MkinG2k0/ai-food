@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useDiaryStore } from '@/entities/meal';
 import { analyzeFoodApi } from '@/features/analyze-food';
-import { saveMealImage } from '@/shared/lib';
+import { saveMealImage, timestampForSelectedDate } from '@/shared/lib';
 import type { Meal, FoodItem } from '@ai-food/shared-types';
 
 export interface SubmitFoodInput {
@@ -18,6 +18,8 @@ export function useSaveMeal() {
     const mealId = crypto.randomUUID();
     const itemId = crypto.randomUUID();
     const trimmedDescription = description?.trim() || '';
+    const { selectedDate } = useDiaryStore.getState();
+    const timestamp = timestampForSelectedDate(selectedDate);
 
     const placeholderItem: FoodItem = {
       id: itemId,
@@ -34,7 +36,7 @@ export function useSaveMeal() {
     if (!image) {
       addMeal({
         id: mealId,
-        timestamp: new Date().toISOString(),
+        timestamp,
         items: [
           {
             ...placeholderItem,
@@ -49,7 +51,7 @@ export function useSaveMeal() {
 
     const pendingMeal: Meal = {
       id: mealId,
-      timestamp: new Date().toISOString(),
+      timestamp,
       items: [placeholderItem],
       totalCalories: 0,
       imageUri,
