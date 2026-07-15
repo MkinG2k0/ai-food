@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import type { AnalyzeFoodResponse } from '@ai-food/shared-types';
+import { useProfileStore } from '@/features/onboarding';
 import { useSettingsStore } from '@/features/settings';
 import { analyzeFoodApi } from '../api/analyzeFoodApi';
 
 export function useAnalyzeFood(image: File | null) {
   const customInstructions = useSettingsStore((s) => s.customInstructions);
+  const dietType = useProfileStore((s) => s.profile?.dietType ?? 'none');
 
   return useQuery<AnalyzeFoodResponse, Error>({
     queryKey: [
@@ -13,9 +15,10 @@ export function useAnalyzeFood(image: File | null) {
       image?.size,
       image?.lastModified,
       customInstructions,
+      dietType,
     ],
     queryFn: () =>
-      analyzeFoodApi(image!, { customInstructions }),
+      analyzeFoodApi(image!, { customInstructions, dietType }),
     enabled: image !== null,
     staleTime: 0,
     retry: 2,

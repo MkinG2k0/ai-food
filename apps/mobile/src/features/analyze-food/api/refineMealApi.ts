@@ -2,10 +2,12 @@ import axios from 'axios';
 import type {
   AnalyzeFoodResponse,
   ApiError,
+  DietType,
   NutritionResult,
 } from '@ai-food/shared-types';
 import {
   appendCustomInstructions,
+  appendDietPreference,
   COMPOSITION_PROMPT_RULE,
   FOOD_NAME_PROMPT_RULE,
 } from './analyzeFoodApi';
@@ -27,6 +29,7 @@ export interface RefineMealInput {
   };
   imageDataUrl?: string;
   customInstructions?: string;
+  dietType?: DietType;
 }
 
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
@@ -183,9 +186,9 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
           { type: 'text' as const, text: userText },
         ]
       : userText;
-  const systemContent = appendCustomInstructions(
-    SYSTEM_PROMPT,
-    input.customInstructions,
+  const systemContent = appendDietPreference(
+    appendCustomInstructions(SYSTEM_PROMPT, input.customInstructions),
+    input.dietType,
   );
 
   const startTime = Date.now();

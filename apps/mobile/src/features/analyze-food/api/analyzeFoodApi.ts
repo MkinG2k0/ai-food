@@ -2,6 +2,7 @@ import axios from 'axios';
 import type {
   AnalyzeFoodResponse,
   ApiError,
+  DietType,
   NutritionResult,
 } from '@ai-food/shared-types';
 
@@ -42,6 +43,7 @@ Do not include any text outside the JSON object.`;
 
 export interface AnalyzeFoodOptions {
   customInstructions?: string;
+  dietType?: DietType;
 }
 
 /** Append non-empty trimmed user prefs to a system prompt. */
@@ -52,6 +54,33 @@ export function appendCustomInstructions(
   const trimmed = customInstructions?.trim();
   if (!trimmed) return systemPrompt;
   return `${systemPrompt}\n\n## User custom instructions\nFollow these user preferences for diet, units, and response style:\n${trimmed}`;
+}
+
+const DIET_RULES: Record<Exclude<DietType, 'none'>, string> = {
+  halal: [
+    'The user follows a Halal (халяль) diet.',
+    'Do not identify pork or other non-halal meats as the food on the photo.',
+    'If the meat looks like pork (похож на свинину), prefer labeling it as chicken (курица).',
+  ].join('\n'),
+  vegan: [
+    'The user follows a vegan (веган) diet.',
+    'Do not identify animal products: no meat, fish, dairy, eggs, or honey.',
+  ].join('\n'),
+  vegetarian: [
+    'The user follows a vegetarian (вегетарианство) diet.',
+    'Do not identify meat or fish; dairy and eggs are allowed.',
+  ].join('\n'),
+};
+
+/** Append structured diet preference rules; pork→chicken bias only for halal. */
+export function appendDietPreference(
+  systemPrompt: string,
+  dietType?: DietType | null,
+): string {
+  if (!dietType || dietType === 'none') return systemPrompt;
+  const rules = DIET_RULES[dietType];
+  if (!rules) return systemPrompt;
+  return `${systemPrompt}\n\n## User diet preference\n${rules}`;
 }
 
 const APP_ERROR_CODES = new Set([
@@ -186,9 +215,9 @@ export async function analyzeFoodApi(
   }
 
   const dataUrl = await fileToDataUrl(image);
-  const systemContent = appendCustomInstructions(
-    SYSTEM_PROMPT,
-    options?.customInstructions,
+  const systemContent = appendDietPreference(
+    appendCustomInstructions(SYSTEM_PROMPT, options?.customInstructions),
+    options?.dietType,
   );
   const startTime = Date.now();
 
