@@ -15,7 +15,7 @@ import {
   MealSummaryEditor,
 } from '@/features/edit-meal';
 import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
-import { Button } from '@/shared/ui';
+import { Button, ImageLightbox } from '@/shared/ui';
 
 export function MealDetailPage() {
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ export function MealDetailPage() {
   const meal = meals.find((m) => m.id === id);
   const imageSrc = useMealImage(meal?.imageUri);
   const [refineOpen, setRefineOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const refine = useRefineMeal();
   const {
@@ -100,11 +101,18 @@ export function MealDetailPage() {
 
       <main className="flex-1 px-4 py-4 space-y-4">
         {imageSrc && (
-          <img
-            src={imageSrc}
-            alt=""
-            className="w-full h-56 object-cover rounded-xl"
-          />
+          <button
+            type="button"
+            className="w-full rounded-xl overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => setLightboxOpen(true)}
+            aria-label="Открыть фото"
+          >
+            <img
+              src={imageSrc}
+              alt=""
+              className="w-full h-56 object-cover"
+            />
+          </button>
         )}
 
         <MealSummaryEditor meal={meal} />
@@ -157,6 +165,13 @@ export function MealDetailPage() {
         onClose={() => setRefineOpen(false)}
         onSubmit={(correction) => void handleRefine(correction)}
       />
+      {imageSrc && (
+        <ImageLightbox
+          open={lightboxOpen}
+          src={imageSrc}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 }
