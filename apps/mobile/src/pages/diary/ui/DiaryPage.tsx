@@ -22,16 +22,16 @@ export function DiaryPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-semibold ml-2">Food Diary</h1>
+        <h1 className="text-lg font-semibold ml-2">Дневник питания</h1>
       </header>
 
       <main className="flex-1 px-4 py-4">
         {meals.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <p className="text-lg font-medium">No meals yet</p>
-            <p className="text-sm mt-1">Add your first meal to get started</p>
-            <Button className="mt-4" onClick={() => navigate('/add')}>
-              Add Food
+            <p className="text-lg font-medium">Пока нет приёмов пищи</p>
+            <p className="text-sm mt-1">Добавьте первый приём пищи</p>
+            <Button className="mt-4" onClick={() => navigate('/')}>
+              Добавить еду
             </Button>
           </div>
         ) : (

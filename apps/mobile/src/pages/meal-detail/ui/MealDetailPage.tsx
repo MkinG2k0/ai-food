@@ -14,12 +14,12 @@ export function MealDetailPage() {
   const imageSrc = useMealImage(meal?.imageUri);
 
   useEffect(() => {
-    if (!meal) {
-      navigate('/diary', { replace: true });
+    if (!meal || meal.status === 'analyzing') {
+      navigate('/', { replace: true });
     }
   }, [meal, navigate]);
 
-  if (!meal) {
+  if (!meal || meal.status === 'analyzing') {
     return null;
   }
 
@@ -43,7 +43,7 @@ export function MealDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-semibold ml-2">Meal Details</h1>
+        <h1 className="text-lg font-semibold ml-2">Детали приёма</h1>
       </header>
 
       <main className="flex-1 px-4 py-4 space-y-4">
@@ -58,7 +58,7 @@ export function MealDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              {formatDate(meal.timestamp)} at {time}
+              {formatDate(meal.timestamp)} в {time}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -66,15 +66,15 @@ export function MealDetailPage() {
               {formatCalories(meal.totalCalories)}
             </p>
             <div className="space-y-3">
-              <NutritionRow label="Protein" value={totals.protein} unit="g" />
-              <NutritionRow label="Carbs" value={totals.carbs} unit="g" />
-              <NutritionRow label="Fat" value={totals.fat} unit="g" />
+              <NutritionRow label="Белки" value={totals.protein} unit="г" />
+              <NutritionRow label="Углеводы" value={totals.carbs} unit="г" />
+              <NutritionRow label="Жиры" value={totals.fat} unit="г" />
             </div>
           </CardContent>
         </Card>
 
         <div className="space-y-3">
-          <h2 className="font-semibold text-foreground">Items</h2>
+          <h2 className="font-semibold text-foreground">Состав</h2>
           {meal.items.map((item) => (
             <Card key={item.id}>
               <CardContent className="py-3 space-y-2">
@@ -84,9 +84,9 @@ export function MealDetailPage() {
                 </div>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>{formatCalories(item.calories)}</span>
-                  <span>{formatMacro(item.protein)} protein</span>
-                  <span>{formatMacro(item.carbs)} carbs</span>
-                  <span>{formatMacro(item.fat)} fat</span>
+                  <span>Б {formatMacro(item.protein)}</span>
+                  <span>У {formatMacro(item.carbs)}</span>
+                  <span>Ж {formatMacro(item.fat)}</span>
                 </div>
               </CardContent>
             </Card>

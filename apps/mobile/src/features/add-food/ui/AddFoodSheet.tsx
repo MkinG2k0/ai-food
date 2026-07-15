@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ImageIcon, Camera, PenLine, ArrowLeft } from 'lucide-react';
 import { BottomSheet, Button, Textarea } from '@/shared/ui';
-import { useImageStore } from '../model/useImageStore';
+import { useSaveMeal } from '@/features/save-meal';
 
 export interface AddFoodSheetProps {
   open: boolean;
@@ -14,8 +13,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
   const [text, setText] = useState('');
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
-  const { setImage, setDescription } = useImageStore();
+  const submitFood = useSaveMeal();
 
   const handleClose = () => {
     setMode('menu');
@@ -24,9 +22,8 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
   };
 
   const handleImageSelect = (file: File) => {
-    setImage(file);
     handleClose();
-    navigate('/result');
+    void submitFood({ image: file });
   };
 
   const handleGalleryClick = () => {
@@ -64,9 +61,9 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
 
   const handleSubmitDescription = () => {
     if (text.trim()) {
-      setDescription(text);
+      const description = text.trim();
       handleClose();
-      navigate('/result');
+      void submitFood({ description });
     }
   };
 
@@ -75,7 +72,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
       <div className="w-full space-y-4 px-4 py-6">
         {mode === 'menu' ? (
           <>
-            <h2 className="text-lg font-semibold text-foreground">Add Food</h2>
+            <h2 className="text-lg font-semibold text-foreground">Добавить еду</h2>
             <div className="space-y-3">
               <Button
                 variant="outline"
@@ -83,7 +80,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
                 onClick={handleGalleryClick}
               >
                 <ImageIcon className="h-5 w-5 text-emerald-600" />
-                <span>Gallery</span>
+                <span>Галерея</span>
               </Button>
 
               <Button
@@ -92,7 +89,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
                 onClick={handleCameraClick}
               >
                 <Camera className="h-5 w-5 text-emerald-600" />
-                <span>Camera</span>
+                <span>Камера</span>
               </Button>
 
               <Button
@@ -101,7 +98,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
                 onClick={handleDescribeClick}
               >
                 <PenLine className="h-5 w-5 text-emerald-600" />
-                <span>Describe</span>
+                <span>Описать</span>
               </Button>
             </div>
 
@@ -111,7 +108,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               accept="image/*"
               onChange={handleGalleryChange}
               className="hidden"
-              aria-label="Gallery input"
+              aria-label="Выбор из галереи"
             />
 
             <input
@@ -121,7 +118,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               capture="environment"
               onChange={handleCameraChange}
               className="hidden"
-              aria-label="Camera input"
+              aria-label="Съёмка камерой"
             />
           </>
         ) : (
@@ -135,12 +132,12 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <h2 className="text-lg font-semibold text-foreground">Describe</h2>
+              <h2 className="text-lg font-semibold text-foreground">Описать</h2>
             </div>
 
             <div className="space-y-4">
               <Textarea
-                placeholder="e.g. Grilled chicken salad with rice"
+                placeholder="Напр.: куриный салат с рисом"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 className="min-h-32 resize-none"
@@ -151,7 +148,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
                 disabled={!text.trim()}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                Submit
+                Отправить
               </Button>
             </div>
           </>

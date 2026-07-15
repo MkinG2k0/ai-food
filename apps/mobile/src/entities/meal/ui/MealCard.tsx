@@ -1,8 +1,8 @@
-import { Utensils } from 'lucide-react';
+import { Utensils, Loader2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Meal } from '@ai-food/shared-types';
-import { Card, CardContent } from '@/shared/ui';
-import { formatCalories } from '@/shared/lib';
+import { Badge, Card, CardContent, Skeleton } from '@/shared/ui';
+import { formatCalories, formatMacro } from '@/shared/lib';
 import { useMealImage } from '../model/useMealImage';
 
 interface MealCardProps {
@@ -12,17 +12,30 @@ interface MealCardProps {
 export function MealCard({ meal }: MealCardProps) {
   const navigate = useNavigate();
   const imageSrc = useMealImage(meal.imageUri);
+  const status = meal.status ?? 'ready';
+  const isAnalyzing = status === 'analyzing';
+  const isError = status === 'error';
   const time = new Date(meal.timestamp).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
   });
   const foodNames = meal.items.map((item) => item.name).join(', ');
+  const totals = meal.items.reduce(
+    (acc, item) => ({
+      protein: acc.protein + item.protein,
+      carbs: acc.carbs + item.carbs,
+      fat: acc.fat + item.fat,
+    }),
+    { protein: 0, carbs: 0, fat: 0 },
+  );
 
   function goToDetail() {
+    if (isAnalyzing) return;
     navigate(`/meal/${meal.id}`);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (isAnalyzing) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       goToDetail();
@@ -31,32 +44,91 @@ export function MealCard({ meal }: MealCardProps) {
 
   return (
     <Card
-      role="button"
-      tabIndex={0}
+      role={isAnalyzing ? undefined : 'button'}
+      tabIndex={isAnalyzing ? undefined : 0}
       onClick={goToDetail}
       onKeyDown={handleKeyDown}
-      aria-label={`${foodNames} at ${time}`}
-      className="cursor-pointer"
+      aria-label={
+        isAnalyzing
+          ? 'Анализ еды'
+          : isError
+            ? `Ошибка анализа приёма пищи в ${time}`
+            : `${foodNames} в ${time}`
+      }
+      aria-busy={isAnalyzing}
+      className={isAnalyzing ? '' : 'cursor-pointer'}
     >
       <CardContent className="flex items-center gap-3 py-3">
-        <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="h-16 w-16 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
           {imageSrc ? (
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
+          ) : isAnalyzing ? (
+            <Loader2 className="h-6 w-6 text-emerald-600 animate-spin" />
+          ) : isError ? (
+            <AlertCircle className="h-6 w-6 text-destructive" />
           ) : (
-            <Utensils className="h-5 w-5 text-emerald-600" />
+            <Utensils className="h-6 w-6 text-emerald-600" />
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          {meal.items.map((item) => (
-            <p key={item.id} className="text-sm font-medium truncate">
-              {item.name}
-            </p>
-          ))}
-          <p className="text-xs text-muted-foreground">{time}</p>
+
+        <div className="flex-1 min-w-0 space-y-1.5">
+          {isAnalyzing ? (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.3s]" />
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.15s]" />
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" />
+                <span className="text-sm text-muted-foreground">Анализ еды…</span>
+              </div>
+              <Skeleton className="h-4 w-36" />
+              <div className="flex flex-wrap gap-1">
+                <Skeleton className="h-5 w-14 rounded-full" />
+                <Skeleton className="h-5 w-12 rounded-full" />
+                <Skeleton className="h-5 w-12 rounded-full" />
+                <Skeleton className="h-5 w-12 rounded-full" />
+              </div>
+            </>
+          ) : isError ? (
+            <>
+              <p className="text-sm font-medium text-destructive">
+                Ошибка анализа…{' '}
+                <span className="font-normal text-muted-foreground">{time}</span>
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="min-w-0">
+                {meal.items.map((item, index) => (
+                  <div key={item.id} className="flex gap-2 justify-between text-sm font-medium truncate">
+
+                    <div>
+                    {item.name}
+
+                    </div>
+
+                    
+                    {index === meal.items.length - 1 && (
+                      <div className="ml-1.5 font-normal text-muted-foreground">
+                        {time}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                <Badge
+                  variant="secondary"
+                  className="bg-emerald-50 text-emerald-700 border-emerald-100 font-semibold"
+                >
+                  {formatCalories(meal.totalCalories)}
+                </Badge>
+                <Badge variant="secondary">Б {formatMacro(totals.protein)}</Badge>
+                <Badge variant="secondary">Ж {formatMacro(totals.fat)}</Badge>
+                <Badge variant="secondary">У {formatMacro(totals.carbs)}</Badge>
+              </div>
+            </>
+          )}
         </div>
-        <p className="text-sm font-semibold text-emerald-600 flex-shrink-0">
-          {formatCalories(meal.totalCalories)}
-        </p>
       </CardContent>
     </Card>
   );

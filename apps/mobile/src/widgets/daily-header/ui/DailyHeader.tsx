@@ -22,7 +22,11 @@ export function DailyHeader({
   const dailyGoal = targets?.kcal ?? 2000;
 
   const dayCalories = meals
-    .filter((m) => isSameDay(new Date(m.timestamp), selectedDate))
+    .filter(
+      (m) =>
+        isSameDay(new Date(m.timestamp), selectedDate) &&
+        (m.status ?? 'ready') === 'ready'
+    )
     .reduce((sum, m) => sum + m.totalCalories, 0);
 
   const remaining = dailyGoal - dayCalories;
@@ -34,8 +38,8 @@ export function DailyHeader({
       <p className="text-4xl font-bold mt-1">{formatCalories(dayCalories)}</p>
       <p className="text-emerald-100 text-sm mt-1">
         {remaining > 0
-          ? `${Math.round(remaining)} kcal remaining`
-          : `${Math.round(Math.abs(remaining))} kcal over goal`}
+          ? `${Math.round(remaining)} ккал осталось`
+          : `${Math.round(Math.abs(remaining))} ккал сверх нормы`}
       </p>
       <div className="mt-4 h-1.5 bg-emerald-400 rounded-full overflow-hidden">
         <div

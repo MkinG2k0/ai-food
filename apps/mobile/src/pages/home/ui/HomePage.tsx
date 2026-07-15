@@ -35,7 +35,7 @@ export function HomePage() {
           size="icon"
           className="rounded-full h-14 w-14 shadow-lg"
           onClick={() => setIsAddOpen(true)}
-          aria-label="Add food"
+          aria-label="Добавить еду"
         >
           <Plus className="h-6 w-6" />
         </Button>

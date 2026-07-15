@@ -27,7 +27,7 @@ export function formatDayLabel(date: Date): string {
 }
 
 export function formatHeaderDate(date: Date): string {
-  if (isSameDay(date, new Date())) return 'Today';
+  if (isSameDay(date, new Date())) return 'Сегодня';
   return date.toLocaleDateString('ru-RU', {
     weekday: 'short',
     day: 'numeric',

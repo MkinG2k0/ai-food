@@ -18,9 +18,9 @@ export function MealList({ selectedDate }: MealListProps) {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
         <p className="text-base font-medium">
-          {isToday ? 'No meals tracked today' : 'No meals on this day'}
+          {isToday ? 'Сегодня приёмов пищи нет' : 'В этот день приёмов пищи нет'}
         </p>
-        {isToday && <p className="text-sm mt-1">Tap + to add your first meal</p>}
+        {isToday && <p className="text-sm mt-1">Нажмите +, чтобы добавить первое блюдо</p>}
       </div>
     );
   }

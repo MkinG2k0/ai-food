@@ -16,7 +16,7 @@ export function NutritionCard({ result }: NutritionCardProps) {
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-lg leading-tight">{result.foodName}</CardTitle>
           <Badge variant="secondary" className="flex-shrink-0">
-            {confidencePct}% match
+            {confidencePct}% совпадение
           </Badge>
         </div>
         <p className="text-3xl font-bold text-emerald-600 mt-1">
@@ -25,30 +25,30 @@ export function NutritionCard({ result }: NutritionCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <NutritionRow
-          label="Protein"
+          label="Белки"
           value={result.protein}
-          unit="g"
+          unit="г"
           max={60}
           color="bg-blue-500"
         />
         <NutritionRow
-          label="Carbohydrates"
+          label="Углеводы"
           value={result.carbs}
-          unit="g"
+          unit="г"
           max={150}
           color="bg-amber-500"
         />
         <NutritionRow
-          label="Fat"
+          label="Жиры"
           value={result.fat}
-          unit="g"
+          unit="г"
           max={80}
           color="bg-red-400"
         />
         <NutritionRow
-          label="Fiber"
+          label="Клетчатка"
           value={result.fiber}
-          unit="g"
+          unit="г"
           max={30}
           color="bg-green-500"
         />

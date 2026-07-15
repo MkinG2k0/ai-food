@@ -12,7 +12,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     const apiError: ApiError = {
-      message: error.response?.data?.message ?? error.message ?? 'Unknown error',
+      message: error.response?.data?.message ?? error.message ?? 'Неизвестная ошибка',
       code: error.response?.data?.code ?? 'UNKNOWN',
       status: error.response?.status ?? 0,
     };
