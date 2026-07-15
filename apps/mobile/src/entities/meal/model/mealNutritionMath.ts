@@ -1,6 +1,6 @@
 import type { FoodItem } from '@ai-food/shared-types';
 
-export type NutrientKey = 'calories' | 'protein' | 'carbs' | 'fat';
+export type NutrientKey = 'calories' | 'protein' | 'carbs' | 'fat' | 'fiber';
 
 export function sanitizeNutrient(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -12,7 +12,7 @@ export function sumItemCalories(items: FoodItem[]): number {
 }
 
 function sumNutrient(items: FoodItem[], key: NutrientKey): number {
-  return items.reduce((sum, item) => sum + item[key], 0);
+  return items.reduce((sum, item) => sum + (item[key] ?? 0), 0);
 }
 
 /** Scale one nutrient across items so their sum equals sanitized target. */
@@ -35,7 +35,7 @@ export function scaleItemsNutrient(
   const ratio = safeTarget / currentSum;
   return items.map((item) => ({
     ...item,
-    [key]: sanitizeNutrient(item[key] * ratio),
+    [key]: sanitizeNutrient((item[key] ?? 0) * ratio),
   }));
 }
 
@@ -43,7 +43,13 @@ export function sanitizeFoodItemPatch(
   patch: Partial<FoodItem>,
 ): Partial<FoodItem> {
   const next: Partial<FoodItem> = { ...patch };
-  const nutrientKeys: NutrientKey[] = ['calories', 'protein', 'carbs', 'fat'];
+  const nutrientKeys: NutrientKey[] = [
+    'calories',
+    'protein',
+    'carbs',
+    'fat',
+    'fiber',
+  ];
   for (const key of nutrientKeys) {
     if (key in next && typeof next[key] === 'number') {
       next[key] = sanitizeNutrient(next[key] as number);

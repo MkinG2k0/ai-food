@@ -38,6 +38,7 @@ export function scaleMealByPortionRatio(
     protein: sanitizeNutrient(item.protein * ratio),
     carbs: sanitizeNutrient(item.carbs * ratio),
     fat: sanitizeNutrient(item.fat * ratio),
+    fiber: sanitizeNutrient((item.fiber ?? 0) * ratio),
     grams: sanitizeNutrient(item.grams * ratio),
   }));
 

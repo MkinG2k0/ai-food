@@ -32,6 +32,7 @@ const baseMeal: Meal = {
       protein: 6,
       carbs: 40,
       fat: 2,
+      fiber: 2,
       grams: 80,
     },
     {
@@ -41,6 +42,7 @@ const baseMeal: Meal = {
       protein: 29,
       carbs: 38,
       fat: 40,
+      fiber: 1,
       grams: 150,
     },
   ],

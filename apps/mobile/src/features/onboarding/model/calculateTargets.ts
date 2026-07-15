@@ -26,5 +26,5 @@ export function calculateTargets(profile: UserProfile): DailyTargets {
   const fat = Math.round((kcal * 0.25) / 9);
   const carbs = Math.round((kcal - protein * 4 - fat * 9) / 4);
 
-  return { kcal, protein, fat, carbs };
+  return { kcal, protein, fat, carbs, fiber: 30 };
 }

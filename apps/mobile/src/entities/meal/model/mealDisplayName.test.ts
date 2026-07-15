@@ -26,6 +26,7 @@ describe('mealDisplayName', () => {
               protein: 1,
               carbs: 4,
               fat: 0,
+              fiber: 1,
               grams: 100,
             },
           ],
@@ -46,6 +47,7 @@ describe('mealDisplayName', () => {
               protein: 1,
               carbs: 4,
               fat: 0,
+              fiber: 1,
               grams: 80,
             },
             {
@@ -55,6 +57,7 @@ describe('mealDisplayName', () => {
               protein: 1,
               carbs: 3,
               fat: 0,
+              fiber: 1,
               grams: 60,
             },
           ],

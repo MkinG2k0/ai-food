@@ -19,6 +19,7 @@ export interface MealNutritionPatch {
   protein?: number;
   carbs?: number;
   fat?: number;
+  fiber?: number;
 }
 
 interface DiaryState {
@@ -39,7 +40,13 @@ interface DiaryState {
   setSelectedDate: (date: Date) => void;
 }
 
-const NUTRIENT_KEYS: NutrientKey[] = ['calories', 'protein', 'carbs', 'fat'];
+const NUTRIENT_KEYS: NutrientKey[] = [
+  'calories',
+  'protein',
+  'carbs',
+  'fat',
+  'fiber',
+];
 
 export const useDiaryStore = create<DiaryState>()(
   persist(

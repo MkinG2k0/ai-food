@@ -5,6 +5,7 @@ export interface FoodItem {
   protein: number;
   carbs: number;
   fat: number;
+  fiber: number;
   grams: number;
 }
 
@@ -80,4 +81,5 @@ export interface DailyTargets {
   protein: number;
   fat: number;
   carbs: number;
+  fiber: number;
 }

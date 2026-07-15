@@ -21,7 +21,7 @@ const mockProfile = {
   dietType: 'none' as const,
 };
 
-const mockTargets = { kcal: 2500, protein: 140, fat: 69, carbs: 288 };
+const mockTargets = { kcal: 2500, protein: 140, fat: 69, carbs: 288, fiber: 30 };
 
 beforeEach(async () => {
   await act(async () => {

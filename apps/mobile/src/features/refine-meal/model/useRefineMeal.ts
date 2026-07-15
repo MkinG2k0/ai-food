@@ -32,6 +32,7 @@ function mapResultToItems(
     protein: number;
     carbs: number;
     fat: number;
+    fiber: number;
     items: Array<{
       name: string;
       calories: number;
@@ -39,6 +40,7 @@ function mapResultToItems(
       carbs: number;
       fat: number;
       grams?: number;
+      fiber?: number;
     }>;
   },
   fallbackItemId?: string,
@@ -51,6 +53,7 @@ function mapResultToItems(
       protein: item.protein,
       carbs: item.carbs,
       fat: item.fat,
+      fiber: item.fiber ?? 0,
       grams: resolveItemGrams({ grams: item.grams ?? 100 }),
     }));
     const totalCalories = items.reduce((sum, item) => sum + item.calories, 0);
@@ -67,6 +70,7 @@ function mapResultToItems(
         protein: result.protein,
         carbs: result.carbs,
         fat: result.fat,
+        fiber: result.fiber,
         grams: 100,
       },
     ],
@@ -103,6 +107,7 @@ export function useRefineMeal() {
           protein: item.protein,
           carbs: item.carbs,
           fat: item.fat,
+          fiber: item.fiber ?? 0,
           grams: item.grams,
         })),
       },

@@ -30,6 +30,7 @@ export function useSaveMeal() {
       protein: 0,
       carbs: 0,
       fat: 0,
+      fiber: 0,
       grams: 100,
     };
 
@@ -90,6 +91,7 @@ export function useSaveMeal() {
           protein: item.protein,
           carbs: item.carbs,
           fat: item.fat,
+          fiber: item.fiber ?? 0,
           grams: resolveItemGrams({ grams: item.grams ?? 100 }),
         }));
         const totalCalories = items.reduce((sum, item) => sum + item.calories, 0);
@@ -112,6 +114,7 @@ export function useSaveMeal() {
               protein: result.protein,
               carbs: result.carbs,
               fat: result.fat,
+              fiber: result.fiber,
               grams: 100,
             },
           ],

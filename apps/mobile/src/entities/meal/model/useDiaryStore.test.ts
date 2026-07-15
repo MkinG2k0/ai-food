@@ -24,6 +24,7 @@ const mockMeal: Meal = {
       protein: 35,
       carbs: 18,
       fat: 12,
+      fiber: 5,
       grams: 100,
     },
   ],
@@ -135,6 +136,7 @@ describe('useDiaryStore', () => {
         protein: 6,
         carbs: 40,
         fat: 2,
+        fiber: 2,
         grams: 80,
       },
       {
@@ -144,6 +146,7 @@ describe('useDiaryStore', () => {
         protein: 24,
         carbs: 0,
         fat: 20,
+        fiber: 0,
         grams: 120,
       },
     ],
@@ -252,8 +255,8 @@ describe('useDiaryStore', () => {
       ...multiItemMeal,
       id: 'z1',
       items: [
-        { id: 'a', name: 'A', calories: 0, protein: 0, carbs: 0, fat: 0, grams: 100 },
-        { id: 'b', name: 'B', calories: 0, protein: 0, carbs: 0, fat: 0, grams: 100 },
+        { id: 'a', name: 'A', calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, grams: 100 },
+        { id: 'b', name: 'B', calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, grams: 100 },
       ],
       totalCalories: 0,
     };
