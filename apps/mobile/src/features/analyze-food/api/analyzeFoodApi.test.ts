@@ -68,7 +68,17 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     await analyzeFoodApi(file);
 
     expect(axios.post).toHaveBeenCalledTimes(1);
-    const [url, body, config] = vi.mocked(axios.post).mock.calls[0];
+    const [url, rawBody, config] = vi.mocked(axios.post).mock.calls[0];
+    const body = rawBody as {
+      model: string;
+      response_format: { type: string };
+      messages: Array<{
+        role: string;
+        content:
+          | string
+          | Array<{ type: string; image_url?: { url: string }; text?: string }>;
+      }>;
+    };
 
     expect(String(url)).toContain('/v1/chat/completions');
     expect(String(url)).toContain(GATEWAY_URL);
@@ -83,8 +93,8 @@ describe('analyzeFoodApi (AI Gateway)', () => {
 
     const userContent = body.messages[1].content;
     expect(Array.isArray(userContent)).toBe(true);
-    const imagePart = userContent.find(
-      (part: { type: string }) => part.type === 'image_url'
+    const imagePart = (userContent as Array<{ type: string; image_url?: { url: string } }>).find(
+      (part) => part.type === 'image_url'
     );
     expect(imagePart?.image_url?.url).toMatch(/^data:image\/png;base64,/);
   });
