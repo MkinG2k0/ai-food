@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
 last_updated: "2026-07-16T00:13:34.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-53i: favorite food
+last_activity: 2026-07-16 - Completed quick task 260716-5gj: PWA + Meal Detail UI/UX
 progress:
   total_phases: 6
   completed_phases: 1
@@ -82,6 +82,7 @@ Recent decisions affecting current work:
 - 260716-4nf: micronutrients qualitative high/medium/low/none on NutritionResult/Meal; Vision prompt; MealSummaryEditor badges «оценка»
 - 260716-51m: MealCard error «Повторить» → useRetryAnalyzeMeal; applyAnalyzeResultToMeal shared with useSaveMeal; loadMealImageAsFile
 - 260716-53i: features/favorites (ai-food-favorites, max 50); MealDetail star; AddFoodSheet «Избранное» → quick-add for selectedDate
+- 260716-5gj: vite-plugin-pwa autoUpdate + safe-area; Meal Detail thicker Полезность/Точность bars, 2×2 macros
 
 ### Pending Todos
 
@@ -121,6 +122,7 @@ None yet.
 | 260716-53i | Favorite food: detail star + quick-add from Home «+» | 2026-07-16 | 4257d07, a1569d5 | [260716-53i-favorite-food](./quick/260716-53i-favorite-food/) |
 | fast | Favorites: photos in list + dedicated `/favorites` page | 2026-07-16 | f479646 | — |
 | 260716-51m | Analyze-food retry «Повторить» on error MealCard | 2026-07-16 | 7454b43, 210f130, a257dbc | [260716-51m-analyze-food-retry-button](./quick/260716-51m-analyze-food-retry-button/) |
+| 260716-5gj | PWA installability + Meal Detail Полезность/Точность layout | 2026-07-16 | bc3f6c8, 7895879 | [260716-5gj-pwa-1-10-ui-ux](./quick/260716-5gj-pwa-1-10-ui-ux/) |
 
 ### Blockers/Concerns
 
