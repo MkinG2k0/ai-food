@@ -10,10 +10,11 @@ import { StepHeight } from './steps/StepHeight';
 import { StepWeight } from './steps/StepWeight';
 import { StepActivity } from './steps/StepActivity';
 import { StepGoal } from './steps/StepGoal';
+import { StepTargetWeight } from './steps/StepTargetWeight';
 import { StepDiet } from './steps/StepDiet';
 import { OnboardingResult } from './OnboardingResult';
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 export function OnboardingPage() {
   const hydrated = useProfileHydrated();
@@ -64,7 +65,14 @@ export function OnboardingPage() {
         {step === 4 && <StepWeight onNext={next} />}
         {step === 5 && <StepActivity onNext={next} />}
         {step === 6 && <StepGoal onNext={next} />}
-        {step === 7 && <StepDiet onNext={next} />}
+        {step === 7 && (
+          <StepTargetWeight
+            onNext={next}
+            currentWeight={draft.weight!}
+            goal={draft.goal!}
+          />
+        )}
+        {step === 8 && <StepDiet onNext={next} />}
         {isResult && targets && (
           <OnboardingResult targets={targets} onStart={finish} />
         )}

@@ -85,6 +85,14 @@ export function SettingsPage() {
                   <dt className="text-muted-foreground">Вес</dt>
                   <dd className="font-medium text-right">{profile.weight} кг</dd>
                 </div>
+                {profile.targetWeight != null && (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Желаемый вес</dt>
+                    <dd className="font-medium text-right">
+                      {profile.targetWeight} кг
+                    </dd>
+                  </div>
+                )}
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Активность</dt>
                   <dd className="font-medium text-right">
