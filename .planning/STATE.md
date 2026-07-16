@@ -130,7 +130,7 @@ None yet.
 | 260716-iqm | Quantitative micronutrients (мг/мкг) + AI daily norms + chart vs norm | 2026-07-16 | e03000e, d09130b, 1a6f6e2 | [260716-iqm-ai](./quick/260716-iqm-ai/) |
 | 260716-j45 | Onboarding result: tips how to photo food for AI | 2026-07-16 | 9c746e8, 557baec | [260716-j45-onboarding-photo-tips](./quick/260716-j45-onboarding-photo-tips/) |
 | 260716-jaa | Onboarding desired weight (targetWeight) after Goal | 2026-07-16 | 50177a8, e01208d, ae67511 | [260716-jaa-onboarding-target-weight](./quick/260716-jaa-onboarding-target-weight/) |
-| 260716-jlq | gpt-4.1 for onboarding micronutrientTargetsApi | 2026-07-16 | 17c6829, 3e96aec | [260716-jlq-use-gpt-4-1-for-onboarding-micronutrient](./quick/260716-jlq-use-gpt-4-1-for-onboarding-micronutrient/) |
+| 260716-jlq | gpt-4.1 for onboarding micronutrientTargetsApi | 2026-07-16 | 17c6829, 3e96aec, 6b7ae04 | [260716-jlq-use-gpt-4-1-for-onboarding-micronutrient](./quick/260716-jlq-use-gpt-4-1-for-onboarding-micronutrient/) |
 
 ### Blockers/Concerns
 
