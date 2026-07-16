@@ -63,6 +63,7 @@ describe('useRefineMeal', () => {
         fat: 21,
         fiber: 3,
         confidence: 0.9,
+        healthiness: 6,
         items: [
           {
             name: 'Булка',
@@ -117,6 +118,8 @@ describe('useRefineMeal', () => {
     expect(meal.imageUri).toBe('meal-images/burger.jpg');
     expect(meal.timestamp).toBe('2026-07-16T10:00:00.000Z');
     expect(meal.status).toBe('ready');
+    expect(meal.healthiness).toBe(6);
+    expect(meal.confidence).toBe(0.9);
   });
 
   it('does not call API when correction is empty', async () => {

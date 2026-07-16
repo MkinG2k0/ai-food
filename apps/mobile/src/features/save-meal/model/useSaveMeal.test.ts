@@ -17,6 +17,7 @@ vi.mock('@/features/analyze-food', () => ({
       fat: 10,
       fiber: 5,
       confidence: 0.9,
+      healthiness: 7,
       items: [
         {
           name: 'Test Food',
@@ -60,6 +61,7 @@ describe('useSaveMeal', () => {
         fat: 10,
         fiber: 5,
         confidence: 0.9,
+        healthiness: 7,
         items: [
           {
             name: 'Test Food',
@@ -133,6 +135,7 @@ describe('useSaveMeal', () => {
         fat: 42,
         fiber: 7,
         confidence: 0.91,
+        healthiness: 5,
         items: [
           {
             name: 'Бургер',
@@ -173,6 +176,8 @@ describe('useSaveMeal', () => {
     expect(meal.items[0].id).not.toBe(meal.items[1].id);
     expect(meal.totalCalories).toBe(850);
     expect(meal.name).toBe('Бургер с картошкой');
+    expect(meal.healthiness).toBe(5);
+    expect(meal.confidence).toBe(0.91);
   });
 
   it('falls back to single FoodItem from foodName when items is empty', async () => {
@@ -185,6 +190,7 @@ describe('useSaveMeal', () => {
         fat: 8,
         fiber: 6,
         confidence: 0.9,
+        healthiness: 8,
         items: [],
       },
       processingTime: 100,
@@ -206,6 +212,8 @@ describe('useSaveMeal', () => {
     expect(meal.items[0].grams).toBe(100);
     expect(meal.totalCalories).toBe(350);
     expect(meal.name).toBe('Овсянка с ягодами');
+    expect(meal.healthiness).toBe(8);
+    expect(meal.confidence).toBe(0.9);
   });
 
   it('sets meal.name from trimmed description for no-image meals', async () => {
