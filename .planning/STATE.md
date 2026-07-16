@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
-last_updated: "2026-07-16T00:13:34.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-i2n: no-food detection error and retry
+last_updated: "2026-07-16T13:42:00.000Z"
+last_activity: 2026-07-16 - Completed quick task 260716-iqm: quantitative micronutrients + AI norms + chart
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Favorites page with photos (`/favorites`)
+Last activity: 2026-07-16 - Completed quick task 260716-iqm: quantitative micronutrients + AI norms + chart
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -80,6 +80,7 @@ Recent decisions affecting current work:
 - 260716-3qy: FoodItem/DailyTargets.fiber; save/refine persist; daily totals + 30 г goal; diary badges/edit «Кл»/клетчатка
 - 260716-4dd: MealCard density=compact (large kcal + Б/Ж/У/К circles); FoodItemDisplayCard keeps pill badges
 - 260716-4nf: micronutrients qualitative high/medium/low/none on NutritionResult/Meal; Vision prompt; MealSummaryEditor badges «оценка»
+- 260716-iqm: MicronutrientEstimate amount+unit (mg/µg); MICRONUTRIENT_UNITS; AI norms after onboarding; chart dailyAvg vs norm
 - 260716-51m: MealCard error «Повторить» → useRetryAnalyzeMeal; applyAnalyzeResultToMeal shared with useSaveMeal; loadMealImageAsFile
 - 260716-53i: features/favorites (ai-food-favorites, max 50); MealDetail star; AddFoodSheet «Избранное» → quick-add for selectedDate
 - 260716-5gj: vite-plugin-pwa autoUpdate + safe-area; Meal Detail thicker Полезность/Точность bars, 2×2 macros
@@ -124,6 +125,7 @@ None yet.
 | 260716-51m | Analyze-food retry «Повторить» on error MealCard | 2026-07-16 | 7454b43, 210f130, a257dbc | [260716-51m-analyze-food-retry-button](./quick/260716-51m-analyze-food-retry-button/) |
 | 260716-5gj | PWA installability + Meal Detail Полезность/Точность layout | 2026-07-16 | bc3f6c8, 7895879 | [260716-5gj-pwa-1-10-ui-ux](./quick/260716-5gj-pwa-1-10-ui-ux/) |
 | 260716-i2n | No-food photo → ошибка распознавания + «Повторить» | 2026-07-16 | 02db668 | [260716-i2n-no-food-detection-error-and-retry](./quick/260716-i2n-no-food-detection-error-and-retry/) |
+| 260716-iqm | Quantitative micronutrients (мг/мкг) + AI daily norms + chart vs norm | 2026-07-16 | e03000e, d09130b, 1a6f6e2 | [260716-iqm-ai](./quick/260716-iqm-ai/) |
 
 ### Blockers/Concerns
 
