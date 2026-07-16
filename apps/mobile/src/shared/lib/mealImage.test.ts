@@ -21,7 +21,7 @@ vi.mock('@capacitor/core', () => ({
   },
 }));
 
-import { saveMealImage, getMealImageSrc } from './mealImage';
+import { saveMealImage, getMealImageSrc, loadMealImageAsFile } from './mealImage';
 
 describe('mealImage', () => {
   beforeEach(() => {
@@ -30,6 +30,30 @@ describe('mealImage', () => {
     readFile.mockReset();
     getUri.mockReset();
   });
+
+  it('loadMealImageAsFile returns a JPEG File from base64 storage data', async () => {
+    // base64 for "hello"
+    readFile.mockResolvedValue({ data: 'aGVsbG8=' });
+
+    const file = await loadMealImageAsFile('meal-images/abc.jpg');
+
+    expect(readFile).toHaveBeenCalledWith({
+      path: 'meal-images/abc.jpg',
+      directory: 'DATA',
+    });
+    expect(file).toBeInstanceOf(File);
+    expect(file!.type).toBe('image/jpeg');
+    expect(file!.name).toBe('retry.jpg');
+  });
+
+  it('loadMealImageAsFile returns null when Filesystem read fails', async () => {
+    readFile.mockRejectedValue(new Error('not found'));
+
+    const file = await loadMealImageAsFile('meal-images/missing.jpg');
+
+    expect(file).toBeNull();
+  });
+
 
   it('saves a file to the filesystem and returns its path', async () => {
     writeFile.mockResolvedValue({ uri: 'file:///meal-images/abc.jpg' });
