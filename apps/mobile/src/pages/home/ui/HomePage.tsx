@@ -32,7 +32,7 @@ export function HomePage() {
       <main className="flex-1 overflow-y-auto px-4 py-4 pb-24">
         <MealList selectedDate={selectedDate} />
       </main>
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-end px-6">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-end px-6 pb-safe-fab">
         <Button
           size="icon"
           className="pointer-events-auto h-14 w-14 rounded-full shadow-lg"
