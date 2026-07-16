@@ -27,9 +27,9 @@ export function OnboardingPage() {
   const targets = isResult ? calculateTargets(draft as UserProfile) : null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background px-6 py-8">
+    <div className="flex h-dvh min-h-0 flex-col bg-background px-6 py-8">
       {!isResult && (
-        <div className="mb-8">
+        <div className="mb-8 shrink-0">
           <div className="flex items-center gap-3 mb-4">
             {step > 1 && (
               <button
@@ -57,7 +57,7 @@ export function OnboardingPage() {
         </div>
       )}
 
-      <div className="flex-1">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {step === 1 && <StepGender onNext={next} />}
         {step === 2 && <StepAge onNext={next} />}
         {step === 3 && <StepHeight onNext={next} />}

@@ -46,7 +46,7 @@ export function OnboardingResult({ targets, onStart }: OnboardingResultProps) {
   ];
 
   return (
-    <div className="flex flex-col gap-6 text-center">
+    <div className="flex flex-col gap-6 pb-4 text-center">
       <OnboardingStepHeader emoji="🎉" title="Ваши цели рассчитаны!" />
       <div className="flex flex-col items-center gap-1">
         <span className="text-5xl leading-none" aria-hidden="true">
