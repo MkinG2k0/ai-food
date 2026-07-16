@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, PenLine, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, PenLine, Star, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ApiError } from '@ai-food/shared-types';
 import { useDiaryStore, useMealImage } from '@/entities/meal';
@@ -14,6 +14,7 @@ import {
   FoodItemDisplayCard,
   MealSummaryEditor,
 } from '@/features/edit-meal';
+import { useFavoritesStore } from '@/features/favorites';
 import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
 import { Button, ImageLightbox } from '@/shared/ui';
 
@@ -23,6 +24,10 @@ export function MealDetailPage() {
   const meals = useDiaryStore((s) => s.meals);
   const meal = meals.find((m) => m.id === id);
   const imageSrc = useMealImage(meal?.imageUri);
+  const isFavorite = useFavoritesStore((s) =>
+    meal ? s.isFavorite(meal.id) : false,
+  );
+  const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
   const [refineOpen, setRefineOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
@@ -50,7 +55,8 @@ export function MealDetailPage() {
     return null;
   }
 
-  const mealId = meal.id;
+  const currentMeal = meal;
+  const mealId = currentMeal.id;
 
   function handleConfirmMealDelete() {
     const deletedId = confirmMealDelete();
@@ -82,6 +88,19 @@ export function MealDetailPage() {
     }
   }
 
+  const canFavorite = currentMeal.status !== 'error';
+
+  function handleToggleFavorite() {
+    const result = toggleFavorite(currentMeal);
+    if (result === 'added') {
+      toast.success('Добавлено в избранное');
+    } else if (result === 'removed') {
+      toast.success('Удалено из избранного');
+    } else if (result === 'limit') {
+      toast.error('Достигнут лимит избранного (50)');
+    }
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="flex items-center px-4 py-4 border-b">
@@ -95,6 +114,25 @@ export function MealDetailPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold ml-2 flex-1">Детали приёма</h1>
+        {canFavorite && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleToggleFavorite}
+            aria-label={
+              isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'
+            }
+          >
+            <Star
+              className={
+                isFavorite
+                  ? 'h-5 w-5 fill-current text-amber-500'
+                  : 'h-5 w-5 text-muted-foreground'
+              }
+            />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -121,7 +159,7 @@ export function MealDetailPage() {
           </button>
         )}
 
-        <MealSummaryEditor meal={meal} />
+        <MealSummaryEditor meal={currentMeal} />
 
         <Button
           variant="outline"

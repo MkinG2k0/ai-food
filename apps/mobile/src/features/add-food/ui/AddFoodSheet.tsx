@@ -1,15 +1,18 @@
 import { useRef, useState } from 'react';
-import { ImageIcon, Camera, PenLine, ArrowLeft } from 'lucide-react';
+import { ImageIcon, Camera, PenLine, ArrowLeft, Star } from 'lucide-react';
 import { BottomSheet, Button, Textarea } from '@/shared/ui';
 import { useSaveMeal } from '@/features/save-meal';
+import { FavoritesList } from '@/features/favorites';
 
 export interface AddFoodSheetProps {
   open: boolean;
   onClose: () => void;
 }
 
+type SheetMode = 'menu' | 'describe' | 'favorites';
+
 export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
-  const [mode, setMode] = useState<'menu' | 'describe'>('menu');
+  const [mode, setMode] = useState<SheetMode>('menu');
   const [text, setText] = useState('');
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -52,6 +55,10 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
 
   const handleDescribeClick = () => {
     setMode('describe');
+  };
+
+  const handleFavoritesClick = () => {
+    setMode('favorites');
   };
 
   const handleBackClick = () => {
@@ -107,6 +114,15 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
                 <PenLine className="h-5 w-5 text-emerald-600" />
                 <span>Описать</span>
               </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3 h-12"
+                onClick={handleFavoritesClick}
+              >
+                <Star className="h-5 w-5 text-emerald-600" />
+                <span>Избранное</span>
+              </Button>
             </div>
 
             <input
@@ -127,6 +143,22 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               className="hidden"
               aria-label="Съёмка камерой"
             />
+          </>
+        ) : mode === 'favorites' ? (
+          <>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackClick}
+                className="px-0"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h2 className="text-lg font-semibold text-foreground">Избранное</h2>
+            </div>
+
+            <FavoritesList onSelect={handleClose} />
           </>
         ) : (
           <>

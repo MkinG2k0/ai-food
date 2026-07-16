@@ -5,3 +5,7 @@ export {
   type ToggleFavoriteResult,
 } from './model/useFavoritesStore';
 export { useQuickAddFavorite } from './model/useQuickAddFavorite';
+export {
+  FavoritesList,
+  type FavoritesListProps,
+} from './ui/FavoritesList';
