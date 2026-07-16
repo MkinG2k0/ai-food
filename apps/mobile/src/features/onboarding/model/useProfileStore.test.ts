@@ -17,6 +17,7 @@ const mockProfile = {
   age: 28,
   height: 178,
   weight: 78,
+  targetWeight: 78,
   activity: 'medium' as const,
   goal: 'maintain' as const,
   dietType: 'none' as const,

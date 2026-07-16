@@ -65,13 +65,17 @@ describe('useOnboarding', () => {
       result.current.next({ weight: 75 });
       result.current.next({ activity: 'medium' });
       result.current.next({ goal: 'maintain' });
+      result.current.next({ targetWeight: 75 });
       result.current.next({ dietType: 'none' });
     });
     await act(async () => {
       await result.current.finish();
     });
     expect(setProfileSpy).toHaveBeenCalledOnce();
-    expect(setProfileSpy.mock.calls[0][0]).toMatchObject({ dietType: 'none' });
+    expect(setProfileSpy.mock.calls[0][0]).toMatchObject({
+      dietType: 'none',
+      targetWeight: 75,
+    });
     expect(setMicronutrientTargetsSpy).toHaveBeenCalledOnce();
     expect(setMicronutrientTargetsSpy.mock.calls[0][0]).toHaveLength(8);
     expect(mockNavigate).toHaveBeenCalledWith('/');
@@ -95,6 +99,34 @@ describe('useOnboarding', () => {
       result.current.next({ weight: 75 });
       result.current.next({ activity: 'medium' });
       result.current.next({ goal: 'maintain' });
+      result.current.next({ targetWeight: 75 });
+    });
+    await act(async () => {
+      await result.current.finish();
+    });
+    expect(setProfileSpy).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('finish() does not call setProfile without targetWeight', async () => {
+    const setProfileSpy = vi.fn();
+    useProfileStore.setState({
+      profile: null,
+      targets: null,
+      micronutrientTargets: null,
+      setProfile: setProfileSpy,
+      isComplete: () => false,
+    });
+
+    const { result } = renderHook(() => useOnboarding());
+    act(() => {
+      result.current.next({ gender: 'male' });
+      result.current.next({ age: 30 });
+      result.current.next({ height: 175 });
+      result.current.next({ weight: 75 });
+      result.current.next({ activity: 'medium' });
+      result.current.next({ goal: 'maintain' });
+      result.current.next({ dietType: 'none' });
     });
     await act(async () => {
       await result.current.finish();

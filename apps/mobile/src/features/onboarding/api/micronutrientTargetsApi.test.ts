@@ -26,6 +26,7 @@ const profile: UserProfile = {
   age: 30,
   height: 165,
   weight: 60,
+  targetWeight: 58,
   activity: 'medium',
   goal: 'maintain',
   dietType: 'none',
@@ -90,6 +91,12 @@ describe('micronutrientTargetsApi', () => {
       expect.objectContaining({
         model: 'gpt-4.1-mini',
         response_format: { type: 'json_object' },
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            role: 'user',
+            content: expect.stringContaining('targetWeight=58'),
+          }),
+        ]),
       }),
       expect.objectContaining({
         headers: expect.objectContaining({
