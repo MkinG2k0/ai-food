@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { FoodItem, Meal } from '@ai-food/shared-types';
 import { capacitorStorage } from '@/shared/lib';
+import { isMealAnalyzeInFlight } from './analyzeInFlight';
 import {
   sanitizeFoodItemPatch,
   scaleItemsNutrient,
@@ -47,6 +48,21 @@ const NUTRIENT_KEYS: NutrientKey[] = [
   'fat',
   'fiber',
 ];
+
+/** Meals left as analyzing after reload/abort have no live request — flip to error for retry. */
+export function recoverStaleAnalyzingMeals(): number {
+  const { meals } = useDiaryStore.getState();
+  let recovered = 0;
+  const next = meals.map((meal) => {
+    if (meal.status !== 'analyzing') return meal;
+    if (isMealAnalyzeInFlight(meal.id)) return meal;
+    recovered += 1;
+    return { ...meal, status: 'error' as const };
+  });
+  if (recovered === 0) return 0;
+  useDiaryStore.setState({ meals: next });
+  return recovered;
+}
 
 export const useDiaryStore = create<DiaryState>()(
   persist(
@@ -155,6 +171,11 @@ export const useDiaryStore = create<DiaryState>()(
       name: 'ai-food-diary',
       storage: createJSONStorage(() => capacitorStorage),
       partialize: (state) => ({ meals: state.meals }),
+      onRehydrateStorage: () => () => {
+        queueMicrotask(() => {
+          recoverStaleAnalyzingMeals();
+        });
+      },
     }
   )
 );

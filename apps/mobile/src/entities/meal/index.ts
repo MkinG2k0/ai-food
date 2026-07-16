@@ -3,7 +3,15 @@ export {
   FoodMacrosBadges,
   type FoodMacrosBadgesProps,
 } from './ui/FoodMacrosBadges';
-export { useDiaryStore } from './model/useDiaryStore';
+export {
+  useDiaryStore,
+  recoverStaleAnalyzingMeals,
+} from './model/useDiaryStore';
+export {
+  beginMealAnalyze,
+  endMealAnalyze,
+  isMealAnalyzeInFlight,
+} from './model/analyzeInFlight';
 export { useMealImage } from './model/useMealImage';
 export { mealDisplayName } from './model/mealDisplayName';
 export { sanitizeNutrient } from './model/mealNutritionMath';

@@ -1,6 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { Meal } from '@ai-food/shared-types';
-import { useDiaryStore } from '@/entities/meal';
+import {
+  beginMealAnalyze,
+  endMealAnalyze,
+  useDiaryStore,
+} from '@/entities/meal';
 import { analyzeFoodApi } from '@/features/analyze-food';
 import { useProfileStore } from '@/features/onboarding';
 import { useSettingsStore } from '@/features/settings';
@@ -35,6 +39,7 @@ export function useRetryAnalyzeMeal() {
       return;
     }
 
+    beginMealAnalyze(mealId);
     updateMeal(mealId, { status: 'analyzing' });
 
     try {
@@ -72,6 +77,8 @@ export function useRetryAnalyzeMeal() {
       applyAnalyzeResultToMeal(mealId, response.result, meal.items[0]?.id);
     } catch {
       updateMeal(mealId, { status: 'error' });
+    } finally {
+      endMealAnalyze(mealId);
     }
   };
 }

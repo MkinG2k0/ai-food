@@ -1,5 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useDiaryStore } from '@/entities/meal';
+import {
+  beginMealAnalyze,
+  endMealAnalyze,
+  useDiaryStore,
+} from '@/entities/meal';
 import { analyzeFoodApi } from '@/features/analyze-food';
 import { useProfileStore } from '@/features/onboarding';
 import { useSettingsStore } from '@/features/settings';
@@ -67,6 +71,7 @@ export function useSaveMeal() {
       status: 'analyzing',
     };
 
+    beginMealAnalyze(mealId);
     addMeal(pendingMeal);
 
     try {
@@ -94,6 +99,8 @@ export function useSaveMeal() {
       applyAnalyzeResultToMeal(mealId, response.result, itemId);
     } catch {
       updateMeal(mealId, { status: 'error' });
+    } finally {
+      endMealAnalyze(mealId);
     }
   };
 }

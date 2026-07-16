@@ -127,6 +127,7 @@ export function FoodItemDisplayCard({
             </div>
 
             <FoodMacrosBadges
+              density="compact"
               calories={item.calories}
               protein={item.protein}
               fat={item.fat}

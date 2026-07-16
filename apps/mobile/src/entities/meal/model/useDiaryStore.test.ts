@@ -9,7 +9,15 @@ vi.mock('@capacitor/preferences', () => ({
   },
 }));
 
-import { useDiaryStore } from './useDiaryStore';
+import {
+  recoverStaleAnalyzingMeals,
+  useDiaryStore,
+} from './useDiaryStore';
+import {
+  beginMealAnalyze,
+  endMealAnalyze,
+  resetMealAnalyzeInFlight,
+} from './analyzeInFlight';
 import { isSameDay } from '@/shared/lib';
 import type { Meal } from '@ai-food/shared-types';
 
@@ -33,10 +41,36 @@ const mockMeal: Meal = {
 
 describe('useDiaryStore', () => {
   beforeEach(async () => {
+    resetMealAnalyzeInFlight();
     await act(async () => {
       await useDiaryStore.persist.rehydrate();
     });
     useDiaryStore.setState({ meals: [], selectedDate: new Date() });
+  });
+
+  it('recoverStaleAnalyzingMeals flips analyzing to error', () => {
+    useDiaryStore.setState({
+      meals: [
+        { ...mockMeal, id: 'a', status: 'analyzing' },
+        { ...mockMeal, id: 'b', status: 'ready' },
+        { ...mockMeal, id: 'c', status: 'error' },
+      ],
+    });
+    expect(recoverStaleAnalyzingMeals()).toBe(1);
+    const meals = useDiaryStore.getState().meals;
+    expect(meals.find((m) => m.id === 'a')?.status).toBe('error');
+    expect(meals.find((m) => m.id === 'b')?.status).toBe('ready');
+    expect(meals.find((m) => m.id === 'c')?.status).toBe('error');
+  });
+
+  it('recoverStaleAnalyzingMeals skips in-flight analyzes', () => {
+    useDiaryStore.setState({
+      meals: [{ ...mockMeal, id: 'live', status: 'analyzing' }],
+    });
+    beginMealAnalyze('live');
+    expect(recoverStaleAnalyzingMeals()).toBe(0);
+    expect(useDiaryStore.getState().meals[0]?.status).toBe('analyzing');
+    endMealAnalyze('live');
   });
 
   it('starts with empty meals', () => {

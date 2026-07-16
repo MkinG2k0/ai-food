@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Utensils, Loader2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Meal } from '@ai-food/shared-types';
@@ -6,6 +7,9 @@ import { useRetryAnalyzeMeal } from '@/features/save-meal';
 import { useMealImage } from '../model/useMealImage';
 import { mealDisplayName } from '../model/mealDisplayName';
 import { FoodMacrosBadges } from './FoodMacrosBadges';
+
+/** After this, an analyzing card is treated as stuck and shows «Повторить». */
+const ANALYZING_STALE_MS = 45_000;
 
 interface MealCardProps {
   meal: Meal;
@@ -18,6 +22,7 @@ export function MealCard({ meal }: MealCardProps) {
   const status = meal.status ?? 'ready';
   const isAnalyzing = status === 'analyzing';
   const isError = status === 'error';
+  const [analyzingStale, setAnalyzingStale] = useState(false);
   const time = new Date(meal.timestamp).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -33,13 +38,28 @@ export function MealCard({ meal }: MealCardProps) {
     { protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
 
+  useEffect(() => {
+    if (!isAnalyzing) {
+      setAnalyzingStale(false);
+      return;
+    }
+    setAnalyzingStale(false);
+    const timer = window.setTimeout(() => {
+      setAnalyzingStale(true);
+    }, ANALYZING_STALE_MS);
+    return () => window.clearTimeout(timer);
+  }, [isAnalyzing, meal.id]);
+
+  const showRetry = isError || (isAnalyzing && analyzingStale);
+  const canOpenDetail = !isAnalyzing && !isError;
+
   function goToDetail() {
-    if (isAnalyzing) return;
+    if (!canOpenDetail) return;
     navigate(`/meal/${meal.id}`);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (isAnalyzing) return;
+    if (!canOpenDetail) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       goToDetail();
@@ -54,27 +74,29 @@ export function MealCard({ meal }: MealCardProps) {
 
   return (
     <Card
-      role={isAnalyzing ? undefined : 'button'}
-      tabIndex={isAnalyzing ? undefined : 0}
+      role={canOpenDetail ? 'button' : undefined}
+      tabIndex={canOpenDetail ? 0 : undefined}
       onClick={goToDetail}
       onKeyDown={handleKeyDown}
       aria-label={
         isAnalyzing
-          ? 'Анализ еды'
+          ? analyzingStale
+            ? `Анализ не завершился, ${time}`
+            : 'Анализ еды'
           : isError
             ? `Ошибка анализа приёма пищи в ${time}`
             : `${title} в ${time}`
       }
-      aria-busy={isAnalyzing}
-      className={isAnalyzing ? '' : 'cursor-pointer '}
+      aria-busy={isAnalyzing && !analyzingStale}
+      className={canOpenDetail ? 'cursor-pointer ' : ''}
     >
       <CardContent className="flex justify-between flex-auto gap-3 p-2 ">
         <div className="h-20 w-20 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
           {imageSrc ? (
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
-          ) : isAnalyzing ? (
+          ) : isAnalyzing && !analyzingStale ? (
             <Loader2 className="h-6 w-6 text-emerald-600 animate-spin" />
-          ) : isError ? (
+          ) : isError || analyzingStale ? (
             <AlertCircle className="h-6 w-6 text-destructive" />
           ) : (
             <Utensils className="h-6 w-6 text-emerald-600" />
@@ -82,7 +104,7 @@ export function MealCard({ meal }: MealCardProps) {
         </div>
 
         <div className="flex flex-col flex-1 min-w-0 space-y-1.5 justify-between">
-          {isAnalyzing ? (
+          {isAnalyzing && !analyzingStale ? (
             <>
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.3s]" />
@@ -90,9 +112,8 @@ export function MealCard({ meal }: MealCardProps) {
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" />
                 <span className="text-sm text-muted-foreground">Анализ еды…</span>
               </div>
-              <Skeleton className="h-4 w-36" />
               <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
-                <Skeleton className="h-5 w-16 shrink-0" />
+                <Skeleton className="h-5 w-14 shrink-0" />
                 <div className="flex flex-nowrap items-center gap-1.5">
                   <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
                   <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
@@ -101,10 +122,10 @@ export function MealCard({ meal }: MealCardProps) {
                 </div>
               </div>
             </>
-          ) : isError ? (
+          ) : showRetry ? (
             <>
               <p className="text-sm font-medium text-destructive">
-                Ошибка анализа…{' '}
+                {isError ? 'Ошибка анализа…' : 'Анализ не завершился…'}{' '}
                 <span className="font-normal text-muted-foreground">{time}</span>
               </p>
               <Button

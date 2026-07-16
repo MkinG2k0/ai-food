@@ -4,6 +4,7 @@ import type {
   ApiError,
   DietType,
 } from '@ai-food/shared-types';
+import { compressImageForAi } from '@/shared/lib';
 import {
   isNutritionResult,
   MICRONUTRIENTS_PROMPT_RULE,
@@ -226,11 +227,13 @@ export async function analyzeFoodApi(
     options?.dietType,
   );
 
-  const userContent = image
+  const imageForAi = image ? await compressImageForAi(image) : null;
+
+  const userContent = imageForAi
     ? [
         {
           type: 'image_url' as const,
-          image_url: { url: await fileToDataUrl(image) },
+          image_url: { url: await fileToDataUrl(imageForAi) },
         },
         {
           type: 'text' as const,
