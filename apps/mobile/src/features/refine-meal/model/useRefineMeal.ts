@@ -125,6 +125,8 @@ export function useRefineMeal() {
       items,
       totalCalories,
       status: 'ready',
+      healthiness: result.healthiness,
+      confidence: result.confidence,
     });
   };
 }

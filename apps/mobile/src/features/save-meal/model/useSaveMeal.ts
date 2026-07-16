@@ -100,6 +100,8 @@ export function useSaveMeal() {
           name: result.foodName,
           totalCalories,
           items,
+          healthiness: result.healthiness,
+          confidence: result.confidence,
         });
       } else {
         updateMeal(mealId, {
@@ -118,6 +120,8 @@ export function useSaveMeal() {
               grams: 100,
             },
           ],
+          healthiness: result.healthiness,
+          confidence: result.confidence,
         });
       }
     } catch {

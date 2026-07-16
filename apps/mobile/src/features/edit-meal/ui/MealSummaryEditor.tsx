@@ -68,6 +68,32 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
         <p className="text-sm text-muted-foreground">
           {formatDate(meal.timestamp)} в {time}
         </p>
+        {(meal.healthiness !== undefined || meal.confidence !== undefined) && (
+          <div className="space-y-2 pt-0.5">
+            {meal.healthiness !== undefined && (
+              <div className="space-y-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">Полезность</span>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {meal.healthiness}/10
+                  </span>
+                </div>
+                <MacroBar value={meal.healthiness} max={10} />
+              </div>
+            )}
+            {meal.confidence !== undefined && (
+              <div className="space-y-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">Точность</span>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {Math.round(meal.confidence * 100)}%
+                  </span>
+                </div>
+                <MacroBar value={Math.round(meal.confidence * 100)} max={100} />
+              </div>
+            )}
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-end gap-3">
