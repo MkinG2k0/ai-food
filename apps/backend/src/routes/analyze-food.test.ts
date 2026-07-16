@@ -115,10 +115,73 @@ describe('POST /analyze-food', () => {
     expect(typeof result.fat).toBe('number');
     expect(typeof result.fiber).toBe('number');
     expect(typeof result.confidence).toBe('number');
+    expect(typeof result.healthiness).toBe('number');
 
     // Confidence must be between 0 and 1
     expect(result.confidence).toBeGreaterThanOrEqual(0);
     expect(result.confidence).toBeLessThanOrEqual(1);
+
+    // Healthiness must be between 1 and 10
+    expect(result.healthiness).toBeGreaterThanOrEqual(1);
+    expect(result.healthiness).toBeLessThanOrEqual(10);
+  });
+
+  it('rejects ANALYSIS_FAILED when healthiness is out of range', async () => {
+    const invalidJson = JSON.stringify({
+      foodName: 'Курица гриль',
+      calories: 300,
+      protein: 40,
+      carbs: 5,
+      fat: 10,
+      fiber: 1,
+      confidence: 0.92,
+      healthiness: 11,
+    });
+
+    const mockCreate = vi.fn().mockResolvedValue({
+      choices: [{ message: { content: invalidJson } }],
+    });
+
+    vi.mocked(OpenAI).mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: mockCreate,
+        },
+      },
+    }) as unknown as OpenAI);
+
+    const app = buildApp();
+    const response = await request(app)
+      .post('/')
+      .attach('image', FAKE_IMAGE, { filename: 'food.jpg', contentType: 'image/jpeg' });
+
+    expect(response.status).toBe(500);
+    expect(response.body.code).toBe('ANALYSIS_FAILED');
+  });
+
+  it('SYSTEM_PROMPT documents healthiness 1–10', async () => {
+    const mockCreate = vi.fn().mockResolvedValue({
+      choices: [{ message: { content: VALID_NUTRITION_JSON } }],
+    });
+
+    vi.mocked(OpenAI).mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: mockCreate,
+        },
+      },
+    }) as unknown as OpenAI);
+
+    const app = buildApp();
+    await request(app)
+      .post('/')
+      .attach('image', FAKE_IMAGE, { filename: 'food.jpg', contentType: 'image/jpeg' });
+
+    const systemMessage = mockCreate.mock.calls[0]?.[0]?.messages?.find(
+      (m: { role: string }) => m.role === 'system',
+    );
+    expect(systemMessage?.content).toMatch(/"healthiness"\s*:\s*number/i);
+    expect(systemMessage?.content).toMatch(/1\s*[–-]\s*10|1 to 10|integer 1/i);
   });
 
   // ERR-03a: No file attached returns 400 INVALID_IMAGE

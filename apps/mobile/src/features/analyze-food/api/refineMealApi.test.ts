@@ -196,6 +196,58 @@ describe('refineMealApi (AI Gateway)', () => {
     } satisfies Partial<ApiError>);
   });
 
+  it('rejects ANALYSIS_FAILED when healthiness is missing', async () => {
+    const withoutHealthiness = {
+      foodName: 'Суп',
+      calories: 200,
+      protein: 10,
+      carbs: 20,
+      fat: 5,
+      fiber: 2,
+      confidence: 0.7,
+      items: [],
+    };
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(withoutHealthiness)),
+    });
+
+    await expect(
+      refineMealApi({ correction: 'меньше соли', mealContext })
+    ).rejects.toMatchObject({
+      code: 'ANALYSIS_FAILED',
+    } satisfies Partial<ApiError>);
+  });
+
+  it.each([0, 11] as const)(
+    'rejects ANALYSIS_FAILED when healthiness is out of range (%s)',
+    async (healthiness) => {
+      vi.mocked(axios.post).mockResolvedValue({
+        data: gatewaySuccessBody(JSON.stringify({ ...validNutrition, healthiness })),
+      });
+
+      await expect(
+        refineMealApi({ correction: 'меньше соли', mealContext })
+      ).rejects.toMatchObject({
+        code: 'ANALYSIS_FAILED',
+      } satisfies Partial<ApiError>);
+    }
+  );
+
+  it('SYSTEM_PROMPT documents healthiness 1–10 alongside confidence', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify({ ...validNutrition, healthiness: 7 })),
+    });
+
+    await refineMealApi({ correction: 'съел половину', mealContext });
+
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const body = rawBody as { messages: Array<{ role: string; content: string }> };
+    const system = body.messages[0].content;
+    expect(system).toMatch(/"healthiness"\s*:\s*number/i);
+    expect(system).toMatch(/1\s*[–-]\s*10|1 to 10|integer 1/i);
+    expect(system).toMatch(/"confidence"\s*:\s*number/i);
+  });
+
   it('maps RATE_LIMITED from gateway', async () => {
     vi.mocked(axios.post).mockRejectedValue({
       response: {

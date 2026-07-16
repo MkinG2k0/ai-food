@@ -275,6 +275,58 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     } satisfies Partial<ApiError>);
   });
 
+  it('rejects ANALYSIS_FAILED when healthiness is missing', async () => {
+    const withoutHealthiness = {
+      foodName: 'Суп',
+      calories: 200,
+      protein: 10,
+      carbs: 20,
+      fat: 5,
+      fiber: 2,
+      confidence: 0.7,
+      items: [],
+    };
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(withoutHealthiness)),
+    });
+
+    const file = new File(['x'], 'food.jpg', { type: 'image/jpeg' });
+    await expect(analyzeFoodApi(file)).rejects.toMatchObject({
+      code: 'ANALYSIS_FAILED',
+    } satisfies Partial<ApiError>);
+  });
+
+  it.each([0, 11, -1] as const)(
+    'rejects ANALYSIS_FAILED when healthiness is out of range (%s)',
+    async (healthiness) => {
+      const outOfRange = { ...validNutrition, healthiness };
+      vi.mocked(axios.post).mockResolvedValue({
+        data: gatewaySuccessBody(JSON.stringify(outOfRange)),
+      });
+
+      const file = new File(['x'], 'food.jpg', { type: 'image/jpeg' });
+      await expect(analyzeFoodApi(file)).rejects.toMatchObject({
+        code: 'ANALYSIS_FAILED',
+      } satisfies Partial<ApiError>);
+    }
+  );
+
+  it('SYSTEM_PROMPT documents healthiness 1–10 alongside confidence', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify({ ...validNutrition, healthiness: 7 })),
+    });
+
+    const file = new File(['x'], 'food.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi(file);
+
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const body = rawBody as { messages: Array<{ role: string; content: string }> };
+    const system = body.messages[0].content;
+    expect(system).toMatch(/"healthiness"\s*:\s*number/i);
+    expect(system).toMatch(/1\s*[–-]\s*10|1 to 10|integer 1/i);
+    expect(system).toMatch(/"confidence"\s*:\s*number/i);
+  });
+
   it.each([
     ['RATE_LIMITED', 'RATE_LIMITED', 429],
     ['UPSTREAM_TIMEOUT', 'ANALYSIS_TIMEOUT', 504],
