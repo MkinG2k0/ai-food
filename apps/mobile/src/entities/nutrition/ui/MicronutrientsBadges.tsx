@@ -1,30 +1,32 @@
-import type {
-  MicronutrientEstimate,
-  MicronutrientLevel,
-} from '@ai-food/shared-types';
+import type { MicronutrientEstimate } from '@ai-food/shared-types';
 import { Badge } from '@/shared/ui';
-import { MICRONUTRIENT_SHORT_LABELS } from '../model/micronutrientLabels';
-
-const LEVEL_LABEL: Record<Exclude<MicronutrientLevel, 'none'>, string> = {
-  high: 'много',
-  medium: 'средне',
-  low: 'мало',
-};
-
-const LEVEL_CLASS: Record<Exclude<MicronutrientLevel, 'none'>, string> = {
-  high: 'bg-emerald-50 text-emerald-800 border-emerald-100',
-  medium: 'bg-amber-50 text-amber-800 border-amber-100',
-  low: 'bg-slate-50 text-slate-600 border-slate-100',
-};
+import {
+  formatMicronutrientUnit,
+  MICRONUTRIENT_SHORT_LABELS,
+} from '../model/micronutrientLabels';
 
 export interface MicronutrientsBadgesProps {
   micronutrients?: MicronutrientEstimate[];
+  /** Optional daily norms — subtle tint by % of norm when present */
+  targets?: MicronutrientEstimate[] | null;
 }
 
-export function MicronutrientsBadges({ micronutrients }: MicronutrientsBadgesProps) {
+function formatAmount(amount: number): string {
+  if (Number.isInteger(amount)) return String(amount);
+  return amount.toFixed(1).replace(/\.0$/, '');
+}
+
+export function MicronutrientsBadges({
+  micronutrients,
+  targets,
+}: MicronutrientsBadgesProps) {
+  const targetById = new Map((targets ?? []).map((t) => [t.id, t]));
+
   const visible = (micronutrients ?? []).filter(
-    (row): row is MicronutrientEstimate & { level: Exclude<MicronutrientLevel, 'none'> } =>
-      row.level !== 'none',
+    (row) =>
+      typeof row.amount === 'number' &&
+      Number.isFinite(row.amount) &&
+      row.amount > 0,
   );
 
   if (visible.length === 0) return null;
@@ -33,21 +35,34 @@ export function MicronutrientsBadges({ micronutrients }: MicronutrientsBadgesPro
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-xs text-muted-foreground">Витамины и минералы</span>
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-          оценка
-        </span>
       </div>
       <div className="flex flex-wrap gap-1">
-        {visible.map((row) => (
-          <Badge
-            key={row.id}
-            variant="secondary"
-            className={`gap-1 font-medium ${LEVEL_CLASS[row.level]}`}
-          >
-            <span>{MICRONUTRIENT_SHORT_LABELS[row.id]}</span>
-            <span className="opacity-70">{LEVEL_LABEL[row.level]}</span>
-          </Badge>
-        ))}
+        {visible.map((row) => {
+          const norm = targetById.get(row.id);
+          const pct =
+            norm && norm.amount > 0 ? Math.min(row.amount / norm.amount, 1.5) : null;
+          const tintClass =
+            pct == null
+              ? 'bg-secondary text-secondary-foreground'
+              : pct >= 0.8
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-100'
+                : pct >= 0.4
+                  ? 'bg-amber-50 text-amber-800 border-amber-100'
+                  : 'bg-slate-50 text-slate-600 border-slate-100';
+
+          return (
+            <Badge
+              key={row.id}
+              variant="secondary"
+              className={`gap-1 font-medium ${tintClass}`}
+            >
+              <span>{MICRONUTRIENT_SHORT_LABELS[row.id]}</span>
+              <span className="opacity-80">
+                {formatAmount(row.amount)} {formatMicronutrientUnit(row.unit)}
+              </span>
+            </Badge>
+          );
+        })}
       </div>
     </div>
   );

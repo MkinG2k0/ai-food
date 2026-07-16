@@ -21,23 +21,24 @@ function makeMeal(partial: Partial<Meal> & Pick<Meal, 'id' | 'timestamp' | 'tota
 const TODAY = new Date(2026, 6, 16, 0, 0, 0, 0);
 
 describe('getWeeklyMicronutrientSeries', () => {
-  it('returns all eight nutrients with zero counts when empty', () => {
+  it('returns all eight nutrients with zero dailyAvg when empty', () => {
     const series = getWeeklyMicronutrientSeries([], 0, TODAY);
     expect(series).toHaveLength(8);
     expect(series.every((p) => micronutrientWeekTotal(p) === 0)).toBe(true);
     expect(weekHasMicronutrientData(series)).toBe(false);
+    expect(series.every((p) => p.unit === 'mg' || p.unit === 'µg')).toBe(true);
   });
 
-  it('aggregates levels from ready meals in the week', () => {
+  it('sums amounts from ready meals and returns dailyAvg = sum/7', () => {
     const meals = [
       makeMeal({
         id: 'a',
         timestamp: localIso(2026, 7, 16, 9),
         totalCalories: 200,
         micronutrients: [
-          { id: 'vitaminC', level: 'high' },
-          { id: 'iron', level: 'medium' },
-          { id: 'vitaminD', level: 'none' },
+          { id: 'vitaminC', amount: 70, unit: 'mg' },
+          { id: 'iron', amount: 3, unit: 'mg' },
+          { id: 'vitaminD', amount: 0, unit: 'µg' },
         ],
       }),
       makeMeal({
@@ -45,32 +46,40 @@ describe('getWeeklyMicronutrientSeries', () => {
         timestamp: localIso(2026, 7, 17, 12),
         totalCalories: 300,
         micronutrients: [
-          { id: 'vitaminC', level: 'medium' },
-          { id: 'iron', level: 'high' },
+          { id: 'vitaminC', amount: 35, unit: 'mg' },
+          { id: 'iron', amount: 4, unit: 'mg' },
         ],
       }),
       makeMeal({
         id: 'out',
         timestamp: localIso(2026, 7, 6, 12),
         totalCalories: 100,
-        micronutrients: [{ id: 'vitaminC', level: 'high' }],
+        micronutrients: [{ id: 'vitaminC', amount: 100, unit: 'mg' }],
       }),
       makeMeal({
         id: 'analyzing',
         timestamp: localIso(2026, 7, 16, 15),
         totalCalories: 0,
         status: 'analyzing',
-        micronutrients: [{ id: 'calcium', level: 'high' }],
+        micronutrients: [{ id: 'calcium', amount: 200, unit: 'mg' }],
+      }),
+      makeMeal({
+        id: 'legacy',
+        timestamp: localIso(2026, 7, 16, 18),
+        totalCalories: 50,
+        micronutrients: [{ id: 'magnesium', level: 'high' } as never],
       }),
     ];
 
     const series = getWeeklyMicronutrientSeries(meals, 0, TODAY);
     const byId = Object.fromEntries(series.map((p) => [p.id, p]));
 
-    expect(byId.vitaminC).toEqual({ id: 'vitaminC', high: 1, medium: 1, low: 0 });
-    expect(byId.iron).toEqual({ id: 'iron', high: 1, medium: 1, low: 0 });
-    expect(byId.vitaminD).toEqual({ id: 'vitaminD', high: 0, medium: 0, low: 0 });
-    expect(byId.calcium).toEqual({ id: 'calcium', high: 0, medium: 0, low: 0 });
+    expect(byId.vitaminC.dailyAvg).toBeCloseTo((70 + 35) / 7, 5);
+    expect(byId.vitaminC.unit).toBe('mg');
+    expect(byId.iron.dailyAvg).toBeCloseTo((3 + 4) / 7, 5);
+    expect(byId.vitaminD.dailyAvg).toBe(0);
+    expect(byId.calcium.dailyAvg).toBe(0);
+    expect(byId.magnesium.dailyAvg).toBe(0);
     expect(weekHasMicronutrientData(series)).toBe(true);
   });
 });

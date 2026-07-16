@@ -10,6 +10,7 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 import { useProfileStore } from './useProfileStore';
+import { defaultMicronutrientTargets } from './defaultMicronutrientTargets';
 
 const mockProfile = {
   gender: 'male' as const,
@@ -27,12 +28,13 @@ beforeEach(async () => {
   await act(async () => {
     await useProfileStore.persist.rehydrate();
   });
-  useProfileStore.setState({ profile: null, targets: null });
+  useProfileStore.setState({ profile: null, targets: null, micronutrientTargets: null });
 });
 
 describe('useProfileStore', () => {
   it('starts with no profile', () => {
     expect(useProfileStore.getState().profile).toBeNull();
+    expect(useProfileStore.getState().micronutrientTargets).toBeNull();
   });
 
   it('isComplete returns false when profile is null', () => {
@@ -54,13 +56,17 @@ describe('useProfileStore', () => {
     expect(useProfileStore.getState().isComplete()).toBe(true);
   });
 
-  it('resetProfile clears profile and targets', async () => {
+  it('resetProfile clears profile, targets, and micronutrientTargets', async () => {
     await act(async () => {
       useProfileStore.getState().setProfile(mockProfile, mockTargets);
+      useProfileStore.getState().setMicronutrientTargets(
+        defaultMicronutrientTargets('male'),
+      );
       useProfileStore.getState().resetProfile();
     });
     expect(useProfileStore.getState().profile).toBeNull();
     expect(useProfileStore.getState().targets).toBeNull();
+    expect(useProfileStore.getState().micronutrientTargets).toBeNull();
     expect(useProfileStore.getState().isComplete()).toBe(false);
   });
 

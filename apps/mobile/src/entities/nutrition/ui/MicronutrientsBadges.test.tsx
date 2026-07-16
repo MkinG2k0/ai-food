@@ -1,33 +1,30 @@
-import type {
-  MicronutrientEstimate,
-  MicronutrientId,
-  MicronutrientLevel,
-} from '@ai-food/shared-types';
+import type { MicronutrientEstimate, MicronutrientId } from '@ai-food/shared-types';
 import { describe, expect, it } from 'vitest';
 import { MicronutrientsBadges } from './MicronutrientsBadges';
 import { render, screen } from '@testing-library/react';
 
 const sample: MicronutrientEstimate[] = [
-  { id: 'vitaminC' as MicronutrientId, level: 'high' as MicronutrientLevel },
-  { id: 'iron' as MicronutrientId, level: 'medium' as MicronutrientLevel },
-  { id: 'vitaminD' as MicronutrientId, level: 'none' as MicronutrientLevel },
+  { id: 'vitaminC' as MicronutrientId, amount: 45, unit: 'mg' },
+  { id: 'iron' as MicronutrientId, amount: 2.5, unit: 'mg' },
+  { id: 'vitaminD' as MicronutrientId, amount: 0, unit: 'µg' },
 ];
 
 describe('MicronutrientsBadges', () => {
-  it('renders visible levels and hides none', () => {
+  it('renders amount + Russian unit and hides zeros', () => {
     render(<MicronutrientsBadges micronutrients={sample} />);
     expect(screen.getByText('C')).toBeInTheDocument();
-    expect(screen.getByText('много')).toBeInTheDocument();
+    expect(screen.getByText(/45 мг/)).toBeInTheDocument();
     expect(screen.getByText('Железо')).toBeInTheDocument();
-    expect(screen.getByText('средне')).toBeInTheDocument();
+    expect(screen.getByText(/2\.5 мг/)).toBeInTheDocument();
     expect(screen.queryByText('D')).not.toBeInTheDocument();
-    expect(screen.getByText('оценка')).toBeInTheDocument();
+    expect(screen.queryByText('много')).not.toBeInTheDocument();
+    expect(screen.queryByText('оценка')).not.toBeInTheDocument();
   });
 
-  it('returns null when empty or only none', () => {
+  it('returns null when empty or only zeros', () => {
     const { container } = render(
       <MicronutrientsBadges
-        micronutrients={[{ id: 'calcium', level: 'none' }]}
+        micronutrients={[{ id: 'calcium', amount: 0, unit: 'mg' }]}
       />,
     );
     expect(container.firstChild).toBeNull();

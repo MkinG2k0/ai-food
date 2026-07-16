@@ -6,4 +6,5 @@ export {
 export {
   MICRONUTRIENT_LABELS,
   MICRONUTRIENT_SHORT_LABELS,
+  formatMicronutrientUnit,
 } from './model/micronutrientLabels';

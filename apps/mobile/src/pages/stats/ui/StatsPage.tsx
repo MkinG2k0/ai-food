@@ -17,6 +17,7 @@ export function StatsPage() {
   const meals = useDiaryStore((s) => s.meals);
   const profile = useProfileStore((s) => s.profile);
   const targets = useProfileStore((s) => s.targets);
+  const micronutrientTargets = useProfileStore((s) => s.micronutrientTargets);
   const [weekOffset, setWeekOffset] = useState(0);
   const goalKcal = targets?.kcal ?? FALLBACK_GOAL_KCAL;
 
@@ -58,6 +59,7 @@ export function StatsPage() {
           meals={meals}
           weekOffset={weekOffset}
           onWeekChange={(delta) => setWeekOffset((o) => o + delta)}
+          micronutrientTargets={micronutrientTargets}
         />
         <p className="text-center text-[11px] text-muted-foreground">
           Свайп витаминов — та же неделя, что у калорий
