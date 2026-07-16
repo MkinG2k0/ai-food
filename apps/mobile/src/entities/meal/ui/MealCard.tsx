@@ -1,7 +1,8 @@
 import { Utensils, Loader2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Meal } from '@ai-food/shared-types';
-import { Card, CardContent, Skeleton } from '@/shared/ui';
+import { Button, Card, CardContent, Skeleton } from '@/shared/ui';
+import { useRetryAnalyzeMeal } from '@/features/save-meal';
 import { useMealImage } from '../model/useMealImage';
 import { mealDisplayName } from '../model/mealDisplayName';
 import { FoodMacrosBadges } from './FoodMacrosBadges';
@@ -12,6 +13,7 @@ interface MealCardProps {
 
 export function MealCard({ meal }: MealCardProps) {
   const navigate = useNavigate();
+  const retry = useRetryAnalyzeMeal();
   const imageSrc = useMealImage(meal.imageUri);
   const status = meal.status ?? 'ready';
   const isAnalyzing = status === 'analyzing';
@@ -42,6 +44,12 @@ export function MealCard({ meal }: MealCardProps) {
       e.preventDefault();
       goToDetail();
     }
+  }
+
+  function handleRetry(e: React.MouseEvent) {
+    e.stopPropagation();
+    e.preventDefault();
+    void retry(meal.id);
   }
 
   return (
@@ -99,6 +107,15 @@ export function MealCard({ meal }: MealCardProps) {
                 Ошибка анализа…{' '}
                 <span className="font-normal text-muted-foreground">{time}</span>
               </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="w-fit"
+                onClick={handleRetry}
+              >
+                Повторить
+              </Button>
             </>
           ) : (
             <>

@@ -46,7 +46,9 @@ export async function loadMealImageAsFile(path: string): Promise<File | null> {
     const { data } = await Filesystem.readFile({ path, directory: Directory.Data });
     if (typeof data === 'string' && data.length > 0) {
       const bytes = base64ToUint8Array(data);
-      return new File([bytes], 'retry.jpg', { type: 'image/jpeg' });
+      const copy = new Uint8Array(bytes.byteLength);
+      copy.set(bytes);
+      return new File([copy.buffer], 'retry.jpg', { type: 'image/jpeg' });
     }
     if (data instanceof Blob) {
       return new File([data], 'retry.jpg', { type: 'image/jpeg' });
