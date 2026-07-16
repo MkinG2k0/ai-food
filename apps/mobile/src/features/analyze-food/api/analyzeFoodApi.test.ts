@@ -425,6 +425,52 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     expect(systemContent).not.toMatch(/1 шт|1 порция|piece-count|serving-count|шт»|порция»/i);
   });
 
+  it('SYSTEM_PROMPT requires grams, healthiness bands, portion estimation, and few-shot noFood', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi(file);
+
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const systemContent = (
+      rawBody as { messages: Array<{ role: string; content: string }> }
+    ).messages[0].content;
+
+    expect(systemContent).toMatch(/grams/i);
+    expect(systemContent).toMatch(/обязательн/i);
+    expect(systemContent).toMatch(/порци/i);
+    expect(systemContent).toMatch(/1\s*[–-]\s*3|ультрапереработан|цельные продукты/i);
+    expect(systemContent).toMatch(/healthiness/i);
+    expect(systemContent).toMatch(/"noFood"\s*:\s*true|"noFood":true/i);
+    expect(systemContent).toMatch(/Пример B|пример B|селфи|человек/i);
+  });
+
+  it('vision user text matches locked D-03 portion/grams instructions', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi(file);
+
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const userContent = (
+      rawBody as {
+        messages: Array<{
+          role: string;
+          content: Array<{ type: string; text?: string }>;
+        }>;
+      }
+    ).messages[1].content;
+
+    const textPart = userContent.find((part) => part.type === 'text');
+    expect(textPart?.text).toBe(
+      'Оцени видимую порцию на фото. Разбей состав на items с обязательными grams. Учти способ приготовления. Не выдумывай еду, если её нет. Верни только JSON по схеме.',
+    );
+  });
+
   it('appends non-empty trimmed customInstructions to system message', async () => {
     vi.mocked(axios.post).mockResolvedValue({
       data: gatewaySuccessBody(JSON.stringify(validNutrition)),
@@ -587,6 +633,8 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     expect(body.messages[1].role).toBe('user');
     expect(typeof body.messages[1].content).toBe('string');
     expect(body.messages[1].content).toContain('куриный салат с рисом');
+    expect(String(body.messages[1].content)).toMatch(/grams|порци/i);
+    expect(String(body.messages[1].content)).toMatch(/JSON/i);
     expect(String(body.messages[0].content)).toMatch(/опис|describe|текст/i);
   });
 
