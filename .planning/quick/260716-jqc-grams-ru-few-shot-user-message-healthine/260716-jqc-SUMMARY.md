@@ -86,7 +86,7 @@ status: complete
 1. **Task 1: RU-structured prompts + stronger user messages** — `3a17608` (feat)
 2. **Task 2: Align prompt fragment tests** — `b3f0f8f` (test)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `c2bc136` (docs: complete plan)
 
 ## Files Created/Modified
 
