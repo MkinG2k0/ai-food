@@ -2,10 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
+current_phase: 1
+current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260716-jlq
-last_updated: "2026-07-16T14:12:00.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-jlq: gpt-4.1 for onboarding micronutrientTargetsApi
+stopped_at: Completed quick task 260716-jqc
+last_updated: "2026-07-16T11:19:00.000Z"
+last_activity: 2026-07-16
+last_activity_desc: "Completed quick task 260716-jqc: RU grams/few-shot analyze prompts"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-jlq: gpt-4.1 for onboarding micronutrientTargetsApi
+Last activity: 2026-07-16 - Completed quick task 260716-jqc: RU grams/few-shot analyze prompts
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -78,6 +81,7 @@ Recent decisions affecting current work:
 - 260716-3nc: DietType on UserProfile (none/halal/vegan/vegetarian); appendDietPreference with Halal-only pork→chicken bias; Settings diet edit
 - 260716-jaa: UserProfile.targetWeight; onboarding StepTargetWeight after Goal (TOTAL_STEPS=8); micronutrient userText; macros still from weight
 - 260716-jlq: micronutrientTargetsApi model gpt-4.1 (not mini); analyze/refine unchanged
+- 260716-jqc: RU-structured analyze prompts; grams REQUIRED; few-shot A/B; locked vision user text D-03
 - 260716-3nq: Settings profile summary + resetProfile redo onboarding (diary/customInstructions kept)
 - 260716-3qy: FoodItem/DailyTargets.fiber; save/refine persist; daily totals + 30 г goal; diary badges/edit «Кл»/клетчатка
 - 260716-4dd: MealCard density=compact (large kcal + Б/Ж/У/К circles); FoodItemDisplayCard keeps pill badges
@@ -131,6 +135,7 @@ None yet.
 | 260716-j45 | Onboarding result: tips how to photo food for AI | 2026-07-16 | 9c746e8, 557baec | [260716-j45-onboarding-photo-tips](./quick/260716-j45-onboarding-photo-tips/) |
 | 260716-jaa | Onboarding desired weight (targetWeight) after Goal | 2026-07-16 | 50177a8, e01208d, ae67511 | [260716-jaa-onboarding-target-weight](./quick/260716-jaa-onboarding-target-weight/) |
 | 260716-jlq | gpt-4.1 for onboarding micronutrientTargetsApi | 2026-07-16 | 17c6829, 3e96aec, 6b7ae04 | [260716-jlq-use-gpt-4-1-for-onboarding-micronutrient](./quick/260716-jlq-use-gpt-4-1-for-onboarding-micronutrient/) |
+| 260716-jqc | RU grams/few-shot analyze prompts + stronger user messages | 2026-07-16 | 3a17608, b3f0f8f | [260716-jqc-grams-ru-few-shot-user-message-healthine](./quick/260716-jqc-grams-ru-few-shot-user-message-healthine/) |
 
 ### Blockers/Concerns
 
@@ -139,7 +144,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-24T18:28:45.469Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-backend-openai-vision-proxy/01-VERIFICATION.md (Phase 1 done)
+Last session: 2026-07-16T11:19:00.000Z
+Stopped at: Completed quick task 260716-jqc
+Resume file: None
 Next: Run /gsd-plan-phase for Phase 2 (Photo Capture & Analysis Loading)
