@@ -21,7 +21,7 @@ Return exactly:
 Rules:
 - Include all 8 ids exactly once.
 - Units: vitaminA, vitaminD, vitaminB12, folate → "µg"; vitaminC, iron, calcium, magnesium → "mg".
-- amount ≥ 0; use typical adult daily values adjusted for gender, age, height, weight, targetWeight, activity, goal, dietType.
+- amount ≥ 0; use typical adult daily values adjusted for gender, age, height, weight, targetWeight, targetWeightDate, activity, goal, dietType.
 - No text outside JSON.`;
 
 function normalizeTargetRows(value: unknown): MicronutrientEstimate[] {
@@ -87,6 +87,7 @@ export async function micronutrientTargetsApi(
     `height=${profile.height}`,
     `weight=${profile.weight}`,
     `targetWeight=${profile.targetWeight}`,
+    `targetWeightDate=${profile.targetWeightDate}`,
     `activity=${profile.activity}`,
     `goal=${profile.goal}`,
     `dietType=${profile.dietType}`,

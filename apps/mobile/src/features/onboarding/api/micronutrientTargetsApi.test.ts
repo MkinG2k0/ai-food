@@ -27,6 +27,7 @@ const profile: UserProfile = {
   height: 165,
   weight: 60,
   targetWeight: 58,
+  targetWeightDate: '2026-10-16',
   activity: 'medium',
   goal: 'maintain',
   dietType: 'none',
@@ -94,7 +95,9 @@ describe('micronutrientTargetsApi', () => {
         messages: expect.arrayContaining([
           expect.objectContaining({
             role: 'user',
-            content: expect.stringContaining('targetWeight=58'),
+            content: expect.stringMatching(
+              /targetWeight=58.*targetWeightDate=2026-10-16/,
+            ),
           }),
         ]),
       }),

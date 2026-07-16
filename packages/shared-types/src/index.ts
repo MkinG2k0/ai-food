@@ -119,6 +119,8 @@ export interface UserProfile {
   weight: number;
   /** Desired weight in kg (onboarding target) */
   targetWeight: number;
+  /** Deadline to reach targetWeight (YYYY-MM-DD) */
+  targetWeightDate: string;
   activity: ActivityLevel;
   goal: Goal;
   dietType: DietType;
