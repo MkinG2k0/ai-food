@@ -6,6 +6,7 @@ import {
   appendDietPreference,
   COMPOSITION_PROMPT_RULE,
   FOOD_NAME_PROMPT_RULE,
+  NO_FOOD_PROMPT_RULE,
   MICRONUTRIENTS_PROMPT_RULE,
 } from './analyzeFoodApi';
 
@@ -90,6 +91,19 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     expect(result.result).toEqual(validNutrition);
     expect(result.result.items).toHaveLength(2);
     expect(result.processingTime).toBeGreaterThanOrEqual(0);
+  });
+
+  it('rejects NO_FOOD_DETECTED when model returns noFood JSON', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify({ noFood: true, reason: 'На фото кот' })),
+    });
+
+    const file = new File(['fake-image'], 'cat.jpg', { type: 'image/jpeg' });
+    await expect(analyzeFoodApi(file)).rejects.toMatchObject({
+      code: 'NO_FOOD_DETECTED',
+      status: 422,
+      message: expect.stringMatching(/не обнаружена еда/i),
+    } satisfies Partial<ApiError>);
   });
 
   it('accepts empty items array when top-level NutritionResult fields are valid', async () => {
@@ -400,6 +414,7 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     const systemContent = body.messages[0].content;
 
     expect(systemContent).toContain(FOOD_NAME_PROMPT_RULE);
+    expect(systemContent).toContain(NO_FOOD_PROMPT_RULE);
     expect(systemContent).toContain(COMPOSITION_PROMPT_RULE);
     expect(systemContent).toContain(MICRONUTRIENTS_PROMPT_RULE);
     expect(systemContent).toMatch(/"micronutrients"/);

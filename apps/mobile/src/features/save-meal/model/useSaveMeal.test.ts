@@ -327,6 +327,25 @@ describe('useSaveMeal', () => {
     expect(meal.status).toBe('error');
   });
 
+  it('stores analyzeErrorCode NO_FOOD_DETECTED when photo has no food', async () => {
+    vi.mocked(analyzeFoodApi).mockRejectedValue({
+      message: 'На фото не обнаружена еда. Сфотографируйте блюдо и попробуйте снова.',
+      code: 'NO_FOOD_DETECTED',
+      status: 422,
+    });
+
+    const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
+    const file = new File(['img'], 'cat.jpg', { type: 'image/jpeg' });
+
+    await act(async () => {
+      await result.current({ image: file });
+    });
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.status).toBe('error');
+    expect(meal.analyzeErrorCode).toBe('NO_FOOD_DETECTED');
+  });
+
   it('sets meal.name to Без названия when no-image description is empty', async () => {
     const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
 

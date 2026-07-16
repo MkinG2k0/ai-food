@@ -47,6 +47,8 @@ export interface Meal {
   healthiness?: number;
   /** AI recognition confidence 0–1; omitted on legacy meals */
   confidence?: number;
+  /** Last analyze failure code; set when status is error */
+  analyzeErrorCode?: string;
   /** Qualitative micronutrient levels; omitted on legacy meals */
   micronutrients?: MicronutrientEstimate[];
 }

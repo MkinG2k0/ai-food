@@ -52,6 +52,12 @@ export function MealCard({ meal }: MealCardProps) {
 
   const showRetry = isError || (isAnalyzing && analyzingStale);
   const canOpenDetail = !isAnalyzing && !isError;
+  const errorLabel =
+    meal.analyzeErrorCode === 'NO_FOOD_DETECTED'
+      ? 'На фото не обнаружена еда…'
+      : isError
+        ? 'Ошибка анализа…'
+        : 'Анализ не завершился…';
 
   function goToDetail() {
     if (!canOpenDetail) return;
@@ -84,7 +90,7 @@ export function MealCard({ meal }: MealCardProps) {
             ? `Анализ не завершился, ${time}`
             : 'Анализ еды'
           : isError
-            ? `Ошибка анализа приёма пищи в ${time}`
+            ? `${errorLabel} приёма пищи в ${time}`
             : `${title} в ${time}`
       }
       aria-busy={isAnalyzing && !analyzingStale}
@@ -125,7 +131,7 @@ export function MealCard({ meal }: MealCardProps) {
           ) : showRetry ? (
             <>
               <p className="text-sm font-medium text-destructive">
-                {isError ? 'Ошибка анализа…' : 'Анализ не завершился…'}{' '}
+                {errorLabel}{' '}
                 <span className="font-normal text-muted-foreground">{time}</span>
               </p>
               <Button

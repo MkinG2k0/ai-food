@@ -10,6 +10,7 @@ import { useSettingsStore } from '@/features/settings';
 import { saveMealImage, timestampForSelectedDate } from '@/shared/lib';
 import type { Meal, FoodItem } from '@ai-food/shared-types';
 import { applyAnalyzeResultToMeal } from './applyAnalyzeResultToMeal';
+import { analyzeErrorPatch } from './analyzeErrorPatch';
 
 export interface SubmitFoodInput {
   image?: File | null;
@@ -97,8 +98,8 @@ export function useSaveMeal() {
               ),
       });
       applyAnalyzeResultToMeal(mealId, response.result, itemId);
-    } catch {
-      updateMeal(mealId, { status: 'error' });
+    } catch (error) {
+      updateMeal(mealId, analyzeErrorPatch(error));
     } finally {
       endMealAnalyze(mealId);
     }

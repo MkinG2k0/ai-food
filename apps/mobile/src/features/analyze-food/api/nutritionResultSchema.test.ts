@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isNoFoodResult,
   isNutritionResult,
   normalizeMicronutrients,
   MICRONUTRIENTS_PROMPT_RULE,
+  NO_FOOD_PROMPT_RULE,
 } from './nutritionResultSchema';
 
 describe('nutritionResultSchema micronutrients', () => {
@@ -67,5 +69,23 @@ describe('nutritionResultSchema micronutrients', () => {
     expect(MICRONUTRIENTS_PROMPT_RULE).toMatch(/vitaminB12/);
     expect(MICRONUTRIENTS_PROMPT_RULE).toMatch(/magnesium/);
     expect(MICRONUTRIENTS_PROMPT_RULE).toMatch(/high\|medium\|low\|none/);
+  });
+});
+
+describe('nutritionResultSchema noFood', () => {
+  it('isNoFoodResult accepts valid noFood payload', () => {
+    expect(isNoFoodResult({ noFood: true, reason: 'На фото человек' })).toBe(true);
+  });
+
+  it('isNoFoodResult rejects nutrition-shaped payload', () => {
+    expect(isNoFoodResult({ foodName: 'Суп', calories: 100 })).toBe(false);
+    expect(isNoFoodResult({ noFood: false, reason: 'x' })).toBe(false);
+    expect(isNoFoodResult({ noFood: true, reason: '' })).toBe(false);
+  });
+
+  it('NO_FOOD_PROMPT_RULE forbids inventing dish names for non-food photos', () => {
+    expect(NO_FOOD_PROMPT_RULE).toMatch(/noFood/i);
+    expect(NO_FOOD_PROMPT_RULE).toMatch(/животн|люди|человек/i);
+    expect(NO_FOOD_PROMPT_RULE).toMatch(/Неизвестное блюдо|Нет еды|Человек/);
   });
 });

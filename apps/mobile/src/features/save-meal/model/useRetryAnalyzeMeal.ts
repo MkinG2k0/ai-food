@@ -10,6 +10,7 @@ import { useProfileStore } from '@/features/onboarding';
 import { useSettingsStore } from '@/features/settings';
 import { loadMealImageAsFile } from '@/shared/lib';
 import { applyAnalyzeResultToMeal } from './applyAnalyzeResultToMeal';
+import { analyzeErrorPatch } from './analyzeErrorPatch';
 
 const ANALYZING_PLACEHOLDER = 'Анализ…';
 
@@ -40,7 +41,7 @@ export function useRetryAnalyzeMeal() {
     }
 
     beginMealAnalyze(mealId);
-    updateMeal(mealId, { status: 'analyzing' });
+    updateMeal(mealId, { status: 'analyzing', analyzeErrorCode: undefined });
 
     try {
       const customInstructions = useSettingsStore.getState().customInstructions;
@@ -75,8 +76,8 @@ export function useRetryAnalyzeMeal() {
               ),
       });
       applyAnalyzeResultToMeal(mealId, response.result, meal.items[0]?.id);
-    } catch {
-      updateMeal(mealId, { status: 'error' });
+    } catch (error) {
+      updateMeal(mealId, analyzeErrorPatch(error));
     } finally {
       endMealAnalyze(mealId);
     }

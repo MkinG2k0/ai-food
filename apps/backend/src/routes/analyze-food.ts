@@ -36,7 +36,17 @@ const NutritionResultSchema = z.object({
   items: z.array(NutritionItemSchema).default([]),
 });
 
-const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object with these exact fields:
+const NO_FOOD_PROMPT_RULE = `Если на изображении НЕТ съедобной еды или напитка — верни ТОЛЬКО JSON:
+{ "noFood": true, "reason": string (кратко на русском, что на фото вместо еды) }
+Случаи noFood: люди, животные, пейзажи, предметы, неясное/размытое фото, пустая тарелка без еды, грязь/мусор, текст/скриншоты.
+НЕ придумывай блюдо и НЕ возвращай КБЖУ для таких фото. НЕ пиши foodName вроде «Неизвестное блюдо», «Нет еды», «Человек».
+Если еда есть — верни обычную схему питания БЕЗ поля noFood.`;
+
+const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object.
+
+${NO_FOOD_PROMPT_RULE}
+
+If food or drink IS visible, return ONLY a JSON object with these exact fields:
 {
   "foodName": string (название блюда или продукта на русском языке, не на английском),
   "calories": number (total kilocalories for a typical serving),
@@ -49,6 +59,11 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food 
 }
 Все текстовые значения полей (в частности foodName) пиши на русском языке.
 Do not include any text outside the JSON object.`;
+
+const NoFoodResultSchema = z.object({
+  noFood: z.literal(true),
+  reason: z.string().min(1),
+});
 
 function sendApiError(res: Response, status: number, code: string, message: string): void {
   const body: ApiError = { message, code, status };
@@ -108,7 +123,18 @@ router.post('/', uploadMiddleware, async (req: Request, res: Response) => {
 
     let parsed;
     try {
-      parsed = NutritionResultSchema.parse(JSON.parse(rawContent));
+      const json = JSON.parse(rawContent);
+      const noFood = NoFoodResultSchema.safeParse(json);
+      if (noFood.success) {
+        sendApiError(
+          res,
+          422,
+          'NO_FOOD_DETECTED',
+          'На фото не обнаружена еда. Сфотографируйте блюдо и попробуйте снова.',
+        );
+        return;
+      }
+      parsed = NutritionResultSchema.parse(json);
     } catch (validationError) {
       console.error('Zod/JSON parse error:', validationError);
       sendApiError(res, 500, 'ANALYSIS_FAILED', 'Ответ анализа не соответствует ожидаемой схеме.');

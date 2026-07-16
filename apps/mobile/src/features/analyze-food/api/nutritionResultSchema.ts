@@ -9,6 +9,24 @@ import { MICRONUTRIENT_IDS } from '@ai-food/shared-types';
 const LEVELS = new Set<MicronutrientLevel>(['high', 'medium', 'low', 'none']);
 const ID_SET = new Set<string>(MICRONUTRIENT_IDS);
 
+/** AI response when the image does not contain edible food. */
+export interface NoFoodResult {
+  noFood: true;
+  reason: string;
+}
+
+export const NO_FOOD_PROMPT_RULE = `Если на изображении НЕТ съедобной еды или напитка — верни ТОЛЬКО JSON:
+{ "noFood": true, "reason": string (кратко на русском, что на фото вместо еды) }
+Случаи noFood: люди, животные, пейзажи, предметы, неясное/размытое фото, пустая тарелка без еды, грязь/мусор, текст/скриншоты.
+НЕ придумывай блюдо и НЕ возвращай КБЖУ для таких фото. НЕ пиши foodName вроде «Неизвестное блюдо», «Нет еды», «Человек».
+Если еда есть — верни обычную схему питания БЕЗ поля noFood.`;
+
+export function isNoFoodResult(value: unknown): value is NoFoodResult {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return v.noFood === true && typeof v.reason === 'string' && v.reason.trim().length > 0;
+}
+
 export const MICRONUTRIENTS_PROMPT_RULE = `micronutrients — массив из ровно 8 объектов { "id", "level" } для всей порции:
 id ∈ vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium;
 level ∈ high|medium|low|none — качественная оценка вклада этой порции (не мг и не меддиагноз).

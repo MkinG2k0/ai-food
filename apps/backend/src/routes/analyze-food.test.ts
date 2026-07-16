@@ -285,4 +285,34 @@ describe('POST /analyze-food', () => {
     expect(response.status).toBe(500);
     expect(response.body.code).toBe('ANALYSIS_FAILED');
   });
+
+  it('returns 422 NO_FOOD_DETECTED when OpenAI returns noFood JSON', async () => {
+    const mockCreate = vi.fn().mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({ noFood: true, reason: 'На фото кошка' }),
+          },
+        },
+      ],
+    });
+
+    vi.mocked(OpenAI).mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: mockCreate,
+        },
+      },
+    }) as unknown as OpenAI);
+
+    const app = buildApp();
+
+    const response = await request(app)
+      .post('/')
+      .attach('image', FAKE_IMAGE, { filename: 'cat.jpg', contentType: 'image/jpeg' });
+
+    expect(response.status).toBe(422);
+    expect(response.body.code).toBe('NO_FOOD_DETECTED');
+    expect(response.body.message).toMatch(/не обнаружена еда/i);
+  });
 });

@@ -29,6 +29,7 @@ export function applyAnalyzeResultToMeal(
       healthiness: result.healthiness,
       confidence: result.confidence,
       micronutrients: result.micronutrients,
+      analyzeErrorCode: undefined,
     });
     return;
   }
@@ -52,5 +53,6 @@ export function applyAnalyzeResultToMeal(
     healthiness: result.healthiness,
     confidence: result.confidence,
     micronutrients: result.micronutrients,
+    analyzeErrorCode: undefined,
   });
 }

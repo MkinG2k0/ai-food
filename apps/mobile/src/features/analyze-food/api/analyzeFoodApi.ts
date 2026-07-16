@@ -6,8 +6,10 @@ import type {
 } from '@ai-food/shared-types';
 import { compressImageForAi } from '@/shared/lib';
 import {
+  isNoFoodResult,
   isNutritionResult,
   MICRONUTRIENTS_PROMPT_RULE,
+  NO_FOOD_PROMPT_RULE,
   normalizeMicronutrients,
 } from './nutritionResultSchema';
 
@@ -19,7 +21,7 @@ export const FOOD_NAME_PROMPT_RULE =
 export const COMPOSITION_PROMPT_RULE =
   'Состав (items[]): составные/слойные блюда (бургер, сэндвич, ролл, шаурма, пицца с начинкой, салат-сборка) всегда разбивай на видимые ингредиенты/слои. Пример: бургер → отдельные items «Булка», «Котлета», «Сыр», «Салат», «Помидор» — не оставляй один item «Гамбургер»/«Бургер», когда на фото видны слои. Простые однородные продукты (картофель фри, яблоко, стакан сока) — один item допустим. foodName = название всего приёма; items[].name = атомарные компоненты — не дублируй название составного блюда как единственный item, если видны части.';
 
-export { MICRONUTRIENTS_PROMPT_RULE };
+export { MICRONUTRIENTS_PROMPT_RULE, NO_FOOD_PROMPT_RULE };
 
 const NUTRITION_JSON_SCHEMA = `{
   "foodName": string (краткое название всего блюда/приёма на русском, например «Свежий овощной салат» — НЕ перечень ингредиентов через запятую),
@@ -52,7 +54,11 @@ Top-level calories/protein/carbs/fat/fiber должны совпадать с с
 Все текстовые значения полей (foodName и items[].name) пиши на русском языке.
 Do not include any text outside the JSON object.`;
 
-const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object with these exact fields:
+const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object.
+
+${NO_FOOD_PROMPT_RULE}
+
+If food or drink IS visible, return ONLY a JSON object with these exact fields:
 ${NUTRITION_JSON_SCHEMA}`;
 
 /** Text-description analysis: same JSON schema, no vision. */
@@ -109,10 +115,14 @@ export function appendDietPreference(
 const APP_ERROR_CODES = new Set([
   'INVALID_IMAGE',
   'INVALID_INPUT',
+  'NO_FOOD_DETECTED',
   'RATE_LIMITED',
   'ANALYSIS_TIMEOUT',
   'ANALYSIS_FAILED',
 ]);
+
+export const NO_FOOD_ERROR_MESSAGE =
+  'На фото не обнаружена еда. Сфотографируйте блюдо и попробуйте снова.';
 
 function resolveAnalyzeInput(input: File | AnalyzeFoodInput): {
   image: File | null;
@@ -286,6 +296,10 @@ export async function analyzeFoodApi(
       'ANALYSIS_FAILED',
       500
     );
+  }
+
+  if (isNoFoodResult(parsed)) {
+    rejectApiError(NO_FOOD_ERROR_MESSAGE, 'NO_FOOD_DETECTED', 422);
   }
 
   if (!isNutritionResult(parsed)) {
