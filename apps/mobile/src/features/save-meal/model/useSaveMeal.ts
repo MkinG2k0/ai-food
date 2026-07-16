@@ -34,18 +34,16 @@ export function useSaveMeal() {
       grams: 100,
     };
 
-    const imageUri = image ? await saveMealImage(image) : undefined;
-
-    if (!image) {
-      const dishName = trimmedDescription || 'Без названия';
+    // Empty text without photo: manual stub, no AI call
+    if (!image && !trimmedDescription) {
       addMeal({
         id: mealId,
         timestamp,
-        name: dishName,
+        name: 'Без названия',
         items: [
           {
             ...placeholderItem,
-            name: dishName,
+            name: 'Без названия',
           },
         ],
         totalCalories: 0,
@@ -54,6 +52,8 @@ export function useSaveMeal() {
       });
       return;
     }
+
+    const imageUri = image ? await saveMealImage(image) : undefined;
 
     const pendingMeal: Meal = {
       id: mealId,
@@ -72,15 +72,23 @@ export function useSaveMeal() {
       const customInstructions = useSettingsStore.getState().customInstructions;
       const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
       const response = await queryClient.fetchQuery({
-        queryKey: [
-          'analyze-food',
-          image.name,
-          image.size,
-          image.lastModified,
-          customInstructions,
-          dietType,
-        ],
-        queryFn: () => analyzeFoodApi(image, { customInstructions, dietType }),
+        queryKey: image
+          ? [
+              'analyze-food',
+              image.name,
+              image.size,
+              image.lastModified,
+              customInstructions,
+              dietType,
+            ]
+          : ['analyze-food', 'text', trimmedDescription, customInstructions, dietType],
+        queryFn: () =>
+          image
+            ? analyzeFoodApi(image, { customInstructions, dietType })
+            : analyzeFoodApi(
+                { description: trimmedDescription },
+                { customInstructions, dietType },
+              ),
       });
       const { result } = response;
       if (result.items.length > 0) {

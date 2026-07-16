@@ -4,6 +4,7 @@ export {
   appendCustomInstructions,
   appendDietPreference,
   MICRONUTRIENTS_PROMPT_RULE,
+  type AnalyzeFoodInput,
   type AnalyzeFoodOptions,
 } from './api/analyzeFoodApi';
 export {

@@ -20,8 +20,7 @@ export const COMPOSITION_PROMPT_RULE =
 
 export { MICRONUTRIENTS_PROMPT_RULE };
 
-const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object with these exact fields:
-{
+const NUTRITION_JSON_SCHEMA = `{
   "foodName": string (краткое название всего блюда/приёма на русском, например «Свежий овощной салат» — НЕ перечень ингредиентов через запятую),
   "calories": number (суммарные килокалории всего приёма),
   "protein": number (grams, сумма по составу),
@@ -52,6 +51,18 @@ Top-level calories/protein/carbs/fat/fiber должны совпадать с с
 Все текстовые значения полей (foodName и items[].name) пиши на русском языке.
 Do not include any text outside the JSON object.`;
 
+const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object with these exact fields:
+${NUTRITION_JSON_SCHEMA}`;
+
+/** Text-description analysis: same JSON schema, no vision. */
+const TEXT_SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user will describe in free text (текст) what they ate. Estimate nutrition for the meal they describe and return ONLY a JSON object with these exact fields:
+${NUTRITION_JSON_SCHEMA}
+Use typical serving sizes when the description is vague, and lower confidence accordingly.`;
+
+export interface AnalyzeFoodInput {
+  image?: File | null;
+  description?: string | null;
+}
 export interface AnalyzeFoodOptions {
   customInstructions?: string;
   dietType?: DietType;
@@ -96,11 +107,24 @@ export function appendDietPreference(
 
 const APP_ERROR_CODES = new Set([
   'INVALID_IMAGE',
+  'INVALID_INPUT',
   'RATE_LIMITED',
   'ANALYSIS_TIMEOUT',
   'ANALYSIS_FAILED',
 ]);
 
+function resolveAnalyzeInput(input: File | AnalyzeFoodInput): {
+  image: File | null;
+  description: string;
+} {
+  if (input instanceof File) {
+    return { image: input, description: '' };
+  }
+  return {
+    image: input.image ?? null,
+    description: input.description?.trim() ?? '',
+  };
+}
 function rejectApiError(message: string, code: string, status: number): never {
   const apiError: ApiError = { message, code, status };
   throw apiError;
@@ -174,7 +198,7 @@ function mapGatewayError(error: unknown): never {
 }
 
 export async function analyzeFoodApi(
-  image: File,
+  input: File | AnalyzeFoodInput,
   options?: AnalyzeFoodOptions,
 ): Promise<AnalyzeFoodResponse> {
   const gatewayUrl = import.meta.env.VITE_AI_GATEWAY_URL;
@@ -188,15 +212,33 @@ export async function analyzeFoodApi(
     );
   }
 
-  if (!image) {
-    rejectApiError('Файл изображения не передан.', 'INVALID_IMAGE', 400);
+  const { image, description } = resolveAnalyzeInput(input);
+
+  if (!image && !description) {
+    rejectApiError('Укажите фото или описание еды.', 'INVALID_INPUT', 400);
   }
 
-  const dataUrl = await fileToDataUrl(image);
   const systemContent = appendDietPreference(
-    appendCustomInstructions(SYSTEM_PROMPT, options?.customInstructions),
+    appendCustomInstructions(
+      image ? SYSTEM_PROMPT : TEXT_SYSTEM_PROMPT,
+      options?.customInstructions,
+    ),
     options?.dietType,
   );
+
+  const userContent = image
+    ? [
+        {
+          type: 'image_url' as const,
+          image_url: { url: await fileToDataUrl(image) },
+        },
+        {
+          type: 'text' as const,
+          text: 'Проанализируй это изображение еды и верни данные о питании в формате JSON.',
+        },
+      ]
+    : `Пользователь описал приём пищи текстом: «${description}». Оцени КБЖУ для типичной порции и верни данные о питании в формате JSON.`;
+
   const startTime = Date.now();
 
   let response;
@@ -210,16 +252,7 @@ export async function analyzeFoodApi(
           { role: 'system', content: systemContent },
           {
             role: 'user',
-            content: [
-              {
-                type: 'image_url',
-                image_url: { url: dataUrl },
-              },
-              {
-                type: 'text',
-                text: 'Проанализируй это изображение еды и верни данные о питании в формате JSON.',
-              },
-            ],
+            content: userContent,
           },
         ],
       },
@@ -234,7 +267,6 @@ export async function analyzeFoodApi(
   } catch (error) {
     mapGatewayError(error);
   }
-
   const processingTime = Date.now() - startTime;
   const rawContent = response.data?.choices?.[0]?.message?.content;
 

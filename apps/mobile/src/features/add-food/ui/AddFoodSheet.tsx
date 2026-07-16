@@ -67,6 +67,13 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
     }
   };
 
+  const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmitDescription();
+    }
+  };
+
   return (
     <BottomSheet open={open} onClose={handleClose}>
       <div className="w-full space-y-4 px-4 py-6">
@@ -140,6 +147,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
                 placeholder="Напр.: куриный салат с рисом"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
+                onKeyDown={handleDescriptionKeyDown}
                 className="min-h-32 resize-none"
               />
 

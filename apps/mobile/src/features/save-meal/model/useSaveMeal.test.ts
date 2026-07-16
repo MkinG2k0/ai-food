@@ -52,6 +52,7 @@ function createWrapper() {
 describe('useSaveMeal', () => {
   beforeEach(() => {
     useDiaryStore.setState({ meals: [], selectedDate: new Date() });
+    vi.mocked(analyzeFoodApi).mockClear();
     vi.mocked(analyzeFoodApi).mockResolvedValue({
       result: {
         foodName: 'Test Food',
