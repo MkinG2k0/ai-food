@@ -102,6 +102,7 @@ export function useSaveMeal() {
           items,
           healthiness: result.healthiness,
           confidence: result.confidence,
+          micronutrients: result.micronutrients,
         });
       } else {
         updateMeal(mealId, {
@@ -122,6 +123,7 @@ export function useSaveMeal() {
           ],
           healthiness: result.healthiness,
           confidence: result.confidence,
+          micronutrients: result.micronutrients,
         });
       }
     } catch {

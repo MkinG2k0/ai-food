@@ -85,7 +85,13 @@ export function MealDetailPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="flex items-center px-4 py-4 border-b">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/')}
+          aria-label="Назад"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold ml-2 flex-1">Детали приёма</h1>

@@ -11,6 +11,27 @@ export interface FoodItem {
 
 export type MealStatus = 'analyzing' | 'ready' | 'error';
 
+export const MICRONUTRIENT_IDS = [
+  'vitaminA',
+  'vitaminC',
+  'vitaminD',
+  'vitaminB12',
+  'iron',
+  'calcium',
+  'folate',
+  'magnesium',
+] as const;
+
+export type MicronutrientId = (typeof MICRONUTRIENT_IDS)[number];
+
+export type MicronutrientLevel = 'high' | 'medium' | 'low' | 'none';
+
+/** Qualitative micronutrient estimate for a meal portion (not lab values). */
+export interface MicronutrientEstimate {
+  id: MicronutrientId;
+  level: MicronutrientLevel;
+}
+
 export interface Meal {
   id: string;
   timestamp: string;
@@ -26,6 +47,8 @@ export interface Meal {
   healthiness?: number;
   /** AI recognition confidence 0–1; omitted on legacy meals */
   confidence?: number;
+  /** Qualitative micronutrient levels; omitted on legacy meals */
+  micronutrients?: MicronutrientEstimate[];
 }
 
 export interface NutritionItem {
@@ -49,6 +72,8 @@ export interface NutritionResult {
   /** Integer 1–10 healthfulness score from AI */
   healthiness: number;
   items: NutritionItem[];
+  /** Qualitative top micronutrients; omitted if model skipped */
+  micronutrients?: MicronutrientEstimate[];
 }
 
 export interface AnalyzeFoodRequest {

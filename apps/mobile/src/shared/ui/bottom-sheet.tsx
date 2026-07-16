@@ -29,7 +29,7 @@ export function BottomSheet({ open, onClose, children }: BottomSheetProps) {
             onClick={onClose}
           />
           <motion.div
-            className="relative w-full max-w-lg rounded-t-2xl bg-background p-4 pb-6 shadow-lg"
+            className="relative w-full max-w-md rounded-t-2xl bg-background p-4 pb-6 shadow-lg"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}

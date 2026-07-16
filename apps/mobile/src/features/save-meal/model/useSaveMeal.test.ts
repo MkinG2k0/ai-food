@@ -180,6 +180,52 @@ describe('useSaveMeal', () => {
     expect(meal.confidence).toBe(0.91);
   });
 
+  it('persists micronutrients from analyze result onto the meal', async () => {
+    vi.mocked(analyzeFoodApi).mockResolvedValue({
+      result: {
+        foodName: 'Шпинатный салат',
+        calories: 180,
+        protein: 8,
+        carbs: 12,
+        fat: 10,
+        fiber: 5,
+        confidence: 0.88,
+        healthiness: 9,
+        items: [
+          {
+            name: 'Шпинат',
+            calories: 180,
+            protein: 8,
+            carbs: 12,
+            fat: 10,
+            fiber: 5,
+            grams: 120,
+          },
+        ],
+        micronutrients: [
+          { id: 'iron', level: 'high' },
+          { id: 'vitaminC', level: 'medium' },
+          { id: 'vitaminD', level: 'none' },
+        ],
+      },
+      processingTime: 80,
+    });
+
+    const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
+    const file = new File(['fake'], 'salad.jpg', { type: 'image/jpeg' });
+
+    await act(async () => {
+      await result.current({ image: file });
+    });
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.micronutrients).toEqual([
+      { id: 'iron', level: 'high' },
+      { id: 'vitaminC', level: 'medium' },
+      { id: 'vitaminD', level: 'none' },
+    ]);
+  });
+
   it('falls back to single FoodItem from foodName when items is empty', async () => {
     vi.mocked(analyzeFoodApi).mockResolvedValue({
       result: {
@@ -216,17 +262,68 @@ describe('useSaveMeal', () => {
     expect(meal.confidence).toBe(0.9);
   });
 
-  it('sets meal.name from trimmed description for no-image meals', async () => {
+  it('analyzes text description via AI and persists nutrition result', async () => {
+    vi.mocked(analyzeFoodApi).mockResolvedValue({
+      result: {
+        foodName: 'Домашний салат',
+        calories: 220,
+        protein: 12,
+        carbs: 18,
+        fat: 10,
+        fiber: 4,
+        confidence: 0.85,
+        healthiness: 8,
+        items: [
+          {
+            name: 'Салат',
+            calories: 220,
+            protein: 12,
+            carbs: 18,
+            fat: 10,
+            fiber: 4,
+            grams: 250,
+          },
+        ],
+      },
+      processingTime: 90,
+    });
+
     const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
 
     await act(async () => {
       await result.current({ description: '  Домашний салат  ' });
     });
 
+    expect(analyzeFoodApi).toHaveBeenCalledWith(
+      { description: 'Домашний салат' },
+      expect.objectContaining({}),
+    );
+
     const meal = useDiaryStore.getState().meals[0];
     expect(meal.name).toBe('Домашний салат');
     expect(meal.status).toBe('ready');
-    expect(meal.items[0].grams).toBe(100);
+    expect(meal.totalCalories).toBe(220);
+    expect(meal.items[0].calories).toBe(220);
+    expect(meal.items[0].grams).toBe(250);
+    expect(meal.healthiness).toBe(8);
+    expect(meal.confidence).toBe(0.85);
+  });
+
+  it('sets text meal to error when description analysis fails', async () => {
+    vi.mocked(analyzeFoodApi).mockRejectedValue({
+      message: 'fail',
+      code: 'ANALYSIS_FAILED',
+      status: 500,
+    });
+
+    const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current({ description: 'суп' });
+    });
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.status).toBe('error');
   });
 
   it('sets meal.name to Без названия when no-image description is empty', async () => {
@@ -238,5 +335,6 @@ describe('useSaveMeal', () => {
 
     const meal = useDiaryStore.getState().meals[0];
     expect(meal.name).toBe('Без названия');
+    expect(analyzeFoodApi).not.toHaveBeenCalled();
   });
 });

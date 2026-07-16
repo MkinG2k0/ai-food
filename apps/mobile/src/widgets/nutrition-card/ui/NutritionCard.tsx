@@ -1,6 +1,6 @@
 import type { NutritionResult } from '@ai-food/shared-types';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/shared/ui';
-import { NutritionRow } from '@/entities/nutrition';
+import { MicronutrientsBadges, NutritionRow } from '@/entities/nutrition';
 import { formatCalories } from '@/shared/lib';
 
 interface NutritionCardProps {
@@ -52,6 +52,7 @@ export function NutritionCard({ result }: NutritionCardProps) {
           max={30}
           color="bg-green-500"
         />
+        <MicronutrientsBadges micronutrients={result.micronutrients} />
       </CardContent>
     </Card>
   );

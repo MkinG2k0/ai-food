@@ -3,8 +3,12 @@ import type {
   AnalyzeFoodResponse,
   ApiError,
   DietType,
-  NutritionResult,
 } from '@ai-food/shared-types';
+import {
+  isNutritionResult,
+  MICRONUTRIENTS_PROMPT_RULE,
+  normalizeMicronutrients,
+} from './nutritionResultSchema';
 
 /** Prompt rule: dish-level foodName ≠ composition list in items[].name */
 export const FOOD_NAME_PROMPT_RULE =
@@ -13,6 +17,8 @@ export const FOOD_NAME_PROMPT_RULE =
 /** Prompt rule: compound dishes → ingredient/layer items, not a single dish-level item */
 export const COMPOSITION_PROMPT_RULE =
   'Состав (items[]): составные/слойные блюда (бургер, сэндвич, ролл, шаурма, пицца с начинкой, салат-сборка) всегда разбивай на видимые ингредиенты/слои. Пример: бургер → отдельные items «Булка», «Котлета», «Сыр», «Салат», «Помидор» — не оставляй один item «Гамбургер»/«Бургер», когда на фото видны слои. Простые однородные продукты (картофель фри, яблоко, стакан сока) — один item допустим. foodName = название всего приёма; items[].name = атомарные компоненты — не дублируй название составного блюда как единственный item, если видны части.';
+
+export { MICRONUTRIENTS_PROMPT_RULE };
 
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food in the image and return ONLY a JSON object with these exact fields:
 {
@@ -34,10 +40,14 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food 
       "grams": number (optional, оценка веса видимого количества этого ингредиента в граммах; только число, без единиц шт/порция),
       "fiber": number (optional)
     }
+  ],
+  "micronutrients": [
+    { "id": "vitaminA"|"vitaminC"|"vitaminD"|"vitaminB12"|"iron"|"calcium"|"folate"|"magnesium", "level": "high"|"medium"|"low"|"none" }
   ]
 }
 ${FOOD_NAME_PROMPT_RULE}
 ${COMPOSITION_PROMPT_RULE}
+${MICRONUTRIENTS_PROMPT_RULE}
 Top-level calories/protein/carbs/fat/fiber должны совпадать с суммой соответствующих полей items (и fiber items, где задан).
 Все текстовые значения полей (foodName и items[].name) пиши на русском языке.
 Do not include any text outside the JSON object.`;
@@ -116,42 +126,6 @@ function fileToDataUrl(image: File): Promise<string> {
     reader.onerror = () => reject(reader.error ?? new Error('Не удалось прочитать изображение.'));
     reader.readAsDataURL(image);
   });
-}
-
-function isNutritionItem(value: unknown): boolean {
-  if (!value || typeof value !== 'object') return false;
-  const item = value as Record<string, unknown>;
-  if (typeof item.name !== 'string') return false;
-  if (typeof item.calories !== 'number') return false;
-  if (typeof item.protein !== 'number') return false;
-  if (typeof item.carbs !== 'number') return false;
-  if (typeof item.fat !== 'number') return false;
-  if (item.grams !== undefined && typeof item.grams !== 'number') return false;
-  if (item.fiber !== undefined && typeof item.fiber !== 'number') return false;
-  return true;
-}
-
-function isNutritionResult(value: unknown): value is NutritionResult {
-  if (!value || typeof value !== 'object') return false;
-  const v = value as Record<string, unknown>;
-  if (
-    typeof v.foodName !== 'string' ||
-    typeof v.calories !== 'number' ||
-    typeof v.protein !== 'number' ||
-    typeof v.carbs !== 'number' ||
-    typeof v.fat !== 'number' ||
-    typeof v.fiber !== 'number' ||
-    typeof v.confidence !== 'number' ||
-    v.confidence < 0 ||
-    v.confidence > 1 ||
-    typeof v.healthiness !== 'number' ||
-    v.healthiness < 1 ||
-    v.healthiness > 10 ||
-    !Array.isArray(v.items)
-  ) {
-    return false;
-  }
-  return v.items.every(isNutritionItem);
 }
 
 function mapGatewayError(error: unknown): never {
@@ -287,5 +261,11 @@ export async function analyzeFoodApi(
     );
   }
 
-  return { result: parsed, processingTime };
+  return {
+    result: {
+      ...parsed,
+      micronutrients: normalizeMicronutrients(parsed.micronutrients),
+    },
+    processingTime,
+  };
 }

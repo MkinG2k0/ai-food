@@ -6,6 +6,7 @@ import {
   appendDietPreference,
   COMPOSITION_PROMPT_RULE,
   FOOD_NAME_PROMPT_RULE,
+  MICRONUTRIENTS_PROMPT_RULE,
 } from './analyzeFoodApi';
 
 const PORK_TO_CHICKEN_BIAS =
@@ -400,6 +401,8 @@ describe('analyzeFoodApi (AI Gateway)', () => {
 
     expect(systemContent).toContain(FOOD_NAME_PROMPT_RULE);
     expect(systemContent).toContain(COMPOSITION_PROMPT_RULE);
+    expect(systemContent).toContain(MICRONUTRIENTS_PROMPT_RULE);
+    expect(systemContent).toMatch(/"micronutrients"/);
     expect(systemContent).toMatch(/атомарн.*ингредиент|атомарн.*слой|видимого ингредиента\/слоя/i);
     expect(systemContent).toMatch(/grams/i);
     expect(systemContent).toMatch(/items\[\]\.grams|"grams".*number|grams.*estimate|оценки.*вес|вес.*грамм/i);
@@ -547,5 +550,36 @@ describe('analyzeFoodApi (AI Gateway)', () => {
 
     expect(omittedSystem).not.toMatch(DIET_SECTION);
     expect(noneSystem).not.toMatch(DIET_SECTION);
+  });
+
+  it('POSTs text-only analysis without image_url when description is provided', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    const result = await analyzeFoodApi({ description: 'куриный салат с рисом' });
+
+    expect(result.result.foodName).toBe(validNutrition.foodName);
+    expect(axios.post).toHaveBeenCalledTimes(1);
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const body = rawBody as {
+      messages: Array<{
+        role: string;
+        content: string | Array<{ type: string; image_url?: unknown; text?: string }>;
+      }>;
+    };
+
+    expect(body.messages[1].role).toBe('user');
+    expect(typeof body.messages[1].content).toBe('string');
+    expect(body.messages[1].content).toContain('куриный салат с рисом');
+    expect(String(body.messages[0].content)).toMatch(/опис|describe|текст/i);
+  });
+
+  it('rejects INVALID_INPUT when neither image nor description is provided', async () => {
+    await expect(analyzeFoodApi({ description: '   ' })).rejects.toMatchObject({
+      code: 'INVALID_INPUT',
+      status: 400,
+    } satisfies Partial<ApiError>);
+    expect(axios.post).not.toHaveBeenCalled();
   });
 });

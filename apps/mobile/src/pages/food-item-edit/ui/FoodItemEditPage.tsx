@@ -65,18 +65,24 @@ export function FoodItemEditPage() {
     const deleted = confirmItemDelete();
     if (deleted) {
       toast.success('Ингредиент удалён');
-      navigate(`/meal/${mealId}`, { replace: true });
+      navigate(-1);
     }
   }
 
   function handleBack() {
-    navigate(`/meal/${mealId}`);
+    navigate(-1);
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="flex items-center px-4 py-4 border-b">
-        <Button variant="ghost" size="icon" onClick={handleBack}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={handleBack}
+          aria-label="Назад"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold ml-2 flex-1">Ингредиент</h1>

@@ -1,0 +1,148 @@
+import { useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
+import type { Goal } from '@ai-food/shared-types';
+import { Button } from '@/shared/ui';
+import {
+  latestWeightKg,
+  useWeightStore,
+} from '../model/useWeightStore';
+import {
+  defaultGoalKg,
+  getWeightTrendPoints,
+  goalTitle,
+  isGoalReached,
+  remainingCopy,
+} from '../model/weightProgress';
+import { LogWeightSheet } from './LogWeightSheet';
+import { UpdateGoalSheet } from './UpdateGoalSheet';
+import { WeightTrendChart } from './WeightTrendChart';
+
+interface WeightProgressCardProps {
+  profileWeight: number;
+  profileGoal: Goal;
+}
+
+export function WeightProgressCard({
+  profileWeight,
+  profileGoal,
+}: WeightProgressCardProps) {
+  const entries = useWeightStore((s) => s.entries);
+  const goalKg = useWeightStore((s) => s.goalKg);
+  const addEntry = useWeightStore((s) => s.addEntry);
+  const setGoalKg = useWeightStore((s) => s.setGoalKg);
+  const ensureGoalKg = useWeightStore((s) => s.ensureGoalKg);
+  const [logOpen, setLogOpen] = useState(false);
+  const [goalOpen, setGoalOpen] = useState(false);
+
+  const currentKg = latestWeightKg(entries, profileWeight) ?? profileWeight;
+  const effectiveGoal =
+    goalKg ?? defaultGoalKg(profileWeight, profileGoal);
+
+  useEffect(() => {
+    ensureGoalKg(defaultGoalKg(profileWeight, profileGoal));
+  }, [ensureGoalKg, profileWeight, profileGoal]);
+
+  const points = getWeightTrendPoints(entries);
+  const title = goalTitle(profileGoal);
+  const reached = isGoalReached(
+    currentKg,
+    effectiveGoal,
+    profileGoal,
+    entries,
+  );
+  const suggestedNextGoal = defaultGoalKg(currentKg, profileGoal);
+
+  return (
+    <div className="space-y-4">
+      <section
+        className={`rounded-2xl border p-4 shadow-sm ${
+          reached
+            ? 'border-primary/40 bg-primary/5'
+            : 'border-border/80 bg-card'
+        }`}
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+            {reached && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                <Check className="h-3.5 w-3.5" aria-hidden />
+                Цель достигнута
+              </span>
+            )}
+          </div>
+          <Button
+            size="sm"
+            variant={reached ? 'outline' : 'default'}
+            className="shrink-0 rounded-full"
+            onClick={() => setLogOpen(true)}
+          >
+            + Записать вес
+          </Button>
+        </div>
+
+        <div className="flex items-end justify-between gap-2">
+          <div>
+            <p className="text-3xl font-semibold tabular-nums tracking-tight">
+              {currentKg.toFixed(1)}
+              <span className="ml-1 text-base font-medium text-muted-foreground">
+                кг
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">сейчас</p>
+          </div>
+          <span className="mb-3 text-muted-foreground" aria-hidden>
+            →
+          </span>
+          <div className="text-right">
+            <p
+              className={`text-3xl font-semibold tabular-nums tracking-tight ${
+                reached ? 'text-primary' : ''
+              }`}
+            >
+              {effectiveGoal.toFixed(1)}
+              <span className="ml-1 text-base font-medium text-muted-foreground">
+                кг
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">цель</p>
+          </div>
+        </div>
+
+        <p
+          className={`mt-3 text-sm ${
+            reached ? 'font-medium text-primary' : 'text-muted-foreground'
+          }`}
+        >
+          {remainingCopy(currentKg, effectiveGoal, profileGoal, entries)}
+        </p>
+
+        {reached && (
+          <Button
+            className="mt-4 w-full rounded-full"
+            onClick={() => setGoalOpen(true)}
+          >
+            Обновить цель
+          </Button>
+        )}
+      </section>
+
+      <WeightTrendChart points={points} goalKg={effectiveGoal} />
+
+      <LogWeightSheet
+        open={logOpen}
+        onClose={() => setLogOpen(false)}
+        initialKg={currentKg}
+        onSave={(kg, date) => addEntry(kg, date)}
+      />
+
+      <UpdateGoalSheet
+        open={goalOpen}
+        onClose={() => setGoalOpen(false)}
+        initialGoalKg={suggestedNextGoal}
+        currentKg={currentKg}
+        onSave={(nextGoal) => setGoalKg(nextGoal)}
+      />
+    </div>
+  );
+}

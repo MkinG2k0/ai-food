@@ -13,19 +13,24 @@ function makeMeal(partial: Partial<Meal> & Pick<Meal, 'id' | 'timestamp' | 'tota
   };
 }
 
-/** Fixed "today": 2026-07-16 local midnight */
+/** Fixed reference: 2026-07-16 (Thu) → week Mon 13 … Sun 19 */
 const TODAY = new Date(2026, 6, 16, 0, 0, 0, 0);
 
 describe('getWeeklyCalorieSeries', () => {
-  it('returns exactly 7 zeros for empty meals, oldest → newest with today last', () => {
-    const series = getWeeklyCalorieSeries([], TODAY);
+  it('returns Mon→Sun calendar week for weekOffset 0', () => {
+    const series = getWeeklyCalorieSeries([], 0, TODAY);
 
     expect(series).toHaveLength(7);
     expect(series.every((p) => p.calories === 0)).toBe(true);
-    expect(series[6].date.getFullYear()).toBe(2026);
-    expect(series[6].date.getMonth()).toBe(6);
-    expect(series[6].date.getDate()).toBe(16);
-    expect(series[0].date.getDate()).toBe(10);
+    expect(series.map((p) => p.date.getDate())).toEqual([13, 14, 15, 16, 17, 18, 19]);
+    expect(series[0].date.getDay()).toBe(1);
+    expect(series[6].date.getDay()).toBe(0);
+  });
+
+  it('shifts to previous calendar week for weekOffset -1', () => {
+    const series = getWeeklyCalorieSeries([], -1, TODAY);
+
+    expect(series.map((p) => p.date.getDate())).toEqual([6, 7, 8, 9, 10, 11, 12]);
   });
 
   it('sums totalCalories for multiple ready meals on the same day', () => {
@@ -43,11 +48,56 @@ describe('getWeeklyCalorieSeries', () => {
       }),
     ];
 
-    const series = getWeeklyCalorieSeries(meals, TODAY);
+    const series = getWeeklyCalorieSeries(meals, 0, TODAY);
 
-    expect(series).toHaveLength(7);
-    expect(series[6].calories).toBe(750);
-    expect(series.slice(0, 6).every((p) => p.calories === 0)).toBe(true);
+    // Jul 16 is Thursday → index 3
+    expect(series[3].calories).toBe(750);
+    expect(series.filter((_, i) => i !== 3).every((p) => p.calories === 0)).toBe(true);
+  });
+
+  it('sums protein/carbs/fat from meal items for the day', () => {
+    const meals = [
+      makeMeal({
+        id: 'a',
+        timestamp: localIso(2026, 7, 16, 9),
+        totalCalories: 400,
+        items: [
+          {
+            id: 'i1',
+            name: 'rice',
+            calories: 200,
+            protein: 5,
+            carbs: 40,
+            fat: 1,
+            fiber: 1,
+            grams: 100,
+          },
+        ],
+      }),
+      makeMeal({
+        id: 'b',
+        timestamp: localIso(2026, 7, 16, 18),
+        totalCalories: 300,
+        items: [
+          {
+            id: 'i2',
+            name: 'chicken',
+            calories: 300,
+            protein: 30,
+            carbs: 0,
+            fat: 10,
+            fiber: 0,
+            grams: 150,
+          },
+        ],
+      }),
+    ];
+
+    const series = getWeeklyCalorieSeries(meals, 0, TODAY);
+
+    expect(series[3].protein).toBe(35);
+    expect(series[3].carbs).toBe(40);
+    expect(series[3].fat).toBe(11);
   });
 
   it('ignores analyzing and error meals; omitted status counts as ready', () => {
@@ -77,57 +127,36 @@ describe('getWeeklyCalorieSeries', () => {
       }),
     ];
 
-    const series = getWeeklyCalorieSeries(meals, TODAY);
+    const series = getWeeklyCalorieSeries(meals, 0, TODAY);
 
-    // Jul 15 is yesterday = index 5
-    expect(series[5].calories).toBe(300);
+    // Jul 15 is Wednesday → index 2
+    expect(series[2].calories).toBe(300);
   });
 
-  it('ignores meals outside the 7-day window', () => {
+  it('ignores meals outside the calendar week', () => {
     const meals = [
       makeMeal({
-        id: 'too-old',
-        timestamp: localIso(2026, 7, 9),
+        id: 'prev-week',
+        timestamp: localIso(2026, 7, 12),
         totalCalories: 500,
       }),
       makeMeal({
-        id: 'in-window',
-        timestamp: localIso(2026, 7, 10),
+        id: 'in-week',
+        timestamp: localIso(2026, 7, 13),
         totalCalories: 120,
       }),
       makeMeal({
-        id: 'future',
-        timestamp: localIso(2026, 7, 17),
+        id: 'next-week',
+        timestamp: localIso(2026, 7, 20),
         totalCalories: 400,
       }),
     ];
 
-    const series = getWeeklyCalorieSeries(meals, TODAY);
+    const series = getWeeklyCalorieSeries(meals, 0, TODAY);
 
-    expect(series[0].calories).toBe(120); // Jul 10
+    expect(series[0].calories).toBe(120); // Jul 13 Mon
     expect(series.every((p, i) => (i === 0 ? p.calories === 120 : p.calories === 0))).toBe(
       true,
     );
-  });
-
-  it('keeps stable length 7 with today as last point', () => {
-    const meals = [
-      makeMeal({
-        id: 'd1',
-        timestamp: localIso(2026, 7, 12),
-        totalCalories: 50,
-      }),
-      makeMeal({
-        id: 'd2',
-        timestamp: localIso(2026, 7, 14),
-        totalCalories: 80,
-      }),
-    ];
-
-    const series = getWeeklyCalorieSeries(meals, TODAY);
-
-    expect(series).toHaveLength(7);
-    expect(series.map((p) => p.date.getDate())).toEqual([10, 11, 12, 13, 14, 15, 16]);
-    expect(series.map((p) => p.calories)).toEqual([0, 0, 50, 0, 80, 0, 0]);
   });
 });

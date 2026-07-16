@@ -45,14 +45,14 @@ function CompactMacros({
   fiber,
 }: Omit<FoodMacrosBadgesProps, 'density'>) {
   return (
-    <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden">
+    <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
       <div className="flex shrink-0 items-baseline gap-1 text-emerald-700">
         <span className="text-lg font-semibold tabular-nums leading-none">
           {Math.round(calories)}
         </span>
         <span className="text-xs font-medium text-muted-foreground">ккал</span>
       </div>
-      <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
+      <div className="flex min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
         <span className="inline-flex shrink-0 items-center gap-1">
           <LetterCircle letter="Б" className="bg-blue-500" />
           <MacroDigits value={protein} maxDigits={3} />

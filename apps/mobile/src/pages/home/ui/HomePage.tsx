@@ -22,20 +22,20 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-50">
+    <div className="relative flex h-dvh flex-col bg-zinc-50">
       <DailyHeader
         selectedDate={selectedDate}
         weekOffset={weekOffset}
         onDaySelect={setSelectedDate}
         onWeekChange={handleWeekChange}
       />
-      <main className="flex-1 px-4 py-4 pb-24">
+      <main className="flex-1 overflow-y-auto px-4 py-4 pb-24">
         <MealList selectedDate={selectedDate} />
       </main>
-      <div className="fixed bottom-6 right-6">
+      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-end px-6">
         <Button
           size="icon"
-          className="rounded-full h-14 w-14 shadow-lg"
+          className="pointer-events-auto h-14 w-14 rounded-full shadow-lg"
           onClick={() => setIsAddOpen(true)}
           aria-label="Добавить еду"
         >

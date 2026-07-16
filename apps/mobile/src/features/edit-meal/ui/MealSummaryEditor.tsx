@@ -9,6 +9,7 @@ import {
   resolveMealPortions,
   useDiaryStore,
 } from '@/entities/meal';
+import { MicronutrientsBadges } from '@/entities/nutrition';
 import { Button, Card, CardContent, CardHeader } from '@/shared/ui';
 import { cn, formatDate } from '@/shared/lib';
 
@@ -92,6 +93,11 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
                 <MacroBar value={Math.round(meal.confidence * 100)} max={100} />
               </div>
             )}
+          </div>
+        )}
+        {meal.micronutrients && meal.micronutrients.length > 0 && (
+          <div className="pt-0.5">
+            <MicronutrientsBadges micronutrients={meal.micronutrients} />
           </div>
         )}
       </CardHeader>

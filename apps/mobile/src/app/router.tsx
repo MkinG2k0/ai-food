@@ -6,16 +6,25 @@ import { MealDetailPage } from '@/pages/meal-detail';
 import { FoodItemEditPage } from '@/pages/food-item-edit';
 import { StatsPage } from '@/pages/stats';
 import { SettingsPage } from '@/pages/settings';
+import { AppShell } from './AppShell';
 import { ProfileGuard } from './ProfileGuard';
 
 const router = createBrowserRouter([
-  { path: '/onboarding', element: <OnboardingPage /> },
-  { path: '/', element: <ProfileGuard><HomePage /></ProfileGuard> },
-  { path: '/diary', element: <ProfileGuard><DiaryPage /></ProfileGuard> },
-  { path: '/stats', element: <ProfileGuard><StatsPage /></ProfileGuard> },
-  { path: '/settings', element: <ProfileGuard><SettingsPage /></ProfileGuard> },
-  { path: '/meal/:id', element: <ProfileGuard><MealDetailPage /></ProfileGuard> },
-  { path: '/meal/:mealId/item/:itemId', element: <ProfileGuard><FoodItemEditPage /></ProfileGuard> },
+  {
+    element: <AppShell />,
+    children: [
+      { path: '/onboarding', element: <OnboardingPage /> },
+      { path: '/', element: <ProfileGuard><HomePage /></ProfileGuard> },
+      { path: '/diary', element: <ProfileGuard><DiaryPage /></ProfileGuard> },
+      { path: '/stats', element: <ProfileGuard><StatsPage /></ProfileGuard> },
+      { path: '/settings', element: <ProfileGuard><SettingsPage /></ProfileGuard> },
+      { path: '/meal/:id', element: <ProfileGuard><MealDetailPage /></ProfileGuard> },
+      {
+        path: '/meal/:mealId/item/:itemId',
+        element: <ProfileGuard><FoodItemEditPage /></ProfileGuard>,
+      },
+    ],
+  },
 ]);
 
 export function AppRouter() {

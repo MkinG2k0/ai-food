@@ -127,6 +127,7 @@ export function useRefineMeal() {
       status: 'ready',
       healthiness: result.healthiness,
       confidence: result.confidence,
+      micronutrients: result.micronutrients,
     });
   };
 }

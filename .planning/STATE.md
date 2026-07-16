@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
 last_updated: "2026-07-16T00:13:34.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-4dd: MealCard compact layout (kcal + circles)
+last_activity: 2026-07-16 - Completed quick task 260716-4nf: micronutrient badges (qualitative)
 progress:
   total_phases: 6
   completed_phases: 1
@@ -79,6 +79,7 @@ Recent decisions affecting current work:
 - 260716-3nq: Settings profile summary + resetProfile redo onboarding (diary/customInstructions kept)
 - 260716-3qy: FoodItem/DailyTargets.fiber; save/refine persist; daily totals + 30 г goal; diary badges/edit «Кл»/клетчатка
 - 260716-4dd: MealCard density=compact (large kcal + Б/Ж/У/К circles); FoodItemDisplayCard keeps pill badges
+- 260716-4nf: micronutrients qualitative high/medium/low/none on NutritionResult/Meal; Vision prompt; MealSummaryEditor badges «оценка»
 
 ### Pending Todos
 
@@ -113,6 +114,7 @@ None yet.
 | fast | Выровнять бейджи КБЖУ (ккал до 9999, макросы до 999) | 2026-07-16 | 05a2665 | — |
 | 260716-4dd | MealCard compact: large kcal + letter circles Б/Ж/У/К | 2026-07-16 | b549a54, 98203ef | [260716-4dd-mealcard](./quick/260716-4dd-mealcard/) |
 | 260716-4aa | Полезность (1–10) и точность распознавания (%) после даты на деталях приёма | 2026-07-16 | 0fa166c, 3aca94d, 38c16b4, 18185df | [260716-4aa-1-10](./quick/260716-4aa-1-10/) |
+| 260716-4nf | Micronutrient badges (top-8 qualitative levels) on meal detail | 2026-07-16 | — | [260716-4nf-micronutrient-badges-vision-returns-top-](./quick/260716-4nf-micronutrient-badges-vision-returns-top-/) |
 
 ### Blockers/Concerns
 

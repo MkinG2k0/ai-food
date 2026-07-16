@@ -3,14 +3,18 @@ import type {
   AnalyzeFoodResponse,
   ApiError,
   DietType,
-  NutritionResult,
 } from '@ai-food/shared-types';
 import {
   appendCustomInstructions,
   appendDietPreference,
   COMPOSITION_PROMPT_RULE,
   FOOD_NAME_PROMPT_RULE,
+  MICRONUTRIENTS_PROMPT_RULE,
 } from './analyzeFoodApi';
+import {
+  isNutritionResult,
+  normalizeMicronutrients,
+} from './nutritionResultSchema';
 
 export interface RefineMealContextItem {
   name: string;
@@ -52,10 +56,14 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides
       "grams": number (optional, оценка веса в граммах; только число),
       "fiber": number (optional)
     }
+  ],
+  "micronutrients": [
+    { "id": "vitaminA"|"vitaminC"|"vitaminD"|"vitaminB12"|"iron"|"calcium"|"folate"|"magnesium", "level": "high"|"medium"|"low"|"none" }
   ]
 }
 ${FOOD_NAME_PROMPT_RULE}
 ${COMPOSITION_PROMPT_RULE}
+${MICRONUTRIENTS_PROMPT_RULE}
 Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items (and fiber items where set).
 Do not include any text outside the JSON object.`;
 
@@ -69,42 +77,6 @@ const APP_ERROR_CODES = new Set([
 function rejectApiError(message: string, code: string, status: number): never {
   const apiError: ApiError = { message, code, status };
   throw apiError;
-}
-
-function isNutritionItem(value: unknown): boolean {
-  if (!value || typeof value !== 'object') return false;
-  const item = value as Record<string, unknown>;
-  if (typeof item.name !== 'string') return false;
-  if (typeof item.calories !== 'number') return false;
-  if (typeof item.protein !== 'number') return false;
-  if (typeof item.carbs !== 'number') return false;
-  if (typeof item.fat !== 'number') return false;
-  if (item.grams !== undefined && typeof item.grams !== 'number') return false;
-  if (item.fiber !== undefined && typeof item.fiber !== 'number') return false;
-  return true;
-}
-
-function isNutritionResult(value: unknown): value is NutritionResult {
-  if (!value || typeof value !== 'object') return false;
-  const v = value as Record<string, unknown>;
-  if (
-    typeof v.foodName !== 'string' ||
-    typeof v.calories !== 'number' ||
-    typeof v.protein !== 'number' ||
-    typeof v.carbs !== 'number' ||
-    typeof v.fat !== 'number' ||
-    typeof v.fiber !== 'number' ||
-    typeof v.confidence !== 'number' ||
-    v.confidence < 0 ||
-    v.confidence > 1 ||
-    typeof v.healthiness !== 'number' ||
-    v.healthiness < 1 ||
-    v.healthiness > 10 ||
-    !Array.isArray(v.items)
-  ) {
-    return false;
-  }
-  return v.items.every(isNutritionItem);
 }
 
 function mapGatewayError(error: unknown): never {
@@ -247,5 +219,11 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
     );
   }
 
-  return { result: parsed, processingTime };
+  return {
+    result: {
+      ...parsed,
+      micronutrients: normalizeMicronutrients(parsed.micronutrients),
+    },
+    processingTime,
+  };
 }

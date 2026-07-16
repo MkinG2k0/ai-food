@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ApiError, NutritionResult } from '@ai-food/shared-types';
 import axios from 'axios';
-import { COMPOSITION_PROMPT_RULE, FOOD_NAME_PROMPT_RULE } from './analyzeFoodApi';
+import { COMPOSITION_PROMPT_RULE, FOOD_NAME_PROMPT_RULE, MICRONUTRIENTS_PROMPT_RULE } from './analyzeFoodApi';
 import { refineMealApi } from './refineMealApi';
 
 vi.mock('axios', () => {
@@ -118,6 +118,7 @@ describe('refineMealApi (AI Gateway)', () => {
     expect(body.messages[0].role).toBe('system');
     expect(body.messages[0].content).toContain(FOOD_NAME_PROMPT_RULE);
     expect(body.messages[0].content).toContain(COMPOSITION_PROMPT_RULE);
+    expect(body.messages[0].content).toContain(MICRONUTRIENTS_PROMPT_RULE);
     expect(typeof body.messages[1].content).toBe('string');
     expect(body.messages[1].content).toContain('съел половину');
     expect(body.messages[1].content).toContain(JSON.stringify(mealContext));

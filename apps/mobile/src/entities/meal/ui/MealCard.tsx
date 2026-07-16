@@ -61,7 +61,7 @@ export function MealCard({ meal }: MealCardProps) {
       className={isAnalyzing ? '' : 'cursor-pointer '}
     >
       <CardContent className="flex justify-between flex-auto gap-3 p-2 ">
-        <div className="h-16 w-16 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="h-20 w-20 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
           {imageSrc ? (
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
           ) : isAnalyzing ? (
@@ -83,12 +83,14 @@ export function MealCard({ meal }: MealCardProps) {
                 <span className="text-sm text-muted-foreground">Анализ еды…</span>
               </div>
               <Skeleton className="h-4 w-36" />
-              <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden">
+              <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
                 <Skeleton className="h-5 w-16 shrink-0" />
-                <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
-                <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
-                <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
-                <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                <div className="flex flex-nowrap items-center gap-1.5">
+                  <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                  <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                  <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                  <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                </div>
               </div>
             </>
           ) : isError ? (
