@@ -135,7 +135,7 @@ None yet.
 | 260716-j45 | Onboarding result: tips how to photo food for AI | 2026-07-16 | 9c746e8, 557baec | [260716-j45-onboarding-photo-tips](./quick/260716-j45-onboarding-photo-tips/) |
 | 260716-jaa | Onboarding desired weight (targetWeight) after Goal | 2026-07-16 | 50177a8, e01208d, ae67511 | [260716-jaa-onboarding-target-weight](./quick/260716-jaa-onboarding-target-weight/) |
 | 260716-jlq | gpt-4.1 for onboarding micronutrientTargetsApi | 2026-07-16 | 17c6829, 3e96aec, 6b7ae04 | [260716-jlq-use-gpt-4-1-for-onboarding-micronutrient](./quick/260716-jlq-use-gpt-4-1-for-onboarding-micronutrient/) |
-| 260716-jqc | RU grams/few-shot analyze prompts + stronger user messages | 2026-07-16 | 3a17608, b3f0f8f | [260716-jqc-grams-ru-few-shot-user-message-healthine](./quick/260716-jqc-grams-ru-few-shot-user-message-healthine/) |
+| 260716-jqc | RU grams/few-shot analyze prompts + stronger user messages | 2026-07-16 | 3a17608, b3f0f8f, c2bc136, baec96e | [260716-jqc-grams-ru-few-shot-user-message-healthine](./quick/260716-jqc-grams-ru-few-shot-user-message-healthine/) |
 
 ### Blockers/Concerns
 
