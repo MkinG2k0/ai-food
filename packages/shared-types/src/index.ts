@@ -117,6 +117,8 @@ export interface UserProfile {
   age: number;
   height: number;
   weight: number;
+  /** Desired weight in kg (onboarding target) */
+  targetWeight: number;
   activity: ActivityLevel;
   goal: Goal;
   dietType: DietType;

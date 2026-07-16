@@ -29,6 +29,7 @@ export function useOnboarding() {
       'weight',
       'activity',
       'goal',
+      'targetWeight',
       'dietType',
     ];
     if (required.some((k) => draft[k] === undefined)) return;
