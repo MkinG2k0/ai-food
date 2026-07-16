@@ -97,7 +97,7 @@ export async function micronutrientTargetsApi(
     response = await axios.post(
       `${gatewayUrl}/v1/chat/completions`,
       {
-        model: 'gpt-4.1-mini',
+        model: 'gpt-4.1',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
