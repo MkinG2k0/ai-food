@@ -37,6 +37,7 @@ const validNutrition: NutritionResult = {
   fat: 42,
   fiber: 7,
   confidence: 0.91,
+  healthiness: 7,
   items: [
     {
       name: 'Бургер',
@@ -99,6 +100,7 @@ describe('analyzeFoodApi (AI Gateway)', () => {
       fat: 8,
       fiber: 6,
       confidence: 0.91,
+      healthiness: 7,
       items: [],
     };
     vi.mocked(axios.post).mockResolvedValue({
@@ -121,6 +123,7 @@ describe('analyzeFoodApi (AI Gateway)', () => {
       fat: 15,
       fiber: 5,
       confidence: 0.8,
+      healthiness: 6,
       items: [{ name: 'Суп', calories: 'много', protein: 10, carbs: 20, fat: 5 }],
     };
     vi.mocked(axios.post).mockResolvedValue({
@@ -189,6 +192,7 @@ describe('analyzeFoodApi (AI Gateway)', () => {
       fat: 5,
       fiber: 2,
       confidence: 0.7,
+      healthiness: 5,
     };
     vi.mocked(axios.post).mockResolvedValue({
       data: gatewaySuccessBody(JSON.stringify(withoutItems)),

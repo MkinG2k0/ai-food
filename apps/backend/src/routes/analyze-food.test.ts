@@ -27,6 +27,7 @@ const VALID_NUTRITION_JSON = JSON.stringify({
   fat: 10,
   fiber: 1,
   confidence: 0.92,
+  healthiness: 8,
 });
 
 // Helper: create a mock image buffer for multipart upload

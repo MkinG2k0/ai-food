@@ -17,6 +17,7 @@ const mockResponse: AnalyzeFoodResponse = {
     fat: 10,
     fiber: 5,
     confidence: 0.92,
+    healthiness: 7,
     items: [],
   },
   processingTime: 2000,
@@ -52,6 +53,9 @@ describe('useAnalyzeFood', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockResponse);
-    expect(analyzeFoodApiModule.analyzeFoodApi).toHaveBeenCalledWith(file);
+    expect(analyzeFoodApiModule.analyzeFoodApi).toHaveBeenCalledWith(file, {
+      customInstructions: '',
+      dietType: 'none',
+    });
   });
 });

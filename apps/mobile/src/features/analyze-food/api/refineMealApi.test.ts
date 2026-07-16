@@ -28,6 +28,7 @@ const validNutrition: NutritionResult = {
   fat: 21,
   fiber: 3.5,
   confidence: 0.88,
+  healthiness: 6,
   items: [
     {
       name: 'Булка',

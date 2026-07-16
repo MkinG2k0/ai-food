@@ -41,6 +41,7 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides
   "fat": number (grams, сумма по составу),
   "fiber": number (grams, сумма по составу),
   "confidence": number (0.0 to 1.0, your confidence in the estimate),
+  "healthiness": number (integer 1–10, оценка полезности блюда для здоровья),
   "items": [
     {
       "name": string (название атомарного ингредиента/слоя на русском),
@@ -96,6 +97,9 @@ function isNutritionResult(value: unknown): value is NutritionResult {
     typeof v.confidence !== 'number' ||
     v.confidence < 0 ||
     v.confidence > 1 ||
+    typeof v.healthiness !== 'number' ||
+    v.healthiness < 1 ||
+    v.healthiness > 10 ||
     !Array.isArray(v.items)
   ) {
     return false;

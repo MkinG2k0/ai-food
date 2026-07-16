@@ -22,6 +22,10 @@ export interface Meal {
   status?: MealStatus;
   /** Servings multiplier; omitted on legacy meals → treat as 1 */
   portions?: number;
+  /** AI healthiness score 1–10; omitted on legacy meals */
+  healthiness?: number;
+  /** AI recognition confidence 0–1; omitted on legacy meals */
+  confidence?: number;
 }
 
 export interface NutritionItem {
@@ -42,6 +46,8 @@ export interface NutritionResult {
   fat: number;
   fiber: number;
   confidence: number;
+  /** Integer 1–10 healthfulness score from AI */
+  healthiness: number;
   items: NutritionItem[];
 }
 

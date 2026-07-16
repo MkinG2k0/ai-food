@@ -32,6 +32,7 @@ const NutritionResultSchema = z.object({
   fat: z.number(),
   fiber: z.number(),
   confidence: z.number().min(0).max(1),
+  healthiness: z.number().min(1).max(10),
   items: z.array(NutritionItemSchema).default([]),
 });
 
@@ -43,7 +44,8 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. Analyze the food 
   "carbs": number (grams),
   "fat": number (grams),
   "fiber": number (grams),
-  "confidence": number (0.0 to 1.0, your confidence in the estimate)
+  "confidence": number (0.0 to 1.0, your confidence in the estimate),
+  "healthiness": number (integer 1–10, оценка полезности блюда для здоровья)
 }
 Все текстовые значения полей (в частности foodName) пиши на русском языке.
 Do not include any text outside the JSON object.`;
