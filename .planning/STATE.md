@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
 last_updated: "2026-07-16T00:13:34.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-5gj: PWA + Meal Detail UI/UX
+last_activity: 2026-07-16 - Completed quick task 260716-i2n: no-food detection error and retry
 progress:
   total_phases: 6
   completed_phases: 1
@@ -123,6 +123,7 @@ None yet.
 | fast | Favorites: photos in list + dedicated `/favorites` page | 2026-07-16 | f479646 | — |
 | 260716-51m | Analyze-food retry «Повторить» on error MealCard | 2026-07-16 | 7454b43, 210f130, a257dbc | [260716-51m-analyze-food-retry-button](./quick/260716-51m-analyze-food-retry-button/) |
 | 260716-5gj | PWA installability + Meal Detail Полезность/Точность layout | 2026-07-16 | bc3f6c8, 7895879 | [260716-5gj-pwa-1-10-ui-ux](./quick/260716-5gj-pwa-1-10-ui-ux/) |
+| 260716-i2n | No-food photo → ошибка распознавания + «Повторить» | 2026-07-16 | 02db668 | [260716-i2n-no-food-detection-error-and-retry](./quick/260716-i2n-no-food-detection-error-and-retry/) |
 
 ### Blockers/Concerns
 
