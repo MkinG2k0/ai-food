@@ -6,6 +6,7 @@ export interface FoodMacrosBadgesProps {
   fat: number;
   carbs: number;
   fiber: number;
+  density?: 'badges' | 'compact';
 }
 
 function MacroDigits({ value, maxDigits }: { value: number; maxDigits: number }) {
@@ -19,13 +20,80 @@ function MacroDigits({ value, maxDigits }: { value: number; maxDigits: number })
   );
 }
 
+function LetterCircle({
+  letter,
+  className,
+}: {
+  letter: string;
+  className: string;
+}) {
+  return (
+    <span
+      className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold leading-none text-white ${className}`}
+      aria-hidden
+    >
+      {letter}
+    </span>
+  );
+}
+
+function CompactMacros({
+  calories,
+  protein,
+  fat,
+  carbs,
+  fiber,
+}: Omit<FoodMacrosBadgesProps, 'density'>) {
+  return (
+    <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden">
+      <div className="flex shrink-0 items-baseline gap-1 text-emerald-700">
+        <span className="text-lg font-semibold tabular-nums leading-none">
+          {Math.round(calories)}
+        </span>
+        <span className="text-xs font-medium text-muted-foreground">ккал</span>
+      </div>
+      <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
+        <span className="inline-flex shrink-0 items-center gap-1">
+          <LetterCircle letter="Б" className="bg-blue-500" />
+          <MacroDigits value={protein} maxDigits={3} />
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-1">
+          <LetterCircle letter="Ж" className="bg-red-500" />
+          <MacroDigits value={fat} maxDigits={3} />
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-1">
+          <LetterCircle letter="У" className="bg-amber-500" />
+          <MacroDigits value={carbs} maxDigits={3} />
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-1">
+          <LetterCircle letter="К" className="bg-teal-500" />
+          <MacroDigits value={fiber} maxDigits={3} />
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function FoodMacrosBadges({
   calories,
   protein,
   fat,
   carbs,
   fiber,
+  density = 'badges',
 }: FoodMacrosBadgesProps) {
+  if (density === 'compact') {
+    return (
+      <CompactMacros
+        calories={calories}
+        protein={protein}
+        fat={fat}
+        carbs={carbs}
+        fiber={fiber}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-wrap gap-1">
       <Badge
