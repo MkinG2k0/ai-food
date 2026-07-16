@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
-last_updated: "2026-07-16T13:42:00.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-iqm: quantitative micronutrients + AI norms + chart
+last_updated: "2026-07-16T10:50:30.000Z"
+last_activity: 2026-07-16 - Completed quick task 260716-j45: onboarding photo tips
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-iqm: quantitative micronutrients + AI norms + chart
+Last activity: 2026-07-16 - Completed quick task 260716-j45: onboarding photo tips
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -126,6 +126,7 @@ None yet.
 | 260716-5gj | PWA installability + Meal Detail Полезность/Точность layout | 2026-07-16 | bc3f6c8, 7895879 | [260716-5gj-pwa-1-10-ui-ux](./quick/260716-5gj-pwa-1-10-ui-ux/) |
 | 260716-i2n | No-food photo → ошибка распознавания + «Повторить» | 2026-07-16 | 02db668 | [260716-i2n-no-food-detection-error-and-retry](./quick/260716-i2n-no-food-detection-error-and-retry/) |
 | 260716-iqm | Quantitative micronutrients (мг/мкг) + AI daily norms + chart vs norm | 2026-07-16 | e03000e, d09130b, 1a6f6e2 | [260716-iqm-ai](./quick/260716-iqm-ai/) |
+| 260716-j45 | Onboarding result: tips how to photo food for AI | 2026-07-16 | 9c746e8, 557baec | [260716-j45-onboarding-photo-tips](./quick/260716-j45-onboarding-photo-tips/) |
 
 ### Blockers/Concerns
 
