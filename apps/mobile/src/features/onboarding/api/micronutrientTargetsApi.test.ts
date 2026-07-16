@@ -89,7 +89,7 @@ describe('micronutrientTargetsApi', () => {
     expect(axios.post).toHaveBeenCalledWith(
       `${GATEWAY_URL}/v1/chat/completions`,
       expect.objectContaining({
-        model: 'gpt-4.1-mini',
+        model: 'gpt-4.1',
         response_format: { type: 'json_object' },
         messages: expect.arrayContaining([
           expect.objectContaining({
