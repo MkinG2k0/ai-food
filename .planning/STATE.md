@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-53i: Favorite food (detail star + quick-add)
+Last activity: 2026-07-16 - Favorites page with photos (`/favorites`)
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -119,6 +119,7 @@ None yet.
 | 260716-4nf | Micronutrient badges (top-8 qualitative levels) on meal detail | 2026-07-16 | — | [260716-4nf-micronutrient-badges-vision-returns-top-](./quick/260716-4nf-micronutrient-badges-vision-returns-top-/) |
 | 260716-50x | Client-side image compression before AI (Canvas, no backend) | 2026-07-16 | — | [260716-50x-client-side-image-compression-before-ai-](./quick/260716-50x-client-side-image-compression-before-ai-/) |
 | 260716-53i | Favorite food: detail star + quick-add from Home «+» | 2026-07-16 | 4257d07, a1569d5 | [260716-53i-favorite-food](./quick/260716-53i-favorite-food/) |
+| fast | Favorites: photos in list + dedicated `/favorites` page | 2026-07-16 | f479646 | — |
 | 260716-51m | Analyze-food retry «Повторить» on error MealCard | 2026-07-16 | 7454b43, 210f130, a257dbc | [260716-51m-analyze-food-retry-button](./quick/260716-51m-analyze-food-retry-button/) |
 
 ### Blockers/Concerns
