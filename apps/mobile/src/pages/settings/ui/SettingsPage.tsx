@@ -93,6 +93,20 @@ export function SettingsPage() {
                     </dd>
                   </div>
                 )}
+                {profile.targetWeightDate ? (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Срок</dt>
+                    <dd className="font-medium text-right">
+                      {new Date(
+                        `${profile.targetWeightDate}T12:00:00`,
+                      ).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </dd>
+                  </div>
+                ) : null}
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Активность</dt>
                   <dd className="font-medium text-right">
