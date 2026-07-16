@@ -2,15 +2,16 @@ import { useState } from 'react';
 import type { UserProfile, ActivityLevel } from '@ai-food/shared-types';
 import { Button } from '@/shared/ui';
 import { cn } from '@/shared/lib';
+import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
 interface StepActivityProps {
   onNext: (data: Pick<UserProfile, 'activity'>) => void;
 }
 
-const OPTIONS: { value: ActivityLevel; label: string; description: string }[] = [
-  { value: 'low', label: 'Низкая', description: 'Сидячий образ жизни' },
-  { value: 'medium', label: 'Средняя', description: 'Умеренные тренировки 1–3 раза в неделю' },
-  { value: 'high', label: 'Высокая', description: 'Интенсивные тренировки 4+ раз в неделю' },
+const OPTIONS: { value: ActivityLevel; label: string; description: string; emoji: string }[] = [
+  { value: 'low', label: 'Низкая', description: 'Сидячий образ жизни', emoji: '🪑' },
+  { value: 'medium', label: 'Средняя', description: 'Умеренные тренировки 1–3 раза в неделю', emoji: '🚶' },
+  { value: 'high', label: 'Высокая', description: 'Интенсивные тренировки 4+ раз в неделю', emoji: '🏋️' },
 ];
 
 export function StepActivity({ onNext }: StepActivityProps) {
@@ -18,7 +19,7 @@ export function StepActivity({ onNext }: StepActivityProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="text-xl font-semibold text-center">Уровень активности</h2>
+      <OnboardingStepHeader emoji="🏃" title="Уровень активности" />
       <div className="flex flex-col gap-3">
         {OPTIONS.map((opt) => (
           <button
@@ -31,8 +32,15 @@ export function StepActivity({ onNext }: StepActivityProps) {
                 : 'border-border bg-background',
             )}
           >
-            <div className="font-medium">{opt.label}</div>
-            <div className="text-sm text-muted-foreground">{opt.description}</div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl leading-none" aria-hidden="true">
+                {opt.emoji}
+              </span>
+              <div>
+                <div className="font-medium">{opt.label}</div>
+                <div className="text-sm text-muted-foreground">{opt.description}</div>
+              </div>
+            </div>
           </button>
         ))}
       </div>

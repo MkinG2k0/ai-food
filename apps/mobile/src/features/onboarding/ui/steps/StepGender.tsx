@@ -2,30 +2,39 @@ import { useState } from 'react';
 import type { UserProfile } from '@ai-food/shared-types';
 import { Button } from '@/shared/ui';
 import { cn } from '@/shared/lib';
+import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
 interface StepGenderProps {
   onNext: (data: Pick<UserProfile, 'gender'>) => void;
 }
+
+const OPTIONS: { value: UserProfile['gender']; label: string; emoji: string }[] = [
+  { value: 'male', label: 'Мужской', emoji: '👨' },
+  { value: 'female', label: 'Женский', emoji: '👩' },
+];
 
 export function StepGender({ onNext }: StepGenderProps) {
   const [selected, setSelected] = useState<UserProfile['gender'] | null>(null);
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="text-xl font-semibold text-center">Ваш пол</h2>
+      <OnboardingStepHeader emoji="👤" title="Ваш пол" />
       <div className="flex gap-4">
-        {(['male', 'female'] as const).map((g) => (
+        {OPTIONS.map((opt) => (
           <button
-            key={g}
-            onClick={() => setSelected(g)}
+            key={opt.value}
+            onClick={() => setSelected(opt.value)}
             className={cn(
-              'flex-1 rounded-xl border-2 py-6 text-base font-medium transition-colors',
-              selected === g
+              'flex flex-1 flex-col items-center gap-2 rounded-xl border-2 py-6 text-base font-medium transition-colors',
+              selected === opt.value
                 ? 'border-primary bg-primary/10'
                 : 'border-border bg-background text-foreground',
             )}
           >
-            {g === 'male' ? 'Мужской' : 'Женский'}
+            <span className="text-3xl leading-none" aria-hidden="true">
+              {opt.emoji}
+            </span>
+            {opt.label}
           </button>
         ))}
       </div>

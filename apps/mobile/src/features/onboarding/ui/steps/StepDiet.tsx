@@ -2,31 +2,36 @@ import { useState } from 'react';
 import type { UserProfile, DietType } from '@ai-food/shared-types';
 import { Button } from '@/shared/ui';
 import { cn } from '@/shared/lib';
+import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
 interface StepDietProps {
   onNext: (data: Pick<UserProfile, 'dietType'>) => void;
 }
 
-const OPTIONS: { value: DietType; label: string; description: string }[] = [
+const OPTIONS: { value: DietType; label: string; description: string; emoji: string }[] = [
   {
     value: 'none',
     label: 'Без ограничений',
     description: 'Нет специальных диетических ограничений',
+    emoji: '🍽️',
   },
   {
     value: 'halal',
     label: 'Халяль',
     description: 'Только халяль-продукты, без свинины и запрещённого мяса',
+    emoji: '☪️',
   },
   {
     value: 'vegan',
     label: 'Веган',
     description: 'Без продуктов животного происхождения',
+    emoji: '🌱',
   },
   {
     value: 'vegetarian',
     label: 'Вегетарианство',
     description: 'Без мяса и рыбы; молочные продукты и яйца допустимы',
+    emoji: '🥬',
   },
 ];
 
@@ -35,7 +40,7 @@ export function StepDiet({ onNext }: StepDietProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="text-xl font-semibold text-center">Тип питания</h2>
+      <OnboardingStepHeader emoji="🥗" title="Тип питания" />
       <div className="flex flex-col gap-3">
         {OPTIONS.map((opt) => (
           <button
@@ -49,8 +54,15 @@ export function StepDiet({ onNext }: StepDietProps) {
                 : 'border-border bg-background',
             )}
           >
-            <div className="font-medium">{opt.label}</div>
-            <div className="text-sm text-muted-foreground">{opt.description}</div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl leading-none" aria-hidden="true">
+                {opt.emoji}
+              </span>
+              <div>
+                <div className="font-medium">{opt.label}</div>
+                <div className="text-sm text-muted-foreground">{opt.description}</div>
+              </div>
+            </div>
           </button>
         ))}
       </div>

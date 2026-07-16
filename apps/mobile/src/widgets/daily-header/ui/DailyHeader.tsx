@@ -62,7 +62,7 @@ export function DailyHeader({
   );
 
   return (
-    <header className="px-4 pt-safe-header pb-2">
+    <header className="p-4 pt-5 pb-2">
       <div className="relative flex items-center justify-center">
         <button
           type="button"
