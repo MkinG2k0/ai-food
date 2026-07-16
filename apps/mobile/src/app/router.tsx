@@ -6,6 +6,7 @@ import { MealDetailPage } from '@/pages/meal-detail';
 import { FoodItemEditPage } from '@/pages/food-item-edit';
 import { StatsPage } from '@/pages/stats';
 import { SettingsPage } from '@/pages/settings';
+import { FavoritesPage } from '@/pages/favorites';
 import { AppShell } from './AppShell';
 import { ProfileGuard } from './ProfileGuard';
 
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
       { path: '/diary', element: <ProfileGuard><DiaryPage /></ProfileGuard> },
       { path: '/stats', element: <ProfileGuard><StatsPage /></ProfileGuard> },
       { path: '/settings', element: <ProfileGuard><SettingsPage /></ProfileGuard> },
+      { path: '/favorites', element: <ProfileGuard><FavoritesPage /></ProfileGuard> },
       { path: '/meal/:id', element: <ProfileGuard><MealDetailPage /></ProfileGuard> },
       {
         path: '/meal/:mealId/item/:itemId',
