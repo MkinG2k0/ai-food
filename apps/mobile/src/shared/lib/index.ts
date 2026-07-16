@@ -10,5 +10,5 @@ export {
   formatHeaderDate,
   timestampForSelectedDate,
 } from './dateUtils';
-export { saveMealImage, getMealImageSrc } from './mealImage';
+export { saveMealImage, getMealImageSrc, loadMealImageAsFile } from './mealImage';
 export { capacitorStorage } from './capacitorStorage';

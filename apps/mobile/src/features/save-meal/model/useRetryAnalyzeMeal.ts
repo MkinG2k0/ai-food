@@ -1,0 +1,77 @@
+import { useQueryClient } from '@tanstack/react-query';
+import type { Meal } from '@ai-food/shared-types';
+import { useDiaryStore } from '@/entities/meal';
+import { analyzeFoodApi } from '@/features/analyze-food';
+import { useProfileStore } from '@/features/onboarding';
+import { useSettingsStore } from '@/features/settings';
+import { loadMealImageAsFile } from '@/shared/lib';
+import { applyAnalyzeResultToMeal } from './applyAnalyzeResultToMeal';
+
+const ANALYZING_PLACEHOLDER = 'Анализ…';
+
+function usableDescription(name: string | undefined): string | null {
+  const trimmed = name?.trim() ?? '';
+  if (!trimmed || trimmed === ANALYZING_PLACEHOLDER) return null;
+  return trimmed;
+}
+
+export function useRetryAnalyzeMeal() {
+  const queryClient = useQueryClient();
+  const updateMeal = useDiaryStore((s) => s.updateMeal);
+
+  return async (mealId: string): Promise<void> => {
+    const meal = useDiaryStore.getState().meals.find((m: Meal) => m.id === mealId);
+    if (!meal) return;
+
+    let image: File | null = null;
+    if (meal.imageUri) {
+      image = await loadMealImageAsFile(meal.imageUri);
+    }
+
+    const description = usableDescription(meal.name);
+
+    if (!image && !description) {
+      updateMeal(mealId, { status: 'error' });
+      return;
+    }
+
+    updateMeal(mealId, { status: 'analyzing' });
+
+    try {
+      const customInstructions = useSettingsStore.getState().customInstructions;
+      const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
+      const response = await queryClient.fetchQuery({
+        queryKey: image
+          ? [
+              'analyze-food',
+              'retry',
+              mealId,
+              image.name,
+              image.size,
+              image.lastModified,
+              customInstructions,
+              dietType,
+            ]
+          : [
+              'analyze-food',
+              'retry',
+              mealId,
+              'text',
+              description,
+              customInstructions,
+              dietType,
+            ],
+        queryFn: () =>
+          image
+            ? analyzeFoodApi(image, { customInstructions, dietType })
+            : analyzeFoodApi(
+                { description: description! },
+                { customInstructions, dietType },
+              ),
+      });
+      applyAnalyzeResultToMeal(mealId, response.result, meal.items[0]?.id);
+    } catch {
+      updateMeal(mealId, { status: 'error' });
+    }
+  };
+}
