@@ -93,7 +93,7 @@ router.post('/', uploadMiddleware, async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();
     const completion = await getOpenAIClient().chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1-mini',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },

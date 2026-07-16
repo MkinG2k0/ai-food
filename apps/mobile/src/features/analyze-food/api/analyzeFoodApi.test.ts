@@ -244,7 +244,7 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     expect(String(url)).toContain(GATEWAY_URL);
     expect(config?.headers?.Authorization).toBe(`Bearer ${GATEWAY_KEY}`);
     expect(body).toMatchObject({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1-mini',
       response_format: { type: 'json_object' },
     });
     expect(body.messages).toHaveLength(2);

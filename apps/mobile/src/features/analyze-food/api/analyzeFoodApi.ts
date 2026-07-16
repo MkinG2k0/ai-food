@@ -259,7 +259,7 @@ export async function analyzeFoodApi(
     response = await axios.post(
       `${gatewayUrl}/v1/chat/completions`,
       {
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemContent },
