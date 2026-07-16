@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 2 not started
-last_updated: "2026-07-16T00:00:00.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-3qy: add fiber everywhere
+last_updated: "2026-07-16T00:13:34.000Z"
+last_activity: 2026-07-16 - Completed quick task 260716-4aa: meal healthiness + recognition accuracy ranges
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-3qy: add fiber everywhere
+Last activity: 2026-07-16 - Completed quick task 260716-4aa: meal healthiness + recognition accuracy ranges
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -78,6 +78,7 @@ Recent decisions affecting current work:
 - 260716-3nc: DietType on UserProfile (none/halal/vegan/vegetarian); appendDietPreference with Halal-only pork→chicken bias; Settings diet edit
 - 260716-3nq: Settings profile summary + resetProfile redo onboarding (diary/customInstructions kept)
 - 260716-3qy: FoodItem/DailyTargets.fiber; save/refine persist; daily totals + 30 г goal; diary badges/edit «Кл»/клетчатка
+- 260716-4dd: MealCard density=compact (large kcal + Б/Ж/У/К circles); FoodItemDisplayCard keeps pill badges
 
 ### Pending Todos
 
@@ -109,6 +110,9 @@ None yet.
 | 260716-3nc | Onboarding diet type + Halal pork→chicken AI bias | 2026-07-16 | 5027899, d26a412, 054becc, 3c42947 | [260716-3nc-bias](./quick/260716-3nc-bias/) |
 | 260716-3qy | Add dietary fiber everywhere (persist, totals, diary UI) | 2026-07-16 | 5c3cbc7, 83a5885, 6b33f4c, b9e83db, 7d6c414 | [260716-3qy-add-fiber](./quick/260716-3qy-add-fiber/) |
 | 260716-3d2 | модуль статистики — недельный график калорий (сумма по дням) | 2026-07-15 | a90f01b, 026da04, 08a7dac | [260716-3d2-stats-weekly-kcal](./quick/260716-3d2-stats-weekly-kcal/) |
+| fast | Выровнять бейджи КБЖУ (ккал до 9999, макросы до 999) | 2026-07-16 | 05a2665 | — |
+| 260716-4dd | MealCard compact: large kcal + letter circles Б/Ж/У/К | 2026-07-16 | b549a54, 98203ef | [260716-4dd-mealcard](./quick/260716-4dd-mealcard/) |
+| 260716-4aa | Полезность (1–10) и точность распознавания (%) после даты на деталях приёма | 2026-07-16 | 0fa166c, 3aca94d, 38c16b4, 18185df | [260716-4aa-1-10](./quick/260716-4aa-1-10/) |
 
 ### Blockers/Concerns
 
