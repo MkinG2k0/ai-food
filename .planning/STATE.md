@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 not started
-last_updated: "2026-07-16T10:50:30.000Z"
-last_activity: 2026-07-16 - Completed quick task 260716-j45: onboarding photo tips
+stopped_at: Completed quick task 260716-jaa
+last_updated: "2026-07-16T11:01:00.000Z"
+last_activity: 2026-07-16 - Completed quick task 260716-jaa: onboarding target weight
 progress:
   total_phases: 6
   completed_phases: 1
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-j45: onboarding photo tips
+Last activity: 2026-07-16 - Completed quick task 260716-jaa: onboarding target weight
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -76,6 +76,7 @@ Recent decisions affecting current work:
 - 260716-3d2: features/stats — getWeeklyCalorieSeries + WeeklyCaloriesChart; StatsPage `/stats`; DailyHeader nav
 - 260716-3g0: useSettingsStore (ai-food-settings) customInstructions → analyze/refine system prompts; `/settings`
 - 260716-3nc: DietType on UserProfile (none/halal/vegan/vegetarian); appendDietPreference with Halal-only pork→chicken bias; Settings diet edit
+- 260716-jaa: UserProfile.targetWeight; onboarding StepTargetWeight after Goal (TOTAL_STEPS=8); micronutrient userText; macros still from weight
 - 260716-3nq: Settings profile summary + resetProfile redo onboarding (diary/customInstructions kept)
 - 260716-3qy: FoodItem/DailyTargets.fiber; save/refine persist; daily totals + 30 г goal; diary badges/edit «Кл»/клетчатка
 - 260716-4dd: MealCard density=compact (large kcal + Б/Ж/У/К circles); FoodItemDisplayCard keeps pill badges
@@ -127,6 +128,7 @@ None yet.
 | 260716-i2n | No-food photo → ошибка распознавания + «Повторить» | 2026-07-16 | 02db668 | [260716-i2n-no-food-detection-error-and-retry](./quick/260716-i2n-no-food-detection-error-and-retry/) |
 | 260716-iqm | Quantitative micronutrients (мг/мкг) + AI daily norms + chart vs norm | 2026-07-16 | e03000e, d09130b, 1a6f6e2 | [260716-iqm-ai](./quick/260716-iqm-ai/) |
 | 260716-j45 | Onboarding result: tips how to photo food for AI | 2026-07-16 | 9c746e8, 557baec | [260716-j45-onboarding-photo-tips](./quick/260716-j45-onboarding-photo-tips/) |
+| 260716-jaa | Onboarding desired weight (targetWeight) after Goal | 2026-07-16 | 50177a8, e01208d, ae67511 | [260716-jaa-onboarding-target-weight](./quick/260716-jaa-onboarding-target-weight/) |
 
 ### Blockers/Concerns
 
