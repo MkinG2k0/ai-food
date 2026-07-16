@@ -30,33 +30,42 @@ export function FoodMacrosBadges({
     <div className="flex flex-wrap gap-1">
       <Badge
         variant="secondary"
-        className="bg-emerald-50 text-emerald-700 border-emerald-100 font-semibold"
+        className="gap-1 bg-emerald-50 text-emerald-700 border-emerald-100 font-semibold"
       >
-        <MacroDigits value={calories} maxDigits={4} /> ккал
+        <MacroDigits value={calories} maxDigits={4} />
+        <span>ккал</span>
       </Badge>
       <Badge
         variant="secondary"
-        className="bg-blue-50 text-blue-700 border-blue-100 font-semibold"
+        className="gap-1 bg-blue-50 text-blue-700 border-blue-100 font-semibold"
       >
-        Б <MacroDigits value={protein} maxDigits={3} /> г
+        <span>Б</span>
+        <MacroDigits value={protein} maxDigits={3} />
+        <span>г</span>
       </Badge>
       <Badge
         variant="secondary"
-        className="bg-red-50 text-red-700 border-red-100 font-semibold"
+        className="gap-1 bg-red-50 text-red-700 border-red-100 font-semibold"
       >
-        Ж <MacroDigits value={fat} maxDigits={3} /> г
+        <span>Ж</span>
+        <MacroDigits value={fat} maxDigits={3} />
+        <span>г</span>
       </Badge>
       <Badge
         variant="secondary"
-        className="bg-amber-50 text-amber-700 border-amber-100 font-semibold"
+        className="gap-1 bg-amber-50 text-amber-700 border-amber-100 font-semibold"
       >
-        У <MacroDigits value={carbs} maxDigits={3} /> г
+        <span>У</span>
+        <MacroDigits value={carbs} maxDigits={3} />
+        <span>г</span>
       </Badge>
       <Badge
         variant="secondary"
-        className="bg-teal-50 text-teal-700 border-teal-100 font-semibold"
+        className="gap-1 bg-teal-50 text-teal-700 border-teal-100 font-semibold"
       >
-        Кл <MacroDigits value={fiber} maxDigits={3} /> г
+        <span>Кл</span>
+        <MacroDigits value={fiber} maxDigits={3} />
+        <span>г</span>
       </Badge>
     </div>
   );
