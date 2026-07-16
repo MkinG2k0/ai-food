@@ -103,7 +103,7 @@ export function MealDetailPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="flex items-center px-4 py-4 border-b">
+      <header className="flex items-center px-4 pt-safe-header pb-3 border-b">
         <Button
           type="button"
           variant="ghost"
@@ -143,7 +143,7 @@ export function MealDetailPage() {
         </Button>
       </header>
 
-      <main className="flex-1 px-4 py-4 space-y-4">
+      <main className="flex-1 px-4 py-5 space-y-5 pb-safe">
         {imageSrc && (
           <button
             type="button"
@@ -154,7 +154,7 @@ export function MealDetailPage() {
             <img
               src={imageSrc}
               alt=""
-              className="w-full h-56 object-cover"
+              className="w-full aspect-[4/3] object-cover"
             />
           </button>
         )}

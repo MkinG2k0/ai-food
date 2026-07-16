@@ -25,10 +25,23 @@ function parseNutrient(raw: string): number {
   return Math.max(0, Math.round(n));
 }
 
-function MacroBar({ value, max = 100 }: { value: number; max?: number }) {
+function MacroBar({
+  value,
+  max = 100,
+  thick = false,
+}: {
+  value: number;
+  max?: number;
+  thick?: boolean;
+}) {
   const pct = Math.min((value / max) * 100, 100);
   return (
-    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+    <div
+      className={cn(
+        'bg-muted rounded-full overflow-hidden',
+        thick ? 'h-2.5' : 'h-1.5',
+      )}
+    >
       <div
         className="h-full rounded-full bg-emerald-500"
         style={{ width: `${pct}%` }}
@@ -64,46 +77,52 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
 
   return (
     <Card>
-      <CardHeader className="space-y-2">
-        <h2 className="text-base font-semibold text-foreground">{dishName}</h2>
-        <p className="text-sm text-muted-foreground">
-          {formatDate(meal.timestamp)} в {time}
-        </p>
+      <CardHeader className="space-y-4 pb-2">
+        <div className="space-y-1.5">
+          <h2 className="text-base font-semibold text-foreground">{dishName}</h2>
+          <p className="text-sm text-muted-foreground">
+            {formatDate(meal.timestamp)} в {time}
+          </p>
+        </div>
         {(meal.healthiness !== undefined || meal.confidence !== undefined) && (
-          <div className="space-y-2 pt-0.5">
+          <div className="space-y-3">
             {meal.healthiness !== undefined && (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-xs text-muted-foreground">Полезность</span>
-                  <span className="text-xs tabular-nums text-muted-foreground">
+                  <span className="text-sm text-muted-foreground">Полезность</span>
+                  <span className="text-sm tabular-nums font-medium text-foreground">
                     {meal.healthiness}/10
                   </span>
                 </div>
-                <MacroBar value={meal.healthiness} max={10} />
+                <MacroBar value={meal.healthiness} max={10} thick />
               </div>
             )}
             {meal.confidence !== undefined && (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-xs text-muted-foreground">Точность</span>
-                  <span className="text-xs tabular-nums text-muted-foreground">
+                  <span className="text-sm text-muted-foreground">Точность</span>
+                  <span className="text-sm tabular-nums font-medium text-foreground">
                     {Math.round(meal.confidence * 100)}%
                   </span>
                 </div>
-                <MacroBar value={Math.round(meal.confidence * 100)} max={100} />
+                <MacroBar
+                  value={Math.round(meal.confidence * 100)}
+                  max={100}
+                  thick
+                />
               </div>
             )}
           </div>
         )}
         {meal.micronutrients && meal.micronutrients.length > 0 && (
-          <div className="pt-0.5">
+          <div>
             <MicronutrientsBadges micronutrients={meal.micronutrients} />
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5 pt-2">
         <div className="flex items-end gap-3">
-          <label className="block min-w-0 flex-1 space-y-1">
+          <label className="block min-w-0 flex-1 space-y-1.5">
             <span className="text-xs text-muted-foreground">Калории, ккал</span>
             <input
               type="number"
@@ -122,7 +141,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
               }
             />
           </label>
-          <div className="shrink-0 space-y-1">
+          <div className="shrink-0 space-y-1.5">
             <span className="block text-xs text-muted-foreground text-center">
               Порции
             </span>
@@ -158,7 +177,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4">
           {(
             [
               {
