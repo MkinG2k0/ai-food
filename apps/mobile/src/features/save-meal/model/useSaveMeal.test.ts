@@ -204,9 +204,9 @@ describe('useSaveMeal', () => {
           },
         ],
         micronutrients: [
-          { id: 'iron', level: 'high' },
-          { id: 'vitaminC', level: 'medium' },
-          { id: 'vitaminD', level: 'none' },
+          { id: 'iron', amount: 3.5, unit: 'mg' },
+          { id: 'vitaminC', amount: 20, unit: 'mg' },
+          { id: 'vitaminD', amount: 0, unit: 'µg' },
         ],
       },
       processingTime: 80,
@@ -221,9 +221,9 @@ describe('useSaveMeal', () => {
 
     const meal = useDiaryStore.getState().meals[0];
     expect(meal.micronutrients).toEqual([
-      { id: 'iron', level: 'high' },
-      { id: 'vitaminC', level: 'medium' },
-      { id: 'vitaminD', level: 'none' },
+      { id: 'iron', amount: 3.5, unit: 'mg' },
+      { id: 'vitaminC', amount: 20, unit: 'mg' },
+      { id: 'vitaminD', amount: 0, unit: 'µg' },
     ]);
   });
 

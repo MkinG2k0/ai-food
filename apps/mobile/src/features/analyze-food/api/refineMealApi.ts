@@ -58,7 +58,7 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides
     }
   ],
   "micronutrients": [
-    { "id": "vitaminA"|"vitaminC"|"vitaminD"|"vitaminB12"|"iron"|"calcium"|"folate"|"magnesium", "level": "high"|"medium"|"low"|"none" }
+    { "id": "vitaminA"|"vitaminC"|"vitaminD"|"vitaminB12"|"iron"|"calcium"|"folate"|"magnesium", "amount": number, "unit": "mg"|"µg" }
   ]
 }
 ${FOOD_NAME_PROMPT_RULE}

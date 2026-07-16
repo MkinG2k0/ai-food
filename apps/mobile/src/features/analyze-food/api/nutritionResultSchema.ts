@@ -1,13 +1,13 @@
 import type {
   MicronutrientEstimate,
   MicronutrientId,
-  MicronutrientLevel,
+  MicronutrientUnit,
   NutritionResult,
 } from '@ai-food/shared-types';
-import { MICRONUTRIENT_IDS } from '@ai-food/shared-types';
+import { MICRONUTRIENT_IDS, MICRONUTRIENT_UNITS } from '@ai-food/shared-types';
 
-const LEVELS = new Set<MicronutrientLevel>(['high', 'medium', 'low', 'none']);
 const ID_SET = new Set<string>(MICRONUTRIENT_IDS);
+const UNITS = new Set<MicronutrientUnit>(['mg', 'µg']);
 
 /** AI response when the image does not contain edible food. */
 export interface NoFoodResult {
@@ -27,23 +27,27 @@ export function isNoFoodResult(value: unknown): value is NoFoodResult {
   return v.noFood === true && typeof v.reason === 'string' && v.reason.trim().length > 0;
 }
 
-export const MICRONUTRIENTS_PROMPT_RULE = `micronutrients — массив из ровно 8 объектов { "id", "level" } для всей порции:
+export const MICRONUTRIENTS_PROMPT_RULE = `micronutrients — массив из ровно 8 объектов { "id", "amount", "unit" } для всей порции (оценка, не меддиагноз):
 id ∈ vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium;
-level ∈ high|medium|low|none — качественная оценка вклада этой порции (не мг и не меддиагноз).
-Всегда включай все 8 id; неизвестно/малозначимо → "none".`;
+amount — неотрицательное число (оценка содержания в этой порции); неизвестно → 0;
+unit строго по id: vitaminA/vitaminD/vitaminB12/folate → "µg"; vitaminC/iron/calcium/magnesium → "mg".
+Всегда включай все 8 id. Не используй граммы и не возвращай качественные level.`;
 
 export function isMicronutrientEstimate(value: unknown): value is MicronutrientEstimate {
   if (!value || typeof value !== 'object') return false;
   const row = value as Record<string, unknown>;
-  return (
-    typeof row.id === 'string' &&
-    ID_SET.has(row.id) &&
-    typeof row.level === 'string' &&
-    LEVELS.has(row.level as MicronutrientLevel)
-  );
+  if (typeof row.id !== 'string' || !ID_SET.has(row.id)) return false;
+  if (typeof row.amount !== 'number' || !Number.isFinite(row.amount) || row.amount < 0) {
+    return false;
+  }
+  if (typeof row.unit !== 'string' || !UNITS.has(row.unit as MicronutrientUnit)) {
+    return false;
+  }
+  const id = row.id as MicronutrientId;
+  return row.unit === MICRONUTRIENT_UNITS[id];
 }
 
-/** Accepts omitted/empty; when present, every entry must be valid known id+level. */
+/** Accepts omitted/empty; when present, every entry must be valid known id+amount+unit. */
 export function isMicronutrientsField(value: unknown): value is MicronutrientEstimate[] | undefined {
   if (value === undefined) return true;
   if (!Array.isArray(value)) return false;
@@ -51,17 +55,27 @@ export function isMicronutrientsField(value: unknown): value is MicronutrientEst
   return value.every(isMicronutrientEstimate);
 }
 
-/** Dedupe by id (first wins), keep only known ids — for persist/UI. */
+/**
+ * Keep known ids, coerce unit from MICRONUTRIENT_UNITS, drop invalid/duplicate ids,
+ * non-finite/negative amounts, and legacy level-only rows.
+ */
 export function normalizeMicronutrients(
-  value: MicronutrientEstimate[] | undefined,
+  value: unknown,
 ): MicronutrientEstimate[] | undefined {
-  if (!value || value.length === 0) return undefined;
+  if (!Array.isArray(value) || value.length === 0) return undefined;
   const seen = new Set<MicronutrientId>();
   const out: MicronutrientEstimate[] = [];
-  for (const row of value) {
-    if (!ID_SET.has(row.id) || !LEVELS.has(row.level) || seen.has(row.id)) continue;
-    seen.add(row.id);
-    out.push({ id: row.id, level: row.level });
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') continue;
+    const row = entry as Record<string, unknown>;
+    if (typeof row.id !== 'string' || !ID_SET.has(row.id)) continue;
+    if (typeof row.amount !== 'number' || !Number.isFinite(row.amount) || row.amount < 0) {
+      continue;
+    }
+    const id = row.id as MicronutrientId;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push({ id, amount: row.amount, unit: MICRONUTRIENT_UNITS[id] });
   }
   return out.length > 0 ? out : undefined;
 }
