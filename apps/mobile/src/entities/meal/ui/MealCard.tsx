@@ -83,12 +83,12 @@ export function MealCard({ meal }: MealCardProps) {
                 <span className="text-sm text-muted-foreground">Анализ еды…</span>
               </div>
               <Skeleton className="h-4 w-36" />
-              <div className="flex flex-wrap gap-1">
-                <Skeleton className="h-5 w-14 rounded-full" />
-                <Skeleton className="h-5 w-12 rounded-full" />
-                <Skeleton className="h-5 w-12 rounded-full" />
-                <Skeleton className="h-5 w-12 rounded-full" />
-                <Skeleton className="h-5 w-12 rounded-full" />
+              <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden">
+                <Skeleton className="h-5 w-16 shrink-0" />
+                <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
               </div>
             </>
           ) : isError ? (
@@ -107,6 +107,7 @@ export function MealCard({ meal }: MealCardProps) {
                 </span>
               </div>
               <FoodMacrosBadges
+                density="compact"
                 calories={meal.totalCalories}
                 protein={totals.protein}
                 fat={totals.fat}
