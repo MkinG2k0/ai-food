@@ -66,7 +66,7 @@ status: complete
 1. **Task 1 (RED): Use gpt-4.1 for micronutrientTargetsApi** - `17c6829` (test)
 2. **Task 1 (GREEN): Use gpt-4.1 for micronutrientTargetsApi** - `3e96aec` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `6b7ae04` (docs: complete plan)
 
 ## Files Created/Modified
 - `apps/mobile/src/features/onboarding/api/micronutrientTargetsApi.ts` - model `gpt-4.1`
