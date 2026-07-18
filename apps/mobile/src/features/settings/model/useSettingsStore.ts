@@ -10,7 +10,7 @@ export const AI_MODEL_OPTIONS = [
   { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' },
   { value: 'qwen/qwen-vl-max', label: 'Qwen VL Max' },
   { value: 'openai/gpt-5-mini', label: 'GPT-5 mini' },
-  { value: 'google/gemini-3-flash', label: 'Gemini 3 Flash' },
+  { value: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash' },
   { value: 'openai/gpt-5.4', label: 'GPT-5.4' },
   { value: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6' },
 ] as const;
