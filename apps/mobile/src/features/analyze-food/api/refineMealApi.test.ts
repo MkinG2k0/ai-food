@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ApiError, NutritionResult } from '@ai-food/shared-types';
 import axios from 'axios';
-import { COMPOSITION_PROMPT_RULE, FOOD_NAME_PROMPT_RULE, MICRONUTRIENTS_PROMPT_RULE } from './analyzeFoodApi';
+import { COMPOSITION_PROMPT_RULE, FOOD_NAME_PROMPT_RULE } from './analyzeFoodApi';
 import { refineMealApi } from './refineMealApi';
 
 vi.mock('axios', () => {
@@ -119,10 +119,26 @@ describe('refineMealApi (AI Gateway)', () => {
     expect(body.messages[0].role).toBe('system');
     expect(body.messages[0].content).toContain(FOOD_NAME_PROMPT_RULE);
     expect(body.messages[0].content).toContain(COMPOSITION_PROMPT_RULE);
-    expect(body.messages[0].content).toContain(MICRONUTRIENTS_PROMPT_RULE);
+    expect(body.messages[0].content).toMatch(/micronutrients/i);
+    expect(body.messages[0].content).toMatch(/"id".*"amount".*"unit"|массив из ровно 8/i);
     expect(typeof body.messages[1].content).toBe('string');
     expect(body.messages[1].content).toContain('съел половину');
     expect(body.messages[1].content).toContain(JSON.stringify(mealContext));
+  });
+
+  it('parses NutritionResult wrapped in markdown json fences', async () => {
+    const fenced = '```json\n' + JSON.stringify(validNutrition) + '\n```';
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(fenced),
+    });
+
+    const result = await refineMealApi({
+      correction: 'добавь соус',
+      mealContext,
+    });
+
+    expect(result.result.foodName).toBe(validNutrition.foodName);
+    expect(result.result.calories).toBe(validNutrition.calories);
   });
 
   it('POSTs multimodal user content when imageDataUrl is provided', async () => {
@@ -236,7 +252,7 @@ describe('refineMealApi (AI Gateway)', () => {
     }
   );
 
-  it('SYSTEM_PROMPT documents healthiness 1–10 alongside confidence', async () => {
+  it('SYSTEM_PROMPT documents healthiness 1–10', async () => {
     vi.mocked(axios.post).mockResolvedValue({
       data: gatewaySuccessBody(JSON.stringify({ ...validNutrition, healthiness: 7 })),
     });
@@ -248,7 +264,7 @@ describe('refineMealApi (AI Gateway)', () => {
     const system = body.messages[0].content;
     expect(system).toMatch(/"healthiness"\s*:\s*number/i);
     expect(system).toMatch(/1\s*[–-]\s*10|1 to 10|integer 1/i);
-    expect(system).toMatch(/"confidence"\s*:\s*number/i);
+    expect(system).not.toMatch(/"confidence"\s*:/);
   });
 
   it('maps RATE_LIMITED from gateway', async () => {

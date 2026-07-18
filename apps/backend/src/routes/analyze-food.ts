@@ -25,7 +25,7 @@ const NutritionResultSchema = z.object({
   carbs: z.number(),
   fat: z.number(),
   fiber: z.number(),
-  confidence: z.number().min(0).max(1),
+  confidence: z.number().min(0).max(1).optional(),
   healthiness: z.number().min(1).max(10),
   items: z.array(NutritionItemSchema).default([]),
 });
@@ -48,7 +48,6 @@ If food or drink IS visible, return ONLY a JSON object with these exact fields:
   "carbs": number (grams),
   "fat": number (grams),
   "fiber": number (grams),
-  "confidence": number (0.0 to 1.0, your confidence in the estimate),
   "healthiness": number (integer 1–10, оценка полезности блюда для здоровья)
 }
 Все текстовые значения полей (в частности foodName) пиши на русском языке.

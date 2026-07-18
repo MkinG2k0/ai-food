@@ -7,10 +7,12 @@ import { FoodItemEditPage } from '@/pages/food-item-edit';
 import { StatsPage } from '@/pages/stats';
 import { SettingsPage } from '@/pages/settings';
 import { FavoritesPage } from '@/pages/favorites';
+import { ModelTestPage } from '@/pages/model-test';
 import { AppShell } from './AppShell';
 import { ProfileGuard } from './ProfileGuard';
 
 const router = createBrowserRouter([
+  { path: '/model-test', element: <ModelTestPage /> },
   {
     element: <AppShell />,
     children: [

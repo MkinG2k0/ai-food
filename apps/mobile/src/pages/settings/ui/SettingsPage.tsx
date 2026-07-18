@@ -212,6 +212,20 @@ export function SettingsPage() {
             {customInstructions.length}/2000
           </p>
         </div>
+
+        <section className="space-y-2 pt-2 border-t">
+          <h2 className="text-sm font-medium leading-none">Разработка</h2>
+          <p className="text-sm text-muted-foreground">
+            Сравнение AI-моделей по эталонным фото (КБЖУ).
+          </p>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate('/model-test')}
+          >
+            Тест моделей
+          </Button>
+        </section>
       </main>
 
       <BottomSheet open={redoOpen} onClose={() => setRedoOpen(false)}>

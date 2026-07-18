@@ -10,6 +10,7 @@ import { useProfileStore } from '@/features/onboarding';
 import { useSettingsStore } from '@/features/settings';
 import { loadMealImageAsFile } from '@/shared/lib';
 import { applyAnalyzeResultToMeal } from './applyAnalyzeResultToMeal';
+import { applyPartialAnalyzeResultToMeal } from './applyPartialAnalyzeResultToMeal';
 import { analyzeErrorPatch } from './analyzeErrorPatch';
 
 const ANALYZING_PLACEHOLDER = 'Анализ…';
@@ -81,10 +82,26 @@ export function useRetryAnalyzeMeal() {
                 customInstructions,
                 dietType,
                 model: aiModel,
+                onPartial: (partial) =>
+                  applyPartialAnalyzeResultToMeal(
+                    mealId,
+                    partial,
+                    meal.items[0]?.id,
+                  ),
               })
             : analyzeFoodApi(
                 { description: description! },
-                { customInstructions, dietType, model: aiModel },
+                {
+                  customInstructions,
+                  dietType,
+                  model: aiModel,
+                  onPartial: (partial) =>
+                    applyPartialAnalyzeResultToMeal(
+                      mealId,
+                      partial,
+                      meal.items[0]?.id,
+                    ),
+                },
               ),
       });
       applyAnalyzeResultToMeal(mealId, response.result, meal.items[0]?.id);

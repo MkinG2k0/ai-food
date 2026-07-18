@@ -12,7 +12,10 @@ vi.mock('@capacitor/preferences', () => ({
 import {
   AI_MODEL_OPTIONS,
   DEFAULT_AI_MODEL,
+  GEMINI_TEMPERATURE,
   aiModelLabel,
+  isGeminiModel,
+  temperatureForModel,
   useSettingsStore,
 } from './useSettingsStore';
 
@@ -31,19 +34,19 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().customInstructions).toBe('');
   });
 
-  it('defaults aiModel to google/gemini-2.5-flash-lite', () => {
+  it('defaults aiModel to google/gemini-3-flash-preview', () => {
     expect(useSettingsStore.getState().aiModel).toBe(
-      'google/gemini-2.5-flash-lite',
+      'google/gemini-3-flash-preview',
     );
-    expect(DEFAULT_AI_MODEL).toBe('google/gemini-2.5-flash-lite');
+    expect(DEFAULT_AI_MODEL).toBe('google/gemini-3-flash-preview');
   });
 
   it('exposes curated AI_MODEL_OPTIONS with known OpenRouter slugs', () => {
     const values = AI_MODEL_OPTIONS.map((o) => o.value);
     expect(values).toEqual([
       'google/gemini-2.5-flash-lite',
-      'qwen/qwen-vl-max',
-      'openai/gpt-5-mini',
+      'google/gemini-2.5-flash',
+      'openai/gpt-4.1-mini',
       'google/gemini-3-flash-preview',
       'openai/gpt-5.4',
       'anthropic/claude-sonnet-4.6',
@@ -83,6 +86,17 @@ describe('useSettingsStore', () => {
       'Gemini 2.5 Flash-Lite',
     );
     expect(aiModelLabel('custom/unknown-model')).toBe('custom/unknown-model');
+  });
+
+  it('temperatureForModel returns 0.2 only for Gemini ids', () => {
+    expect(GEMINI_TEMPERATURE).toBe(0.2);
+    expect(isGeminiModel('google/gemini-2.5-flash-lite')).toBe(true);
+    expect(isGeminiModel('openai/gpt-4.1-mini')).toBe(false);
+    expect(temperatureForModel('google/gemini-2.5-flash-lite')).toBe(0.2);
+    expect(temperatureForModel('google/gemini-3-flash-preview')).toBe(0.2);
+    expect(temperatureForModel('openai/gpt-4.1-mini')).toBeUndefined();
+    expect(temperatureForModel('anthropic/claude-sonnet-4.6')).toBeUndefined();
+    expect(temperatureForModel(undefined)).toBeUndefined();
   });
 
   it('truncates customInstructions longer than 2000 characters', async () => {

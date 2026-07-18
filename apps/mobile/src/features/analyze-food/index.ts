@@ -6,6 +6,7 @@ export {
   MICRONUTRIENTS_PROMPT_RULE,
   type AnalyzeFoodInput,
   type AnalyzeFoodOptions,
+  type PartialNutritionXml,
 } from './api/analyzeFoodApi';
 export {
   normalizeMicronutrients,

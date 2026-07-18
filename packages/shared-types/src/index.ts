@@ -66,6 +66,16 @@ export interface Meal {
   micronutrients?: MicronutrientEstimate[];
   /** OpenRouter model id used for the scan; omitted on legacy / manual meals */
   aiModel?: string;
+  /** Scale anchor used for portion size; omitted on legacy meals */
+  portionReference?: string;
+  /** Added/free sugar grams within carbs; omitted on legacy meals */
+  addedSugar?: number;
+  /** Short Russian rationale for confidence; omitted on legacy meals */
+  confidenceReason?: string;
+  /** Short Russian rationale for healthiness; omitted on legacy meals */
+  healthinessReason?: string;
+  /** Hidden calories / uncertainty notes; omitted on legacy meals */
+  disclaimers?: string[];
 }
 
 export interface NutritionItem {
@@ -85,12 +95,23 @@ export interface NutritionResult {
   carbs: number;
   fat: number;
   fiber: number;
-  confidence: number;
+  /** AI recognition confidence 0–1; omitted when model does not return it */
+  confidence?: number;
   /** Integer 1–10 healthfulness score from AI */
   healthiness: number;
   items: NutritionItem[];
   /** Quantitative micronutrient amounts for the portion; omitted if model skipped */
   micronutrients?: MicronutrientEstimate[];
+  /** Scale anchor used for portion size (plate / spoon / …) */
+  portionReference?: string;
+  /** Added/free sugar grams within carbs; 0 if none */
+  addedSugar?: number;
+  /** Short Russian rationale for confidence */
+  confidenceReason?: string;
+  /** Short Russian rationale for healthiness */
+  healthinessReason?: string;
+  /** Hidden calories / uncertainty notes from the model */
+  disclaimers?: string[];
 }
 
 export interface AnalyzeFoodRequest {

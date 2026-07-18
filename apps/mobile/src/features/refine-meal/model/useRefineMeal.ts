@@ -129,6 +129,11 @@ export function useRefineMeal() {
       healthiness: result.healthiness,
       confidence: result.confidence,
       micronutrients: result.micronutrients,
+      portionReference: result.portionReference,
+      addedSugar: result.addedSugar,
+      confidenceReason: result.confidenceReason,
+      healthinessReason: result.healthinessReason,
+      disclaimers: result.disclaimers,
     });
   };
 }

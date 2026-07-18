@@ -9,12 +9,12 @@ import {
   appendDietPreference,
   COMPOSITION_PROMPT_RULE,
   FOOD_NAME_PROMPT_RULE,
-  MICRONUTRIENTS_PROMPT_RULE,
 } from './analyzeFoodApi';
 import {
   isNutritionResult,
   normalizeMicronutrients,
 } from './nutritionResultSchema';
+import { temperatureForModel } from '@/features/settings';
 
 export interface RefineMealContextItem {
   name: string;
@@ -37,16 +37,25 @@ export interface RefineMealInput {
   model?: string;
 }
 
+/** JSON-oriented micronutrient rule (analyze uses XML; refine stays on JSON). */
+const REFINE_MICRONUTRIENTS_RULE = `micronutrients — массив из ровно 8 объектов { "id", "amount", "unit" } для всей порции (оценка, не меддиагноз):
+id ∈ vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium;
+amount — неотрицательное число в канонических единицах; неизвестно → 0;
+unit строго по id: vitaminA/vitaminD/vitaminB12/folate → "µg"; vitaminC/iron/calcium/magnesium → "mg".
+Всегда включай все 8 id. Не возвращай качественные level.`;
+
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
 {
-  "foodName": string (краткое название всего блюда/приёма на русском — НЕ перечень ингредиентов через запятую),
-  "calories": number (суммарные килокалории всего приёма),
+  "foodName": string (краткое название всего блюда/приёма на русском),
+  "calories": number (суммарные килокалории — сумма items),
   "protein": number (grams, сумма по составу),
   "carbs": number (grams, сумма по составу),
+  "addedSugar": number (optional, grams of added/free sugar within carbs, 0 if none),
   "fat": number (grams, сумма по составу),
   "fiber": number (grams, сумма по составу),
-  "confidence": number (0.0 to 1.0, your confidence in the estimate),
-  "healthiness": number (integer 1–10, оценка полезности блюда для здоровья),
+  "healthiness": number (integer 1–10),
+  "healthinessReason": string (optional, короткое пояснение на русском),
+  "portionReference": string (optional, якорь размера порции),
   "items": [
     {
       "name": string (название атомарного ингредиента/слоя на русском),
@@ -54,19 +63,20 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides
       "protein": number,
       "carbs": number,
       "fat": number,
-      "grams": number (optional, оценка веса в граммах; только число),
-      "fiber": number (optional)
+      "grams": number (оценка веса в граммах; только число),
+      "fiber": number
     }
   ],
   "micronutrients": [
     { "id": "vitaminA"|"vitaminC"|"vitaminD"|"vitaminB12"|"iron"|"calcium"|"folate"|"magnesium", "amount": number, "unit": "mg"|"µg" }
-  ]
+  ],
+  "disclaimers": string[] (optional, скрытые калории / неопределённость; omit if none)
 }
 ${FOOD_NAME_PROMPT_RULE}
 ${COMPOSITION_PROMPT_RULE}
-${MICRONUTRIENTS_PROMPT_RULE}
-Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items (and fiber items where set).
-Do not include any text outside the JSON object.`;
+${REFINE_MICRONUTRIENTS_RULE}
+Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items.
+Do not include any text outside the JSON object. No markdown fences.`;
 
 const APP_ERROR_CODES = new Set([
   'INVALID_IMAGE',
@@ -133,8 +143,33 @@ function buildUserText(correction: string, mealContext: RefineMealInput['mealCon
     'Текущий снимок приёма пищи (JSON):',
     JSON.stringify(mealContext),
     '',
-    'Верни полный обновлённый NutritionResult в формате JSON с учётом уточнения.',
+    'Верни полный обновлённый NutritionResult в формате JSON с учётом уточнения. Без markdown.',
   ].join('\n');
+}
+
+/** Strip ```json fences and extract the outermost JSON object if needed. */
+export function parseJsonContent(raw: string): unknown {
+  let text = raw.trim();
+  const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)```$/i);
+  if (fenced) {
+    text = fenced[1].trim();
+  } else if (text.startsWith('```')) {
+    text = text
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      return JSON.parse(text.slice(start, end + 1));
+    }
+    throw new Error('Invalid JSON');
+  }
 }
 
 export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFoodResponse> {
@@ -172,10 +207,12 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
 
   let response;
   try {
+    const temperature = temperatureForModel(input.model);
     response = await axios.post(
       `${gatewayUrl}/v1/chat/completions`,
       {
         model: input.model,
+        ...(temperature !== undefined ? { temperature } : {}),
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemContent },
@@ -203,7 +240,7 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(rawContent);
+    parsed = parseJsonContent(rawContent);
   } catch {
     rejectApiError(
       'Ответ анализа не соответствует ожидаемой схеме.',

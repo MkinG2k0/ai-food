@@ -10,6 +10,7 @@ import { useSettingsStore } from '@/features/settings';
 import { saveMealImage, timestampForSelectedDate } from '@/shared/lib';
 import type { Meal, FoodItem } from '@ai-food/shared-types';
 import { applyAnalyzeResultToMeal } from './applyAnalyzeResultToMeal';
+import { applyPartialAnalyzeResultToMeal } from './applyPartialAnalyzeResultToMeal';
 import { analyzeErrorPatch } from './analyzeErrorPatch';
 
 export interface SubmitFoodInput {
@@ -105,10 +106,18 @@ export function useSaveMeal() {
                 customInstructions,
                 dietType,
                 model: aiModel,
+                onPartial: (partial) =>
+                  applyPartialAnalyzeResultToMeal(mealId, partial, itemId),
               })
             : analyzeFoodApi(
                 { description: trimmedDescription },
-                { customInstructions, dietType, model: aiModel },
+                {
+                  customInstructions,
+                  dietType,
+                  model: aiModel,
+                  onPartial: (partial) =>
+                    applyPartialAnalyzeResultToMeal(mealId, partial, itemId),
+                },
               ),
       });
       applyAnalyzeResultToMeal(mealId, response.result, itemId);

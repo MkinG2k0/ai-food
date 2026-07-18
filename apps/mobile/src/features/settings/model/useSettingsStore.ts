@@ -4,12 +4,15 @@ import { capacitorStorage } from '@/shared/lib';
 
 const MAX_CUSTOM_INSTRUCTIONS_LENGTH = 2000;
 
-export const DEFAULT_AI_MODEL = 'google/gemini-2.5-flash-lite';
+export const DEFAULT_AI_MODEL = 'google/gemini-3-flash-preview';
+
+/** Lower temperature for Gemini — more deterministic nutrition estimates. */
+export const GEMINI_TEMPERATURE = 0.2;
 
 export const AI_MODEL_OPTIONS = [
   { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' },
-  { value: 'qwen/qwen-vl-max', label: 'Qwen VL Max' },
-  { value: 'openai/gpt-5-mini', label: 'GPT-5 mini' },
+  { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { value: 'openai/gpt-4.1-mini', label: 'GPT-4.1 mini' },
   { value: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash' },
   { value: 'openai/gpt-5.4', label: 'GPT-5.4' },
   { value: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6' },
@@ -27,6 +30,16 @@ export function aiModelLabel(value: string | undefined): string | undefined {
   if (!value) return undefined;
   const option = AI_MODEL_OPTIONS.find((o) => o.value === value);
   return option?.label ?? value;
+}
+
+export function isGeminiModel(model?: string | null): boolean {
+  return !!model && /gemini/i.test(model);
+}
+
+/** Gemini models get temperature 0.2; others omit (provider default). */
+export function temperatureForModel(model?: string | null): number | undefined {
+  if (!isGeminiModel(model)) return undefined;
+  return GEMINI_TEMPERATURE;
 }
 
 interface SettingsState {

@@ -5,6 +5,7 @@ import type {
   UserProfile,
 } from '@ai-food/shared-types';
 import { MICRONUTRIENT_IDS, MICRONUTRIENT_UNITS } from '@ai-food/shared-types';
+import { temperatureForModel } from '@/features/settings';
 import { defaultMicronutrientTargets } from '../model/defaultMicronutrientTargets';
 
 const ID_SET = new Set<string>(MICRONUTRIENT_IDS);
@@ -96,10 +97,12 @@ export async function micronutrientTargetsApi(
 
   let response;
   try {
+    const temperature = temperatureForModel(options?.model);
     response = await axios.post(
       `${gatewayUrl}/v1/chat/completions`,
       {
         model: options?.model,
+        ...(temperature !== undefined ? { temperature } : {}),
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },

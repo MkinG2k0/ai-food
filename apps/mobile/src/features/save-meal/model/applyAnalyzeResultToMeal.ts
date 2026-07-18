@@ -29,6 +29,11 @@ export function applyAnalyzeResultToMeal(
       healthiness: result.healthiness,
       confidence: result.confidence,
       micronutrients: result.micronutrients,
+      portionReference: result.portionReference,
+      addedSugar: result.addedSugar,
+      confidenceReason: result.confidenceReason,
+      healthinessReason: result.healthinessReason,
+      disclaimers: result.disclaimers,
       analyzeErrorCode: undefined,
     });
     return;
@@ -53,6 +58,11 @@ export function applyAnalyzeResultToMeal(
     healthiness: result.healthiness,
     confidence: result.confidence,
     micronutrients: result.micronutrients,
+    portionReference: result.portionReference,
+    addedSugar: result.addedSugar,
+    confidenceReason: result.confidenceReason,
+    healthinessReason: result.healthinessReason,
+    disclaimers: result.disclaimers,
     analyzeErrorCode: undefined,
   });
 }

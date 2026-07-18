@@ -84,34 +84,17 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
             {formatDate(meal.timestamp)} в {time}
           </p>
         </div>
-        {(meal.healthiness !== undefined || meal.confidence !== undefined) && (
+        {meal.healthiness !== undefined && (
           <div className="space-y-3">
-            {meal.healthiness !== undefined && (
-              <div className="space-y-1.5">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">Полезность</span>
-                  <span className="text-sm tabular-nums font-medium text-foreground">
-                    {meal.healthiness}/10
-                  </span>
-                </div>
-                <MacroBar value={meal.healthiness} max={10} thick />
+            <div className="space-y-1.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-sm text-muted-foreground">Полезность</span>
+                <span className="text-sm tabular-nums font-medium text-foreground">
+                  {meal.healthiness}/10
+                </span>
               </div>
-            )}
-            {meal.confidence !== undefined && (
-              <div className="space-y-1.5">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm text-muted-foreground">Точность</span>
-                  <span className="text-sm tabular-nums font-medium text-foreground">
-                    {Math.round(meal.confidence * 100)}%
-                  </span>
-                </div>
-                <MacroBar
-                  value={Math.round(meal.confidence * 100)}
-                  max={100}
-                  thick
-                />
-              </div>
-            )}
+              <MacroBar value={meal.healthiness} max={10} thick />
+            </div>
           </div>
         )}
         {meal.micronutrients && meal.micronutrients.length > 0 && (

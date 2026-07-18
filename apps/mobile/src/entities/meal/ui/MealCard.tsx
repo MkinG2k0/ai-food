@@ -52,6 +52,11 @@ export function MealCard({ meal }: MealCardProps) {
 
   const showRetry = isError || (isAnalyzing && analyzingStale);
   const canOpenDetail = !isAnalyzing && !isError;
+  const hasPartialName =
+    Boolean(meal.name?.trim() && meal.name !== 'Анализ…');
+  const hasPartialMacros = meal.totalCalories > 0;
+  const hasPartialPreview =
+    isAnalyzing && !analyzingStale && (hasPartialName || hasPartialMacros);
   const errorLabel =
     meal.analyzeErrorCode === 'NO_FOOD_DETECTED'
       ? 'На фото не обнаружена еда…'
@@ -111,23 +116,54 @@ export function MealCard({ meal }: MealCardProps) {
 
         <div className="flex flex-col flex-1 min-w-0 space-y-1.5 justify-between">
           {isAnalyzing && !analyzingStale ? (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.3s]" />
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.15s]" />
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" />
-                <span className="text-sm text-muted-foreground">Анализ еды…</span>
-              </div>
-              <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
-                <Skeleton className="h-5 w-14 shrink-0" />
-                <div className="flex flex-nowrap items-center gap-1.5">
-                  <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
-                  <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
-                  <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
-                  <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+            hasPartialPreview ? (
+              <>
+                <div className="flex gap-2 justify-between text-sm font-medium min-w-0">
+                  <span className="truncate flex items-center gap-1.5">
+                    <Loader2 className="h-3.5 w-3.5 shrink-0 text-emerald-600 animate-spin" />
+                    {hasPartialName ? title : 'Анализ еды…'}
+                  </span>
+                  <span className="ml-1.5 shrink-0 font-normal text-muted-foreground">
+                    {time}
+                  </span>
                 </div>
-              </div>
-            </>
+                {hasPartialMacros ? (
+                  <FoodMacrosBadges
+                    density="compact"
+                    calories={meal.totalCalories}
+                    protein={totals.protein}
+                    fat={totals.fat}
+                    carbs={totals.carbs}
+                    fiber={totals.fiber}
+                  />
+                ) : (
+                  <div className="flex flex-nowrap items-center gap-1.5">
+                    <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                    <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                    <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                    <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.3s]" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.15s]" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" />
+                  <span className="text-sm text-muted-foreground">Анализ еды…</span>
+                </div>
+                <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
+                  <Skeleton className="h-5 w-14 shrink-0" />
+                  <div className="flex flex-nowrap items-center gap-1.5">
+                    <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                    <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                    <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                    <Skeleton className="h-5 w-5 shrink-0 rounded-full" />
+                  </div>
+                </div>
+              </>
+            )
           ) : showRetry ? (
             <>
               <p className="text-sm font-medium text-destructive">

@@ -1,5 +1,5 @@
 import type { NutritionResult } from '@ai-food/shared-types';
-import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/shared/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui';
 import { MicronutrientsBadges, NutritionRow } from '@/entities/nutrition';
 import { formatCalories } from '@/shared/lib';
 
@@ -8,17 +8,10 @@ interface NutritionCardProps {
 }
 
 export function NutritionCard({ result }: NutritionCardProps) {
-  const confidencePct = Math.round(result.confidence * 100);
-
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg leading-tight">{result.foodName}</CardTitle>
-          <Badge variant="secondary" className="flex-shrink-0">
-            {confidencePct}% совпадение
-          </Badge>
-        </div>
+        <CardTitle className="text-lg leading-tight">{result.foodName}</CardTitle>
         <p className="text-3xl font-bold text-emerald-600 mt-1">
           {formatCalories(result.calories)}
         </p>
