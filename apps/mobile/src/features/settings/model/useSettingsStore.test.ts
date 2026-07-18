@@ -30,21 +30,24 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().customInstructions).toBe('');
   });
 
-  it('defaults aiModel to openai/gpt-4.1-mini', () => {
-    expect(useSettingsStore.getState().aiModel).toBe('openai/gpt-4.1-mini');
-    expect(DEFAULT_AI_MODEL).toBe('openai/gpt-4.1-mini');
+  it('defaults aiModel to google/gemini-2.5-flash-lite', () => {
+    expect(useSettingsStore.getState().aiModel).toBe(
+      'google/gemini-2.5-flash-lite',
+    );
+    expect(DEFAULT_AI_MODEL).toBe('google/gemini-2.5-flash-lite');
   });
 
   it('exposes curated AI_MODEL_OPTIONS with known OpenRouter slugs', () => {
     const values = AI_MODEL_OPTIONS.map((o) => o.value);
-    expect(values).toEqual(
-      expect.arrayContaining([
-        'openai/gpt-4.1-mini',
-        'openai/gpt-4.1',
-        'openai/gpt-4o-mini',
-        'anthropic/claude-sonnet-4.6',
-      ]),
-    );
+    expect(values).toEqual([
+      'google/gemini-2.5-flash-lite',
+      'qwen/qwen-vl-max',
+      'openai/gpt-5-mini',
+      'google/gemini-3-flash-preview',
+      'openai/gpt-5.4',
+      'google/gemini-2.5-pro',
+      'anthropic/claude-sonnet-4.6',
+    ]);
   });
 
   it('persists under storage key ai-food-settings', () => {

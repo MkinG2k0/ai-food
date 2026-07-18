@@ -4,15 +4,15 @@ import { capacitorStorage } from '@/shared/lib';
 
 const MAX_CUSTOM_INSTRUCTIONS_LENGTH = 2000;
 
-export const DEFAULT_AI_MODEL = 'openai/gpt-4.1-mini';
+export const DEFAULT_AI_MODEL = 'google/gemini-2.5-flash-lite';
 
 export const AI_MODEL_OPTIONS = [
-  { value: 'openai/gpt-4.1-mini', label: 'GPT-4.1 Mini' },
-  { value: 'openai/gpt-4.1', label: 'GPT-4.1' },
-  { value: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
-  { value: 'openai/gpt-4o', label: 'GPT-4o' },
+  { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' },
+  { value: 'qwen/qwen-vl-max', label: 'Qwen VL Max' },
+  { value: 'openai/gpt-5-mini', label: 'GPT-5 mini' },
+  { value: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash' },
+  { value: 'openai/gpt-5.4', label: 'GPT-5.4' },
   { value: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6' },
-  { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
 ] as const;
 
 const ALLOWED_MODELS = new Set<string>(
