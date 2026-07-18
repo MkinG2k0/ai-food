@@ -225,7 +225,7 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     });
 
     const file = new File(['img-bytes'], 'meal.png', { type: 'image/png' });
-    await analyzeFoodApi(file);
+    await analyzeFoodApi(file, { model: 'openai/gpt-4.1-mini' });
 
     expect(axios.post).toHaveBeenCalledTimes(1);
     const [url, rawBody, config] = vi.mocked(axios.post).mock.calls[0];
@@ -244,7 +244,7 @@ describe('analyzeFoodApi (AI Gateway)', () => {
     expect(String(url)).toContain(GATEWAY_URL);
     expect(config?.headers?.Authorization).toBe(`Bearer ${GATEWAY_KEY}`);
     expect(body).toMatchObject({
-      model: 'gpt-4.1-mini',
+      model: 'openai/gpt-4.1-mini',
       response_format: { type: 'json_object' },
     });
     expect(body.messages).toHaveLength(2);

@@ -9,18 +9,42 @@ vi.mock('@capacitor/preferences', () => ({
   },
 }));
 
-import { useSettingsStore } from './useSettingsStore';
+import {
+  AI_MODEL_OPTIONS,
+  DEFAULT_AI_MODEL,
+  useSettingsStore,
+} from './useSettingsStore';
 
 beforeEach(async () => {
   await act(async () => {
     await useSettingsStore.persist.rehydrate();
   });
-  useSettingsStore.setState({ customInstructions: '' });
+  useSettingsStore.setState({
+    customInstructions: '',
+    aiModel: DEFAULT_AI_MODEL,
+  });
 });
 
 describe('useSettingsStore', () => {
   it('defaults customInstructions to empty string', () => {
     expect(useSettingsStore.getState().customInstructions).toBe('');
+  });
+
+  it('defaults aiModel to openai/gpt-4.1-mini', () => {
+    expect(useSettingsStore.getState().aiModel).toBe('openai/gpt-4.1-mini');
+    expect(DEFAULT_AI_MODEL).toBe('openai/gpt-4.1-mini');
+  });
+
+  it('exposes curated AI_MODEL_OPTIONS with known OpenRouter slugs', () => {
+    const values = AI_MODEL_OPTIONS.map((o) => o.value);
+    expect(values).toEqual(
+      expect.arrayContaining([
+        'openai/gpt-4.1-mini',
+        'openai/gpt-4.1',
+        'openai/gpt-4o-mini',
+        'anthropic/claude-sonnet-4.6',
+      ]),
+    );
   });
 
   it('persists under storage key ai-food-settings', () => {
@@ -32,6 +56,22 @@ describe('useSettingsStore', () => {
       useSettingsStore.getState().setCustomInstructions('Веган, граммы');
     });
     expect(useSettingsStore.getState().customInstructions).toBe('Веган, граммы');
+  });
+
+  it('setAiModel updates to a curated slug', async () => {
+    await act(async () => {
+      useSettingsStore.getState().setAiModel('anthropic/claude-sonnet-4.6');
+    });
+    expect(useSettingsStore.getState().aiModel).toBe(
+      'anthropic/claude-sonnet-4.6',
+    );
+  });
+
+  it('setAiModel normalizes unknown values to default', async () => {
+    await act(async () => {
+      useSettingsStore.getState().setAiModel('not-a-real-model');
+    });
+    expect(useSettingsStore.getState().aiModel).toBe(DEFAULT_AI_MODEL);
   });
 
   it('truncates customInstructions longer than 2000 characters', async () => {

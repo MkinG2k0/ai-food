@@ -97,6 +97,7 @@ describe('refineMealApi (AI Gateway)', () => {
     const result = await refineMealApi({
       correction: 'съел половину',
       mealContext,
+      model: 'openai/gpt-4o-mini',
     });
 
     expect(result.result).toEqual(validNutrition);
@@ -112,7 +113,7 @@ describe('refineMealApi (AI Gateway)', () => {
     expect(String(url)).toContain(`${GATEWAY_URL}/v1/chat/completions`);
     expect(config?.headers?.Authorization).toBe(`Bearer ${GATEWAY_KEY}`);
     expect(body).toMatchObject({
-      model: 'gpt-4o-mini',
+      model: 'openai/gpt-4o-mini',
       response_format: { type: 'json_object' },
     });
     expect(body.messages[0].role).toBe('system');

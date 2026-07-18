@@ -79,7 +79,9 @@ describe('micronutrientTargetsApi', () => {
       data: gatewaySuccessBody(JSON.stringify({ micronutrients: aiRows })),
     });
 
-    const result = await micronutrientTargetsApi(profile);
+    const result = await micronutrientTargetsApi(profile, {
+      model: 'openai/gpt-4.1',
+    });
 
     expect(result).toHaveLength(8);
     expect(result.map((t) => t.id)).toEqual([...MICRONUTRIENT_IDS]);
@@ -90,7 +92,7 @@ describe('micronutrientTargetsApi', () => {
     expect(axios.post).toHaveBeenCalledWith(
       `${GATEWAY_URL}/v1/chat/completions`,
       expect.objectContaining({
-        model: 'gpt-4.1',
+        model: 'openai/gpt-4.1',
         response_format: { type: 'json_object' },
         messages: expect.arrayContaining([
           expect.objectContaining({
