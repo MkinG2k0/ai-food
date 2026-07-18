@@ -12,6 +12,7 @@ vi.mock('@capacitor/preferences', () => ({
 import {
   AI_MODEL_OPTIONS,
   DEFAULT_AI_MODEL,
+  aiModelLabel,
   useSettingsStore,
 } from './useSettingsStore';
 
@@ -45,7 +46,6 @@ describe('useSettingsStore', () => {
       'openai/gpt-5-mini',
       'google/gemini-3-flash-preview',
       'openai/gpt-5.4',
-      'google/gemini-2.5-pro',
       'anthropic/claude-sonnet-4.6',
     ]);
   });
@@ -75,6 +75,14 @@ describe('useSettingsStore', () => {
       useSettingsStore.getState().setAiModel('not-a-real-model');
     });
     expect(useSettingsStore.getState().aiModel).toBe(DEFAULT_AI_MODEL);
+  });
+
+  it('aiModelLabel returns curated labels and falls back for unknown ids', () => {
+    expect(aiModelLabel(undefined)).toBeUndefined();
+    expect(aiModelLabel('google/gemini-2.5-flash-lite')).toBe(
+      'Gemini 2.5 Flash-Lite',
+    );
+    expect(aiModelLabel('custom/unknown-model')).toBe('custom/unknown-model');
   });
 
   it('truncates customInstructions longer than 2000 characters', async () => {

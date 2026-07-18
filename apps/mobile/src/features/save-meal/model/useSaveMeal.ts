@@ -60,6 +60,7 @@ export function useSaveMeal() {
     }
 
     const imageUri = image ? await saveMealImage(image) : undefined;
+    const aiModel = useSettingsStore.getState().aiModel;
 
     const pendingMeal: Meal = {
       id: mealId,
@@ -70,6 +71,7 @@ export function useSaveMeal() {
       portions: 1,
       imageUri,
       status: 'analyzing',
+      aiModel,
     };
 
     beginMealAnalyze(mealId);
@@ -77,7 +79,6 @@ export function useSaveMeal() {
 
     try {
       const customInstructions = useSettingsStore.getState().customInstructions;
-      const aiModel = useSettingsStore.getState().aiModel;
       const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
       const response = await queryClient.fetchQuery({
         queryKey: image

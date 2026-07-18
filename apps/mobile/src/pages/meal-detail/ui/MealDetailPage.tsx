@@ -16,7 +16,8 @@ import {
 } from '@/features/edit-meal';
 import { useFavoritesStore } from '@/features/favorites';
 import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
-import { Button, ImageLightbox } from '@/shared/ui';
+import { aiModelLabel } from '@/features/settings';
+import { Badge, Button, ImageLightbox } from '@/shared/ui';
 
 export function MealDetailPage() {
   const navigate = useNavigate();
@@ -89,6 +90,7 @@ export function MealDetailPage() {
   }
 
   const canFavorite = currentMeal.status !== 'error';
+  const modelLabel = aiModelLabel(currentMeal.aiModel);
 
   function handleToggleFavorite() {
     const result = toggleFavorite(currentMeal);
@@ -113,7 +115,18 @@ export function MealDetailPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-semibold ml-2 flex-1">Детали приёма</h1>
+        <div className="ml-2 flex-1 min-w-0 flex items-center gap-2">
+          <h1 className="text-lg font-semibold truncate">Детали приёма</h1>
+          {modelLabel && (
+            <Badge
+              variant="secondary"
+              className="shrink-0 max-w-[45%] truncate font-medium"
+              title={modelLabel}
+            >
+              {modelLabel}
+            </Badge>
+          )}
+        </div>
         {canFavorite && (
           <Button
             type="button"

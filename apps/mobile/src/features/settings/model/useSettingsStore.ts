@@ -23,6 +23,12 @@ export function normalizeAiModel(value: string): string {
   return ALLOWED_MODELS.has(value) ? value : DEFAULT_AI_MODEL;
 }
 
+export function aiModelLabel(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const option = AI_MODEL_OPTIONS.find((o) => o.value === value);
+  return option?.label ?? value;
+}
+
 interface SettingsState {
   customInstructions: string;
   setCustomInstructions: (value: string) => void;

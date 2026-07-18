@@ -40,13 +40,18 @@ export function useRetryAnalyzeMeal() {
       return;
     }
 
+    const customInstructions = useSettingsStore.getState().customInstructions;
+    const aiModel = useSettingsStore.getState().aiModel;
+    const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
+
     beginMealAnalyze(mealId);
-    updateMeal(mealId, { status: 'analyzing', analyzeErrorCode: undefined });
+    updateMeal(mealId, {
+      status: 'analyzing',
+      analyzeErrorCode: undefined,
+      aiModel,
+    });
 
     try {
-      const customInstructions = useSettingsStore.getState().customInstructions;
-      const aiModel = useSettingsStore.getState().aiModel;
-      const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
       const response = await queryClient.fetchQuery({
         queryKey: image
           ? [

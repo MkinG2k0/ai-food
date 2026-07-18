@@ -64,6 +64,8 @@ export interface Meal {
   analyzeErrorCode?: string;
   /** Quantitative micronutrient amounts for the portion; omitted on legacy meals */
   micronutrients?: MicronutrientEstimate[];
+  /** OpenRouter model id used for the scan; omitted on legacy / manual meals */
+  aiModel?: string;
 }
 
 export interface NutritionItem {
