@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260716-jve
-last_updated: "2026-07-16T11:24:32.000Z"
-last_activity: 2026-07-16
-last_activity_desc: "Completed quick task 260716-jve: onboarding targetWeightDate deadline"
+stopped_at: Completed quick task 260718-4y0
+last_updated: "2026-07-18T00:40:00.000Z"
+last_activity: 2026-07-18
+last_activity_desc: "Completed quick task 260718-4y0: frontend AI model switch"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-16 - Completed quick task 260716-jve: onboarding targetWeightDate deadline
+Last activity: 2026-07-18 - Completed quick task 260718-4y0: frontend AI model switch
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -78,6 +78,7 @@ Recent decisions affecting current work:
 - 260716-2dw: MealDetail «Дополнить» → refineMealApi (client gateway) → updateMeal; features/refine-meal
 - 260716-3d2: features/stats — getWeeklyCalorieSeries + WeeklyCaloriesChart; StatsPage `/stats`; DailyHeader nav
 - 260716-3g0: useSettingsStore (ai-food-settings) customInstructions → analyze/refine system prompts; `/settings`
+- 260718-4y0: Settings aiModel SoT; chat/completions honors client model; OPENROUTER_MODEL fallback
 - 260716-3nc: DietType on UserProfile (none/halal/vegan/vegetarian); appendDietPreference with Halal-only pork→chicken bias; Settings diet edit
 - 260716-jaa: UserProfile.targetWeight; onboarding StepTargetWeight after Goal (TOTAL_STEPS=8); micronutrient userText; macros still from weight
 - 260716-jlq: micronutrientTargetsApi model gpt-4.1 (not mini); analyze/refine unchanged
@@ -138,6 +139,7 @@ None yet.
 | 260716-jlq | gpt-4.1 for onboarding micronutrientTargetsApi | 2026-07-16 | 17c6829, 3e96aec, 6b7ae04 | [260716-jlq-use-gpt-4-1-for-onboarding-micronutrient](./quick/260716-jlq-use-gpt-4-1-for-onboarding-micronutrient/) |
 | 260716-jqc | RU grams/few-shot analyze prompts + stronger user messages | 2026-07-16 | 3a17608, b3f0f8f, c2bc136, baec96e | [260716-jqc-grams-ru-few-shot-user-message-healthine](./quick/260716-jqc-grams-ru-few-shot-user-message-healthine/) |
 | 260716-jve | Onboarding target weight deadline (targetWeightDate) | 2026-07-16 | 4629491, 2746b6e | [260716-jve-onboarding-target-weight-deadline](./quick/260716-jve-onboarding-target-weight-deadline/) |
+| 260718-4y0 | Frontend AI model switch (Settings → chat/completions) | 2026-07-18 | d9d4b79, 1b1ee38, 4d94245, bd1847a | [260718-4y0-frontend-model-switch](./quick/260718-4y0-frontend-model-switch/) |
 
 ### Blockers/Concerns
 
@@ -146,7 +148,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-16T11:24:32.000Z
-Stopped at: Completed quick task 260716-jve
+Last session: 2026-07-18T00:40:00.000Z
+Stopped at: Completed quick task 260718-4y0
 Resume file: None
 Next: Run /gsd-plan-phase for Phase 2 (Photo Capture & Analysis Loading)
