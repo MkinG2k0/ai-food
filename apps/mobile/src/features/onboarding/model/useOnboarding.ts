@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { UserProfile } from '@ai-food/shared-types';
+import { useSettingsStore } from '@/features/settings';
 import { useProfileStore } from './useProfileStore';
 import { calculateTargets } from './calculateTargets';
 import { micronutrientTargetsApi } from '../api/micronutrientTargetsApi';
@@ -37,7 +38,9 @@ export function useOnboarding() {
     const profile = draft as UserProfile;
     const targets = calculateTargets(profile);
     setProfile(profile, targets);
-    const micronutrientTargets = await micronutrientTargetsApi(profile);
+    const micronutrientTargets = await micronutrientTargetsApi(profile, {
+      model: useSettingsStore.getState().aiModel,
+    });
     setMicronutrientTargets(micronutrientTargets);
     navigate('/');
   }

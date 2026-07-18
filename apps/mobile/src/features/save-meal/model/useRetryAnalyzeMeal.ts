@@ -45,6 +45,7 @@ export function useRetryAnalyzeMeal() {
 
     try {
       const customInstructions = useSettingsStore.getState().customInstructions;
+      const aiModel = useSettingsStore.getState().aiModel;
       const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
       const response = await queryClient.fetchQuery({
         queryKey: image
@@ -57,6 +58,7 @@ export function useRetryAnalyzeMeal() {
               image.lastModified,
               customInstructions,
               dietType,
+              aiModel,
             ]
           : [
               'analyze-food',
@@ -66,13 +68,18 @@ export function useRetryAnalyzeMeal() {
               description,
               customInstructions,
               dietType,
+              aiModel,
             ],
         queryFn: () =>
           image
-            ? analyzeFoodApi(image, { customInstructions, dietType })
+            ? analyzeFoodApi(image, {
+                customInstructions,
+                dietType,
+                model: aiModel,
+              })
             : analyzeFoodApi(
                 { description: description! },
-                { customInstructions, dietType },
+                { customInstructions, dietType, model: aiModel },
               ),
       });
       applyAnalyzeResultToMeal(mealId, response.result, meal.items[0]?.id);

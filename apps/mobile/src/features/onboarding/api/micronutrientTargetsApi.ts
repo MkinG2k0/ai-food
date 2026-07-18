@@ -71,6 +71,7 @@ function mergeWithDefaults(
  */
 export async function micronutrientTargetsApi(
   profile: UserProfile,
+  options?: { model?: string },
 ): Promise<MicronutrientEstimate[]> {
   const fallback = () => defaultMicronutrientTargets(profile.gender);
 
@@ -98,7 +99,7 @@ export async function micronutrientTargetsApi(
     response = await axios.post(
       `${gatewayUrl}/v1/chat/completions`,
       {
-        model: 'gpt-4.1',
+        model: options?.model,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },

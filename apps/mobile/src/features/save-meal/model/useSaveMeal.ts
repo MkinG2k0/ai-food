@@ -77,6 +77,7 @@ export function useSaveMeal() {
 
     try {
       const customInstructions = useSettingsStore.getState().customInstructions;
+      const aiModel = useSettingsStore.getState().aiModel;
       const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
       const response = await queryClient.fetchQuery({
         queryKey: image
@@ -87,14 +88,26 @@ export function useSaveMeal() {
               image.lastModified,
               customInstructions,
               dietType,
+              aiModel,
             ]
-          : ['analyze-food', 'text', trimmedDescription, customInstructions, dietType],
+          : [
+              'analyze-food',
+              'text',
+              trimmedDescription,
+              customInstructions,
+              dietType,
+              aiModel,
+            ],
         queryFn: () =>
           image
-            ? analyzeFoodApi(image, { customInstructions, dietType })
+            ? analyzeFoodApi(image, {
+                customInstructions,
+                dietType,
+                model: aiModel,
+              })
             : analyzeFoodApi(
                 { description: trimmedDescription },
-                { customInstructions, dietType },
+                { customInstructions, dietType, model: aiModel },
               ),
       });
       applyAnalyzeResultToMeal(mealId, response.result, itemId);

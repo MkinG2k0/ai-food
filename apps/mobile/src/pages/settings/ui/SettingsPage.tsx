@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import type { DietType, UserProfile } from '@ai-food/shared-types';
 import { useProfileStore } from '@/features/onboarding';
-import { useSettingsStore } from '@/features/settings';
+import { AI_MODEL_OPTIONS, useSettingsStore } from '@/features/settings';
 import { BottomSheet, Button, Textarea } from '@/shared/ui';
 
 const GENDER_LABELS: Record<UserProfile['gender'], string> = {
@@ -36,6 +36,8 @@ export function SettingsPage() {
 
   const customInstructions = useSettingsStore((s) => s.customInstructions);
   const setCustomInstructions = useSettingsStore((s) => s.setCustomInstructions);
+  const aiModel = useSettingsStore((s) => s.aiModel);
+  const setAiModel = useSettingsStore((s) => s.setAiModel);
 
   const profile = useProfileStore((s) => s.profile);
   const targets = useProfileStore((s) => s.targets);
@@ -160,6 +162,31 @@ export function SettingsPage() {
             Пройти анбординг заново
           </Button>
         </section>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="ai-model"
+            className="text-sm font-medium leading-none"
+          >
+            AI-модель
+          </label>
+          <p className="text-sm text-muted-foreground">
+            Выберите модель для анализа еды, уточнений и расчёта норм. Выбор
+            сохраняется на устройстве.
+          </p>
+          <select
+            id="ai-model"
+            value={aiModel}
+            onChange={(e) => setAiModel(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            {AI_MODEL_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="space-y-2">
           <label

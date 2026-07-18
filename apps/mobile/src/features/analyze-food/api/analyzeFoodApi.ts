@@ -162,6 +162,7 @@ export interface AnalyzeFoodInput {
 export interface AnalyzeFoodOptions {
   customInstructions?: string;
   dietType?: DietType;
+  model?: string;
 }
 
 /** Append non-empty trimmed user prefs to a system prompt. */
@@ -348,7 +349,7 @@ export async function analyzeFoodApi(
     response = await axios.post(
       `${gatewayUrl}/v1/chat/completions`,
       {
-        model: 'gpt-4.1-mini',
+        model: options?.model,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemContent },

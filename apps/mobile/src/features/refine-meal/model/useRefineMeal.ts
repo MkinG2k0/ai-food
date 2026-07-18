@@ -99,6 +99,7 @@ export function useRefineMeal() {
       correction: trimmed,
       customInstructions: useSettingsStore.getState().customInstructions,
       dietType: useProfileStore.getState().profile?.dietType ?? 'none',
+      model: useSettingsStore.getState().aiModel,
       mealContext: {
         name: meal.name,
         items: meal.items.map((item) => ({

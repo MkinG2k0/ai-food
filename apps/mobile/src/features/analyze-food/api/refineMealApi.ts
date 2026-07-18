@@ -34,6 +34,7 @@ export interface RefineMealInput {
   imageDataUrl?: string;
   customInstructions?: string;
   dietType?: DietType;
+  model?: string;
 }
 
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
@@ -174,7 +175,7 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
     response = await axios.post(
       `${gatewayUrl}/v1/chat/completions`,
       {
-        model: 'gpt-4o-mini',
+        model: input.model,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemContent },
