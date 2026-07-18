@@ -19,7 +19,7 @@ const TOTAL_STEPS = 8;
 export function OnboardingPage() {
   const hydrated = useProfileHydrated();
   const isComplete = useProfileStore((s) => s.isComplete());
-  const { step, draft, next, back, finish } = useOnboarding();
+  const { step, draft, next, back, finish, skip } = useOnboarding();
 
   if (!hydrated) return null;
   if (isComplete) return <Navigate to="/" replace />;
@@ -34,6 +34,7 @@ export function OnboardingPage() {
           <div className="flex items-center gap-3 mb-4">
             {step > 1 && (
               <button
+                type="button"
                 onClick={back}
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Назад"
@@ -44,6 +45,13 @@ export function OnboardingPage() {
             <span className="ml-auto text-sm text-muted-foreground">
               {step} / {TOTAL_STEPS}
             </span>
+            <button
+              type="button"
+              onClick={() => void skip()}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Пропустить
+            </button>
           </div>
           <div className="flex gap-1">
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (

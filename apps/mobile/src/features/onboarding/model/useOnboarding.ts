@@ -4,6 +4,7 @@ import type { UserProfile } from '@ai-food/shared-types';
 import { useSettingsStore } from '@/features/settings';
 import { useProfileStore } from './useProfileStore';
 import { calculateTargets } from './calculateTargets';
+import { createDefaultProfile } from './defaultProfile';
 import { micronutrientTargetsApi } from '../api/micronutrientTargetsApi';
 
 export function useOnboarding() {
@@ -22,6 +23,16 @@ export function useOnboarding() {
     setStep((s) => Math.max(1, s - 1));
   }
 
+  async function completeWithProfile(profile: UserProfile) {
+    const targets = calculateTargets(profile);
+    setProfile(profile, targets);
+    const micronutrientTargets = await micronutrientTargetsApi(profile, {
+      model: useSettingsStore.getState().aiModel,
+    });
+    setMicronutrientTargets(micronutrientTargets);
+    navigate('/');
+  }
+
   async function finish() {
     const required: (keyof UserProfile)[] = [
       'gender',
@@ -35,15 +46,12 @@ export function useOnboarding() {
       'dietType',
     ];
     if (required.some((k) => draft[k] === undefined)) return;
-    const profile = draft as UserProfile;
-    const targets = calculateTargets(profile);
-    setProfile(profile, targets);
-    const micronutrientTargets = await micronutrientTargetsApi(profile, {
-      model: useSettingsStore.getState().aiModel,
-    });
-    setMicronutrientTargets(micronutrientTargets);
-    navigate('/');
+    await completeWithProfile(draft as UserProfile);
   }
 
-  return { step, draft, next, back, finish };
+  async function skip() {
+    await completeWithProfile(createDefaultProfile());
+  }
+
+  return { step, draft, next, back, finish, skip };
 }

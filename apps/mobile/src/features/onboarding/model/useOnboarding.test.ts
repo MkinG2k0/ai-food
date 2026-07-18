@@ -163,4 +163,37 @@ describe('useOnboarding', () => {
     expect(setProfileSpy).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
+
+  it('skip() saves default profile, sets micronutrient targets, and navigates', async () => {
+    const setProfileSpy = vi.fn();
+    const setMicronutrientTargetsSpy = vi.fn();
+    useProfileStore.setState({
+      profile: null,
+      targets: null,
+      micronutrientTargets: null,
+      setProfile: setProfileSpy,
+      setMicronutrientTargets: setMicronutrientTargetsSpy,
+      isComplete: () => false,
+    });
+
+    const { result } = renderHook(() => useOnboarding());
+    await act(async () => {
+      await result.current.skip();
+    });
+
+    expect(setProfileSpy).toHaveBeenCalledOnce();
+    expect(setProfileSpy.mock.calls[0][0]).toMatchObject({
+      gender: 'male',
+      age: 25,
+      height: 170,
+      weight: 70,
+      activity: 'medium',
+      goal: 'maintain',
+      targetWeight: 70,
+      dietType: 'none',
+    });
+    expect(setProfileSpy.mock.calls[0][0].targetWeightDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(setMicronutrientTargetsSpy).toHaveBeenCalledOnce();
+    expect(mockNavigate).toHaveBeenCalledWith('/');
+  });
 });
