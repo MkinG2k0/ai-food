@@ -36,6 +36,7 @@ const FAKE_IMAGE = Buffer.from('fakeimagedata');
 describe('POST /analyze-food', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
   });
 
   // AI-01: Successful response returns HTTP 200 with correct shape

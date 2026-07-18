@@ -3,16 +3,10 @@ import multer from 'multer';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import type { AnalyzeFoodResponse, ApiError } from '@ai-food/shared-types';
+import { createOpenRouterClient, getOpenRouterModel } from '../openrouter';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
-
-function getOpenAIClient(): OpenAI {
-  return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    timeout: 30_000,
-  });
-}
 
 const NutritionItemSchema = z.object({
   name: z.string(),
@@ -92,8 +86,8 @@ router.post('/', uploadMiddleware, async (req: Request, res: Response) => {
 
   try {
     const startTime = Date.now();
-    const completion = await getOpenAIClient().chat.completions.create({
-      model: 'gpt-4.1-mini',
+    const completion = await createOpenRouterClient().chat.completions.create({
+      model: getOpenRouterModel(),
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -116,7 +110,7 @@ router.post('/', uploadMiddleware, async (req: Request, res: Response) => {
 
     const rawContent = completion.choices[0]?.message?.content;
     if (!rawContent) {
-      console.error('OpenAI returned empty content');
+      console.error('OpenRouter returned empty content');
       sendApiError(res, 500, 'ANALYSIS_FAILED', 'Анализ вернул пустой ответ.');
       return;
     }
@@ -144,10 +138,10 @@ router.post('/', uploadMiddleware, async (req: Request, res: Response) => {
     const response: AnalyzeFoodResponse = { result: parsed, processingTime };
     res.json(response);
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    console.error('OpenRouter API error:', error);
 
     if (error instanceof OpenAI.RateLimitError) {
-      sendApiError(res, 429, 'RATE_LIMITED', 'Превышен лимит запросов OpenAI. Попробуйте позже.');
+      sendApiError(res, 429, 'RATE_LIMITED', 'Превышен лимит запросов. Попробуйте позже.');
       return;
     }
     if (error instanceof OpenAI.APIConnectionTimeoutError) {
