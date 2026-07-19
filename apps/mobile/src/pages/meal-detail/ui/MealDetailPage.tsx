@@ -105,7 +105,7 @@ export function MealDetailPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="flex items-center px-4 pt-5 pb-3 border-b">
+      <header className="flex items-center px-4 pt-safe-header pb-3 border-b">
         <Button
           type="button"
           variant="ghost"

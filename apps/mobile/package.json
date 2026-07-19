@@ -12,6 +12,7 @@
     "type-check": "tsc --noEmit",
     "cap:sync": "cap sync",
     "cap:open:android": "cap open android",
+    "cap:build": "npm run build && npm run cap:sync",
     "cap:open:ios": "cap open ios"
   },
   "dependencies": {
