@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { resolveItemGrams } from './resolveItemGrams';
 
 describe('resolveItemGrams', () => {
-  it('rounds finite grams', () => {
-    expect(resolveItemGrams({ grams: 85.6 })).toBe(86);
+  it('keeps one-decimal grams', () => {
+    expect(resolveItemGrams({ grams: 85.6 })).toBe(85.6);
   });
 
   it('clamps negative grams to 0', () => {

@@ -3,6 +3,7 @@ export {
   DEFAULT_AI_MODEL,
   GEMINI_TEMPERATURE,
   aiModelLabel,
+  getAnalyzeFeaturesFromSettings,
   isGeminiModel,
   normalizeAiModel,
   temperatureForModel,

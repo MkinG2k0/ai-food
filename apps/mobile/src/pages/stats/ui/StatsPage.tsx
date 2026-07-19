@@ -8,6 +8,7 @@ import {
   WeeklyMicronutrientsChart,
   WeightProgressCard,
 } from '@/features/stats';
+import { useSettingsStore } from '@/features/settings';
 import { Button } from '@/shared/ui';
 
 const FALLBACK_GOAL_KCAL = 2000;
@@ -18,6 +19,7 @@ export function StatsPage() {
   const profile = useProfileStore((s) => s.profile);
   const targets = useProfileStore((s) => s.targets);
   const micronutrientTargets = useProfileStore((s) => s.micronutrientTargets);
+  const featureVitamins = useSettingsStore((s) => s.featureVitamins);
   const [weekOffset, setWeekOffset] = useState(0);
   const goalKcal = targets?.kcal ?? FALLBACK_GOAL_KCAL;
 
@@ -55,15 +57,19 @@ export function StatsPage() {
           Свайп графика — соседняя неделя
         </p>
 
-        <WeeklyMicronutrientsChart
-          meals={meals}
-          weekOffset={weekOffset}
-          onWeekChange={(delta) => setWeekOffset((o) => o + delta)}
-          micronutrientTargets={micronutrientTargets}
-        />
-        <p className="text-center text-[11px] text-muted-foreground">
-          Свайп витаминов — та же неделя, что у калорий
-        </p>
+        {featureVitamins && (
+          <>
+            <WeeklyMicronutrientsChart
+              meals={meals}
+              weekOffset={weekOffset}
+              onWeekChange={(delta) => setWeekOffset((o) => o + delta)}
+              micronutrientTargets={micronutrientTargets}
+            />
+            <p className="text-center text-[11px] text-muted-foreground">
+              Свайп витаминов — та же неделя, что у калорий
+            </p>
+          </>
+        )}
       </main>
     </div>
   );

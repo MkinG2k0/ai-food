@@ -215,7 +215,7 @@ describe('refineMealApi (AI Gateway)', () => {
     } satisfies Partial<ApiError>);
   });
 
-  it('rejects ANALYSIS_FAILED when healthiness is missing', async () => {
+  it('accepts result when healthiness is missing (feature may be off)', async () => {
     const withoutHealthiness = {
       foodName: 'Суп',
       calories: 200,
@@ -224,17 +224,48 @@ describe('refineMealApi (AI Gateway)', () => {
       fat: 5,
       fiber: 2,
       confidence: 0.7,
-      items: [],
+      items: [
+        {
+          name: 'Суп',
+          calories: 200,
+          protein: 10,
+          carbs: 20,
+          fat: 5,
+          grams: 250,
+          fiber: 2,
+        },
+      ],
     };
     vi.mocked(axios.post).mockResolvedValue({
       data: gatewaySuccessBody(JSON.stringify(withoutHealthiness)),
     });
 
-    await expect(
-      refineMealApi({ correction: 'меньше соли', mealContext })
-    ).rejects.toMatchObject({
-      code: 'ANALYSIS_FAILED',
-    } satisfies Partial<ApiError>);
+    const result = await refineMealApi({
+      correction: 'меньше соли',
+      mealContext,
+    });
+    expect(result.result.foodName).toBe('Суп');
+    expect(result.result.healthiness).toBeUndefined();
+  });
+
+  it('omits healthiness and micronutrients from refine prompt when features are off', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await refineMealApi({
+      correction: 'съел половину',
+      mealContext,
+      features: { vitamins: false, healthiness: false, composition: false },
+    });
+
+    const body = vi.mocked(axios.post).mock.calls[0][1] as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    const system = body.messages[0].content;
+    expect(system).not.toMatch(/"healthiness"/i);
+    expect(system).not.toMatch(/micronutrients —/i);
+    expect(system).toMatch(/ровно один item/i);
   });
 
   it.each([0, 11] as const)(

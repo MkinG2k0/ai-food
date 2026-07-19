@@ -7,7 +7,7 @@ import {
 } from '@/entities/meal';
 import { analyzeFoodApi } from '@/features/analyze-food';
 import { useProfileStore } from '@/features/onboarding';
-import { useSettingsStore } from '@/features/settings';
+import { getAnalyzeFeaturesFromSettings, useSettingsStore } from '@/features/settings';
 import { loadMealImageAsFile } from '@/shared/lib';
 import { applyAnalyzeResultToMeal } from './applyAnalyzeResultToMeal';
 import { applyPartialAnalyzeResultToMeal } from './applyPartialAnalyzeResultToMeal';
@@ -44,6 +44,7 @@ export function useRetryAnalyzeMeal() {
     const customInstructions = useSettingsStore.getState().customInstructions;
     const aiModel = useSettingsStore.getState().aiModel;
     const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
+    const features = getAnalyzeFeaturesFromSettings();
 
     beginMealAnalyze(mealId);
     updateMeal(mealId, {
@@ -65,6 +66,7 @@ export function useRetryAnalyzeMeal() {
               customInstructions,
               dietType,
               aiModel,
+              features,
             ]
           : [
               'analyze-food',
@@ -75,6 +77,7 @@ export function useRetryAnalyzeMeal() {
               customInstructions,
               dietType,
               aiModel,
+              features,
             ],
         queryFn: () =>
           image
@@ -82,6 +85,7 @@ export function useRetryAnalyzeMeal() {
                 customInstructions,
                 dietType,
                 model: aiModel,
+                features,
                 onPartial: (partial) =>
                   applyPartialAnalyzeResultToMeal(
                     mealId,
@@ -95,6 +99,7 @@ export function useRetryAnalyzeMeal() {
                   customInstructions,
                   dietType,
                   model: aiModel,
+                  features,
                   onPartial: (partial) =>
                     applyPartialAnalyzeResultToMeal(
                       mealId,

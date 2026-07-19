@@ -38,6 +38,12 @@ export function SettingsPage() {
   const setCustomInstructions = useSettingsStore((s) => s.setCustomInstructions);
   const aiModel = useSettingsStore((s) => s.aiModel);
   const setAiModel = useSettingsStore((s) => s.setAiModel);
+  const featureVitamins = useSettingsStore((s) => s.featureVitamins);
+  const setFeatureVitamins = useSettingsStore((s) => s.setFeatureVitamins);
+  const featureHealthiness = useSettingsStore((s) => s.featureHealthiness);
+  const setFeatureHealthiness = useSettingsStore((s) => s.setFeatureHealthiness);
+  const featureComposition = useSettingsStore((s) => s.featureComposition);
+  const setFeatureComposition = useSettingsStore((s) => s.setFeatureComposition);
 
   const profile = useProfileStore((s) => s.profile);
   const targets = useProfileStore((s) => s.targets);
@@ -187,6 +193,56 @@ export function SettingsPage() {
             ))}
           </select>
         </div>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium leading-none">Анализ еды</h2>
+          <p className="text-sm text-muted-foreground">
+            Включённые опции показываются в приложении и запрашиваются у AI.
+            Выключенные — скрыты и не входят в промпт (быстрее и дешевле).
+          </p>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-input"
+              checked={featureVitamins}
+              onChange={(e) => setFeatureVitamins(e.target.checked)}
+            />
+            <span className="space-y-0.5">
+              <span className="block text-sm font-medium">Витамины и минералы</span>
+              <span className="block text-sm text-muted-foreground">
+                Микронутриенты в карточке приёма и в статистике
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-input"
+              checked={featureHealthiness}
+              onChange={(e) => setFeatureHealthiness(e.target.checked)}
+            />
+            <span className="space-y-0.5">
+              <span className="block text-sm font-medium">Полезность</span>
+              <span className="block text-sm text-muted-foreground">
+                Оценка полезности блюда по шкале 1–10
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-input"
+              checked={featureComposition}
+              onChange={(e) => setFeatureComposition(e.target.checked)}
+            />
+            <span className="space-y-0.5">
+              <span className="block text-sm font-medium">Состав</span>
+              <span className="block text-sm text-muted-foreground">
+                Разбивка блюда на ингредиенты и слои
+              </span>
+            </span>
+          </label>
+        </section>
 
         <div className="space-y-2">
           <label

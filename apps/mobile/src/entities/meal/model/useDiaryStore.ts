@@ -14,6 +14,12 @@ import {
   resolveMealPortions,
   scaleMealByPortionRatio,
 } from './mealPortions';
+import {
+  resolveMealTotalGrams,
+  sanitizeGrams,
+  scaleItemsGramsToTotal,
+  sumItemGrams,
+} from './mealGrams';
 
 export interface MealNutritionPatch {
   calories?: number;
@@ -40,6 +46,11 @@ interface DiaryState {
   setMealPortions: (mealId: string, portions: number) => void;
   /** Change portion count label only — does not rescale nutrients (fix AI count). */
   redefineMealPortions: (mealId: string, portions: number) => void;
+  /**
+   * Set dish totalGrams and redistribute item grams by current shares.
+   * Does not change KBJU.
+   */
+  setMealTotalGrams: (mealId: string, totalGrams: number) => void;
   clearDiary: () => void;
   setSelectedDate: (date: Date) => void;
 }
@@ -100,6 +111,10 @@ export const useDiaryStore = create<DiaryState>()(
             ...meal,
             items,
             totalCalories: sumItemCalories(items),
+            // Editing item grams updates that item's share and dish totalGrams
+            ...(safePatch.grams !== undefined
+              ? { totalGrams: sumItemGrams(items) }
+              : {}),
           };
           return { meals };
         }),
@@ -117,6 +132,9 @@ export const useDiaryStore = create<DiaryState>()(
             ...meal,
             items,
             totalCalories: sumItemCalories(items),
+            ...(meal.totalGrams !== undefined
+              ? { totalGrams: sumItemGrams(items) }
+              : {}),
           };
           return { meals };
         }),
@@ -153,9 +171,10 @@ export const useDiaryStore = create<DiaryState>()(
           const next = normalizePortions(portions);
           if (next === current) return state;
 
+          const ratio = next / current;
           const { items, totalCalories } = scaleMealByPortionRatio(
             meal.items,
-            next / current,
+            ratio,
           );
 
           const meals = [...state.meals];
@@ -164,6 +183,15 @@ export const useDiaryStore = create<DiaryState>()(
             portions: next,
             items,
             totalCalories,
+            ...(meal.totalGrams !== undefined
+              ? {
+                  totalGrams: sanitizeGrams(
+                    resolveMealTotalGrams(meal) * ratio,
+                  ),
+                }
+              : sumItemGrams(items) > 0
+                ? { totalGrams: sumItemGrams(items) }
+                : {}),
           };
           return { meals };
         }),
@@ -180,6 +208,43 @@ export const useDiaryStore = create<DiaryState>()(
           meals[mealIndex] = {
             ...meal,
             portions: next,
+          };
+          return { meals };
+        }),
+      setMealTotalGrams: (mealId, totalGrams) =>
+        set((state) => {
+          const mealIndex = state.meals.findIndex((m) => m.id === mealId);
+          if (mealIndex === -1) return state;
+
+          const meal = state.meals[mealIndex];
+          if (meal.items.length === 0) {
+            const next = sanitizeGrams(totalGrams);
+            if (next === resolveMealTotalGrams(meal)) return state;
+            const meals = [...state.meals];
+            meals[mealIndex] = { ...meal, totalGrams: next };
+            return { meals };
+          }
+
+          const next = sanitizeGrams(totalGrams);
+          const compositionSum = sumItemGrams(meal.items);
+          // No-op only when total and every item gram already match the target
+          if (
+            next === meal.totalGrams &&
+            next === compositionSum
+          ) {
+            return state;
+          }
+
+          const { items, totalGrams: scaledTotal } = scaleItemsGramsToTotal(
+            meal.items,
+            next,
+          );
+
+          const meals = [...state.meals];
+          meals[mealIndex] = {
+            ...meal,
+            items,
+            totalGrams: scaledTotal,
           };
           return { meals };
         }),

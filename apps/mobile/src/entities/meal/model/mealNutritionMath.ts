@@ -1,4 +1,5 @@
 import type { FoodItem } from '@ai-food/shared-types';
+import { sanitizeGrams } from './mealGrams';
 
 export type NutrientKey = 'calories' | 'protein' | 'carbs' | 'fat' | 'fiber';
 
@@ -56,7 +57,7 @@ export function sanitizeFoodItemPatch(
     }
   }
   if ('grams' in next && typeof next.grams === 'number') {
-    next.grams = sanitizeNutrient(next.grams);
+    next.grams = sanitizeGrams(next.grams);
   }
   return next;
 }

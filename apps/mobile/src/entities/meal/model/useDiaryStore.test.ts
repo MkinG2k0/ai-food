@@ -384,4 +384,71 @@ describe('useDiaryStore', () => {
     expect(meal.portions).toBe(1);
     expect(meal.totalCalories).toBe(250);
   });
+
+  it('setMealTotalGrams redistributes item grams by share without changing KBJU', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal({
+        ...multiItemMeal,
+        totalGrams: 200,
+        items: [
+          { ...multiItemMeal.items[0], grams: 80 },
+          { ...multiItemMeal.items[1], grams: 120 },
+        ],
+      });
+      result.current.setMealTotalGrams('m1', 400);
+    });
+    const meal = result.current.meals[0];
+    expect(meal.totalGrams).toBe(400);
+    expect(meal.items[0].grams).toBe(160);
+    expect(meal.items[1].grams).toBe(240);
+    expect(meal.totalCalories).toBe(500);
+    expect(meal.items[0].calories).toBe(200);
+  });
+
+  it('setMealTotalGrams round-trips to original grams', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal({
+        ...multiItemMeal,
+        totalGrams: 200,
+        items: [
+          { ...multiItemMeal.items[0], grams: 80 },
+          { ...multiItemMeal.items[1], grams: 120 },
+        ],
+      });
+      result.current.setMealTotalGrams('m1', 400);
+      result.current.setMealTotalGrams('m1', 200);
+    });
+    const meal = result.current.meals[0];
+    expect(meal.totalGrams).toBe(200);
+    expect(meal.items[0].grams).toBe(80);
+    expect(meal.items[1].grams).toBe(120);
+  });
+
+  it('updateMealItem grams updates totalGrams and later scale uses new share', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal({
+        ...multiItemMeal,
+        totalGrams: 200,
+        items: [
+          { ...multiItemMeal.items[0], id: 'chicken', grams: 80 },
+          { ...multiItemMeal.items[1], id: 'veg', grams: 120 },
+        ],
+      });
+      result.current.updateMealItem('m1', 'chicken', { grams: 150 });
+    });
+    expect(result.current.meals[0].totalGrams).toBe(270);
+    expect(result.current.meals[0].items[0].grams).toBe(150);
+
+    await act(async () => {
+      result.current.setMealTotalGrams('m1', 270);
+      result.current.setMealTotalGrams('m1', 135);
+    });
+    const meal = result.current.meals[0];
+    expect(meal.totalGrams).toBe(135);
+    expect(meal.items[0].grams).toBe(75);
+    expect(meal.items[1].grams).toBe(60);
+  });
 });

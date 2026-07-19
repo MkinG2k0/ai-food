@@ -3,7 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  formatItemGrams,
   resolveItemGrams,
+  sanitizeGrams,
   sanitizeNutrient,
   useDiaryStore,
 } from '@/entities/meal';
@@ -99,10 +101,10 @@ export function FoodItemEditPage() {
               min={0}
               aria-label="Граммы"
               className={cn(inputClassName, 'text-center tabular-nums max-w-[8rem]')}
-              value={resolveItemGrams(item)}
+              value={formatItemGrams(resolveItemGrams(item))}
               onChange={(e) =>
                 updateMealItem(mealId, itemId, {
-                  grams: sanitizeNutrient(Number(e.target.value)),
+                  grams: sanitizeGrams(Number(e.target.value.replace(',', '.'))),
                 })
               }
             />

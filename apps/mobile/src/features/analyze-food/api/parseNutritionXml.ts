@@ -338,11 +338,13 @@ export function parseNutritionXml(raw: string): NutritionResult | NoFoodResult {
     carbs: partial.carbs,
     fat: partial.fat,
     fiber: partial.fiber ?? 0,
-    healthiness: partial.healthiness,
     items: strictItems,
-    micronutrients: partial.micronutrients,
   };
 
+  if (partial.healthiness !== undefined) candidate.healthiness = partial.healthiness;
+  if (partial.micronutrients !== undefined) {
+    candidate.micronutrients = partial.micronutrients;
+  }
   if (partial.confidence !== undefined) candidate.confidence = partial.confidence;
   if (partial.itemCount !== undefined) candidate.itemCount = partial.itemCount;
   if (partial.totalGrams !== undefined) candidate.totalGrams = partial.totalGrams;
@@ -413,8 +415,11 @@ export function legacyNutritionResultToXml(result: NutritionResult): string {
     result.confidence !== undefined
       ? `\n  <confidence>${result.confidence}</confidence>`
       : ''
+  }${
+    result.healthiness !== undefined
+      ? `\n  <healthiness>${result.healthiness}</healthiness>`
+      : ''
   }
-  <healthiness>${result.healthiness}</healthiness>
   <items>
 ${items}
   </items>${
@@ -490,9 +495,12 @@ ${result.disclaimers.map((d) => `    <disclaimer>${escapeXml(d)}</disclaimer>`).
           result.confidenceReason ? escapeXml(result.confidenceReason) : ''
         }</confidence>`
       : '';
-  const healthinessReason = result.healthinessReason
-    ? escapeXml(result.healthinessReason)
-    : '';
+  const healthinessXml =
+    result.healthiness !== undefined
+      ? `\n  <healthiness value="${result.healthiness}">${
+          result.healthinessReason ? escapeXml(result.healthinessReason) : ''
+        }</healthiness>`
+      : '';
 
   return `<analysis>
   <foodName>${escapeXml(result.foodName)}</foodName>${itemCountXml}${totalGramsXml}${portionRef}
@@ -502,8 +510,7 @@ ${result.disclaimers.map((d) => `    <disclaimer>${escapeXml(d)}</disclaimer>`).
     <carbs unit="g">${result.carbs}</carbs>${addedSugar}
     <fat unit="g">${result.fat}</fat>
     <fiber unit="g">${result.fiber}</fiber>
-  </totals>${confidenceXml}
-  <healthiness value="${result.healthiness}">${healthinessReason}</healthiness>
+  </totals>${confidenceXml}${healthinessXml}
   <items>
 ${items}
   </items>${

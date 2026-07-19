@@ -10,7 +10,14 @@ import {
   COMPOSITION_PROMPT_RULE,
   FOOD_NAME_PROMPT_RULE,
   ITEM_COUNT_PROMPT_RULE,
+  SINGLE_ITEM_COMPOSITION_RULE,
 } from './analyzeFoodApi';
+import {
+  applyAnalyzeFeaturesToPrompt,
+  DEFAULT_ANALYZE_FEATURES,
+  maskNutritionResultByFeatures,
+  type AnalyzeFeatures,
+} from './analyzeFeatures';
 import {
   isNutritionResult,
   normalizeMicronutrients,
@@ -36,6 +43,7 @@ export interface RefineMealInput {
   customInstructions?: string;
   dietType?: DietType;
   model?: string;
+  features?: AnalyzeFeatures;
 }
 
 /** JSON-oriented micronutrient rule (analyze uses XML; refine stays on JSON). */
@@ -45,7 +53,7 @@ amount — неотрицательное число в канонических
 unit строго по id: vitaminA/vitaminD/vitaminB12/folate → "µg"; vitaminC/iron/calcium/magnesium → "mg".
 Всегда включай все 8 id. Не возвращай качественные level.`;
 
-const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
+const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
 {
   "foodName": string (краткое название всего блюда/приёма на русском),
   "itemCount": number (отдельные ПОРЦИИ/подачи, не куски внутри блюда: тарелка курицы кусочками → 1; 2 ролла → 2; НЕ равно длине items),
@@ -81,6 +89,15 @@ ${ITEM_COUNT_PROMPT_RULE}
 ${REFINE_MICRONUTRIENTS_RULE}
 Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many separate servings were eaten (not pieces inside one dish). Update totalGrams to match the revised dish weight.
 Do not include any text outside the JSON object. No markdown fences.`;
+
+function buildRefineSystemPrompt(features: AnalyzeFeatures): string {
+  return applyAnalyzeFeaturesToPrompt(
+    SYSTEM_PROMPT_BASE,
+    features,
+    COMPOSITION_PROMPT_RULE,
+    SINGLE_ITEM_COMPOSITION_RULE,
+  );
+}
 
 const APP_ERROR_CODES = new Set([
   'INVALID_IMAGE',
@@ -202,8 +219,9 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
           { type: 'text' as const, text: userText },
         ]
       : userText;
+  const features = input.features ?? DEFAULT_ANALYZE_FEATURES;
   const systemContent = appendDietPreference(
-    appendCustomInstructions(SYSTEM_PROMPT, input.customInstructions),
+    appendCustomInstructions(buildRefineSystemPrompt(features), input.customInstructions),
     input.dietType,
   );
 
@@ -262,10 +280,13 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
   }
 
   return {
-    result: {
-      ...parsed,
-      micronutrients: normalizeMicronutrients(parsed.micronutrients),
-    },
+    result: maskNutritionResultByFeatures(
+      {
+        ...parsed,
+        micronutrients: normalizeMicronutrients(parsed.micronutrients),
+      },
+      features,
+    ),
     processingTime,
   };
 }

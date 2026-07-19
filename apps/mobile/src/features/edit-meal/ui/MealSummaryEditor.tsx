@@ -2,15 +2,18 @@ import { useRef, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import type { Meal } from '@ai-food/shared-types';
 import {
+  formatItemGrams,
   formatPortions,
   MAX_PORTIONS,
   mealDisplayName,
   MIN_PORTIONS,
   PORTION_STEP,
   resolveMealPortions,
+  resolveMealTotalGrams,
   useDiaryStore,
 } from '@/entities/meal';
 import { MicronutrientsBadges } from '@/entities/nutrition';
+import { useSettingsStore } from '@/features/settings';
 import { Button, Card, CardContent, CardHeader } from '@/shared/ui';
 import { cn, formatDate } from '@/shared/lib';
 
@@ -24,6 +27,12 @@ function parseNutrient(raw: string): number {
   const n = Number(raw);
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, Math.round(n));
+}
+
+function parseGrams(raw: string): number {
+  const n = Number(raw.replace(',', '.'));
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, n);
 }
 
 function MacroBar({
@@ -56,15 +65,19 @@ export interface MealSummaryEditorProps {
 }
 
 export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
-  const updateMeal = useDiaryStore((s) => s.updateMeal);
   const updateMealNutrition = useDiaryStore((s) => s.updateMealNutrition);
   const setMealPortions = useDiaryStore((s) => s.setMealPortions);
   const redefineMealPortions = useDiaryStore((s) => s.redefineMealPortions);
+  const setMealTotalGrams = useDiaryStore((s) => s.setMealTotalGrams);
+  const featureHealthiness = useSettingsStore((s) => s.featureHealthiness);
+  const featureVitamins = useSettingsStore((s) => s.featureVitamins);
   const [portionsDraft, setPortionsDraft] = useState<string | null>(null);
+  const [gramsDraft, setGramsDraft] = useState<string | null>(null);
   const portionsInputRef = useRef<HTMLInputElement>(null);
 
   const dishName = mealDisplayName(meal);
   const portions = resolveMealPortions(meal);
+  const totalGrams = resolveMealTotalGrams(meal);
   const time = new Date(meal.timestamp).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -89,6 +102,15 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
     setPortionsDraft(null);
   }
 
+  function commitTotalGrams() {
+    if (gramsDraft === null) return;
+    const parsed = parseGrams(gramsDraft);
+    if (Number.isFinite(parsed)) {
+      setMealTotalGrams(meal.id, parsed);
+    }
+    setGramsDraft(null);
+  }
+
   return (
     <Card>
       <CardHeader className="space-y-4 pb-2">
@@ -98,7 +120,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
             {formatDate(meal.timestamp)} в {time}
           </p>
         </div>
-        {meal.healthiness !== undefined && (
+        {featureHealthiness && meal.healthiness !== undefined && (
           <div className="space-y-3">
             <div className="space-y-1.5">
               <div className="flex items-baseline justify-between gap-2">
@@ -111,7 +133,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
             </div>
           </div>
         )}
-        {meal.micronutrients && meal.micronutrients.length > 0 && (
+        {featureVitamins && meal.micronutrients && meal.micronutrients.length > 0 && (
           <div>
             <MicronutrientsBadges micronutrients={meal.micronutrients} />
           </div>
@@ -143,28 +165,23 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
               Вес, г
             </span>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              min={0}
-              aria-label="Граммовка всего блюда (не влияет на КБЖУ)"
-              title="Оценка веса блюда — правка не меняет КБЖУ"
+              aria-label="Граммовка всего блюда (масштабирует граммы состава)"
+              title="Меняет граммы всех ингредиентов по их долям; КБЖУ не трогает"
               className={cn(
                 inputClassName,
                 'h-9 text-center text-base font-semibold tabular-nums',
               )}
-              value={
-                meal.totalGrams !== undefined
-                  ? Math.round(meal.totalGrams)
-                  : ''
-              }
-              placeholder="—"
-              onChange={(e) => {
-                const raw = e.target.value.trim();
-                if (raw === '') {
-                  updateMeal(meal.id, { totalGrams: undefined });
-                  return;
+              value={gramsDraft ?? formatItemGrams(totalGrams)}
+              onFocus={() => setGramsDraft(formatItemGrams(totalGrams))}
+              onChange={(e) => setGramsDraft(e.target.value)}
+              onBlur={commitTotalGrams}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  (e.target as HTMLInputElement).blur();
                 }
-                updateMeal(meal.id, { totalGrams: parseNutrient(raw) });
               }}
             />
           </label>

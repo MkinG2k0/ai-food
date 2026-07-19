@@ -147,13 +147,19 @@ export function isNutritionResult(value: unknown): value is NutritionResult {
     typeof v.carbs !== 'number' ||
     typeof v.fat !== 'number' ||
     typeof v.fiber !== 'number' ||
-    typeof v.healthiness !== 'number' ||
-    v.healthiness < 1 ||
-    v.healthiness > 10 ||
     !Array.isArray(v.items) ||
     !isMicronutrientsField(v.micronutrients)
   ) {
     return false;
+  }
+  if (v.healthiness !== undefined) {
+    if (
+      typeof v.healthiness !== 'number' ||
+      v.healthiness < 1 ||
+      v.healthiness > 10
+    ) {
+      return false;
+    }
   }
   if (v.confidence !== undefined) {
     if (typeof v.confidence !== 'number' || v.confidence < 0 || v.confidence > 1) {

@@ -57,7 +57,8 @@ export interface Meal {
   /** Servings multiplier; omitted on legacy meals → treat as 1 */
   portions?: number;
   /**
-   * Estimated total dish weight in grams (display-only; editing does not rescale macros).
+   * Estimated total dish weight in grams.
+   * Editing redistributes item grams by share; does not change KBJU.
    * Omitted on legacy meals.
    */
   totalGrams?: number;
@@ -102,8 +103,8 @@ export interface NutritionResult {
   fiber: number;
   /** AI recognition confidence 0–1; omitted when model does not return it */
   confidence?: number;
-  /** Integer 1–10 healthfulness score from AI */
-  healthiness: number;
+  /** Integer 1–10 healthfulness score from AI; omitted when feature disabled or model skips */
+  healthiness?: number;
   items: NutritionItem[];
   /**
    * Count of discrete edible units on the plate (pieces/rolls/slices).

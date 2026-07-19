@@ -17,6 +17,14 @@ export { mealDisplayName } from './model/mealDisplayName';
 export { sanitizeNutrient } from './model/mealNutritionMath';
 export { resolveItemGrams } from './model/resolveItemGrams';
 export {
+  sumItemGrams,
+  resolveMealTotalGrams,
+  itemGramShares,
+  scaleItemsGramsToTotal,
+  sanitizeGrams,
+  formatItemGrams,
+} from './model/mealGrams';
+export {
   DEFAULT_PORTIONS,
   PORTION_STEP,
   MIN_PORTIONS,

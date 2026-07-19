@@ -368,7 +368,7 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     } satisfies Partial<ApiError>);
   });
 
-  it('rejects ANALYSIS_FAILED when healthiness is missing', async () => {
+  it('accepts result when healthiness is missing (feature may be off)', async () => {
     mockStreamOk(`<analysis>
   <foodName>Суп</foodName>
   <calories>200</calories>
@@ -377,13 +377,40 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
   <fat>5</fat>
   <fiber>2</fiber>
   <confidence>0.7</confidence>
-  <items></items>
+  <items>
+    <item>
+      <name>Суп</name>
+      <calories>200</calories>
+      <protein>10</protein>
+      <carbs>20</carbs>
+      <fat>5</fat>
+      <grams>250</grams>
+    </item>
+  </items>
 </analysis>`);
 
     const file = new File(['x'], 'food.jpg', { type: 'image/jpeg' });
-    await expect(analyzeFoodApi(file)).rejects.toMatchObject({
-      code: 'ANALYSIS_FAILED',
-    } satisfies Partial<ApiError>);
+    const result = await analyzeFoodApi(file);
+    expect(result.result.foodName).toBe('Суп');
+    expect(result.result.healthiness).toBeUndefined();
+  });
+
+  it('omits healthiness and micronutrients from prompt when features are off', async () => {
+    mockStreamOk(nutritionResultToXml({ ...validNutrition, healthiness: 7 }));
+
+    const file = new File(['x'], 'food.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi(file, {
+      model: 'openai/gpt-4.1-mini',
+      features: { vitamins: false, healthiness: false, composition: false },
+    });
+
+    const body = lastFetchBody();
+    const system = systemText(body.messages[0].content);
+    expect(system).not.toMatch(/## healthiness/i);
+    expect(system).not.toMatch(/## Микронутриенты/i);
+    expect(system).not.toMatch(/<healthiness\b/i);
+    expect(system).not.toMatch(/<micronutrients\b/i);
+    expect(system).toMatch(/ровно один item/i);
   });
 
   it.each([0, 11, -1] as const)(

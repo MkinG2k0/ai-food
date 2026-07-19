@@ -3,7 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { motion, useMotionValue, animate, type PanInfo } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import type { FoodItem } from '@ai-food/shared-types';
-import { FoodMacrosBadges, resolveItemGrams } from '@/entities/meal';
+import { FoodMacrosBadges, formatItemGrams, resolveItemGrams } from '@/entities/meal';
 import { Badge, Card, CardContent } from '@/shared/ui';
 
 const SWIPE_OFFSET_THRESHOLD = 80;
@@ -110,7 +110,7 @@ export function FoodItemDisplayCard({
                 {item.name}
               </p>
               <Badge variant="outline" className="shrink-0">
-                {`${resolveItemGrams(item)} г`}
+                {`${formatItemGrams(resolveItemGrams(item))} г`}
               </Badge>
               <button
                 type="button"

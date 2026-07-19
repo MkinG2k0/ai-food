@@ -1,5 +1,6 @@
 import type { FoodItem, Meal } from '@ai-food/shared-types';
 import { sanitizeNutrient, sumItemCalories } from './mealNutritionMath';
+import { sanitizeGrams } from './mealGrams';
 
 export const DEFAULT_PORTIONS = 1;
 export const PORTION_STEP = 0.5;
@@ -39,7 +40,7 @@ export function scaleMealByPortionRatio(
     carbs: sanitizeNutrient(item.carbs * ratio),
     fat: sanitizeNutrient(item.fat * ratio),
     fiber: sanitizeNutrient((item.fiber ?? 0) * ratio),
-    grams: sanitizeNutrient(item.grams * ratio),
+    grams: sanitizeGrams(item.grams * ratio),
   }));
 
   return {

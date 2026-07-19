@@ -7,6 +7,14 @@ import type {
 import { compressImageForAi } from '@/shared/lib';
 import { isGeminiModel, temperatureForModel } from '@/features/settings';
 import {
+  applyAnalyzeFeaturesToPrompt,
+  DEFAULT_ANALYZE_FEATURES,
+  GEMINI_SINGLE_ITEM_COMPOSITION_RULE,
+  maskNutritionResultByFeatures,
+  SINGLE_ITEM_COMPOSITION_RULE,
+  type AnalyzeFeatures,
+} from './analyzeFeatures';
+import {
   GEMINI_MICRONUTRIENTS_PROMPT_RULE,
   GEMINI_NO_FOOD_PROMPT_RULE,
   isNoFoodResult,
@@ -22,6 +30,13 @@ import {
   type PartialNutritionXml,
 } from './parseNutritionXml';
 import { streamChatCompletions } from './streamChatCompletions';
+
+export type { AnalyzeFeatures };
+export {
+  DEFAULT_ANALYZE_FEATURES,
+  SINGLE_ITEM_COMPOSITION_RULE,
+  GEMINI_SINGLE_ITEM_COMPOSITION_RULE,
+};
 
 /** Prompt rule: dish-level foodName ≠ composition list in items[].name */
 export const FOOD_NAME_PROMPT_RULE =
@@ -359,11 +374,32 @@ ${GEMINI_MICRONUTRIENTS_PROMPT_RULE}
 /** Short fixed user text for vision — rules live in system prompt (cacheable). */
 const ANALYSIS_PROMPT = 'Проанализируй изображение.';
 
-function selectAnalyzeSystemPrompt(hasImage: boolean, model?: string): string {
-  if (isGeminiModel(model)) {
-    return hasImage ? GEMINI_SYSTEM_PROMPT : GEMINI_TEXT_SYSTEM_PROMPT;
-  }
-  return hasImage ? LEGACY_SYSTEM_PROMPT : LEGACY_TEXT_SYSTEM_PROMPT;
+function selectAnalyzeSystemPrompt(
+  hasImage: boolean,
+  model?: string,
+  features: AnalyzeFeatures = DEFAULT_ANALYZE_FEATURES,
+): string {
+  const base = isGeminiModel(model)
+    ? hasImage
+      ? GEMINI_SYSTEM_PROMPT
+      : GEMINI_TEXT_SYSTEM_PROMPT
+    : hasImage
+      ? LEGACY_SYSTEM_PROMPT
+      : LEGACY_TEXT_SYSTEM_PROMPT;
+
+  const compositionOn = isGeminiModel(model)
+    ? GEMINI_COMPOSITION_PROMPT_RULE
+    : COMPOSITION_PROMPT_RULE;
+  const compositionOff = isGeminiModel(model)
+    ? GEMINI_SINGLE_ITEM_COMPOSITION_RULE
+    : SINGLE_ITEM_COMPOSITION_RULE;
+
+  return applyAnalyzeFeaturesToPrompt(
+    base,
+    features,
+    compositionOn,
+    compositionOff,
+  );
 }
 
 export interface AnalyzeFoodInput {
@@ -374,6 +410,7 @@ export interface AnalyzeFoodOptions {
   customInstructions?: string;
   dietType?: DietType;
   model?: string;
+  features?: AnalyzeFeatures;
   /** Called as closed XML tags become available during the stream */
   onPartial?: (partial: PartialNutritionXml) => void;
 }
@@ -485,15 +522,21 @@ export async function analyzeFoodApi(
     rejectApiError('Укажите фото или описание еды.', 'INVALID_INPUT', 400);
   }
 
+  const features = options?.features ?? DEFAULT_ANALYZE_FEATURES;
+
   const systemContent = appendDietPreference(
     appendCustomInstructions(
-      selectAnalyzeSystemPrompt(!!image, options?.model),
+      selectAnalyzeSystemPrompt(!!image, options?.model, features),
       options?.customInstructions,
     ),
     options?.dietType,
   );
 
   const imageForAi = image ? await compressImageForAi(image) : null;
+
+  const textUserPrompt = features.composition
+    ? `Пользователь описал приём пищи текстом: «${description}». Оцени порцию/типичную порцию. Разбей состав на items с обязательными grams. Учти способ приготовления, если упомянут. Не выдумывай еду, если её нет. Верни только XML по схеме.`
+    : `Пользователь описал приём пищи текстом: «${description}». Оцени порцию/типичную порцию. Верни ровно один item на всё блюдо (без разбивки на ингредиенты) с обязательными grams. Учти способ приготовления, если упомянут. Не выдумывай еду, если её нет. Верни только XML по схеме.`;
 
   // Stable system text first + cache_control; image last and never cached.
   const userContent = imageForAi
@@ -507,7 +550,7 @@ export async function analyzeFoodApi(
           image_url: { url: await fileToDataUrl(imageForAi) },
         },
       ]
-    : `Пользователь описал приём пищи текстом: «${description}». Оцени порцию/типичную порцию. Разбей состав на items с обязательными grams. Учти способ приготовления, если упомянут. Не выдумывай еду, если её нет. Верни только XML по схеме.`;
+    : textUserPrompt;
 
   const startTime = Date.now();
   const controller = new AbortController();
@@ -580,10 +623,13 @@ export async function analyzeFoodApi(
   }
 
   return {
-    result: {
-      ...parsed,
-      micronutrients: normalizeMicronutrients(parsed.micronutrients),
-    },
+    result: maskNutritionResultByFeatures(
+      {
+        ...parsed,
+        micronutrients: normalizeMicronutrients(parsed.micronutrients),
+      },
+      features,
+    ),
     processingTime,
   };
 }

@@ -1,9 +1,9 @@
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import type { ApiError, FoodItem, Meal } from '@ai-food/shared-types';
-import { normalizePortions, resolveItemGrams, useDiaryStore } from '@/entities/meal';
+import { normalizePortions, resolveItemGrams, sumItemGrams, useDiaryStore } from '@/entities/meal';
 import { refineMealApi } from '@/features/analyze-food';
 import { useProfileStore } from '@/features/onboarding';
-import { useSettingsStore } from '@/features/settings';
+import { getAnalyzeFeaturesFromSettings, useSettingsStore } from '@/features/settings';
 
 function rejectApiError(message: string, code: string, status: number): never {
   const apiError: ApiError = { message, code, status };
@@ -100,6 +100,7 @@ export function useRefineMeal() {
       customInstructions: useSettingsStore.getState().customInstructions,
       dietType: useProfileStore.getState().profile?.dietType ?? 'none',
       model: useSettingsStore.getState().aiModel,
+      features: getAnalyzeFeaturesFromSettings(),
       mealContext: {
         name: meal.name,
         items: meal.items.map((item) => ({
@@ -129,7 +130,10 @@ export function useRefineMeal() {
       ...(result.itemCount !== undefined
         ? { portions: normalizePortions(result.itemCount) }
         : {}),
-      ...(result.totalGrams !== undefined ? { totalGrams: result.totalGrams } : {}),
+      totalGrams:
+        result.totalGrams !== undefined
+          ? result.totalGrams
+          : sumItemGrams(items),
       healthiness: result.healthiness,
       confidence: result.confidence,
       micronutrients: result.micronutrients,

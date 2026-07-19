@@ -6,7 +6,7 @@ import {
 } from '@/entities/meal';
 import { analyzeFoodApi } from '@/features/analyze-food';
 import { useProfileStore } from '@/features/onboarding';
-import { useSettingsStore } from '@/features/settings';
+import { useSettingsStore, getAnalyzeFeaturesFromSettings } from '@/features/settings';
 import { saveMealImage, timestampForSelectedDate } from '@/shared/lib';
 import type { Meal, FoodItem } from '@ai-food/shared-types';
 import { applyAnalyzeResultToMeal } from './applyAnalyzeResultToMeal';
@@ -81,6 +81,7 @@ export function useSaveMeal() {
     try {
       const customInstructions = useSettingsStore.getState().customInstructions;
       const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
+      const features = getAnalyzeFeaturesFromSettings();
       const response = await queryClient.fetchQuery({
         queryKey: image
           ? [
@@ -91,6 +92,7 @@ export function useSaveMeal() {
               customInstructions,
               dietType,
               aiModel,
+              features,
             ]
           : [
               'analyze-food',
@@ -99,6 +101,7 @@ export function useSaveMeal() {
               customInstructions,
               dietType,
               aiModel,
+              features,
             ],
         queryFn: () =>
           image
@@ -106,6 +109,7 @@ export function useSaveMeal() {
                 customInstructions,
                 dietType,
                 model: aiModel,
+                features,
                 onPartial: (partial) =>
                   applyPartialAnalyzeResultToMeal(mealId, partial, itemId),
               })
@@ -115,6 +119,7 @@ export function useSaveMeal() {
                   customInstructions,
                   dietType,
                   model: aiModel,
+                  features,
                   onPartial: (partial) =>
                     applyPartialAnalyzeResultToMeal(mealId, partial, itemId),
                 },

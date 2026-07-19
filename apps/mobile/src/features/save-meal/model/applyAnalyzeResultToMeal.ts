@@ -1,5 +1,11 @@
 import type { FoodItem, NutritionResult } from '@ai-food/shared-types';
-import { normalizePortions, resolveItemGrams, useDiaryStore } from '@/entities/meal';
+import {
+  normalizePortions,
+  resolveItemGrams,
+  scaleItemsGramsToTotal,
+  sumItemGrams,
+  useDiaryStore,
+} from '@/entities/meal';
 
 /** Shared success mapping for first analyze and retry — keeps field lists in sync. */
 export function applyAnalyzeResultToMeal(
@@ -11,7 +17,7 @@ export function applyAnalyzeResultToMeal(
   const portions = normalizePortions(result.itemCount ?? 1);
 
   if (result.items.length > 0) {
-    const items: FoodItem[] = result.items.map((item) => ({
+    let items: FoodItem[] = result.items.map((item) => ({
       id: crypto.randomUUID(),
       name: item.name,
       calories: item.calories,
@@ -22,13 +28,26 @@ export function applyAnalyzeResultToMeal(
       grams: resolveItemGrams({ grams: item.grams ?? 100 }),
     }));
     const totalCalories = items.reduce((sum, item) => sum + item.calories, 0);
+    const compositionSum = sumItemGrams(items);
+    let totalGrams =
+      result.totalGrams !== undefined ? result.totalGrams : compositionSum;
+
+    // Keep dish weight and composition grams in sync (same shares)
+    if (compositionSum > 0 && totalGrams !== compositionSum) {
+      const scaled = scaleItemsGramsToTotal(items, totalGrams);
+      items = scaled.items;
+      totalGrams = scaled.totalGrams;
+    } else if (compositionSum > 0) {
+      totalGrams = compositionSum;
+    }
+
     updateMeal(mealId, {
       status: 'ready',
       name: result.foodName,
       totalCalories,
       items,
       portions,
-      ...(result.totalGrams !== undefined ? { totalGrams: result.totalGrams } : {}),
+      totalGrams,
       healthiness: result.healthiness,
       confidence: result.confidence,
       micronutrients: result.micronutrients,
@@ -42,6 +61,7 @@ export function applyAnalyzeResultToMeal(
     return;
   }
 
+  const fallbackGrams = result.totalGrams ?? 100;
   updateMeal(mealId, {
     status: 'ready',
     name: result.foodName,
@@ -55,11 +75,11 @@ export function applyAnalyzeResultToMeal(
         carbs: result.carbs,
         fat: result.fat,
         fiber: result.fiber,
-        grams: 100,
+        grams: fallbackGrams,
       },
     ],
     portions,
-    ...(result.totalGrams !== undefined ? { totalGrams: result.totalGrams } : {}),
+    totalGrams: fallbackGrams,
     healthiness: result.healthiness,
     confidence: result.confidence,
     micronutrients: result.micronutrients,

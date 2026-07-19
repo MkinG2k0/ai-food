@@ -42,11 +42,34 @@ export function temperatureForModel(model?: string | null): number | undefined {
   return GEMINI_TEMPERATURE;
 }
 
+/** Snapshot of analyze/refine feature flags from settings. */
+export function getAnalyzeFeaturesFromSettings(): {
+  vitamins: boolean;
+  healthiness: boolean;
+  composition: boolean;
+} {
+  const s = useSettingsStore.getState();
+  return {
+    vitamins: s.featureVitamins,
+    healthiness: s.featureHealthiness,
+    composition: s.featureComposition,
+  };
+}
+
 interface SettingsState {
   customInstructions: string;
   setCustomInstructions: (value: string) => void;
   aiModel: string;
   setAiModel: (value: string) => void;
+  /** Show vitamins/minerals in UI and request them from AI */
+  featureVitamins: boolean;
+  setFeatureVitamins: (value: boolean) => void;
+  /** Show healthiness score in UI and request it from AI */
+  featureHealthiness: boolean;
+  setFeatureHealthiness: (value: boolean) => void;
+  /** Show dish composition (items) in UI and ask AI to break down ingredients */
+  featureComposition: boolean;
+  setFeatureComposition: (value: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -59,6 +82,12 @@ export const useSettingsStore = create<SettingsState>()(
         }),
       aiModel: DEFAULT_AI_MODEL,
       setAiModel: (value) => set({ aiModel: normalizeAiModel(value) }),
+      featureVitamins: true,
+      setFeatureVitamins: (value) => set({ featureVitamins: value }),
+      featureHealthiness: true,
+      setFeatureHealthiness: (value) => set({ featureHealthiness: value }),
+      featureComposition: true,
+      setFeatureComposition: (value) => set({ featureComposition: value }),
     }),
     {
       name: 'ai-food-settings',

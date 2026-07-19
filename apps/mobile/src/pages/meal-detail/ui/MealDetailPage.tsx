@@ -16,7 +16,7 @@ import {
 } from '@/features/edit-meal';
 import { useFavoritesStore } from '@/features/favorites';
 import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
-import { aiModelLabel } from '@/features/settings';
+import { aiModelLabel, useSettingsStore } from '@/features/settings';
 import { Badge, Button, ImageLightbox } from '@/shared/ui';
 
 export function MealDetailPage() {
@@ -25,6 +25,7 @@ export function MealDetailPage() {
   const meals = useDiaryStore((s) => s.meals);
   const meal = meals.find((m) => m.id === id);
   const imageSrc = useMealImage(meal?.imageUri);
+  const featureComposition = useSettingsStore((s) => s.featureComposition);
   const isFavorite = useFavoritesStore((s) =>
     meal ? s.isFavorite(meal.id) : false,
   );
@@ -105,7 +106,7 @@ export function MealDetailPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="flex items-center px-4 pt-safe-header pb-3 border-b">
+      <header className="flex items-center px-4 pt-5 pb-3 border-b">
         <Button
           type="button"
           variant="ghost"
@@ -188,23 +189,25 @@ export function MealDetailPage() {
           {isRefining ? 'Дополняем…' : 'Дополнить'}
         </Button>
 
-        <div className="space-y-3">
-          <h2 className="font-semibold text-foreground">Состав</h2>
-          {meal.items.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              Нет ингредиентов
-            </p>
-          ) : (
-            meal.items.map((item) => (
-              <FoodItemDisplayCard
-                key={item.id}
-                mealId={mealId}
-                item={item}
-                onRequestDelete={(itemId) => openItemDelete(mealId, itemId)}
-              />
-            ))
-          )}
-        </div>
+        {featureComposition && (
+          <div className="space-y-3">
+            <h2 className="font-semibold text-foreground">Состав</h2>
+            {meal.items.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                Нет ингредиентов
+              </p>
+            ) : (
+              meal.items.map((item) => (
+                <FoodItemDisplayCard
+                  key={item.id}
+                  mealId={mealId}
+                  item={item}
+                  onRequestDelete={(itemId) => openItemDelete(mealId, itemId)}
+                />
+              ))
+            )}
+          </div>
+        )}
       </main>
 
       <DeleteMealConfirmSheet

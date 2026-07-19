@@ -26,12 +26,32 @@ beforeEach(async () => {
   useSettingsStore.setState({
     customInstructions: '',
     aiModel: DEFAULT_AI_MODEL,
+    featureVitamins: true,
+    featureHealthiness: true,
+    featureComposition: true,
   });
 });
 
 describe('useSettingsStore', () => {
   it('defaults customInstructions to empty string', () => {
     expect(useSettingsStore.getState().customInstructions).toBe('');
+  });
+
+  it('defaults feature flags to enabled', () => {
+    expect(useSettingsStore.getState().featureVitamins).toBe(true);
+    expect(useSettingsStore.getState().featureHealthiness).toBe(true);
+    expect(useSettingsStore.getState().featureComposition).toBe(true);
+  });
+
+  it('setFeatureVitamins / Healthiness / Composition update state', async () => {
+    await act(async () => {
+      useSettingsStore.getState().setFeatureVitamins(false);
+      useSettingsStore.getState().setFeatureHealthiness(false);
+      useSettingsStore.getState().setFeatureComposition(false);
+    });
+    expect(useSettingsStore.getState().featureVitamins).toBe(false);
+    expect(useSettingsStore.getState().featureHealthiness).toBe(false);
+    expect(useSettingsStore.getState().featureComposition).toBe(false);
   });
 
   it('defaults aiModel to google/gemini-3-flash-preview', () => {
