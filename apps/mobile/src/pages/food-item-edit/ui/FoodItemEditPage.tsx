@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -26,6 +26,8 @@ const inputClassName = cn(
   'ring-offset-background placeholder:text-muted-foreground',
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 );
+
+type NutrientMode = 'per100' | 'portion';
 
 const MACRO_FIELDS = [
   {
@@ -62,6 +64,7 @@ export function FoodItemEditPage() {
   const updateMealItem = useDiaryStore((s) => s.updateMealItem);
   const meal = meals.find((m) => m.id === mealId);
   const item = meal?.items.find((i) => i.id === itemId);
+  const [nutrientMode, setNutrientMode] = useState<NutrientMode>('portion');
   const {
     isOpen: isItemDeleteOpen,
     openConfirm: openItemDelete,
@@ -178,38 +181,58 @@ export function FoodItemEditPage() {
           </label>
         </div>
 
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium text-foreground">На 100 г</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {MACRO_FIELDS.map((macro) => (
-              <label key={`per100-${macro.field}`} className="min-w-0 space-y-1">
-                <span className="block text-xs text-muted-foreground">
-                  {macro.label}
-                </span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  aria-label={`${macro.ariaLabel} на 100 г`}
-                  className={cn(inputClassName, 'text-center tabular-nums')}
-                  value={Math.round(per100[macro.field])}
-                  onChange={(e) => patchPer100(macro.field, e.target.value)}
-                />
-              </label>
-            ))}
+        <section className="space-y-3">
+          <div
+            role="tablist"
+            aria-label="Режим ввода КБЖУ"
+            className="grid grid-cols-2 rounded-lg border border-input bg-muted/40 p-1"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={nutrientMode === 'per100'}
+              className={cn(
+                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                nutrientMode === 'per100'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+              onClick={() => setNutrientMode('per100')}
+            >
+              На 100 г
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={nutrientMode === 'portion'}
+              className={cn(
+                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                nutrientMode === 'portion'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+              onClick={() => setNutrientMode('portion')}
+            >
+              На порцию
+            </button>
           </div>
-        </section>
 
-        <section className="space-y-2">
-          <h2 className="text-sm font-medium text-foreground">На порцию</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div
+            role="tabpanel"
+            className="grid grid-cols-2 gap-3"
+            aria-label={
+              nutrientMode === 'per100' ? 'КБЖУ на 100 г' : 'КБЖУ на порцию'
+            }
+          >
             {MACRO_FIELDS.map((macro) => {
-              const value =
-                macro.field === 'fiber'
+              const isPer100 = nutrientMode === 'per100';
+              const value = isPer100
+                ? per100[macro.field]
+                : macro.field === 'fiber'
                   ? (item.fiber ?? 0)
                   : item[macro.field];
               return (
-                <label key={`portion-${macro.field}`} className="min-w-0 space-y-1">
+                <label key={macro.field} className="min-w-0 space-y-1">
                   <span className="block text-xs text-muted-foreground">
                     {macro.label}
                   </span>
@@ -217,10 +240,18 @@ export function FoodItemEditPage() {
                     type="number"
                     inputMode="decimal"
                     min={0}
-                    aria-label={macro.ariaLabel}
+                    aria-label={
+                      isPer100
+                        ? `${macro.ariaLabel} на 100 г`
+                        : macro.ariaLabel
+                    }
                     className={cn(inputClassName, 'text-center tabular-nums')}
                     value={Math.round(value)}
-                    onChange={(e) => patchNumber(macro.field, e.target.value)}
+                    onChange={(e) =>
+                      isPer100
+                        ? patchPer100(macro.field, e.target.value)
+                        : patchNumber(macro.field, e.target.value)
+                    }
                   />
                 </label>
               );
