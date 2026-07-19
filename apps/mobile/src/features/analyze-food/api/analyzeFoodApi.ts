@@ -57,6 +57,7 @@ export {
 const LEGACY_NUTRITION_XML_SCHEMA = `<analysis>
   <foodName>краткое название всего блюда/приёма на русском, например «Свежий овощной салат» — НЕ перечень ингредиентов через запятую</foodName>
   <itemCount>число отдельных ПОРЦИЙ (подач), не кусков внутри блюда: одна тарелка курицы кусочками → 1; 2 ролла → 2. НЕ равно числу items</itemCount>
+  <totalGrams>оценка веса всего блюда в граммах (сумма items[].grams); только число</totalGrams>
   <calories>суммарные килокалории всего приёма (число)</calories>
   <protein>grams, сумма по составу (число)</protein>
   <carbs>grams, сумма по составу (число)</carbs>
@@ -86,6 +87,7 @@ const LEGACY_NUTRITION_XML_SCHEMA = `<analysis>
 const EXAMPLE_A_XML = legacyNutritionResultToXml({
   foodName: 'Бургер с сыром',
   itemCount: 1,
+  totalGrams: 225,
   calories: 520,
   protein: 28,
   carbs: 42,
@@ -117,6 +119,7 @@ ${COMPOSITION_PROMPT_RULE}
 ## Порция и граммы (обязательно)
 - grams обязателен для каждого item (только число в граммах).
 ${ITEM_COUNT_PROMPT_RULE}
+- totalGrams — оценка веса ВСЕГО блюда в граммах (обычно ≈ сумма items[].grams).
 - Якоря масштаба: тарелка ≈ 22–27 см; столовая ложка; банка; бутылка 0.5 л.
 - Оценивай видимую порцию на фото, а не «стандартную порцию из меню».
 - Top-level calories/protein/carbs/fat/fiber = сумма соответствующих полей items (и fiber items, где задан).
@@ -152,6 +155,7 @@ ${EXAMPLE_B_XML}`;
 const EXAMPLE_A_TEXT_XML = legacyNutritionResultToXml({
   foodName: 'Бургер с сыром',
   itemCount: 1,
+  totalGrams: 225,
   calories: 520,
   protein: 28,
   carbs: 42,
@@ -183,6 +187,7 @@ ${COMPOSITION_PROMPT_RULE}
 ## Порция и граммы (обязательно)
 - grams обязателен для каждого item (только число в граммах).
 ${ITEM_COUNT_PROMPT_RULE}
+- totalGrams — оценка веса ВСЕГО блюда в граммах (обычно ≈ сумма items[].grams).
 - Если размер порции в описании неясен — оцени типичную порцию.
 - Якоря: тарелка ≈ 22–27 см; столовая ложка; банка; бутылка 0.5 л.
 - Top-level calories/protein/carbs/fat/fiber = сумма соответствующих полей items.
@@ -217,6 +222,8 @@ const GEMINI_NUTRITION_XML_SCHEMA = `<analysis>
   <foodName>краткое название всего блюда/приёма на русском</foodName>
 
   <itemCount>число отдельных ПОРЦИЙ (подач), не кусков внутри блюда: одна тарелка курицы кусочками → 1; 2 ролла → 2. НЕ равно числу items</itemCount>
+
+  <totalGrams>оценка веса всего блюда в граммах (сумма items[].grams); только число</totalGrams>
 
   <portionReference>какой якорь использован для оценки размера порции (тарелка/ложка/банка/бутылка), или "явный референс отсутствует, оценка приблизительная"</portionReference>
 
@@ -280,6 +287,7 @@ ${GEMINI_FOOD_NAME_PROMPT_RULE} ${GEMINI_COMPOSITION_PROMPT_RULE}
 ## Порция и граммы (обязательно)
 - grams обязателен для каждого item.
 ${ITEM_COUNT_PROMPT_RULE}
+- totalGrams — оценка веса ВСЕГО блюда в граммах (обычно ≈ сумма items[].grams).
 - Якоря: тарелка ≈ 22–27 см; столовая ложка ≈ 15 мл; банка; бутылка 0.5 л.
 - Оценивай видимую порцию на фото, а не «стандартную порцию из меню».
 - totals (calories/protein/carbs/fat/fiber) должны быть суммой соответствующих значений по всем items — не считай отдельно от компонентов.
@@ -327,6 +335,7 @@ ${GEMINI_FOOD_NAME_PROMPT_RULE} ${GEMINI_COMPOSITION_PROMPT_RULE}
 ## Порция и граммы (обязательно)
 - grams обязателен для каждого item.
 ${ITEM_COUNT_PROMPT_RULE}
+- totalGrams — оценка веса ВСЕГО блюда в граммах (обычно ≈ сумма items[].grams).
 - Если размер порции в описании неясен — оцени типичную порцию, укажи это в portionReference.
 - Якоря: тарелка ≈ 22–27 см; столовая ложка ≈ 15 мл; банка; бутылка 0.5 л.
 - totals (calories/protein/carbs/fat/fiber) должны быть суммой соответствующих значений по всем items.

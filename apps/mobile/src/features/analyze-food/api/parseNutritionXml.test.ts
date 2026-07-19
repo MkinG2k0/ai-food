@@ -59,6 +59,11 @@ describe('parseNutritionXml', () => {
     expect(parseNutritionXml(xml)).toMatchObject({ itemCount: 2 });
   });
 
+  it('parses totalGrams from top-level tag', () => {
+    const xml = nutritionResultToXml({ ...sample, totalGrams: 350 });
+    expect(parseNutritionXml(xml)).toMatchObject({ totalGrams: 350 });
+  });
+
   it('omits itemCount when absent', () => {
     const parsed = parseNutritionXml(nutritionResultToXml(sample));
     expect(parsed).not.toHaveProperty('itemCount');

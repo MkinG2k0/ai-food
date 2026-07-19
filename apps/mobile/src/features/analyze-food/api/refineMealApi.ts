@@ -49,6 +49,7 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides
 {
   "foodName": string (краткое название всего блюда/приёма на русском),
   "itemCount": number (отдельные ПОРЦИИ/подачи, не куски внутри блюда: тарелка курицы кусочками → 1; 2 ролла → 2; НЕ равно длине items),
+  "totalGrams": number (оценка веса всего блюда в граммах; обычно ≈ сумма items[].grams),
   "calories": number (суммарные килокалории — сумма items),
   "protein": number (grams, сумма по составу),
   "carbs": number (grams, сумма по составу),
@@ -78,7 +79,7 @@ ${FOOD_NAME_PROMPT_RULE}
 ${COMPOSITION_PROMPT_RULE}
 ${ITEM_COUNT_PROMPT_RULE}
 ${REFINE_MICRONUTRIENTS_RULE}
-Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many separate servings were eaten (not pieces inside one dish).
+Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many separate servings were eaten (not pieces inside one dish). Update totalGrams to match the revised dish weight.
 Do not include any text outside the JSON object. No markdown fences.`;
 
 const APP_ERROR_CODES = new Set([

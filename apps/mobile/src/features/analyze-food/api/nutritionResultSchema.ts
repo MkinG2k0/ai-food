@@ -166,6 +166,11 @@ export function isNutritionResult(value: unknown): value is NutritionResult {
       return false;
     }
   }
+  if (v.totalGrams !== undefined) {
+    if (typeof v.totalGrams !== 'number' || !Number.isFinite(v.totalGrams) || v.totalGrams < 0) {
+      return false;
+    }
+  }
   if (v.addedSugar !== undefined && typeof v.addedSugar !== 'number') return false;
   if (v.confidenceReason !== undefined && typeof v.confidenceReason !== 'string') return false;
   if (v.healthinessReason !== undefined && typeof v.healthinessReason !== 'string') return false;

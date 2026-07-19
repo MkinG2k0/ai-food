@@ -24,7 +24,8 @@ export function applyPartialAnalyzeResultToMeal(
     partial.carbs !== undefined ||
     partial.fat !== undefined ||
     partial.fiber !== undefined ||
-    partial.itemCount !== undefined;
+    partial.itemCount !== undefined ||
+    partial.totalGrams !== undefined;
 
   if (!hasScalars) return;
 
@@ -59,6 +60,7 @@ export function applyPartialAnalyzeResultToMeal(
     ...(partial.itemCount !== undefined
       ? { portions: normalizePortions(partial.itemCount) }
       : {}),
+    ...(partial.totalGrams !== undefined ? { totalGrams: partial.totalGrams } : {}),
     healthiness: partial.healthiness ?? meal?.healthiness,
     confidence: partial.confidence ?? meal?.confidence,
     micronutrients: partial.micronutrients ?? meal?.micronutrients,

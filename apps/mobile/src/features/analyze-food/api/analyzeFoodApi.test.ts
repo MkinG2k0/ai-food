@@ -501,6 +501,7 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
 
     expect(systemContent).toMatch(/portionReference|totals|addedSugar|disclaimers/i);
     expect(systemContent).toMatch(/itemCount/);
+    expect(systemContent).toMatch(/totalGrams/);
     expect(systemContent).toMatch(/наггетс|курин|кусоч|подач/i);
     expect(systemContent).toMatch(/amount_mg/);
     expect(systemContent).not.toContain(FOOD_NAME_PROMPT_RULE);

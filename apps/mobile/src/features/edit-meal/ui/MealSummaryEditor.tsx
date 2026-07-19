@@ -56,6 +56,7 @@ export interface MealSummaryEditorProps {
 }
 
 export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
+  const updateMeal = useDiaryStore((s) => s.updateMeal);
   const updateMealNutrition = useDiaryStore((s) => s.updateMealNutrition);
   const setMealPortions = useDiaryStore((s) => s.setMealPortions);
   const redefineMealPortions = useDiaryStore((s) => s.redefineMealPortions);
@@ -135,6 +136,36 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
                   calories: parseNutrient(e.target.value),
                 })
               }
+            />
+          </label>
+          <label className="block w-[4.5rem] shrink-0 space-y-1.5">
+            <span className="block text-xs text-muted-foreground text-center">
+              Вес, г
+            </span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              aria-label="Граммовка всего блюда (не влияет на КБЖУ)"
+              title="Оценка веса блюда — правка не меняет КБЖУ"
+              className={cn(
+                inputClassName,
+                'h-9 text-center text-base font-semibold tabular-nums',
+              )}
+              value={
+                meal.totalGrams !== undefined
+                  ? Math.round(meal.totalGrams)
+                  : ''
+              }
+              placeholder="—"
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                if (raw === '') {
+                  updateMeal(meal.id, { totalGrams: undefined });
+                  return;
+                }
+                updateMeal(meal.id, { totalGrams: parseNutrient(raw) });
+              }}
             />
           </label>
           <div className="shrink-0 space-y-1.5">

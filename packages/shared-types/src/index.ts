@@ -56,6 +56,11 @@ export interface Meal {
   status?: MealStatus;
   /** Servings multiplier; omitted on legacy meals → treat as 1 */
   portions?: number;
+  /**
+   * Estimated total dish weight in grams (display-only; editing does not rescale macros).
+   * Omitted on legacy meals.
+   */
+  totalGrams?: number;
   /** AI healthiness score 1–10; omitted on legacy meals */
   healthiness?: number;
   /** AI recognition confidence 0–1; omitted on legacy meals */
@@ -106,6 +111,11 @@ export interface NutritionResult {
    * Omitted when model skips — treat as 1.
    */
   itemCount?: number;
+  /**
+   * Estimated total dish weight in grams (sum of visible food).
+   * Display-only on the client; omitted when model skips.
+   */
+  totalGrams?: number;
   /** Quantitative micronutrient amounts for the portion; omitted if model skipped */
   micronutrients?: MicronutrientEstimate[];
   /** Scale anchor used for portion size (plate / spoon / …) */

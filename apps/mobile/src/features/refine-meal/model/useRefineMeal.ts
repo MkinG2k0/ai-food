@@ -129,6 +129,7 @@ export function useRefineMeal() {
       ...(result.itemCount !== undefined
         ? { portions: normalizePortions(result.itemCount) }
         : {}),
+      ...(result.totalGrams !== undefined ? { totalGrams: result.totalGrams } : {}),
       healthiness: result.healthiness,
       confidence: result.confidence,
       micronutrients: result.micronutrients,
