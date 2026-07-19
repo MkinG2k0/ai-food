@@ -82,6 +82,12 @@ export interface Meal {
   healthinessReason?: string;
   /** Hidden calories / uncertainty notes; omitted on legacy meals */
   disclaimers?: string[];
+  /**
+   * Markdown from lazy custom-instructions answer on meal detail.
+   * `undefined` = not loaded yet; `""` = loaded with no content.
+   * Omitted on legacy meals.
+   */
+  customContent?: string;
 }
 
 export interface NutritionItem {
@@ -129,6 +135,11 @@ export interface NutritionResult {
   healthinessReason?: string;
   /** Hidden calories / uncertainty notes from the model */
   disclaimers?: string[];
+  /**
+   * Optional Markdown custom answer (refine only when user asks to update).
+   * Primary fill path is lazy fetch on meal detail, not first analyze.
+   */
+  customContent?: string;
 }
 
 export interface AnalyzeFoodRequest {

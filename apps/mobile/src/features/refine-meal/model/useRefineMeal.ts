@@ -142,6 +142,9 @@ export function useRefineMeal() {
       confidenceReason: result.confidenceReason,
       healthinessReason: result.healthinessReason,
       disclaimers: result.disclaimers,
+      ...(result.customContent !== undefined
+        ? { customContent: result.customContent }
+        : {}),
     });
   };
 }

@@ -185,5 +185,8 @@ export function isNutritionResult(value: unknown): value is NutritionResult {
       return false;
     }
   }
+  if (v.customContent !== undefined && typeof v.customContent !== 'string') {
+    return false;
+  }
   return v.items.every(isNutritionItem);
 }

@@ -81,7 +81,8 @@ const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user pro
   "micronutrients": [
     { "id": "vitaminA"|"vitaminC"|"vitaminD"|"vitaminB12"|"iron"|"calcium"|"folate"|"magnesium", "amount": number, "unit": "mg"|"µg" }
   ],
-  "disclaimers": string[] (optional, скрытые калории / неопределённость; omit if none)
+  "disclaimers": string[] (optional, скрытые калории / неопределённость; omit if none),
+  "customContent": string (optional Markdown; include ONLY when the user correction explicitly asks to update/rewrite the extra custom answer — recipe, spiciness notes, «перепиши дополнительно», etc.; otherwise OMIT this key entirely so the client keeps the previous value)
 }
 ${FOOD_NAME_PROMPT_RULE}
 ${COMPOSITION_PROMPT_RULE}

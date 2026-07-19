@@ -252,15 +252,15 @@ export function SettingsPage() {
             Кастомные инструкции
           </label>
           <p className="text-sm text-muted-foreground">
-            Укажите предпочтения для анализа еды: диета, единицы измерения,
-            стиль ответа. Например: «веган», «всегда в граммах», «низкий
-            гликемический индекс».
+            Укажите предпочтения для анализа (диета, единицы) и дополнительные
+            запросы к блюду (рецепт, острота и т.п.). Ответ на доп. запросы
+            появится на карточке приёма в формате Markdown.
           </p>
           <Textarea
             id="custom-instructions"
             value={customInstructions}
             maxLength={2000}
-            placeholder="Например: я веган, считай всё в граммах"
+            placeholder="Например: я веган; дай краткий рецепт"
             onChange={(e) => setCustomInstructions(e.target.value)}
             className="min-h-32"
           />

@@ -1,4 +1,6 @@
 export { useAnalyzeFood } from './model/useAnalyzeFood';
+export { useMealCustomContent } from './model/useMealCustomContent';
+export { MealCustomContentBlock } from './ui/MealCustomContentBlock';
 export {
   analyzeFoodApi,
   appendCustomInstructions,
@@ -17,3 +19,7 @@ export {
   type RefineMealInput,
   type RefineMealContextItem,
 } from './api/refineMealApi';
+export {
+  fetchMealCustomContentApi,
+  type MealCustomContentInput,
+} from './api/fetchMealCustomContentApi';

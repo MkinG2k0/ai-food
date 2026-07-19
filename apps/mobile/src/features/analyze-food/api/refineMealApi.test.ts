@@ -298,6 +298,37 @@ describe('refineMealApi (AI Gateway)', () => {
     expect(system).not.toMatch(/"confidence"\s*:/);
   });
 
+  it('SYSTEM_PROMPT documents optional customContent only when user asks', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await refineMealApi({ correction: 'съел половину', mealContext });
+
+    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
+    const body = rawBody as { messages: Array<{ role: string; content: string }> };
+    const system = body.messages[0].content;
+    expect(system).toMatch(/"customContent"\s*:\s*string/i);
+    expect(system).toMatch(/OMIT this key/i);
+  });
+
+  it('accepts NutritionResult with optional customContent', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(
+        JSON.stringify({
+          ...validNutrition,
+          customContent: '## Рецепт\n- шаг 1',
+        }),
+      ),
+    });
+
+    const { result } = await refineMealApi({
+      correction: 'перепиши рецепт в дополнительно',
+      mealContext,
+    });
+    expect(result.customContent).toBe('## Рецепт\n- шаг 1');
+  });
+
   it('maps RATE_LIMITED from gateway', async () => {
     vi.mocked(axios.post).mockRejectedValue({
       response: {

@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, PenLine, Star, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ApiError } from '@ai-food/shared-types';
 import { useDiaryStore, useMealImage } from '@/entities/meal';
+import { MealCustomContentBlock } from '@/features/analyze-food';
 import {
   useConfirmDeleteMeal,
   DeleteMealConfirmSheet,
@@ -18,7 +19,6 @@ import { useFavoritesStore } from '@/features/favorites';
 import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
 import { aiModelLabel, useSettingsStore } from '@/features/settings';
 import { Badge, Button, ImageLightbox } from '@/shared/ui';
-
 export function MealDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -174,6 +174,8 @@ export function MealDetailPage() {
         )}
 
         <MealSummaryEditor meal={currentMeal} />
+
+        <MealCustomContentBlock mealId={mealId} />
 
         <Button
           variant="outline"
