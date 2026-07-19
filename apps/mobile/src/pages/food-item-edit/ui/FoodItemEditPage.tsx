@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,7 +9,6 @@ import {
   resolveItemGrams,
   sanitizeGrams,
   sanitizeNutrient,
-  scalePortionNutrientsByGrams,
   useDiaryStore,
   type NutrientKey,
   type PortionNutrients,
@@ -65,6 +64,10 @@ export function FoodItemEditPage() {
   const meal = meals.find((m) => m.id === mealId);
   const item = meal?.items.find((i) => i.id === itemId);
   const [nutrientMode, setNutrientMode] = useState<NutrientMode>('portion');
+  /** Local draft while typing grams — avoid rescale on every keystroke. */
+  const [gramsDraft, setGramsDraft] = useState<string | null>(null);
+  /** Density captured on focus so intermediate 0g cannot wipe macros. */
+  const densityOnFocusRef = useRef<PortionNutrients | null>(null);
   const {
     isOpen: isItemDeleteOpen,
     openConfirm: openItemDelete,
@@ -118,23 +121,49 @@ export function FoodItemEditPage() {
     );
   }
 
-  function handleGramsChange(raw: string) {
-    const oldGrams = resolveItemGrams(item!);
+  function portionDensityFromItem(): PortionNutrients {
+    return nutrientsPer100FromPortion({
+      calories: item!.calories,
+      protein: item!.protein,
+      carbs: item!.carbs,
+      fat: item!.fat,
+      fiber: item!.fiber ?? 0,
+      grams: resolveItemGrams(item!),
+    });
+  }
+
+  function handleGramsFocus() {
+    densityOnFocusRef.current = portionDensityFromItem();
+    setGramsDraft(formatItemGrams(resolveItemGrams(item!)));
+  }
+
+  function commitGrams(raw: string) {
     const newGrams = sanitizeGrams(Number(raw.replace(',', '.')));
+    const density = densityOnFocusRef.current ?? portionDensityFromItem();
+    densityOnFocusRef.current = null;
+    setGramsDraft(null);
+
+    if (newGrams === 0) {
+      updateMealItem(mealId!, itemId!, {
+        grams: 0,
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        fiber: 0,
+      });
+      return;
+    }
+
     updateMealItem(mealId!, itemId!, {
       grams: newGrams,
-      ...scalePortionNutrientsByGrams(
-        {
-          calories: item!.calories,
-          protein: item!.protein,
-          carbs: item!.carbs,
-          fat: item!.fat,
-          fiber: item!.fiber ?? 0,
-        },
-        oldGrams,
-        newGrams,
-      ),
+      ...nutrientsFromPer100(density, newGrams),
     });
+  }
+
+  function handleGramsBlur() {
+    if (gramsDraft === null) return;
+    commitGrams(gramsDraft);
   }
 
   function handleConfirmItemDelete() {
@@ -175,8 +204,15 @@ export function FoodItemEditPage() {
               min={0}
               aria-label="Граммы"
               className={cn(inputClassName, 'text-center tabular-nums max-w-[8rem]')}
-              value={formatItemGrams(grams)}
-              onChange={(e) => handleGramsChange(e.target.value)}
+              value={gramsDraft ?? formatItemGrams(grams)}
+              onFocus={handleGramsFocus}
+              onChange={(e) => setGramsDraft(e.target.value)}
+              onBlur={handleGramsBlur}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur();
+                }
+              }}
             />
           </label>
         </div>
