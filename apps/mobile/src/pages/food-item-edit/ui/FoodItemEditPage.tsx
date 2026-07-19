@@ -4,10 +4,15 @@ import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   formatItemGrams,
+  nutrientsFromPer100,
+  nutrientsPer100FromPortion,
   resolveItemGrams,
   sanitizeGrams,
   sanitizeNutrient,
+  scalePortionNutrientsByGrams,
   useDiaryStore,
+  type NutrientKey,
+  type PortionNutrients,
 } from '@/entities/meal';
 import {
   useConfirmDeleteMealItem,
@@ -21,6 +26,34 @@ const inputClassName = cn(
   'ring-offset-background placeholder:text-muted-foreground',
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 );
+
+const MACRO_FIELDS = [
+  {
+    label: 'Ккал',
+    ariaLabel: 'Калории',
+    field: 'calories' as const,
+  },
+  {
+    label: 'Б',
+    ariaLabel: 'Белки',
+    field: 'protein' as const,
+  },
+  {
+    label: 'У',
+    ariaLabel: 'Углеводы',
+    field: 'carbs' as const,
+  },
+  {
+    label: 'Ж',
+    ariaLabel: 'Жиры',
+    field: 'fat' as const,
+  },
+  {
+    label: 'Кл',
+    ariaLabel: 'Клетчатка',
+    field: 'fiber' as const,
+  },
+] as const;
 
 export function FoodItemEditPage() {
   const navigate = useNavigate();
@@ -54,12 +87,50 @@ export function FoodItemEditPage() {
     return null;
   }
 
-  function patchNumber(
-    field: 'calories' | 'protein' | 'carbs' | 'fat' | 'fiber',
-    raw: string,
-  ) {
+  const grams = resolveItemGrams(item);
+  const per100 = nutrientsPer100FromPortion({
+    calories: item.calories,
+    protein: item.protein,
+    carbs: item.carbs,
+    fat: item.fat,
+    fiber: item.fiber ?? 0,
+    grams,
+  });
+
+  function patchNumber(field: NutrientKey, raw: string) {
     updateMealItem(mealId!, itemId!, {
       [field]: sanitizeNutrient(Number(raw)),
+    });
+  }
+
+  function patchPer100(field: NutrientKey, raw: string) {
+    const nextPer100: PortionNutrients = {
+      ...per100,
+      [field]: sanitizeNutrient(Number(raw)),
+    };
+    updateMealItem(
+      mealId!,
+      itemId!,
+      nutrientsFromPer100(nextPer100, resolveItemGrams(item!)),
+    );
+  }
+
+  function handleGramsChange(raw: string) {
+    const oldGrams = resolveItemGrams(item!);
+    const newGrams = sanitizeGrams(Number(raw.replace(',', '.')));
+    updateMealItem(mealId!, itemId!, {
+      grams: newGrams,
+      ...scalePortionNutrientsByGrams(
+        {
+          calories: item!.calories,
+          protein: item!.protein,
+          carbs: item!.carbs,
+          fat: item!.fat,
+          fiber: item!.fiber ?? 0,
+        },
+        oldGrams,
+        newGrams,
+      ),
     });
   }
 
@@ -101,67 +172,61 @@ export function FoodItemEditPage() {
               min={0}
               aria-label="Граммы"
               className={cn(inputClassName, 'text-center tabular-nums max-w-[8rem]')}
-              value={formatItemGrams(resolveItemGrams(item))}
-              onChange={(e) =>
-                updateMealItem(mealId, itemId, {
-                  grams: sanitizeGrams(Number(e.target.value.replace(',', '.'))),
-                })
-              }
+              value={formatItemGrams(grams)}
+              onChange={(e) => handleGramsChange(e.target.value)}
             />
           </label>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {(
-            [
-              {
-                label: 'Ккал',
-                ariaLabel: 'Калории',
-                field: 'calories' as const,
-                value: item.calories,
-              },
-              {
-                label: 'Б',
-                ariaLabel: 'Белки',
-                field: 'protein' as const,
-                value: item.protein,
-              },
-              {
-                label: 'У',
-                ariaLabel: 'Углеводы',
-                field: 'carbs' as const,
-                value: item.carbs,
-              },
-              {
-                label: 'Ж',
-                ariaLabel: 'Жиры',
-                field: 'fat' as const,
-                value: item.fat,
-              },
-              {
-                label: 'Кл',
-                ariaLabel: 'Клетчатка',
-                field: 'fiber' as const,
-                value: item.fiber ?? 0,
-              },
-            ] as const
-          ).map((macro) => (
-            <label key={macro.field} className="min-w-0 space-y-1">
-              <span className="block text-xs text-muted-foreground">
-                {macro.label}
-              </span>
-              <input
-                type="number"
-                inputMode="decimal"
-                min={0}
-                aria-label={macro.ariaLabel}
-                className={cn(inputClassName, 'text-center tabular-nums')}
-                value={Math.round(macro.value)}
-                onChange={(e) => patchNumber(macro.field, e.target.value)}
-              />
-            </label>
-          ))}
-        </div>
+        <section className="space-y-2">
+          <h2 className="text-sm font-medium text-foreground">На 100 г</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {MACRO_FIELDS.map((macro) => (
+              <label key={`per100-${macro.field}`} className="min-w-0 space-y-1">
+                <span className="block text-xs text-muted-foreground">
+                  {macro.label}
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  aria-label={`${macro.ariaLabel} на 100 г`}
+                  className={cn(inputClassName, 'text-center tabular-nums')}
+                  value={Math.round(per100[macro.field])}
+                  onChange={(e) => patchPer100(macro.field, e.target.value)}
+                />
+              </label>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-sm font-medium text-foreground">На порцию</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {MACRO_FIELDS.map((macro) => {
+              const value =
+                macro.field === 'fiber'
+                  ? (item.fiber ?? 0)
+                  : item[macro.field];
+              return (
+                <label key={`portion-${macro.field}`} className="min-w-0 space-y-1">
+                  <span className="block text-xs text-muted-foreground">
+                    {macro.label}
+                  </span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    aria-label={macro.ariaLabel}
+                    className={cn(inputClassName, 'text-center tabular-nums')}
+                    value={Math.round(value)}
+                    onChange={(e) => patchNumber(macro.field, e.target.value)}
+                  />
+                </label>
+              );
+            })}
+          </div>
+        </section>
 
         <Button
           variant="destructive"
