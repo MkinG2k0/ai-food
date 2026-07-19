@@ -19,11 +19,14 @@ export interface MealCustomContentInput {
     totalCalories: number;
     items: MealCustomContentContextItem[];
   };
-  customInstructions: string;
+  /** Settings preferences / content requests (initial slide). */
+  customInstructions?: string;
+  /** Follow-up question about this meal (appends a new carousel slide). */
+  question?: string;
   model?: string;
 }
 
-const SYSTEM_PROMPT = `Ты помощник по еде. Пользователь сохранил приём пищи и задал кастомные инструкции в настройках.
+const SETTINGS_SYSTEM_PROMPT = `Ты помощник по еде. Пользователь сохранил приём пищи и задал кастомные инструкции в настройках.
 
 Ответь ТОЛЬКО на запросы дополнительного контента из инструкций (рецепт, острота, комментарий, советы по приготовлению и т.п.).
 Предпочтения диеты/единиц измерения/стиля анализа НЕ дублируй как весь ответ, если пользователь не просил такой контент.
@@ -34,6 +37,16 @@ const SYSTEM_PROMPT = `Ты помощник по еде. Пользовател
 - Без XML, без JSON, без обёртки \`\`\`markdown\`\`\`.
 - Без текста вне ответа (без преамбулы вроде «Вот рецепт:» отдельно от MD — можно сразу с MD).
 - Держи ответ практичным и не слишком длинным.`;
+
+const QUESTION_SYSTEM_PROMPT = `Ты помощник по еде. Пользователь задаёт ОДИН вопрос о конкретном приёме пищи.
+
+Ответь ТОЛЬКО на этот вопрос по контексту блюда (состав, КБЖУ).
+Не добавляй рецепт, ингредиенты для готовки, шаги приготовления, общую «оценку блюда» и другие разделы, если пользователь об этом не спрашивал.
+Если вопрос оценочный (энергия, сытость, острота и т.п.) — дай краткую обоснованную оценку в Markdown, без лишних блоков.
+
+Формат ответа:
+- Чистый Markdown на русском, короткий и по делу.
+- Без XML, без JSON, без обёртки \`\`\`markdown\`\`\`.`;
 
 function rejectApiError(message: string, code: string, status: number): never {
   const apiError: ApiError = { message, code, status };
@@ -112,7 +125,7 @@ export function normalizeCustomContent(raw: string): string {
   return stripped.slice(0, MAX_CUSTOM_CONTENT_LENGTH);
 }
 
-function buildUserText(
+function buildSettingsUserText(
   instructions: string,
   mealContext: MealCustomContentInput['mealContext'],
 ): string {
@@ -124,6 +137,23 @@ function buildUserText(
     JSON.stringify(mealContext),
     '',
     'Верни Markdown-ответ на доп. запросы или пустую строку.',
+  ].join('\n');
+}
+
+function buildQuestionUserText(
+  question: string,
+  mealContext: MealCustomContentInput['mealContext'],
+): string {
+  // Do not attach settings customInstructions — they often ask for a recipe
+  // and the model would repeat it instead of answering only the question.
+  return [
+    'Вопрос пользователя:',
+    question,
+    '',
+    'Контекст приёма пищи (JSON):',
+    JSON.stringify(mealContext),
+    '',
+    'Верни Markdown-ответ ТОЛЬКО на этот вопрос. Не добавляй рецепт и посторонние разделы.',
   ].join('\n');
 }
 
@@ -141,12 +171,20 @@ export async function fetchMealCustomContentApi(
     );
   }
 
-  const instructions = input.customInstructions.trim();
-  if (!instructions) {
+  const question = input.question?.trim() ?? '';
+  const instructions = input.customInstructions?.trim() ?? '';
+
+  if (!question && !instructions) {
     return '';
   }
 
-  const userText = buildUserText(instructions, input.mealContext);
+  const isQuestion = question.length > 0;
+  const systemContent = isQuestion
+    ? QUESTION_SYSTEM_PROMPT
+    : SETTINGS_SYSTEM_PROMPT;
+  const userText = isQuestion
+    ? buildQuestionUserText(question, input.mealContext)
+    : buildSettingsUserText(instructions, input.mealContext);
 
   let response;
   try {
@@ -157,7 +195,7 @@ export async function fetchMealCustomContentApi(
         model: input.model,
         ...(temperature !== undefined ? { temperature } : {}),
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemContent },
           { role: 'user', content: userText },
         ],
       },

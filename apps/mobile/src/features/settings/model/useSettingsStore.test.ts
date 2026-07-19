@@ -14,6 +14,7 @@ import {
   DEFAULT_AI_MODEL,
   GEMINI_TEMPERATURE,
   aiModelLabel,
+  getActiveCustomInstructions,
   isGeminiModel,
   temperatureForModel,
   useSettingsStore,
@@ -25,6 +26,7 @@ beforeEach(async () => {
   });
   useSettingsStore.setState({
     customInstructions: '',
+    customInstructionsEnabled: true,
     aiModel: DEFAULT_AI_MODEL,
     featureVitamins: true,
     featureHealthiness: true,
@@ -37,6 +39,35 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().customInstructions).toBe('');
   });
 
+  it('defaults customInstructionsEnabled to true', () => {
+    expect(useSettingsStore.getState().customInstructionsEnabled).toBe(true);
+  });
+
+  it('setCustomInstructionsEnabled toggles without clearing text', async () => {
+    await act(async () => {
+      useSettingsStore.getState().setCustomInstructions('дай рецепт');
+      useSettingsStore.getState().setCustomInstructionsEnabled(false);
+    });
+    expect(useSettingsStore.getState().customInstructionsEnabled).toBe(false);
+    expect(useSettingsStore.getState().customInstructions).toBe('дай рецепт');
+    await act(async () => {
+      useSettingsStore.getState().setCustomInstructionsEnabled(true);
+    });
+    expect(useSettingsStore.getState().customInstructionsEnabled).toBe(true);
+    expect(useSettingsStore.getState().customInstructions).toBe('дай рецепт');
+  });
+
+  it('getActiveCustomInstructions returns empty when disabled', async () => {
+    await act(async () => {
+      useSettingsStore.getState().setCustomInstructions('  веган  ');
+      useSettingsStore.getState().setCustomInstructionsEnabled(false);
+    });
+    expect(getActiveCustomInstructions()).toBe('');
+    await act(async () => {
+      useSettingsStore.getState().setCustomInstructionsEnabled(true);
+    });
+    expect(getActiveCustomInstructions()).toBe('веган');
+  });
   it('defaults feature flags to enabled', () => {
     expect(useSettingsStore.getState().featureVitamins).toBe(true);
     expect(useSettingsStore.getState().featureHealthiness).toBe(true);

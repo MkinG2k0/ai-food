@@ -57,6 +57,11 @@ describe('useAnalyzeFood', () => {
       customInstructions: '',
       dietType: 'none',
       model: expect.any(String),
+      features: {
+        vitamins: true,
+        healthiness: true,
+        composition: true,
+      },
     });
   });
 });

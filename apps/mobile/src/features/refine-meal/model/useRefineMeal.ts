@@ -3,7 +3,7 @@ import type { ApiError, FoodItem, Meal } from '@ai-food/shared-types';
 import { normalizePortions, resolveItemGrams, sumItemGrams, useDiaryStore } from '@/entities/meal';
 import { refineMealApi } from '@/features/analyze-food';
 import { useProfileStore } from '@/features/onboarding';
-import { getAnalyzeFeaturesFromSettings, useSettingsStore } from '@/features/settings';
+import { getActiveCustomInstructions, getAnalyzeFeaturesFromSettings, useSettingsStore } from '@/features/settings';
 
 function rejectApiError(message: string, code: string, status: number): never {
   const apiError: ApiError = { message, code, status };
@@ -97,7 +97,7 @@ export function useRefineMeal() {
 
     const response = await refineMealApi({
       correction: trimmed,
-      customInstructions: useSettingsStore.getState().customInstructions,
+      customInstructions: getActiveCustomInstructions(),
       dietType: useProfileStore.getState().profile?.dietType ?? 'none',
       model: useSettingsStore.getState().aiModel,
       features: getAnalyzeFeaturesFromSettings(),

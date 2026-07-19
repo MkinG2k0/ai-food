@@ -101,6 +101,7 @@ function mockStreamHttpError(status: number, body: unknown) {
 function lastFetchBody(): {
   model?: string;
   stream?: boolean;
+  temperature?: number;
   response_format?: unknown;
   messages: Array<{
     role: string;

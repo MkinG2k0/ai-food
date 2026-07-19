@@ -68,7 +68,7 @@ describe('fetchMealCustomContentApi', () => {
     vi.clearAllMocks();
   });
 
-  it('returns empty string when instructions are blank without calling gateway', async () => {
+  it('returns empty string when instructions and question are blank without calling gateway', async () => {
     const result = await fetchMealCustomContentApi({
       mealContext,
       customInstructions: '   ',
@@ -76,6 +76,44 @@ describe('fetchMealCustomContentApi', () => {
     });
     expect(result).toBe('');
     expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it('answers a follow-up question without requiring settings instructions', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody('**Энергия:** 4/5'),
+    });
+
+    const result = await fetchMealCustomContentApi({
+      mealContext,
+      question: 'Ожидаемая энергия 1–5 через час',
+      model: 'openai/gpt-4.1-mini',
+    });
+
+    expect(result).toBe('**Энергия:** 4/5');
+    const body = vi.mocked(axios.post).mock.calls[0][1] as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    expect(body.messages[0].content).toMatch(/ТОЛЬКО на этот вопрос/i);
+    expect(body.messages[1].content).toContain('Ожидаемая энергия');
+  });
+
+  it('does not pass settings recipe instructions into follow-up question prompt', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody('Айран или минералка'),
+    });
+
+    await fetchMealCustomContentApi({
+      mealContext,
+      customInstructions: 'дай полный рецепт и оценку блюда',
+      question: 'что взять попить коротко',
+    });
+
+    const body = vi.mocked(axios.post).mock.calls[0][1] as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    expect(body.messages[1].content).toContain('что взять попить коротко');
+    expect(body.messages[1].content).not.toContain('дай полный рецепт');
+    expect(body.messages[1].content).toMatch(/ТОЛЬКО на этот вопрос/);
   });
 
   it('rejects when gateway env is missing', async () => {

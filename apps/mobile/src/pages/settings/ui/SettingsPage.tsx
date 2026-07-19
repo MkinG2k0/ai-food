@@ -36,6 +36,12 @@ export function SettingsPage() {
 
   const customInstructions = useSettingsStore((s) => s.customInstructions);
   const setCustomInstructions = useSettingsStore((s) => s.setCustomInstructions);
+  const customInstructionsEnabled = useSettingsStore(
+    (s) => s.customInstructionsEnabled,
+  );
+  const setCustomInstructionsEnabled = useSettingsStore(
+    (s) => s.setCustomInstructionsEnabled,
+  );
   const aiModel = useSettingsStore((s) => s.aiModel);
   const setAiModel = useSettingsStore((s) => s.setAiModel);
   const featureVitamins = useSettingsStore((s) => s.featureVitamins);
@@ -242,32 +248,44 @@ export function SettingsPage() {
               </span>
             </span>
           </label>
+          <div className="space-y-2">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-input"
+                checked={customInstructionsEnabled}
+                onChange={(e) => setCustomInstructionsEnabled(e.target.checked)}
+                aria-controls="custom-instructions"
+              />
+              <span className="space-y-0.5">
+                <span className="block text-sm font-medium">
+                  Кастомные инструкции
+                </span>
+                <span className="block text-sm text-muted-foreground">
+                  Укажите предпочтения для анализа (диета, единицы) и
+                  дополнительные запросы к блюду (рецепт, острота и т.п.). Ответ
+                  на доп. запросы появится на карточке приёма в формате Markdown.
+                  Выключенные инструкции не отправляются в AI; текст сохраняется.
+                </span>
+              </span>
+            </label>
+            {customInstructionsEnabled && (
+              <>
+                <Textarea
+                  id="custom-instructions"
+                  value={customInstructions}
+                  maxLength={2000}
+                  placeholder="Например: я веган; дай краткий рецепт"
+                  onChange={(e) => setCustomInstructions(e.target.value)}
+                  className="min-h-32"
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  {customInstructions.length}/2000
+                </p>
+              </>
+            )}
+          </div>
         </section>
-
-        <div className="space-y-2">
-          <label
-            htmlFor="custom-instructions"
-            className="text-sm font-medium leading-none"
-          >
-            Кастомные инструкции
-          </label>
-          <p className="text-sm text-muted-foreground">
-            Укажите предпочтения для анализа (диета, единицы) и дополнительные
-            запросы к блюду (рецепт, острота и т.п.). Ответ на доп. запросы
-            появится на карточке приёма в формате Markdown.
-          </p>
-          <Textarea
-            id="custom-instructions"
-            value={customInstructions}
-            maxLength={2000}
-            placeholder="Например: я веган; дай краткий рецепт"
-            onChange={(e) => setCustomInstructions(e.target.value)}
-            className="min-h-32"
-          />
-          <p className="text-xs text-muted-foreground text-right">
-            {customInstructions.length}/2000
-          </p>
-        </div>
 
         <section className="space-y-2 pt-2 border-t">
           <h2 className="text-sm font-medium leading-none">Разработка</h2>

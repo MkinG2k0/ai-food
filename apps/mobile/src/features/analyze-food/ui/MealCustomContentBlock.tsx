@@ -1,8 +1,10 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Loader2 } from 'lucide-react';
-import { Button, Skeleton } from '@/shared/ui';
+import { Check, ChevronLeft, ChevronRight, Copy, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import type { ApiError } from '@ai-food/shared-types';
+import { Button, Skeleton, Textarea } from '@/shared/ui';
 import { useMealCustomContent } from '../model/useMealCustomContent';
 
 interface MealCustomContentBlockProps {
@@ -53,67 +55,176 @@ const markdownComponents = {
 };
 
 export function MealCustomContentBlock({ mealId }: MealCustomContentBlockProps) {
-  const { instructions, content, isLoading, isError, refetch } =
-    useMealCustomContent(mealId);
+  const {
+    slides,
+    activeSlide,
+    activeIndex,
+    canGoPrev,
+    canGoNext,
+    goPrev,
+    goNext,
+    isLoading,
+    isError,
+    refetch,
+    askQuestion,
+    isAsking,
+  } = useMealCustomContent(mealId);
 
-  if (!instructions) {
-    return null;
+  const [question, setQuestion] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setCopied(false);
+  }, [activeIndex]);
+
+  async function handleAsk(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = question.trim();
+    if (!trimmed || isAsking) return;
+    try {
+      await askQuestion(trimmed);
+      setQuestion('');
+    } catch (error) {
+      const apiError = error as Partial<ApiError>;
+      toast.error(apiError.message ?? 'Не удалось получить ответ.');
+    }
   }
 
-  if (content !== undefined && content.trim() === '') {
-    return null;
+  async function handleCopy() {
+    if (!activeSlide?.content) return;
+    try {
+      await navigator.clipboard.writeText(activeSlide.content);
+      setCopied(true);
+      toast.success('Ответ скопирован');
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error('Не удалось скопировать');
+    }
   }
 
-  if (content !== undefined && content.trim().length > 0) {
-    return (
-      <section className="space-y-3" aria-label="Дополнительно">
-        <h2 className="font-semibold text-foreground">Дополнительно</h2>
-        <div className="rounded-lg border border-border bg-muted/30 px-3 py-3">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={markdownComponents}
-          >
-            {content}
-          </ReactMarkdown>
-        </div>
-      </section>
-    );
-  }
-
-  if (isError) {
-    return (
-      <section className="space-y-3" aria-label="Дополнительно">
-        <h2 className="font-semibold text-foreground">Дополнительно</h2>
-        <p className="text-sm text-muted-foreground">
-          Не удалось загрузить доп. ответ.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => void refetch()}
-        >
-          Повторить
-        </Button>
-      </section>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <section className="space-y-3" aria-label="Дополнительно">
+  return (
+    <section className="space-y-3" aria-label="Дополнительно">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="font-semibold text-foreground flex items-center gap-2">
           Дополнительно
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          {(isLoading || isAsking) && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
         </h2>
+        {slides.length > 1 && (
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              disabled={!canGoPrev}
+              onClick={goPrev}
+              aria-label="Предыдущий ответ"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-xs text-muted-foreground tabular-nums min-w-[2.5rem] text-center">
+              {activeIndex + 1}/{slides.length}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              disabled={!canGoNext}
+              onClick={goNext}
+              aria-label="Следующий ответ"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {isError && slides.length === 0 && (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Не удалось загрузить доп. ответ.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => void refetch()}
+          >
+            Повторить
+          </Button>
+        </div>
+      )}
+
+      {isLoading && slides.length === 0 && (
         <div className="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-3">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-[83%]" />
           <Skeleton className="h-4 w-[66%]" />
         </div>
-      </section>
-    );
-  }
+      )}
 
-  return null;
+      {activeSlide && (
+        <div className="relative rounded-lg border border-border bg-muted/30 px-3 py-3 pb-10 space-y-2">
+          {activeSlide.question && (
+            <p className="text-xs text-muted-foreground">
+              Вопрос: {activeSlide.question}
+            </p>
+          )}
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents}
+          >
+            {activeSlide.content}
+          </ReactMarkdown>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute bottom-1.5 right-1.5 h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={() => void handleCopy()}
+            aria-label="Скопировать ответ"
+          >
+            {copied ? (
+              <Check className="h-4 w-4 text-primary" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      )}
+
+      <form onSubmit={(e) => void handleAsk(e)} className="space-y-2">
+        <label htmlFor="meal-custom-question" className="sr-only">
+          Вопрос по блюду
+        </label>
+        <Textarea
+          id="meal-custom-question"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="Например: Ожидаемая энергия 1–5 через час"
+          className="min-h-20"
+          disabled={isAsking}
+          maxLength={500}
+        />
+        <Button
+          type="submit"
+          variant="outline"
+          className="w-full"
+          disabled={isAsking || !question.trim()}
+        >
+          {isAsking ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Спрашиваем…
+            </>
+          ) : (
+            'Спросить'
+          )}
+        </Button>
+      </form>
+    </section>
+  );
 }

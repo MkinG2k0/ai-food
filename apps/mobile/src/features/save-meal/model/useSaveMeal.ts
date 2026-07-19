@@ -6,7 +6,7 @@ import {
 } from '@/entities/meal';
 import { analyzeFoodApi } from '@/features/analyze-food';
 import { useProfileStore } from '@/features/onboarding';
-import { useSettingsStore, getAnalyzeFeaturesFromSettings } from '@/features/settings';
+import { useSettingsStore, getActiveCustomInstructions, getAnalyzeFeaturesFromSettings } from '@/features/settings';
 import { saveMealImage, timestampForSelectedDate } from '@/shared/lib';
 import type { Meal, FoodItem } from '@ai-food/shared-types';
 import { applyAnalyzeResultToMeal } from './applyAnalyzeResultToMeal';
@@ -79,7 +79,7 @@ export function useSaveMeal() {
     addMeal(pendingMeal);
 
     try {
-      const customInstructions = useSettingsStore.getState().customInstructions;
+      const customInstructions = getActiveCustomInstructions();
       const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
       const features = getAnalyzeFeaturesFromSettings();
       const response = await queryClient.fetchQuery({

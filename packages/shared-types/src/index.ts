@@ -45,6 +45,14 @@ export interface MicronutrientEstimate {
   unit: MicronutrientUnit;
 }
 
+/** One Markdown answer in the meal «Дополнительно» carousel. */
+export interface MealCustomContentEntry {
+  id: string;
+  /** User question that produced this answer; omitted for settings-based first slide */
+  question?: string;
+  content: string;
+}
+
 export interface Meal {
   id: string;
   timestamp: string;
@@ -83,11 +91,16 @@ export interface Meal {
   /** Hidden calories / uncertainty notes; omitted on legacy meals */
   disclaimers?: string[];
   /**
-   * Markdown from lazy custom-instructions answer on meal detail.
+   * Markdown from lazy custom-instructions answer on meal detail (first slide).
    * `undefined` = not loaded yet; `""` = loaded with no content.
    * Omitted on legacy meals.
    */
   customContent?: string;
+  /**
+   * Follow-up Q&A answers on meal detail (after the initial customContent slide).
+   * Navigate with arrows; never replaces prior answers.
+   */
+  customContentEntries?: MealCustomContentEntry[];
 }
 
 export interface NutritionItem {

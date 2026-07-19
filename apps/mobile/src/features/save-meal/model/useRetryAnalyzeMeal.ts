@@ -7,7 +7,7 @@ import {
 } from '@/entities/meal';
 import { analyzeFoodApi } from '@/features/analyze-food';
 import { useProfileStore } from '@/features/onboarding';
-import { getAnalyzeFeaturesFromSettings, useSettingsStore } from '@/features/settings';
+import { getActiveCustomInstructions, getAnalyzeFeaturesFromSettings, useSettingsStore } from '@/features/settings';
 import { loadMealImageAsFile } from '@/shared/lib';
 import { applyAnalyzeResultToMeal } from './applyAnalyzeResultToMeal';
 import { applyPartialAnalyzeResultToMeal } from './applyPartialAnalyzeResultToMeal';
@@ -41,7 +41,7 @@ export function useRetryAnalyzeMeal() {
       return;
     }
 
-    const customInstructions = useSettingsStore.getState().customInstructions;
+    const customInstructions = getActiveCustomInstructions();
     const aiModel = useSettingsStore.getState().aiModel;
     const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
     const features = getAnalyzeFeaturesFromSettings();

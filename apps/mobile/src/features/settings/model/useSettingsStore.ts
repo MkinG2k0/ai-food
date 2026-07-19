@@ -56,9 +56,22 @@ export function getAnalyzeFeaturesFromSettings(): {
   };
 }
 
+/**
+ * Custom instructions text to send to AI, or empty when the toggle is off.
+ * The stored textarea value is never cleared by the toggle.
+ */
+export function getActiveCustomInstructions(): string {
+  const s = useSettingsStore.getState();
+  if (!s.customInstructionsEnabled) return '';
+  return s.customInstructions.trim();
+}
+
 interface SettingsState {
   customInstructions: string;
   setCustomInstructions: (value: string) => void;
+  /** When false, instructions are not sent to AI and the textarea is hidden (text kept). */
+  customInstructionsEnabled: boolean;
+  setCustomInstructionsEnabled: (value: boolean) => void;
   aiModel: string;
   setAiModel: (value: string) => void;
   /** Show vitamins/minerals in UI and request them from AI */
@@ -80,6 +93,9 @@ export const useSettingsStore = create<SettingsState>()(
         set({
           customInstructions: value.slice(0, MAX_CUSTOM_INSTRUCTIONS_LENGTH),
         }),
+      customInstructionsEnabled: true,
+      setCustomInstructionsEnabled: (value) =>
+        set({ customInstructionsEnabled: value }),
       aiModel: DEFAULT_AI_MODEL,
       setAiModel: (value) => set({ aiModel: normalizeAiModel(value) }),
       featureVitamins: true,
