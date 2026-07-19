@@ -142,6 +142,7 @@ None yet.
 | 260716-jve | Onboarding target weight deadline (targetWeightDate) | 2026-07-16 | 4629491, 2746b6e | [260716-jve-onboarding-target-weight-deadline](./quick/260716-jve-onboarding-target-weight-deadline/) |
 | 260718-4y0 | Frontend AI model switch (Settings → chat/completions) | 2026-07-18 | d9d4b79, 1b1ee38, 4d94245, bd1847a | [260718-4y0-frontend-model-switch](./quick/260718-4y0-frontend-model-switch/) |
 | 260719-mq7 | Per-100g KBJU on ingredient edit (density ↔ portion) | 2026-07-19 | 9662f34, 4638154, 9b84404 | [260719-mq7-100](./quick/260719-mq7-100/) |
+| fast | Toggle ingredient KBJU: На 100 г / На порцию | 2026-07-19 | cb77e5c | — |
 
 ### Blockers/Concerns
 
