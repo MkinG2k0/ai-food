@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -25,6 +25,14 @@ const inputClassName = cn(
   'ring-offset-background placeholder:text-muted-foreground',
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 );
+
+const ZERO_DENSITY: PortionNutrients = {
+  calories: 0,
+  protein: 0,
+  carbs: 0,
+  fat: 0,
+  fiber: 0,
+};
 
 type NutrientMode = 'per100' | 'portion';
 
@@ -56,6 +64,24 @@ const MACRO_FIELDS = [
   },
 ] as const;
 
+function densityFromItem(item: {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber?: number;
+  grams?: number;
+}): PortionNutrients {
+  return nutrientsPer100FromPortion({
+    calories: item.calories,
+    protein: item.protein,
+    carbs: item.carbs,
+    fat: item.fat,
+    fiber: item.fiber ?? 0,
+    grams: resolveItemGrams(item),
+  });
+}
+
 export function FoodItemEditPage() {
   const navigate = useNavigate();
   const { mealId, itemId } = useParams<{ mealId: string; itemId: string }>();
@@ -66,8 +92,12 @@ export function FoodItemEditPage() {
   const [nutrientMode, setNutrientMode] = useState<NutrientMode>('portion');
   /** Local draft while typing grams — avoid rescale on every keystroke. */
   const [gramsDraft, setGramsDraft] = useState<string | null>(null);
-  /** Density captured on focus so intermediate 0g cannot wipe macros. */
-  const densityOnFocusRef = useRef<PortionNutrients | null>(null);
+  /**
+   * Last known KBJU density (per 100 g). Survives grams → 0 so restoring
+   * weight (e.g. 0 → 150) can rebuild absolute nutrients.
+   */
+  const [rememberedDensity, setRememberedDensity] =
+    useState<PortionNutrients | null>(null);
   const {
     isOpen: isItemDeleteOpen,
     openConfirm: openItemDelete,
@@ -89,24 +119,64 @@ export function FoodItemEditPage() {
     }
   }, [meal, item, mealId, navigate]);
 
+  // Seed density when opening an ingredient. grams → 0 must NOT clear it.
+  useEffect(() => {
+    setGramsDraft(null);
+    if (!itemId || !mealId) {
+      setRememberedDensity(null);
+      return;
+    }
+    const current = useDiaryStore
+      .getState()
+      .meals.find((m) => m.id === mealId)
+      ?.items.find((i) => i.id === itemId);
+    if (!current) {
+      setRememberedDensity(null);
+      return;
+    }
+    const g = resolveItemGrams(current);
+    setRememberedDensity(g > 0 ? densityFromItem(current) : null);
+  }, [itemId, mealId]);
+
+  // While grams > 0, keep density in sync with store edits.
+  useEffect(() => {
+    if (!item) return;
+    const g = resolveItemGrams(item);
+    if (g <= 0) return;
+    setRememberedDensity(densityFromItem(item));
+  }, [
+    item?.calories,
+    item?.protein,
+    item?.carbs,
+    item?.fat,
+    item?.fiber,
+    item?.grams,
+  ]);
+
   if (!meal || meal.status === 'analyzing' || !item || !mealId || !itemId) {
     return null;
   }
 
   const grams = resolveItemGrams(item);
-  const per100 = nutrientsPer100FromPortion({
-    calories: item.calories,
-    protein: item.protein,
-    carbs: item.carbs,
-    fat: item.fat,
-    fiber: item.fiber ?? 0,
-    grams,
-  });
+  const per100 =
+    grams > 0
+      ? densityFromItem(item)
+      : (rememberedDensity ?? ZERO_DENSITY);
 
   function patchNumber(field: NutrientKey, raw: string) {
-    updateMealItem(mealId!, itemId!, {
-      [field]: sanitizeNutrient(Number(raw)),
-    });
+    const value = sanitizeNutrient(Number(raw));
+    const next = {
+      calories: field === 'calories' ? value : item!.calories,
+      protein: field === 'protein' ? value : item!.protein,
+      carbs: field === 'carbs' ? value : item!.carbs,
+      fat: field === 'fat' ? value : item!.fat,
+      fiber: field === 'fiber' ? value : (item!.fiber ?? 0),
+    };
+    updateMealItem(mealId!, itemId!, { [field]: value });
+    const g = resolveItemGrams(item!);
+    if (g > 0) {
+      setRememberedDensity(densityFromItem({ ...item!, ...next, grams: g }));
+    }
   }
 
   function patchPer100(field: NutrientKey, raw: string) {
@@ -114,36 +184,23 @@ export function FoodItemEditPage() {
       ...per100,
       [field]: sanitizeNutrient(Number(raw)),
     };
-    updateMealItem(
-      mealId!,
-      itemId!,
-      nutrientsFromPer100(nextPer100, resolveItemGrams(item!)),
-    );
-  }
-
-  function portionDensityFromItem(): PortionNutrients {
-    return nutrientsPer100FromPortion({
-      calories: item!.calories,
-      protein: item!.protein,
-      carbs: item!.carbs,
-      fat: item!.fat,
-      fiber: item!.fiber ?? 0,
-      grams: resolveItemGrams(item!),
-    });
-  }
-
-  function handleGramsFocus() {
-    densityOnFocusRef.current = portionDensityFromItem();
-    setGramsDraft(formatItemGrams(resolveItemGrams(item!)));
+    setRememberedDensity(nextPer100);
+    const g = resolveItemGrams(item!);
+    if (g > 0) {
+      updateMealItem(mealId!, itemId!, nutrientsFromPer100(nextPer100, g));
+    }
   }
 
   function commitGrams(raw: string) {
     const newGrams = sanitizeGrams(Number(raw.replace(',', '.')));
-    const density = densityOnFocusRef.current ?? portionDensityFromItem();
-    densityOnFocusRef.current = null;
     setGramsDraft(null);
 
+    const density =
+      rememberedDensity ??
+      (grams > 0 ? densityFromItem(item!) : ZERO_DENSITY);
+
     if (newGrams === 0) {
+      // Absolute portion becomes 0, but density stays in rememberedDensity.
       updateMealItem(mealId!, itemId!, {
         grams: 0,
         calories: 0,
@@ -205,7 +262,7 @@ export function FoodItemEditPage() {
               aria-label="Граммы"
               className={cn(inputClassName, 'text-center tabular-nums max-w-[8rem]')}
               value={gramsDraft ?? formatItemGrams(grams)}
-              onFocus={handleGramsFocus}
+              onFocus={() => setGramsDraft(formatItemGrams(grams))}
               onChange={(e) => setGramsDraft(e.target.value)}
               onBlur={handleGramsBlur}
               onKeyDown={(e) => {
