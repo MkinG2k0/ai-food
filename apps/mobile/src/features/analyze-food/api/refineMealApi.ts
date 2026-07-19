@@ -9,6 +9,7 @@ import {
   appendDietPreference,
   COMPOSITION_PROMPT_RULE,
   FOOD_NAME_PROMPT_RULE,
+  ITEM_COUNT_PROMPT_RULE,
 } from './analyzeFoodApi';
 import {
   isNutritionResult,
@@ -47,7 +48,7 @@ unit строго по id: vitaminA/vitaminD/vitaminB12/folate → "µg"; vitami
 const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
 {
   "foodName": string (краткое название всего блюда/приёма на русском),
-  "itemCount": number (число единиц/кусков/штук — например 2 ролла → 2; одно блюдо без штук → 1; НЕ равно длине items),
+  "itemCount": number (отдельные ПОРЦИИ/подачи, не куски внутри блюда: тарелка курицы кусочками → 1; 2 ролла → 2; НЕ равно длине items),
   "calories": number (суммарные килокалории — сумма items),
   "protein": number (grams, сумма по составу),
   "carbs": number (grams, сумма по составу),
@@ -75,8 +76,9 @@ const SYSTEM_PROMPT = `You are a nutrition analysis assistant. The user provides
 }
 ${FOOD_NAME_PROMPT_RULE}
 ${COMPOSITION_PROMPT_RULE}
+${ITEM_COUNT_PROMPT_RULE}
 ${REFINE_MICRONUTRIENTS_RULE}
-Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many pieces/units were eaten.
+Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many separate servings were eaten (not pieces inside one dish).
 Do not include any text outside the JSON object. No markdown fences.`;
 
 const APP_ERROR_CODES = new Set([

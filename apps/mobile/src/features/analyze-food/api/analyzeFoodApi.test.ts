@@ -5,6 +5,7 @@ import {
   appendDietPreference,
   COMPOSITION_PROMPT_RULE,
   FOOD_NAME_PROMPT_RULE,
+  ITEM_COUNT_PROMPT_RULE,
   NO_FOOD_PROMPT_RULE,
   MICRONUTRIENTS_PROMPT_RULE,
 } from './analyzeFoodApi';
@@ -464,6 +465,13 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(COMPOSITION_PROMPT_RULE).toMatch(/фри|один item|однородн|один элемент/i);
   });
 
+  it('ITEM_COUNT_PROMPT_RULE treats one plated dish as 1 even with many pieces', () => {
+    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/itemCount/);
+    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/тарелка|порци/i);
+    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/наггетс|курин|кусоч/i);
+    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/itemCount\s*=\s*1|→\s*1/);
+  });
+
   it('legacy SYSTEM_PROMPT embeds composition rules (non-Gemini models)', async () => {
     mockStreamOk(nutritionResultToXml(validNutrition));
 
@@ -493,6 +501,7 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
 
     expect(systemContent).toMatch(/portionReference|totals|addedSugar|disclaimers/i);
     expect(systemContent).toMatch(/itemCount/);
+    expect(systemContent).toMatch(/наггетс|курин|кусоч|подач/i);
     expect(systemContent).toMatch(/amount_mg/);
     expect(systemContent).not.toContain(FOOD_NAME_PROMPT_RULE);
   });
