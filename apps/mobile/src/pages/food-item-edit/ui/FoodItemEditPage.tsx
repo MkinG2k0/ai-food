@@ -180,10 +180,8 @@ export function FoodItemEditPage() {
     }
   }
 
-  function commitGrams(raw: string) {
+  function applyGrams(raw: string) {
     const newGrams = sanitizeGrams(Number(raw.replace(',', '.')));
-    setGramsDraft(null);
-
     const density = densityRef.current ?? ZERO_DENSITY;
 
     if (newGrams === 0) {
@@ -204,9 +202,9 @@ export function FoodItemEditPage() {
     });
   }
 
-  function handleGramsBlur() {
-    if (gramsDraft === null) return;
-    commitGrams(gramsDraft);
+  function handleGramsChange(raw: string) {
+    setGramsDraft(raw);
+    applyGrams(raw);
   }
 
   function handleConfirmItemDelete() {
@@ -249,13 +247,8 @@ export function FoodItemEditPage() {
               className={cn(inputClassName, 'text-center tabular-nums max-w-[8rem]')}
               value={gramsDraft ?? formatItemGrams(grams)}
               onFocus={() => setGramsDraft(formatItemGrams(grams))}
-              onChange={(e) => setGramsDraft(e.target.value)}
-              onBlur={handleGramsBlur}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.currentTarget.blur();
-                }
-              }}
+              onChange={(e) => handleGramsChange(e.target.value)}
+              onBlur={() => setGramsDraft(null)}
             />
           </label>
         </div>
