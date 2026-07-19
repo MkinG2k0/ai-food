@@ -1,9 +1,17 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Check, ChevronLeft, ChevronRight, Copy, Loader2 } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Loader2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import type { ApiError } from '@ai-food/shared-types';
+import { cn } from '@/shared/lib';
 import { Button, Skeleton, Textarea } from '@/shared/ui';
 import { useMealCustomContent } from '../model/useMealCustomContent';
 
@@ -72,6 +80,7 @@ export function MealCustomContentBlock({ mealId }: MealCustomContentBlockProps) 
 
   const [question, setQuestion] = useState('');
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
     setCopied(false);
@@ -105,13 +114,25 @@ export function MealCustomContentBlock({ mealId }: MealCustomContentBlockProps) 
   return (
     <section className="space-y-3" aria-label="Дополнительно">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-semibold text-foreground flex items-center gap-2">
+        <button
+          type="button"
+          className="font-semibold text-foreground flex items-center gap-2 min-w-0 text-left"
+          onClick={() => setExpanded((prev) => !prev)}
+          aria-expanded={expanded}
+          aria-controls="meal-custom-content-body"
+        >
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+              !expanded && '-rotate-90',
+            )}
+          />
           Дополнительно
           {(isLoading || isAsking) && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
-        </h2>
-        {slides.length > 1 && (
+        </button>
+        {expanded && slides.length > 1 && (
           <div className="flex items-center gap-1">
             <Button
               type="button"
@@ -142,89 +163,93 @@ export function MealCustomContentBlock({ mealId }: MealCustomContentBlockProps) 
         )}
       </div>
 
-      {isError && slides.length === 0 && (
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Не удалось загрузить доп. ответ.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => void refetch()}
-          >
-            Повторить
-          </Button>
-        </div>
-      )}
-
-      {isLoading && slides.length === 0 && (
-        <div className="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-3">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-[83%]" />
-          <Skeleton className="h-4 w-[66%]" />
-        </div>
-      )}
-
-      {activeSlide && (
-        <div className="relative rounded-lg border border-border bg-muted/30 px-3 py-3 pb-10 space-y-2">
-          {activeSlide.question && (
-            <p className="text-xs text-muted-foreground">
-              Вопрос: {activeSlide.question}
-            </p>
+      {expanded && (
+        <div id="meal-custom-content-body" className="space-y-3">
+          {isError && slides.length === 0 && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Не удалось загрузить доп. ответ.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => void refetch()}
+              >
+                Повторить
+              </Button>
+            </div>
           )}
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={markdownComponents}
-          >
-            {activeSlide.content}
-          </ReactMarkdown>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute bottom-1.5 right-1.5 h-8 w-8 text-muted-foreground hover:text-foreground"
-            onClick={() => void handleCopy()}
-            aria-label="Скопировать ответ"
-          >
-            {copied ? (
-              <Check className="h-4 w-4 text-primary" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
-          </Button>
+
+          {isLoading && slides.length === 0 && (
+            <div className="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-[83%]" />
+              <Skeleton className="h-4 w-[66%]" />
+            </div>
+          )}
+
+          {activeSlide && (
+            <div className="relative rounded-lg border border-border bg-muted/30 px-3 py-3 pb-10 space-y-2">
+              {activeSlide.question && (
+                <p className="text-xs text-muted-foreground">
+                  Вопрос: {activeSlide.question}
+                </p>
+              )}
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
+                {activeSlide.content}
+              </ReactMarkdown>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute bottom-1.5 right-1.5 h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={() => void handleCopy()}
+                aria-label="Скопировать ответ"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-primary" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          )}
+
+          <form onSubmit={(e) => void handleAsk(e)} className="space-y-2">
+            <label htmlFor="meal-custom-question" className="sr-only">
+              Вопрос по блюду
+            </label>
+            <Textarea
+              id="meal-custom-question"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Например: Ожидаемая энергия 1–5 через час"
+              className="min-h-20"
+              disabled={isAsking}
+              maxLength={500}
+            />
+            <Button
+              type="submit"
+              variant="outline"
+              className="w-full"
+              disabled={isAsking || !question.trim()}
+            >
+              {isAsking ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Спрашиваем…
+                </>
+              ) : (
+                'Спросить'
+              )}
+            </Button>
+          </form>
         </div>
       )}
-
-      <form onSubmit={(e) => void handleAsk(e)} className="space-y-2">
-        <label htmlFor="meal-custom-question" className="sr-only">
-          Вопрос по блюду
-        </label>
-        <Textarea
-          id="meal-custom-question"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Например: Ожидаемая энергия 1–5 через час"
-          className="min-h-20"
-          disabled={isAsking}
-          maxLength={500}
-        />
-        <Button
-          type="submit"
-          variant="outline"
-          className="w-full"
-          disabled={isAsking || !question.trim()}
-        >
-          {isAsking ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Спрашиваем…
-            </>
-          ) : (
-            'Спросить'
-          )}
-        </Button>
-      </form>
     </section>
   );
 }
