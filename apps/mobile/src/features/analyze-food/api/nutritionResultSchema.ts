@@ -161,6 +161,11 @@ export function isNutritionResult(value: unknown): value is NutritionResult {
     }
   }
   if (v.portionReference !== undefined && typeof v.portionReference !== 'string') return false;
+  if (v.itemCount !== undefined) {
+    if (typeof v.itemCount !== 'number' || !Number.isFinite(v.itemCount) || v.itemCount <= 0) {
+      return false;
+    }
+  }
   if (v.addedSugar !== undefined && typeof v.addedSugar !== 'number') return false;
   if (v.confidenceReason !== undefined && typeof v.confidenceReason !== 'string') return false;
   if (v.healthinessReason !== undefined && typeof v.healthinessReason !== 'string') return false;

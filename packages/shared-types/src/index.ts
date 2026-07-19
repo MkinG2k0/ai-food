@@ -100,6 +100,12 @@ export interface NutritionResult {
   /** Integer 1–10 healthfulness score from AI */
   healthiness: number;
   items: NutritionItem[];
+  /**
+   * Count of discrete edible units on the plate (pieces/rolls/slices).
+   * Not the length of `items` (composition). Maps to Meal.portions.
+   * Omitted when model skips — treat as 1.
+   */
+  itemCount?: number;
   /** Quantitative micronutrient amounts for the portion; omitted if model skipped */
   micronutrients?: MicronutrientEstimate[];
   /** Scale anchor used for portion size (plate / spoon / …) */

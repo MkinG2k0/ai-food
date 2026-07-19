@@ -21,6 +21,7 @@ export interface PartialNutritionXml {
   micronutrients?: MicronutrientEstimate[];
   noFood?: boolean;
   reason?: string;
+  itemCount?: number;
   portionReference?: string;
   addedSugar?: number;
   confidenceReason?: string;
@@ -270,6 +271,9 @@ export function parsePartialNutritionXml(buffer: string): PartialNutritionXml {
   const foodName = extractTopLevelTag(xml, 'foodName');
   if (foodName) partial.foodName = foodName;
 
+  const itemCount = parseNumber(extractTopLevelTag(xml, 'itemCount'));
+  if (itemCount !== undefined && itemCount > 0) partial.itemCount = itemCount;
+
   const portionReference = extractTopLevelTag(xml, 'portionReference');
   if (portionReference) partial.portionReference = portionReference;
 
@@ -336,6 +340,7 @@ export function parseNutritionXml(raw: string): NutritionResult | NoFoodResult {
   };
 
   if (partial.confidence !== undefined) candidate.confidence = partial.confidence;
+  if (partial.itemCount !== undefined) candidate.itemCount = partial.itemCount;
   if (partial.portionReference !== undefined) {
     candidate.portionReference = partial.portionReference;
   }
@@ -386,7 +391,11 @@ export function legacyNutritionResultToXml(result: NutritionResult): string {
       .join('\n') ?? '';
 
   return `<analysis>
-  <foodName>${escapeXml(result.foodName)}</foodName>
+  <foodName>${escapeXml(result.foodName)}</foodName>${
+    result.itemCount !== undefined
+      ? `\n  <itemCount>${result.itemCount}</itemCount>`
+      : ''
+  }
   <calories>${result.calories}</calories>
   <protein>${result.protein}</protein>
   <carbs>${result.carbs}</carbs>
@@ -451,6 +460,11 @@ ${result.disclaimers.map((d) => `    <disclaimer>${escapeXml(d)}</disclaimer>`).
       ? `\n  <portionReference>${escapeXml(result.portionReference)}</portionReference>`
       : '';
 
+  const itemCountXml =
+    result.itemCount !== undefined
+      ? `\n  <itemCount>${result.itemCount}</itemCount>`
+      : '';
+
   const addedSugar =
     result.addedSugar !== undefined
       ? `\n    <addedSugar unit="g">${result.addedSugar}</addedSugar>`
@@ -467,7 +481,7 @@ ${result.disclaimers.map((d) => `    <disclaimer>${escapeXml(d)}</disclaimer>`).
     : '';
 
   return `<analysis>
-  <foodName>${escapeXml(result.foodName)}</foodName>${portionRef}
+  <foodName>${escapeXml(result.foodName)}</foodName>${itemCountXml}${portionRef}
   <totals>
     <calories unit="kcal">${result.calories}</calories>
     <protein unit="g">${result.protein}</protein>

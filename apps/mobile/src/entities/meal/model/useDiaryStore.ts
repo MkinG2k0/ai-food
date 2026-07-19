@@ -36,7 +36,10 @@ interface DiaryState {
   ) => void;
   removeMealItem: (mealId: string, itemId: string) => void;
   updateMealNutrition: (mealId: string, nutrition: MealNutritionPatch) => void;
+  /** Scale KBJU/grams by portions ratio (ate more/less). */
   setMealPortions: (mealId: string, portions: number) => void;
+  /** Change portion count label only — does not rescale nutrients (fix AI count). */
+  redefineMealPortions: (mealId: string, portions: number) => void;
   clearDiary: () => void;
   setSelectedDate: (date: Date) => void;
 }
@@ -161,6 +164,22 @@ export const useDiaryStore = create<DiaryState>()(
             portions: next,
             items,
             totalCalories,
+          };
+          return { meals };
+        }),
+      redefineMealPortions: (mealId, portions) =>
+        set((state) => {
+          const mealIndex = state.meals.findIndex((m) => m.id === mealId);
+          if (mealIndex === -1) return state;
+
+          const meal = state.meals[mealIndex];
+          const next = normalizePortions(portions);
+          if (next === resolveMealPortions(meal)) return state;
+
+          const meals = [...state.meals];
+          meals[mealIndex] = {
+            ...meal,
+            portions: next,
           };
           return { meals };
         }),

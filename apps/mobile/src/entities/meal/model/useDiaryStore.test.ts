@@ -359,4 +359,29 @@ describe('useDiaryStore', () => {
     expect(result.current.meals[0].portions).toBe(1);
     expect(result.current.meals[0].totalCalories).toBe(500);
   });
+
+  it('redefineMealPortions updates count without scaling KBJU', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal({ ...multiItemMeal, portions: 1 });
+      result.current.redefineMealPortions('m1', 2);
+    });
+    const meal = result.current.meals[0];
+    expect(meal.portions).toBe(2);
+    expect(meal.items[0].calories).toBe(200);
+    expect(meal.items[1].calories).toBe(300);
+    expect(meal.totalCalories).toBe(500);
+  });
+
+  it('redefineMealPortions then setMealPortions scales from new baseline', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal({ ...multiItemMeal, portions: 1 });
+      result.current.redefineMealPortions('m1', 2);
+      result.current.setMealPortions('m1', 1);
+    });
+    const meal = result.current.meals[0];
+    expect(meal.portions).toBe(1);
+    expect(meal.totalCalories).toBe(250);
+  });
 });

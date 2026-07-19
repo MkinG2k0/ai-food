@@ -34,10 +34,11 @@ const sample: NutritionResult = {
 
 describe('parseNutritionXml', () => {
   it('parses full nutrition XML', () => {
-    const xml = nutritionResultToXml(sample);
+    const xml = nutritionResultToXml({ ...sample, itemCount: 2 });
     const parsed = parseNutritionXml(xml);
     expect(parsed).toMatchObject({
       foodName: 'Бургер с сыром',
+      itemCount: 2,
       calories: 520,
       protein: 28,
       addedSugar: 2,
@@ -51,6 +52,16 @@ describe('parseNutritionXml', () => {
       ]),
       disclaimers: ['возможное масло на сковороде'],
     });
+  });
+
+  it('parses itemCount from top-level tag', () => {
+    const xml = nutritionResultToXml({ ...sample, itemCount: 2 });
+    expect(parseNutritionXml(xml)).toMatchObject({ itemCount: 2 });
+  });
+
+  it('omits itemCount when absent', () => {
+    const parsed = parseNutritionXml(nutritionResultToXml(sample));
+    expect(parsed).not.toHaveProperty('itemCount');
   });
 
   it('converts amount_mg micronutrients to canonical units', () => {

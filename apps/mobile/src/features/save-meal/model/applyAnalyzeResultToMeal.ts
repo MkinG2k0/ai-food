@@ -1,5 +1,5 @@
 import type { FoodItem, NutritionResult } from '@ai-food/shared-types';
-import { resolveItemGrams, useDiaryStore } from '@/entities/meal';
+import { normalizePortions, resolveItemGrams, useDiaryStore } from '@/entities/meal';
 
 /** Shared success mapping for first analyze and retry — keeps field lists in sync. */
 export function applyAnalyzeResultToMeal(
@@ -8,6 +8,7 @@ export function applyAnalyzeResultToMeal(
   fallbackItemId?: string,
 ): void {
   const updateMeal = useDiaryStore.getState().updateMeal;
+  const portions = normalizePortions(result.itemCount ?? 1);
 
   if (result.items.length > 0) {
     const items: FoodItem[] = result.items.map((item) => ({
@@ -26,6 +27,7 @@ export function applyAnalyzeResultToMeal(
       name: result.foodName,
       totalCalories,
       items,
+      portions,
       healthiness: result.healthiness,
       confidence: result.confidence,
       micronutrients: result.micronutrients,
@@ -55,6 +57,7 @@ export function applyAnalyzeResultToMeal(
         grams: 100,
       },
     ],
+    portions,
     healthiness: result.healthiness,
     confidence: result.confidence,
     micronutrients: result.micronutrients,

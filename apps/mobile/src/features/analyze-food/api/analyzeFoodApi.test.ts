@@ -492,6 +492,7 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     const systemContent = systemText(lastFetchBody().messages[0].content);
 
     expect(systemContent).toMatch(/portionReference|totals|addedSugar|disclaimers/i);
+    expect(systemContent).toMatch(/itemCount/);
     expect(systemContent).toMatch(/amount_mg/);
     expect(systemContent).not.toContain(FOOD_NAME_PROMPT_RULE);
   });
@@ -507,6 +508,7 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(systemContent).toMatch(/grams/i);
     expect(systemContent).toMatch(/обязательн/i);
     expect(systemContent).toMatch(/порци/i);
+    expect(systemContent).toMatch(/itemCount/);
     expect(systemContent).toMatch(/1\s*[–-]\s*3|ультрапереработан|цельные продукты/i);
     expect(systemContent).toMatch(/healthiness/i);
     expect(systemContent).toMatch(/<noFood>true<\/noFood>/i);

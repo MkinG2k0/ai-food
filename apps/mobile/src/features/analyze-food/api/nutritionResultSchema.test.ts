@@ -25,6 +25,12 @@ describe('nutritionResultSchema micronutrients', () => {
     expect(isNutritionResult(base)).toBe(true);
   });
 
+  it('accepts optional positive itemCount', () => {
+    expect(isNutritionResult({ ...base, itemCount: 2 })).toBe(true);
+    expect(isNutritionResult({ ...base, itemCount: 0 })).toBe(false);
+    expect(isNutritionResult({ ...base, itemCount: -1 })).toBe(false);
+  });
+
   it('isMicronutrientEstimate accepts amount+unit matching MICRONUTRIENT_UNITS', () => {
     expect(
       isMicronutrientEstimate({ id: 'vitaminC', amount: 45, unit: 'mg' }),

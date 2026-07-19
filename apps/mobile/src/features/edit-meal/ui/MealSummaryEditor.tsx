@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import type { Meal } from '@ai-food/shared-types';
 import {
@@ -57,6 +58,9 @@ export interface MealSummaryEditorProps {
 export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
   const updateMealNutrition = useDiaryStore((s) => s.updateMealNutrition);
   const setMealPortions = useDiaryStore((s) => s.setMealPortions);
+  const redefineMealPortions = useDiaryStore((s) => s.redefineMealPortions);
+  const [portionsDraft, setPortionsDraft] = useState<string | null>(null);
+  const portionsInputRef = useRef<HTMLInputElement>(null);
 
   const dishName = mealDisplayName(meal);
   const portions = resolveMealPortions(meal);
@@ -74,6 +78,15 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
     }),
     { protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
+
+  function commitPortionsRedefine() {
+    if (portionsDraft === null) return;
+    const parsed = Number(portionsDraft.replace(',', '.'));
+    if (Number.isFinite(parsed)) {
+      redefineMealPortions(meal.id, parsed);
+    }
+    setPortionsDraft(null);
+  }
 
   return (
     <Card>
@@ -134,30 +147,49 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
                 variant="outline"
                 size="icon"
                 className="h-9 w-9 shrink-0"
-                aria-label="Уменьшить порции"
+                aria-label="Уменьшить съеденные порции (меняет КБЖУ)"
+                title="Уменьшить съеденное — пересчитать КБЖУ"
                 disabled={portions <= MIN_PORTIONS}
                 onClick={() => setMealPortions(meal.id, portions - PORTION_STEP)}
               >
                 <Minus className="h-4 w-4" />
               </Button>
-              <span
-                className="min-w-[2.25rem] text-center text-base font-semibold tabular-nums"
+              <input
+                ref={portionsInputRef}
+                type="text"
+                inputMode="decimal"
+                aria-label="Исправить число порций без изменения КБЖУ"
+                title="Исправить счёт порций (КБЖУ не меняется)"
                 aria-live="polite"
-              >
-                {formatPortions(portions)}
-              </span>
+                className={cn(
+                  inputClassName,
+                  'h-9 w-11 px-1 text-center text-base font-semibold tabular-nums',
+                )}
+                value={portionsDraft ?? formatPortions(portions)}
+                onFocus={() => setPortionsDraft(formatPortions(portions))}
+                onChange={(e) => setPortionsDraft(e.target.value)}
+                onBlur={commitPortionsRedefine}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
                 className="h-9 w-9 shrink-0"
-                aria-label="Увеличить порции"
+                aria-label="Увеличить съеденные порции (меняет КБЖУ)"
+                title="Увеличить съеденное — пересчитать КБЖУ"
                 disabled={portions >= MAX_PORTIONS}
                 onClick={() => setMealPortions(meal.id, portions + PORTION_STEP)}
               >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
+      
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
