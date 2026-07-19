@@ -103,8 +103,19 @@ describe('scalePortionNutrientsByGrams', () => {
 
 describe('per-100 round-trip', () => {
   it('recovers density within sanitize rounding for grams=80', () => {
+    // fiber: 2×80/100=1.6→2, then 2×100/80=2.5→3 (±1 from sanitizeNutrient)
     const portion = nutrientsFromPer100(samplePer100, 80);
     const recovered = nutrientsPer100FromPortion({ ...portion, grams: 80 });
-    expect(recovered).toEqual(samplePer100);
+    for (const key of [
+      'calories',
+      'protein',
+      'carbs',
+      'fat',
+      'fiber',
+    ] as const) {
+      expect(Math.abs(recovered[key] - samplePer100[key])).toBeLessThanOrEqual(
+        1,
+      );
+    }
   });
 });

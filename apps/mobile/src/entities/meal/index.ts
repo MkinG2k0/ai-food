@@ -14,7 +14,14 @@ export {
 } from './model/analyzeInFlight';
 export { useMealImage } from './model/useMealImage';
 export { mealDisplayName } from './model/mealDisplayName';
-export { sanitizeNutrient } from './model/mealNutritionMath';
+export {
+  sanitizeNutrient,
+  nutrientsFromPer100,
+  nutrientsPer100FromPortion,
+  scalePortionNutrientsByGrams,
+  type PortionNutrients,
+  type NutrientKey,
+} from './model/mealNutritionMath';
 export { resolveItemGrams } from './model/resolveItemGrams';
 export {
   sumItemGrams,
