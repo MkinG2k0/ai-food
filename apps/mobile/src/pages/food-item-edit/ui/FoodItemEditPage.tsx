@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -93,17 +93,23 @@ export function FoodItemEditPage() {
   /** Local draft while typing grams — avoid rescale on every keystroke. */
   const [gramsDraft, setGramsDraft] = useState<string | null>(null);
   /**
-   * Last known KBJU density (per 100 g). Survives grams → 0 so restoring
-   * weight (e.g. 0 → 150) can rebuild absolute nutrients.
+   * Sticky KBJU density (per 100 g). Seeded on open / nutrient edits only —
+   * never recomputed after gram rescales (integer rounding at 1g would wipe it).
    */
   const [rememberedDensity, setRememberedDensity] =
     useState<PortionNutrients | null>(null);
+  const densityRef = useRef<PortionNutrients | null>(null);
   const {
     isOpen: isItemDeleteOpen,
     openConfirm: openItemDelete,
     closeConfirm: closeItemDelete,
     confirmDelete: confirmItemDelete,
   } = useConfirmDeleteMealItem();
+
+  function rememberDensity(next: PortionNutrients | null) {
+    densityRef.current = next;
+    setRememberedDensity(next);
+  }
 
   useEffect(() => {
     if (!mealId) {
@@ -119,11 +125,11 @@ export function FoodItemEditPage() {
     }
   }, [meal, item, mealId, navigate]);
 
-  // Seed density when opening an ingredient. grams → 0 must NOT clear it.
+  // Seed density once when opening an ingredient.
   useEffect(() => {
     setGramsDraft(null);
     if (!itemId || !mealId) {
-      setRememberedDensity(null);
+      rememberDensity(null);
       return;
     }
     const current = useDiaryStore
@@ -131,37 +137,19 @@ export function FoodItemEditPage() {
       .meals.find((m) => m.id === mealId)
       ?.items.find((i) => i.id === itemId);
     if (!current) {
-      setRememberedDensity(null);
+      rememberDensity(null);
       return;
     }
     const g = resolveItemGrams(current);
-    setRememberedDensity(g > 0 ? densityFromItem(current) : null);
+    rememberDensity(g > 0 ? densityFromItem(current) : null);
   }, [itemId, mealId]);
-
-  // While grams > 0, keep density in sync with store edits.
-  useEffect(() => {
-    if (!item) return;
-    const g = resolveItemGrams(item);
-    if (g <= 0) return;
-    setRememberedDensity(densityFromItem(item));
-  }, [
-    item?.calories,
-    item?.protein,
-    item?.carbs,
-    item?.fat,
-    item?.fiber,
-    item?.grams,
-  ]);
 
   if (!meal || meal.status === 'analyzing' || !item || !mealId || !itemId) {
     return null;
   }
 
   const grams = resolveItemGrams(item);
-  const per100 =
-    grams > 0
-      ? densityFromItem(item)
-      : (rememberedDensity ?? ZERO_DENSITY);
+  const per100 = rememberedDensity ?? ZERO_DENSITY;
 
   function patchNumber(field: NutrientKey, raw: string) {
     const value = sanitizeNutrient(Number(raw));
@@ -175,16 +163,17 @@ export function FoodItemEditPage() {
     updateMealItem(mealId!, itemId!, { [field]: value });
     const g = resolveItemGrams(item!);
     if (g > 0) {
-      setRememberedDensity(densityFromItem({ ...item!, ...next, grams: g }));
+      rememberDensity(densityFromItem({ ...item!, ...next, grams: g }));
     }
   }
 
   function patchPer100(field: NutrientKey, raw: string) {
+    const base = densityRef.current ?? ZERO_DENSITY;
     const nextPer100: PortionNutrients = {
-      ...per100,
+      ...base,
       [field]: sanitizeNutrient(Number(raw)),
     };
-    setRememberedDensity(nextPer100);
+    rememberDensity(nextPer100);
     const g = resolveItemGrams(item!);
     if (g > 0) {
       updateMealItem(mealId!, itemId!, nutrientsFromPer100(nextPer100, g));
@@ -195,12 +184,9 @@ export function FoodItemEditPage() {
     const newGrams = sanitizeGrams(Number(raw.replace(',', '.')));
     setGramsDraft(null);
 
-    const density =
-      rememberedDensity ??
-      (grams > 0 ? densityFromItem(item!) : ZERO_DENSITY);
+    const density = densityRef.current ?? ZERO_DENSITY;
 
     if (newGrams === 0) {
-      // Absolute portion becomes 0, but density stays in rememberedDensity.
       updateMealItem(mealId!, itemId!, {
         grams: 0,
         calories: 0,
