@@ -12,7 +12,9 @@ import { AppShell } from './AppShell';
 import { ProfileGuard } from './ProfileGuard';
 
 const router = createBrowserRouter([
-  { path: '/model-test', element: <ModelTestPage /> },
+  ...(import.meta.env.DEV
+    ? [{ path: '/model-test', element: <ModelTestPage /> }]
+    : []),
   {
     element: <AppShell />,
     children: [
