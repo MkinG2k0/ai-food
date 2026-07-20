@@ -25,9 +25,12 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
     onClose();
   };
 
-  const handleImageSelect = (file: File) => {
+  const handleImagesSelect = (files: File[]) => {
+    if (files.length === 0) return;
     handleClose();
-    void submitFood({ image: file });
+    void submitFood(
+      files.length === 1 ? { image: files[0] } : { images: files },
+    );
   };
 
   const handleGalleryClick = () => {
@@ -39,9 +42,9 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
   };
 
   const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0];
-    if (file) {
-      handleImageSelect(file);
+    const files = Array.from(e.currentTarget.files ?? []);
+    if (files.length > 0) {
+      handleImagesSelect(files);
       e.currentTarget.value = '';
     }
   };
@@ -49,7 +52,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
   const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0];
     if (file) {
-      handleImageSelect(file);
+      handleImagesSelect([file]);
       e.currentTarget.value = '';
     }
   };
@@ -131,9 +134,10 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               ref={galleryInputRef}
               type="file"
               accept="image/*"
+              multiple
               onChange={handleGalleryChange}
               className="hidden"
-              aria-label="Выбор из галереи"
+              aria-label="Выбор из галереи (можно несколько ракурсов)"
             />
 
             <input

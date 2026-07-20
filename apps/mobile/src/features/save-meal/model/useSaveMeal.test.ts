@@ -126,6 +126,24 @@ describe('useSaveMeal', () => {
     expect(isSameDay(new Date(meal.timestamp), past)).toBe(true);
   });
 
+  it('passes all images to analyzeFoodApi and keeps first as diary preview', async () => {
+    const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
+    const a = new File(['a'], 'a.jpg', { type: 'image/jpeg' });
+    const b = new File(['b'], 'b.jpg', { type: 'image/jpeg' });
+
+    await act(async () => {
+      await result.current({ images: [a, b] });
+    });
+
+    expect(analyzeFoodApi).toHaveBeenCalledWith(
+      { images: [a, b] },
+      expect.objectContaining({}),
+    );
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.status).toBe('ready');
+    expect(meal.imageUri).toBeTruthy();
+  });
+
   it('maps multiple analyze items to FoodItem[] with unique ids', async () => {
     vi.mocked(analyzeFoodApi).mockResolvedValue({
       result: {

@@ -4,7 +4,7 @@ import {
   endMealAnalyze,
   useDiaryStore,
 } from '@/entities/meal';
-import { analyzeFoodApi } from '@/features/analyze-food';
+import { analyzeFoodApi, type PartialNutritionXml } from '@/features/analyze-food';
 import { useProfileStore } from '@/features/onboarding';
 import { useSettingsStore, getActiveCustomInstructions, getAnalyzeFeaturesFromSettings } from '@/features/settings';
 import { saveMealImage, timestampForSelectedDate } from '@/shared/lib';
@@ -15,7 +15,15 @@ import { analyzeErrorPatch } from './analyzeErrorPatch';
 
 export interface SubmitFoodInput {
   image?: File | null;
+  /** Several photos of the same dish (different angles). Diary keeps the first. */
+  images?: File[] | null;
   description?: string | null;
+}
+
+function resolveSubmitImages(input: SubmitFoodInput): File[] {
+  const fromList = (input.images ?? []).filter((f): f is File => f instanceof File);
+  if (fromList.length > 0) return fromList;
+  return input.image ? [input.image] : [];
 }
 
 export function useSaveMeal() {
@@ -23,7 +31,10 @@ export function useSaveMeal() {
   const addMeal = useDiaryStore((s) => s.addMeal);
   const updateMeal = useDiaryStore((s) => s.updateMeal);
 
-  return async ({ image, description }: SubmitFoodInput) => {
+  return async (input: SubmitFoodInput) => {
+    const { description } = input;
+    const imageList = resolveSubmitImages(input);
+    const primaryImage = imageList[0] ?? null;
     const mealId = crypto.randomUUID();
     const itemId = crypto.randomUUID();
     const trimmedDescription = description?.trim() || '';
@@ -42,7 +53,7 @@ export function useSaveMeal() {
     };
 
     // Empty text without photo: manual stub, no AI call
-    if (!image && !trimmedDescription) {
+    if (imageList.length === 0 && !trimmedDescription) {
       addMeal({
         id: mealId,
         timestamp,
@@ -60,7 +71,7 @@ export function useSaveMeal() {
       return;
     }
 
-    const imageUri = image ? await saveMealImage(image) : undefined;
+    const imageUri = primaryImage ? await saveMealImage(primaryImage) : undefined;
     const aiModel = useSettingsStore.getState().aiModel;
 
     const pendingMeal: Meal = {
@@ -82,47 +93,47 @@ export function useSaveMeal() {
       const customInstructions = getActiveCustomInstructions();
       const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
       const features = getAnalyzeFeaturesFromSettings();
+      const analyzeOptions = {
+        customInstructions,
+        dietType,
+        model: aiModel,
+        features,
+        onPartial: (partial: PartialNutritionXml) =>
+          applyPartialAnalyzeResultToMeal(mealId, partial, itemId),
+      };
       const response = await queryClient.fetchQuery({
-        queryKey: image
-          ? [
-              'analyze-food',
-              image.name,
-              image.size,
-              image.lastModified,
-              customInstructions,
-              dietType,
-              aiModel,
-              features,
-            ]
-          : [
-              'analyze-food',
-              'text',
-              trimmedDescription,
-              customInstructions,
-              dietType,
-              aiModel,
-              features,
-            ],
-        queryFn: () =>
-          image
-            ? analyzeFoodApi(image, {
+        queryKey:
+          imageList.length > 0
+            ? [
+                'analyze-food',
+                ...imageList.map(
+                  (f) => `${f.name}:${f.size}:${f.lastModified}`,
+                ),
                 customInstructions,
                 dietType,
-                model: aiModel,
+                aiModel,
                 features,
-                onPartial: (partial) =>
-                  applyPartialAnalyzeResultToMeal(mealId, partial, itemId),
-              })
+              ]
+            : [
+                'analyze-food',
+                'text',
+                trimmedDescription,
+                customInstructions,
+                dietType,
+                aiModel,
+                features,
+              ],
+        queryFn: () =>
+          imageList.length > 0
+            ? analyzeFoodApi(
+                imageList.length === 1
+                  ? imageList[0]
+                  : { images: imageList },
+                analyzeOptions,
+              )
             : analyzeFoodApi(
                 { description: trimmedDescription },
-                {
-                  customInstructions,
-                  dietType,
-                  model: aiModel,
-                  features,
-                  onPartial: (partial) =>
-                    applyPartialAnalyzeResultToMeal(mealId, partial, itemId),
-                },
+                analyzeOptions,
               ),
       });
       applyAnalyzeResultToMeal(mealId, response.result, itemId);

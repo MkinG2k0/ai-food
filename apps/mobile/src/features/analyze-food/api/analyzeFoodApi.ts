@@ -374,6 +374,10 @@ ${GEMINI_MICRONUTRIENTS_PROMPT_RULE}
 /** Short fixed user text for vision — rules live in system prompt (cacheable). */
 const ANALYSIS_PROMPT = 'Проанализируй изображение.';
 
+/** Multi-angle: same dish, several photos in one request. */
+const ANALYSIS_PROMPT_MULTI =
+  'Это одно блюдо с разных ракурсов. Проанализируй все изображения вместе как один приём пищи.';
+
 function selectAnalyzeSystemPrompt(
   hasImage: boolean,
   model?: string,
@@ -403,7 +407,10 @@ function selectAnalyzeSystemPrompt(
 }
 
 export interface AnalyzeFoodInput {
+  /** Single photo (legacy). Ignored when `images` is non-empty. */
   image?: File | null;
+  /** Several photos of the same dish (e.g. different angles). */
+  images?: File[] | null;
   description?: string | null;
 }
 export interface AnalyzeFoodOptions {
@@ -413,6 +420,8 @@ export interface AnalyzeFoodOptions {
   features?: AnalyzeFeatures;
   /** Called as closed XML tags become available during the stream */
   onPartial?: (partial: PartialNutritionXml) => void;
+  /** Cancels the in-flight gateway request (also respects the 30s timeout). */
+  signal?: AbortSignal;
 }
 
 export type { PartialNutritionXml };
@@ -458,14 +467,17 @@ export const NO_FOOD_ERROR_MESSAGE =
   'На фото не обнаружена еда. Сфотографируйте блюдо и попробуйте снова.';
 
 function resolveAnalyzeInput(input: File | AnalyzeFoodInput): {
-  image: File | null;
+  images: File[];
   description: string;
 } {
   if (input instanceof File) {
-    return { image: input, description: '' };
+    return { images: [input], description: '' };
   }
+  const fromList = (input.images ?? []).filter((f): f is File => f instanceof File);
+  const images =
+    fromList.length > 0 ? fromList : input.image ? [input.image] : [];
   return {
-    image: input.image ?? null,
+    images,
     description: input.description?.trim() ?? '',
   };
 }
@@ -516,45 +528,65 @@ export async function analyzeFoodApi(
     );
   }
 
-  const { image, description } = resolveAnalyzeInput(input);
+  const { images, description } = resolveAnalyzeInput(input);
 
-  if (!image && !description) {
+  if (images.length === 0 && !description) {
     rejectApiError('Укажите фото или описание еды.', 'INVALID_INPUT', 400);
   }
 
   const features = options?.features ?? DEFAULT_ANALYZE_FEATURES;
+  const hasImage = images.length > 0;
 
   const systemContent = appendDietPreference(
     appendCustomInstructions(
-      selectAnalyzeSystemPrompt(!!image, options?.model, features),
+      selectAnalyzeSystemPrompt(hasImage, options?.model, features),
       options?.customInstructions,
     ),
     options?.dietType,
   );
 
-  const imageForAi = image ? await compressImageForAi(image) : null;
-
   const textUserPrompt = features.composition
     ? `Пользователь описал приём пищи текстом: «${description}». Оцени порцию/типичную порцию. Разбей состав на items с обязательными grams. Учти способ приготовления, если упомянут. Не выдумывай еду, если её нет. Верни только XML по схеме.`
     : `Пользователь описал приём пищи текстом: «${description}». Оцени порцию/типичную порцию. Верни ровно один item на всё блюдо (без разбивки на ингредиенты) с обязательными grams. Учти способ приготовления, если упомянут. Не выдумывай еду, если её нет. Верни только XML по схеме.`;
 
-  // Stable system text first + cache_control; image last and never cached.
-  const userContent = imageForAi
-    ? [
-        {
-          type: 'text' as const,
-          text: ANALYSIS_PROMPT,
-        },
-        {
+  // Stable system text first + cache_control; images last and never cached.
+  let userContent: string | Array<
+    | { type: 'text'; text: string }
+    | { type: 'image_url'; image_url: { url: string } }
+  >;
+  if (hasImage) {
+    const imageParts = await Promise.all(
+      images.map(async (file) => {
+        const compressed = await compressImageForAi(file);
+        return {
           type: 'image_url' as const,
-          image_url: { url: await fileToDataUrl(imageForAi) },
-        },
-      ]
-    : textUserPrompt;
+          image_url: { url: await fileToDataUrl(compressed) },
+        };
+      }),
+    );
+    userContent = [
+      {
+        type: 'text' as const,
+        text: images.length > 1 ? ANALYSIS_PROMPT_MULTI : ANALYSIS_PROMPT,
+      },
+      ...imageParts,
+    ];
+  } else {
+    userContent = textUserPrompt;
+  }
 
   const startTime = Date.now();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30_000);
+  const externalSignal = options?.signal;
+  const onExternalAbort = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      clearTimeout(timeoutId);
+      rejectApiError('Анализ отменён.', 'ANALYSIS_FAILED', 499);
+    }
+    externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+  }
 
   let lastPartialKey = '';
   const emitPartial = (accumulated: string) => {
@@ -597,6 +629,7 @@ export async function analyzeFoodApi(
       },
     });
   } finally {
+    externalSignal?.removeEventListener('abort', onExternalAbort);
     clearTimeout(timeoutId);
   }
 

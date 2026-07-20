@@ -6,16 +6,19 @@ const MAX_CUSTOM_INSTRUCTIONS_LENGTH = 2000;
 
 export const DEFAULT_AI_MODEL = 'google/gemini-3-flash-preview';
 
-/** Lower temperature for all models — more deterministic nutrition estimates. */
-export const AI_TEMPERATURE = 0.2;
+/** Zero temperature for all models — deterministic nutrition estimates. */
+export const AI_TEMPERATURE = 0;
 
 export const AI_MODEL_OPTIONS = [
   { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' },
   { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
   { value: 'openai/gpt-4.1-mini', label: 'GPT-4.1 mini' },
   { value: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash' },
+  { value: 'google/gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
   { value: 'openai/gpt-5.4', label: 'GPT-5.4' },
   { value: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6' },
+  { value: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5' },
+  { value: 'moonshotai/kimi-k2.6', label: 'Kimi K2.6' },
 ] as const;
 
 const ALLOWED_MODELS = new Set<string>(
@@ -36,7 +39,7 @@ export function isGeminiModel(model?: string | null): boolean {
   return !!model && /gemini/i.test(model);
 }
 
-/** All models get temperature 0.2 for more deterministic estimates. */
+/** All models get temperature 0 for deterministic estimates. */
 export function temperatureForModel(_model?: string | null): number {
   return AI_TEMPERATURE;
 }

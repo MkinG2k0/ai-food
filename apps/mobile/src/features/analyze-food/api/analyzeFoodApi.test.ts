@@ -286,7 +286,7 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
       model: 'openai/gpt-4.1-mini',
       stream: true,
     });
-    expect(body.temperature).toBe(0.2);
+    expect(body.temperature).toBe(0);
     expect(body.response_format).toBeUndefined();
     expect(body.messages).toHaveLength(2);
     expect(body.messages[0].role).toBe('system');
@@ -318,16 +318,35 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(userParts[1]?.cache_control).toBeUndefined();
   });
 
-  it('sets temperature 0.2 for all models', async () => {
+  it('sends multiple image_url parts for multi-angle photos', async () => {
+    mockStreamOk(nutritionResultToXml(validNutrition));
+
+    const a = new File(['a'], 'angle-a.jpg', { type: 'image/jpeg' });
+    const b = new File(['b'], 'angle-b.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi({ images: [a, b] }, { model: 'openai/gpt-4.1-mini' });
+
+    const userContent = lastFetchBody().messages[1].content as Array<{
+      type: string;
+      text?: string;
+      image_url?: { url: string };
+    }>;
+    expect(userContent[0]?.type).toBe('text');
+    expect(userContent[0]?.text).toMatch(/разных ракурсов/i);
+    expect(userContent.filter((p) => p.type === 'image_url')).toHaveLength(2);
+    expect(userContent[1]?.image_url?.url).toMatch(/^data:image\//);
+    expect(userContent[2]?.image_url?.url).toMatch(/^data:image\//);
+  });
+
+  it('sets temperature 0 for all models', async () => {
     mockStreamOk(nutritionResultToXml(validNutrition));
 
     const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
     await analyzeFoodApi(file, { model: 'google/gemini-2.5-flash' });
-    expect(lastFetchBody().temperature).toBe(0.2);
+    expect(lastFetchBody().temperature).toBe(0);
 
     mockStreamOk(nutritionResultToXml(validNutrition));
     await analyzeFoodApi(file, { model: 'openai/gpt-4.1-mini' });
-    expect(lastFetchBody().temperature).toBe(0.2);
+    expect(lastFetchBody().temperature).toBe(0);
   });
 
   it('calls onPartial as closed XML tags arrive', async () => {

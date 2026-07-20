@@ -99,8 +99,11 @@ describe('useSettingsStore', () => {
       'google/gemini-2.5-flash',
       'openai/gpt-4.1-mini',
       'google/gemini-3-flash-preview',
+      'google/gemini-3.5-flash',
       'openai/gpt-5.4',
       'anthropic/claude-sonnet-4.6',
+      'moonshotai/kimi-k2.5',
+      'moonshotai/kimi-k2.6',
     ]);
   });
 
@@ -139,15 +142,15 @@ describe('useSettingsStore', () => {
     expect(aiModelLabel('custom/unknown-model')).toBe('custom/unknown-model');
   });
 
-  it('temperatureForModel returns 0.2 for all models', () => {
-    expect(AI_TEMPERATURE).toBe(0.2);
+  it('temperatureForModel returns 0 for all models', () => {
+    expect(AI_TEMPERATURE).toBe(0);
     expect(isGeminiModel('google/gemini-2.5-flash-lite')).toBe(true);
     expect(isGeminiModel('openai/gpt-4.1-mini')).toBe(false);
-    expect(temperatureForModel('google/gemini-2.5-flash-lite')).toBe(0.2);
-    expect(temperatureForModel('google/gemini-3-flash-preview')).toBe(0.2);
-    expect(temperatureForModel('openai/gpt-4.1-mini')).toBe(0.2);
-    expect(temperatureForModel('anthropic/claude-sonnet-4.6')).toBe(0.2);
-    expect(temperatureForModel(undefined)).toBe(0.2);
+    expect(temperatureForModel('google/gemini-2.5-flash-lite')).toBe(0);
+    expect(temperatureForModel('google/gemini-3-flash-preview')).toBe(0);
+    expect(temperatureForModel('openai/gpt-4.1-mini')).toBe(0);
+    expect(temperatureForModel('anthropic/claude-sonnet-4.6')).toBe(0);
+    expect(temperatureForModel(undefined)).toBe(0);
   });
 
   it('truncates customInstructions longer than 2000 characters', async () => {
