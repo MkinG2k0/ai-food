@@ -12,7 +12,7 @@ vi.mock('@capacitor/preferences', () => ({
 import {
   AI_MODEL_OPTIONS,
   DEFAULT_AI_MODEL,
-  GEMINI_TEMPERATURE,
+  AI_TEMPERATURE,
   aiModelLabel,
   getActiveCustomInstructions,
   isGeminiModel,
@@ -139,15 +139,15 @@ describe('useSettingsStore', () => {
     expect(aiModelLabel('custom/unknown-model')).toBe('custom/unknown-model');
   });
 
-  it('temperatureForModel returns 0.2 only for Gemini ids', () => {
-    expect(GEMINI_TEMPERATURE).toBe(0.2);
+  it('temperatureForModel returns 0.2 for all models', () => {
+    expect(AI_TEMPERATURE).toBe(0.2);
     expect(isGeminiModel('google/gemini-2.5-flash-lite')).toBe(true);
     expect(isGeminiModel('openai/gpt-4.1-mini')).toBe(false);
     expect(temperatureForModel('google/gemini-2.5-flash-lite')).toBe(0.2);
     expect(temperatureForModel('google/gemini-3-flash-preview')).toBe(0.2);
-    expect(temperatureForModel('openai/gpt-4.1-mini')).toBeUndefined();
-    expect(temperatureForModel('anthropic/claude-sonnet-4.6')).toBeUndefined();
-    expect(temperatureForModel(undefined)).toBeUndefined();
+    expect(temperatureForModel('openai/gpt-4.1-mini')).toBe(0.2);
+    expect(temperatureForModel('anthropic/claude-sonnet-4.6')).toBe(0.2);
+    expect(temperatureForModel(undefined)).toBe(0.2);
   });
 
   it('truncates customInstructions longer than 2000 characters', async () => {

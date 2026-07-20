@@ -6,8 +6,8 @@ const MAX_CUSTOM_INSTRUCTIONS_LENGTH = 2000;
 
 export const DEFAULT_AI_MODEL = 'google/gemini-3-flash-preview';
 
-/** Lower temperature for Gemini — more deterministic nutrition estimates. */
-export const GEMINI_TEMPERATURE = 0.2;
+/** Lower temperature for all models — more deterministic nutrition estimates. */
+export const AI_TEMPERATURE = 0.2;
 
 export const AI_MODEL_OPTIONS = [
   { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' },
@@ -36,10 +36,9 @@ export function isGeminiModel(model?: string | null): boolean {
   return !!model && /gemini/i.test(model);
 }
 
-/** Gemini models get temperature 0.2; others omit (provider default). */
-export function temperatureForModel(model?: string | null): number | undefined {
-  if (!isGeminiModel(model)) return undefined;
-  return GEMINI_TEMPERATURE;
+/** All models get temperature 0.2 for more deterministic estimates. */
+export function temperatureForModel(_model?: string | null): number {
+  return AI_TEMPERATURE;
 }
 
 /** Snapshot of analyze/refine feature flags from settings. */

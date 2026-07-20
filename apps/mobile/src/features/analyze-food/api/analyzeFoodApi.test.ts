@@ -286,7 +286,7 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
       model: 'openai/gpt-4.1-mini',
       stream: true,
     });
-    expect(body.temperature).toBeUndefined();
+    expect(body.temperature).toBe(0.2);
     expect(body.response_format).toBeUndefined();
     expect(body.messages).toHaveLength(2);
     expect(body.messages[0].role).toBe('system');
@@ -318,12 +318,15 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(userParts[1]?.cache_control).toBeUndefined();
   });
 
-  it('sets temperature 0.2 for Gemini models', async () => {
+  it('sets temperature 0.2 for all models', async () => {
     mockStreamOk(nutritionResultToXml(validNutrition));
 
     const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
     await analyzeFoodApi(file, { model: 'google/gemini-2.5-flash' });
+    expect(lastFetchBody().temperature).toBe(0.2);
 
+    mockStreamOk(nutritionResultToXml(validNutrition));
+    await analyzeFoodApi(file, { model: 'openai/gpt-4.1-mini' });
     expect(lastFetchBody().temperature).toBe(0.2);
   });
 

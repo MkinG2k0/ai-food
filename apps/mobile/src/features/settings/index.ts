@@ -1,7 +1,7 @@
 export {
   AI_MODEL_OPTIONS,
   DEFAULT_AI_MODEL,
-  GEMINI_TEMPERATURE,
+  AI_TEMPERATURE,
   aiModelLabel,
   getActiveCustomInstructions,
   getAnalyzeFeaturesFromSettings,
