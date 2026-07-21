@@ -100,6 +100,7 @@ describe('useSettingsStore', () => {
       'openai/gpt-4.1-mini',
       'google/gemini-3-flash-preview',
       'google/gemini-3.5-flash',
+      'google/gemini-3.6-flash',
       'openai/gpt-5.4',
       'anthropic/claude-sonnet-4.6',
       'moonshotai/kimi-k2.5',
