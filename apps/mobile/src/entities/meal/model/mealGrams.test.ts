@@ -72,6 +72,27 @@ describe('mealGrams', () => {
     expect(back.items[1]!.grams).toBe(120);
   });
 
+  it('scaleItemsGramsToTotal preserves shares through tiny total (385→1→385)', () => {
+    const base = [
+      item({ id: 'fish', grams: 100 }),
+      item({ id: 'roll', grams: 120 }),
+      item({ id: 'beans', grams: 80 }),
+      item({ id: 'salad', grams: 50 }),
+      item({ id: 'rice', grams: 35 }),
+    ];
+    const tiny = scaleItemsGramsToTotal(base, 1);
+    expect(tiny.totalGrams).toBe(1);
+    expect(sumItemGrams(tiny.items)).toBe(1);
+
+    const restored = scaleItemsGramsToTotal(tiny.items, 385);
+    expect(restored.totalGrams).toBe(385);
+    expect(restored.items[0]!.grams).toBe(100);
+    expect(restored.items[1]!.grams).toBe(120);
+    expect(restored.items[2]!.grams).toBe(80);
+    expect(restored.items[3]!.grams).toBe(50);
+    expect(restored.items[4]!.grams).toBe(35);
+  });
+
   it('after editing one item share, scale uses new percentages', () => {
     const afterEdit = [
       item({ id: 'chicken', grams: 150 }),

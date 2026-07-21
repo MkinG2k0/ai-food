@@ -1,14 +1,20 @@
 import type { FoodItem, Meal } from '@ai-food/shared-types';
 
-/** Grams stored/scaled to 1 decimal so small total changes still move every item. */
+/** Grams for user input / dish totals — 1 decimal is enough for display. */
 export function sanitizeGrams(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.round(value * 10) / 10);
 }
 
-/** Sum of item grams (1-decimal precision). */
+/** Raw non-negative grams without coarse rounding (keeps composition shares). */
+function rawGrams(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return 0;
+  return Math.max(0, value);
+}
+
+/** Sum of item grams (1-decimal precision on the total only). */
 export function sumItemGrams(items: Pick<FoodItem, 'grams'>[]): number {
-  const sum = items.reduce((acc, item) => acc + sanitizeGrams(item.grams ?? 0), 0);
+  const sum = items.reduce((acc, item) => acc + rawGrams(item.grams), 0);
   return sanitizeGrams(sum);
 }
 
@@ -34,11 +40,12 @@ export function formatItemGrams(grams: number): string {
 
 /**
  * Share of each item in the dish weight (0–1).
- * Uses current item grams; equal shares if all zero.
+ * Uses raw item grams so tiny totals still keep real proportions.
+ * Equal shares if all zero.
  */
 export function itemGramShares(items: Pick<FoodItem, 'grams'>[]): number[] {
   if (items.length === 0) return [];
-  const weights = items.map((item) => sanitizeGrams(item.grams ?? 0));
+  const weights = items.map((item) => rawGrams(item.grams));
   const sum = weights.reduce((a, b) => a + b, 0);
   if (sum <= 0) {
     const equal = 1 / items.length;
@@ -48,22 +55,10 @@ export function itemGramShares(items: Pick<FoodItem, 'grams'>[]): number[] {
 }
 
 /**
- * Redistribute item grams to a new dish total while keeping each item's share.
- * Uses 0.1g steps + largest-remainder so every positive-share item moves when
- * the total changes enough, and ±0.1 still apportions fairly.
+ * Apportion `targetTenths` (0.1g units) by share using largest-remainder.
+ * Guarantees the integer tenths sum exactly to the target.
  */
-export function scaleItemsGramsToTotal(
-  items: FoodItem[],
-  targetTotalGrams: number,
-): { items: FoodItem[]; totalGrams: number } {
-  const safeTarget = sanitizeGrams(targetTotalGrams);
-  if (items.length === 0) {
-    return { items, totalGrams: safeTarget };
-  }
-
-  // Work in tenths of a gram to keep integer apportionment exact
-  const targetTenths = Math.round(safeTarget * 10);
-  const shares = itemGramShares(items);
+function apportionTenths(shares: number[], targetTenths: number): number[] {
   const exactTenths = shares.map((share) => share * targetTenths);
   const floored = exactTenths.map((v) => Math.floor(v + 1e-9));
   let remaining = targetTenths - floored.reduce((a, b) => a + b, 0);
@@ -77,11 +72,54 @@ export function scaleItemsGramsToTotal(
     const idx = order[k % order.length]!.i;
     tenths[idx] = tenths[idx]! + 1;
   }
+  return tenths;
+}
+
+/**
+ * Redistribute item grams to a new dish total while keeping each item's share.
+ *
+ * Tiny totals (not enough 0.1g slots to represent every positive share) keep
+ * exact float proportions so 385→1→385 restores the original composition.
+ * Normal totals use 0.1g largest-remainder for clean display values.
+ */
+export function scaleItemsGramsToTotal(
+  items: FoodItem[],
+  targetTotalGrams: number,
+): { items: FoodItem[]; totalGrams: number } {
+  const safeTarget = sanitizeGrams(targetTotalGrams);
+  if (items.length === 0) {
+    return { items, totalGrams: safeTarget };
+  }
+
+  const shares = itemGramShares(items);
+  const targetTenths = Math.round(safeTarget * 10);
+  const positiveCount = shares.filter((s) => s > 0).length;
+
+  // Need ~1.0g average per positive item before 0.1g rounding is safe;
+  // otherwise shares collapse (e.g. 1g / 5 items → 0.3/0.3/0.2/0.1/0.1).
+  const tenthsSafe =
+    positiveCount === 0 || targetTenths >= positiveCount * 10;
+
+  let nextGrams: number[];
+  if (tenthsSafe) {
+    nextGrams = apportionTenths(shares, targetTenths).map((t) => t / 10);
+  } else {
+    nextGrams = shares.map((s) => s * safeTarget);
+    const scaledSum = nextGrams.reduce((a, b) => a + b, 0);
+    const drift = safeTarget - scaledSum;
+    if (drift !== 0 && nextGrams.length > 0) {
+      let maxIdx = 0;
+      for (let i = 1; i < nextGrams.length; i += 1) {
+        if (nextGrams[i]! > nextGrams[maxIdx]!) maxIdx = i;
+      }
+      nextGrams[maxIdx] = nextGrams[maxIdx]! + drift;
+    }
+  }
 
   const nextItems = items.map((item, index) => ({
     ...item,
-    grams: sanitizeGrams(tenths[index]! / 10),
+    grams: nextGrams[index]!,
   }));
 
-  return { items: nextItems, totalGrams: sanitizeGrams(targetTenths / 10) };
+  return { items: nextItems, totalGrams: safeTarget };
 }
