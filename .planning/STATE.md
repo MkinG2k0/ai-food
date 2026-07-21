@@ -146,6 +146,7 @@ None yet.
 | fast | Apply temperature 0.2 to all AI models | 2026-07-20 | 0e08c21 | — |
 | 260721-rt6 | Settings: экспорт/импорт данных в JSON | 2026-07-21 | 9c629a7 | [260721-rt6-json](./quick/260721-rt6-json/) |
 | 260721-ruz | Multi-photo: save all angles + slider on meal detail | 2026-07-21 | — | [260721-ruz-multi-photo-meal](./quick/260721-ruz-multi-photo-meal/) |
+| fast | Add google/gemini-3.6-flash to AI model options | 2026-07-21 | a74d412 | — |
 
 ### Blockers/Concerns
 
