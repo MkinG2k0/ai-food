@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Goal, UserProfile } from '@ai-food/shared-types';
+import type { UserProfile } from '@ai-food/shared-types';
 import { isFutureDay } from '@/shared/lib';
 import { Button } from '@/shared/ui';
 import { useNumericRangeInput } from '../../model/useNumericRangeInput';
@@ -9,6 +9,14 @@ import { OnboardingStepHeader } from '../OnboardingStepHeader';
 const MIN = 40;
 const MAX = 160;
 const DEFAULT_DEADLINE_DAYS = 90;
+/** Suggest target ~15% above current so the slider isn't stuck on the same number. */
+const DEFAULT_TARGET_WEIGHT_FACTOR = 1.15;
+
+function defaultTargetWeight(currentWeight: number): number {
+  const suggested =
+    Math.round(currentWeight * DEFAULT_TARGET_WEIGHT_FACTOR * 10) / 10;
+  return Math.min(MAX, Math.max(MIN, suggested));
+}
 
 function toDateInputValue(date: Date): string {
   const y = date.getFullYear();
@@ -46,19 +54,13 @@ function tomorrowDateInputValue(): string {
 interface StepTargetWeightProps {
   onNext: (data: Pick<UserProfile, 'targetWeight' | 'targetWeightDate'>) => void;
   currentWeight: number;
-  goal: Goal;
 }
 
 export function StepTargetWeight({
   onNext,
   currentWeight,
-  goal,
 }: StepTargetWeightProps) {
-  // D-04: maintain → current weight; lose/gain also start from current weight
-  const initial = Math.min(
-    MAX,
-    Math.max(MIN, goal === 'maintain' ? currentWeight : currentWeight),
-  );
+  const initial = defaultTargetWeight(currentWeight);
 
   const {
     value,

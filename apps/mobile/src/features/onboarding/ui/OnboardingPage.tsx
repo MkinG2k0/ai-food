@@ -77,7 +77,6 @@ export function OnboardingPage() {
           <StepTargetWeight
             onNext={next}
             currentWeight={draft.weight!}
-            goal={draft.goal!}
           />
         )}
         {step === 8 && <StepDiet onNext={next} />}
