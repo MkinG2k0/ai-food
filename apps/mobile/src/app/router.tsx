@@ -6,6 +6,7 @@ import { MealDetailPage } from '@/pages/meal-detail';
 import { FoodItemEditPage } from '@/pages/food-item-edit';
 import { StatsPage } from '@/pages/stats';
 import { SettingsPage } from '@/pages/settings';
+import { NewsPage } from '@/pages/news';
 import { FavoritesPage } from '@/pages/favorites';
 import { ModelTestPage } from '@/pages/model-test';
 import { AppShell } from './AppShell';
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
       { path: '/diary', element: <ProfileGuard><DiaryPage /></ProfileGuard> },
       { path: '/stats', element: <ProfileGuard><StatsPage /></ProfileGuard> },
       { path: '/settings', element: <ProfileGuard><SettingsPage /></ProfileGuard> },
+      { path: '/news', element: <ProfileGuard><NewsPage /></ProfileGuard> },
       { path: '/favorites', element: <ProfileGuard><FavoritesPage /></ProfileGuard> },
       { path: '/meal/:id', element: <ProfileGuard><MealDetailPage /></ProfileGuard> },
       {

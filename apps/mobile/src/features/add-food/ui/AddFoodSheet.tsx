@@ -1,8 +1,12 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ImageIcon, Camera, PenLine, ArrowLeft, Star } from 'lucide-react';
+import { toast } from 'sonner';
 import { BottomSheet, Button, Textarea } from '@/shared/ui';
 import { useSaveMeal } from '@/features/save-meal';
+
+/** Max photos per meal analysis — more angles rarely help. */
+export const MAX_FOOD_IMAGES = 3;
 
 export interface AddFoodSheetProps {
   open: boolean;
@@ -27,9 +31,13 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
 
   const handleImagesSelect = (files: File[]) => {
     if (files.length === 0) return;
+    if (files.length > MAX_FOOD_IMAGES) {
+      toast.message(`Можно выбрать не больше ${MAX_FOOD_IMAGES} фото`);
+    }
+    const limited = files.slice(0, MAX_FOOD_IMAGES);
     handleClose();
     void submitFood(
-      files.length === 1 ? { image: files[0] } : { images: files },
+      limited.length === 1 ? { image: limited[0] } : { images: limited },
     );
   };
 
@@ -137,7 +145,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               multiple
               onChange={handleGalleryChange}
               className="hidden"
-              aria-label="Выбор из галереи (можно несколько ракурсов)"
+              aria-label="Выбор из галереи (до 3 ракурсов)"
             />
 
             <input

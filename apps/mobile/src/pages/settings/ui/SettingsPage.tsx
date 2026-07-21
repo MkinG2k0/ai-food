@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import type { DietType, UserProfile } from '@ai-food/shared-types';
 import { recoverStaleAnalyzingMeals, useDiaryStore } from '@/entities/meal';
@@ -402,6 +402,18 @@ export function SettingsPage() {
               Импорт JSON
             </Button>
           </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium leading-none">О приложении</h2>
+          <Button
+            variant="outline"
+            className="w-full justify-between"
+            onClick={() => navigate('/news')}
+          >
+            Новости
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </Button>
         </section>
 
         {import.meta.env.DEV && (
