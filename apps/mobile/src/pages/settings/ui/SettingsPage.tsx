@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import type { DietType, UserProfile } from '@ai-food/shared-types';
 import { recoverStaleAnalyzingMeals, useDiaryStore } from '@/entities/meal';
@@ -47,6 +47,8 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const [redoOpen, setRedoOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
   const [pendingImport, setPendingImport] = useState<ReturnType<
     typeof parseAppDataExport
   > | null>(null);
@@ -186,189 +188,240 @@ export function SettingsPage() {
 
       <main className="flex-1 px-4 py-6 space-y-8">
         <section className="space-y-3">
-          <h2 className="text-sm font-medium leading-none">Профиль</h2>
-          {profile ? (
-            <>
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Пол</dt>
-                  <dd className="font-medium text-right">
-                    {GENDER_LABELS[profile.gender]}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Возраст</dt>
-                  <dd className="font-medium text-right">{profile.age} лет</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Рост</dt>
-                  <dd className="font-medium text-right">{profile.height} см</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Вес</dt>
-                  <dd className="font-medium text-right">{profile.weight} кг</dd>
-                </div>
-                {profile.targetWeight != null && (
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Желаемый вес</dt>
-                    <dd className="font-medium text-right">
-                      {profile.targetWeight} кг
-                    </dd>
-                  </div>
-                )}
-                {profile.targetWeightDate ? (
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Срок</dt>
-                    <dd className="font-medium text-right">
-                      {new Date(
-                        `${profile.targetWeightDate}T12:00:00`,
-                      ).toLocaleDateString('ru-RU', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </dd>
-                  </div>
-                ) : null}
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Активность</dt>
-                  <dd className="font-medium text-right">
-                    {ACTIVITY_LABELS[profile.activity]}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Цель</dt>
-                  <dd className="font-medium text-right">
-                    {GOAL_LABELS[profile.goal]}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Тип питания</dt>
-                  <dd className="font-medium text-right">
-                    {DIET_LABELS[profile.dietType ?? 'none']}
-                  </dd>
-                </div>
-              </dl>
-              {targets && (
-                <dl className="space-y-2 text-sm pt-2 border-t">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Калории</dt>
-                    <dd className="font-medium text-right">{targets.kcal} ккал</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Белки</dt>
-                    <dd className="font-medium text-right">{targets.protein} г</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Жиры</dt>
-                    <dd className="font-medium text-right">{targets.fat} г</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Углеводы</dt>
-                    <dd className="font-medium text-right">{targets.carbs} г</dd>
-                  </div>
-                </dl>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Профиль ещё не заполнен.
-            </p>
-          )}
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setRedoOpen(true)}
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 text-left"
+            aria-expanded={profileOpen}
+            onClick={() => setProfileOpen((open) => !open)}
           >
-            Пройти анбординг заново
-          </Button>
+            <h2 className="text-sm font-medium leading-none">Профиль</h2>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                profileOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          {profileOpen && (
+            <>
+              {profile ? (
+                <>
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Пол</dt>
+                      <dd className="font-medium text-right">
+                        {GENDER_LABELS[profile.gender]}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Возраст</dt>
+                      <dd className="font-medium text-right">
+                        {profile.age} лет
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Рост</dt>
+                      <dd className="font-medium text-right">
+                        {profile.height} см
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Вес</dt>
+                      <dd className="font-medium text-right">
+                        {profile.weight} кг
+                      </dd>
+                    </div>
+                    {profile.targetWeight != null && (
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-muted-foreground">Желаемый вес</dt>
+                        <dd className="font-medium text-right">
+                          {profile.targetWeight} кг
+                        </dd>
+                      </div>
+                    )}
+                    {profile.targetWeightDate ? (
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-muted-foreground">Срок</dt>
+                        <dd className="font-medium text-right">
+                          {new Date(
+                            `${profile.targetWeightDate}T12:00:00`,
+                          ).toLocaleDateString('ru-RU', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </dd>
+                      </div>
+                    ) : null}
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Активность</dt>
+                      <dd className="font-medium text-right">
+                        {ACTIVITY_LABELS[profile.activity]}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Цель</dt>
+                      <dd className="font-medium text-right">
+                        {GOAL_LABELS[profile.goal]}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Тип питания</dt>
+                      <dd className="font-medium text-right">
+                        {DIET_LABELS[profile.dietType ?? 'none']}
+                      </dd>
+                    </div>
+                  </dl>
+                  {targets && (
+                    <dl className="space-y-2 text-sm pt-2 border-t">
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-muted-foreground">Калории</dt>
+                        <dd className="font-medium text-right">
+                          {targets.kcal} ккал
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-muted-foreground">Белки</dt>
+                        <dd className="font-medium text-right">
+                          {targets.protein} г
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-muted-foreground">Жиры</dt>
+                        <dd className="font-medium text-right">
+                          {targets.fat} г
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-muted-foreground">Углеводы</dt>
+                        <dd className="font-medium text-right">
+                          {targets.carbs} г
+                        </dd>
+                      </div>
+                    </dl>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Профиль ещё не заполнен.
+                </p>
+              )}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setRedoOpen(true)}
+              >
+                Пройти анбординг заново
+              </Button>
+            </>
+          )}
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-medium leading-none">Анализ еды</h2>
-          <p className="text-sm text-muted-foreground">
-            Включённые опции показываются в приложении и запрашиваются у AI.
-            Выключенные — скрыты и не входят в промпт (быстрее и дешевле).
-          </p>
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-input"
-              checked={featureVitamins}
-              onChange={(e) => setFeatureVitamins(e.target.checked)}
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 text-left"
+            aria-expanded={analysisOpen}
+            onClick={() => setAnalysisOpen((open) => !open)}
+          >
+            <h2 className="text-sm font-medium leading-none">Анализ еды</h2>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                analysisOpen ? 'rotate-180' : ''
+              }`}
             />
-            <span className="space-y-0.5">
-              <span className="block text-sm font-medium">Витамины и минералы</span>
-              <span className="block text-sm text-muted-foreground">
-                Микронутриенты в карточке приёма и в статистике
-              </span>
-            </span>
-          </label>
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-input"
-              checked={featureHealthiness}
-              onChange={(e) => setFeatureHealthiness(e.target.checked)}
-            />
-            <span className="space-y-0.5">
-              <span className="block text-sm font-medium">Полезность</span>
-              <span className="block text-sm text-muted-foreground">
-                Оценка полезности блюда по шкале 1–10
-              </span>
-            </span>
-          </label>
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-1 h-4 w-4 rounded border-input"
-              checked={featureComposition}
-              onChange={(e) => setFeatureComposition(e.target.checked)}
-            />
-            <span className="space-y-0.5">
-              <span className="block text-sm font-medium">Состав</span>
-              <span className="block text-sm text-muted-foreground">
-                Разбивка блюда на ингредиенты и слои
-              </span>
-            </span>
-          </label>
-          <div className="space-y-2">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-input"
-                checked={customInstructionsEnabled}
-                onChange={(e) => setCustomInstructionsEnabled(e.target.checked)}
-                aria-controls="custom-instructions"
-              />
-              <span className="space-y-0.5">
-                <span className="block text-sm font-medium">
-                  Кастомные инструкции
-                </span>
-                <span className="block text-sm text-muted-foreground">
-                  Укажите предпочтения для анализа (диета, единицы) и
-                  дополнительные запросы к блюду (рецепт, острота и т.п.). Ответ
-                  на доп. запросы появится на карточке приёма в формате Markdown.
-                  Выключенные инструкции не отправляются в AI; текст сохраняется.
-                </span>
-              </span>
-            </label>
-            {customInstructionsEnabled && (
-              <>
-                <Textarea
-                  id="custom-instructions"
-                  value={customInstructions}
-                  maxLength={2000}
-                  placeholder="Например: я веган; дай краткий рецепт"
-                  onChange={(e) => setCustomInstructions(e.target.value)}
-                  className="min-h-32"
+          </button>
+          {analysisOpen && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Включённые опции показываются в приложении и запрашиваются у AI.
+                Выключенные — скрыты и не входят в промпт (быстрее и дешевле).
+              </p>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-input"
+                  checked={featureVitamins}
+                  onChange={(e) => setFeatureVitamins(e.target.checked)}
                 />
-                <p className="text-xs text-muted-foreground text-right">
-                  {customInstructions.length}/2000
-                </p>
-              </>
-            )}
-          </div>
+                <span className="space-y-0.5">
+                  <span className="block text-sm font-medium">
+                    Витамины и минералы
+                  </span>
+                  <span className="block text-sm text-muted-foreground">
+                    Микронутриенты в карточке приёма и в статистике
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-input"
+                  checked={featureHealthiness}
+                  onChange={(e) => setFeatureHealthiness(e.target.checked)}
+                />
+                <span className="space-y-0.5">
+                  <span className="block text-sm font-medium">Полезность</span>
+                  <span className="block text-sm text-muted-foreground">
+                    Оценка полезности блюда по шкале 1–10
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-input"
+                  checked={featureComposition}
+                  onChange={(e) => setFeatureComposition(e.target.checked)}
+                />
+                <span className="space-y-0.5">
+                  <span className="block text-sm font-medium">Состав</span>
+                  <span className="block text-sm text-muted-foreground">
+                    Разбивка блюда на ингредиенты и слои
+                  </span>
+                </span>
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-input"
+                    checked={customInstructionsEnabled}
+                    onChange={(e) =>
+                      setCustomInstructionsEnabled(e.target.checked)
+                    }
+                    aria-controls="custom-instructions"
+                  />
+                  <span className="space-y-0.5">
+                    <span className="block text-sm font-medium">
+                      Кастомные инструкции
+                    </span>
+                    <span className="block text-sm text-muted-foreground">
+                      Укажите предпочтения для анализа (диета, единицы) и
+                      дополнительные запросы к блюду (рецепт, острота и т.п.).
+                      Ответ на доп. запросы появится на карточке приёма в
+                      формате Markdown. Выключенные инструкции не отправляются
+                      в AI; текст сохраняется.
+                    </span>
+                  </span>
+                </label>
+                {customInstructionsEnabled && (
+                  <>
+                    <Textarea
+                      id="custom-instructions"
+                      value={customInstructions}
+                      maxLength={2000}
+                      placeholder="Например: я веган; дай краткий рецепт"
+                      onChange={(e) => setCustomInstructions(e.target.value)}
+                      className="min-h-32"
+                    />
+                    <p className="text-xs text-muted-foreground text-right">
+                      {customInstructions.length}/2000
+                    </p>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </section>
 
         <section className="space-y-3">
@@ -413,6 +466,16 @@ export function SettingsPage() {
           >
             Новости
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </Button>
+          <Button variant="outline" className="w-full justify-between" asChild>
+            <a
+              href="https://t.me/double_cumboy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Telegram
+              <span className="text-muted-foreground">@double_cumboy</span>
+            </a>
           </Button>
         </section>
 
