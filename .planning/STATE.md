@@ -144,7 +144,7 @@ None yet.
 | 260719-mq7 | Per-100g KBJU on ingredient edit (density ↔ portion) | 2026-07-19 | 9662f34, 4638154, 9b84404 | [260719-mq7-100](./quick/260719-mq7-100/) |
 | fast | Toggle ingredient KBJU: На 100 г / На порцию | 2026-07-19 | cb77e5c | — |
 | fast | Apply temperature 0.2 to all AI models | 2026-07-20 | 0e08c21 | — |
-| 260721-rt6 | Settings: экспорт/импорт данных в JSON | 2026-07-21 | pending | [260721-rt6-json](./quick/260721-rt6-json/) |
+| 260721-rt6 | Settings: экспорт/импорт данных в JSON | 2026-07-21 | 9c629a7 | [260721-rt6-json](./quick/260721-rt6-json/) |
 
 ### Blockers/Concerns
 
