@@ -1,9 +1,22 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import type { DietType, UserProfile } from '@ai-food/shared-types';
+import { recoverStaleAnalyzingMeals, useDiaryStore } from '@/entities/meal';
+import { useFavoritesStore } from '@/features/favorites';
 import { useProfileStore } from '@/features/onboarding';
-import { useSettingsStore } from '@/features/settings';
+import {
+  AppDataBackupError,
+  buildAppDataExport,
+  downloadAppDataJson,
+  parseAppDataExport,
+  readJsonFile,
+  snapshotFromExport,
+  useSettingsStore,
+} from '@/features/settings';
+import { useWeightStore } from '@/features/stats';
 import { BottomSheet, Button, Textarea } from '@/shared/ui';
 
 const GENDER_LABELS: Record<UserProfile['gender'], string> = {
@@ -33,6 +46,12 @@ const DIET_LABELS: Record<DietType, string> = {
 export function SettingsPage() {
   const navigate = useNavigate();
   const [redoOpen, setRedoOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [pendingImport, setPendingImport] = useState<ReturnType<
+    typeof parseAppDataExport
+  > | null>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const customInstructions = useSettingsStore((s) => s.customInstructions);
   const setCustomInstructions = useSettingsStore((s) => s.setCustomInstructions);
@@ -57,6 +76,98 @@ export function SettingsPage() {
     resetProfile();
     setRedoOpen(false);
     navigate('/onboarding', { replace: true });
+  };
+
+  const handleExport = async () => {
+    setBackupBusy(true);
+    try {
+      const settings = useSettingsStore.getState();
+      const profileState = useProfileStore.getState();
+      const data = buildAppDataExport({
+        meals: useDiaryStore.getState().meals,
+        profile: profileState.profile,
+        targets: profileState.targets,
+        micronutrientTargets: profileState.micronutrientTargets,
+        settings: {
+          customInstructions: settings.customInstructions,
+          customInstructionsEnabled: settings.customInstructionsEnabled,
+          aiModel: settings.aiModel,
+          featureVitamins: settings.featureVitamins,
+          featureHealthiness: settings.featureHealthiness,
+          featureComposition: settings.featureComposition,
+        },
+        favorites: useFavoritesStore.getState().favorites,
+        weightEntries: useWeightStore.getState().entries,
+        weightGoalKg: useWeightStore.getState().goalKg,
+      });
+      await downloadAppDataJson(data);
+      toast.success(
+        Capacitor.isNativePlatform()
+          ? 'Бэкап сохранён в Документы'
+          : 'Бэкап скачан',
+      );
+    } catch (err) {
+      const message =
+        err instanceof AppDataBackupError
+          ? err.message
+          : 'Не удалось экспортировать данные';
+      toast.error(message);
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const handleImportFile = async (file: File | undefined) => {
+    if (!file) return;
+    setBackupBusy(true);
+    try {
+      const raw = await readJsonFile(file);
+      const data = parseAppDataExport(raw);
+      setPendingImport(data);
+      setImportOpen(true);
+    } catch (err) {
+      const message =
+        err instanceof AppDataBackupError
+          ? err.message
+          : 'Не удалось прочитать файл';
+      toast.error(message);
+    } finally {
+      setBackupBusy(false);
+      if (importInputRef.current) importInputRef.current.value = '';
+    }
+  };
+
+  const handleImportConfirm = () => {
+    if (!pendingImport) return;
+    const snapshot = snapshotFromExport(pendingImport);
+
+    useDiaryStore.setState({ meals: snapshot.meals });
+    recoverStaleAnalyzingMeals();
+
+    useProfileStore.setState({
+      profile: snapshot.profile,
+      targets: snapshot.targets,
+      micronutrientTargets: snapshot.micronutrientTargets,
+    });
+
+    useSettingsStore.setState({
+      customInstructions: snapshot.settings.customInstructions.slice(0, 2000),
+      customInstructionsEnabled: snapshot.settings.customInstructionsEnabled,
+      aiModel: snapshot.settings.aiModel,
+      featureVitamins: snapshot.settings.featureVitamins,
+      featureHealthiness: snapshot.settings.featureHealthiness,
+      featureComposition: snapshot.settings.featureComposition,
+    });
+
+    useFavoritesStore.setState({ favorites: snapshot.favorites });
+    useWeightStore.setState({
+      entries: snapshot.weightEntries,
+      goalKg: snapshot.weightGoalKg,
+    });
+
+    setImportOpen(false);
+    setPendingImport(null);
+    toast.success('Данные импортированы');
   };
 
   return (
@@ -260,6 +371,39 @@ export function SettingsPage() {
           </div>
         </section>
 
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium leading-none">Данные</h2>
+          <p className="text-sm text-muted-foreground">
+            Экспорт дневника, профиля, настроек, избранного и веса в JSON.
+            Импорт полностью заменит текущие данные на устройстве.
+          </p>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => void handleImportFile(e.target.files?.[0])}
+          />
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={backupBusy}
+              onClick={() => void handleExport()}
+            >
+              Экспорт JSON
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={backupBusy}
+              onClick={() => importInputRef.current?.click()}
+            >
+              Импорт JSON
+            </Button>
+          </div>
+        </section>
+
         {import.meta.env.DEV && (
           <section className="space-y-2 pt-2 border-t">
             <h2 className="text-sm font-medium leading-none">Разработка</h2>
@@ -296,6 +440,41 @@ export function SettingsPage() {
             </Button>
             <Button className="flex-1" onClick={handleRedoConfirm}>
               Пройти заново
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={importOpen}
+        onClose={() => {
+          setImportOpen(false);
+          setPendingImport(null);
+        }}
+      >
+        <div className="w-full space-y-4 px-2 py-2">
+          <h2 className="text-lg font-semibold text-foreground">
+            Заменить данные?
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Импорт перезапишет дневник ({pendingImport?.diary.meals.length ?? 0}{' '}
+            приёмов), профиль, настройки, избранное (
+            {pendingImport?.favorites.favorites.length ?? 0}) и вес. Это
+            нельзя отменить.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setImportOpen(false);
+                setPendingImport(null);
+              }}
+            >
+              Отмена
+            </Button>
+            <Button className="flex-1" onClick={handleImportConfirm}>
+              Импортировать
             </Button>
           </div>
         </div>

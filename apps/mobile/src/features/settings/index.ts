@@ -10,3 +10,15 @@ export {
   temperatureForModel,
   useSettingsStore,
 } from './model/useSettingsStore';
+export {
+  APP_DATA_EXPORT_VERSION,
+  AppDataBackupError,
+  backupFileName,
+  buildAppDataExport,
+  downloadAppDataJson,
+  parseAppDataExport,
+  readJsonFile,
+  snapshotFromExport,
+  type AppDataExport,
+  type AppDataSnapshot,
+} from './model/appDataBackup';
