@@ -3,6 +3,7 @@ import type { Meal } from '@ai-food/shared-types';
 import {
   beginMealAnalyze,
   endMealAnalyze,
+  resolveMealImageUris,
   useDiaryStore,
 } from '@/entities/meal';
 import { analyzeFoodApi } from '@/features/analyze-food';
@@ -29,14 +30,16 @@ export function useRetryAnalyzeMeal() {
     const meal = useDiaryStore.getState().meals.find((m: Meal) => m.id === mealId);
     if (!meal) return;
 
-    let image: File | null = null;
-    if (meal.imageUri) {
-      image = await loadMealImageAsFile(meal.imageUri);
+    const imagePaths = resolveMealImageUris(meal);
+    const images: File[] = [];
+    for (const path of imagePaths) {
+      const file = await loadMealImageAsFile(path);
+      if (file) images.push(file);
     }
 
     const description = usableDescription(meal.name);
 
-    if (!image && !description) {
+    if (images.length === 0 && !description) {
       updateMeal(mealId, { status: 'error' });
       return;
     }
@@ -55,44 +58,46 @@ export function useRetryAnalyzeMeal() {
 
     try {
       const response = await queryClient.fetchQuery({
-        queryKey: image
-          ? [
-              'analyze-food',
-              'retry',
-              mealId,
-              image.name,
-              image.size,
-              image.lastModified,
-              customInstructions,
-              dietType,
-              aiModel,
-              features,
-            ]
-          : [
-              'analyze-food',
-              'retry',
-              mealId,
-              'text',
-              description,
-              customInstructions,
-              dietType,
-              aiModel,
-              features,
-            ],
-        queryFn: () =>
-          image
-            ? analyzeFoodApi(image, {
+        queryKey:
+          images.length > 0
+            ? [
+                'analyze-food',
+                'retry',
+                mealId,
+                ...images.map((f) => `${f.name}:${f.size}:${f.lastModified}`),
                 customInstructions,
                 dietType,
-                model: aiModel,
+                aiModel,
                 features,
-                onPartial: (partial) =>
-                  applyPartialAnalyzeResultToMeal(
-                    mealId,
-                    partial,
-                    meal.items[0]?.id,
-                  ),
-              })
+              ]
+            : [
+                'analyze-food',
+                'retry',
+                mealId,
+                'text',
+                description,
+                customInstructions,
+                dietType,
+                aiModel,
+                features,
+              ],
+        queryFn: () =>
+          images.length > 0
+            ? analyzeFoodApi(
+                images.length === 1 ? images[0] : { images },
+                {
+                  customInstructions,
+                  dietType,
+                  model: aiModel,
+                  features,
+                  onPartial: (partial) =>
+                    applyPartialAnalyzeResultToMeal(
+                      mealId,
+                      partial,
+                      meal.items[0]?.id,
+                    ),
+                },
+              )
             : analyzeFoodApi(
                 { description: description! },
                 {

@@ -25,6 +25,7 @@ export function useQuickAddFavorite() {
       totalCalories: favorite.totalCalories,
       portions: favorite.portions ?? 1,
       imageUri: favorite.imageUri,
+      imageUris: favorite.imageUris,
       status: 'ready',
       healthiness: favorite.healthiness,
       confidence: favorite.confidence,

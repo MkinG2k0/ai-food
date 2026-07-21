@@ -12,6 +12,8 @@ export interface FavoriteFood {
   totalCalories: number;
   portions?: number;
   imageUri?: string;
+  /** All photo paths when favorite was saved from a multi-angle meal */
+  imageUris?: string[];
   healthiness?: number;
   confidence?: number;
   micronutrients?: MicronutrientEstimate[];

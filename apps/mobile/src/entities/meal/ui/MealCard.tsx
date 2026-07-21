@@ -5,6 +5,7 @@ import type { Meal } from '@ai-food/shared-types';
 import { Button, Card, CardContent, Skeleton } from '@/shared/ui';
 import { useRetryAnalyzeMeal } from '@/features/save-meal';
 import { useMealImage } from '../model/useMealImage';
+import { resolveMealImageUris } from '../model/resolveMealImageUris';
 import { mealDisplayName } from '../model/mealDisplayName';
 import { FoodMacrosBadges } from './FoodMacrosBadges';
 
@@ -18,6 +19,7 @@ interface MealCardProps {
 export function MealCard({ meal }: MealCardProps) {
   const navigate = useNavigate();
   const retry = useRetryAnalyzeMeal();
+  const photoCount = resolveMealImageUris(meal).length;
   const imageSrc = useMealImage(meal.imageUri);
   const status = meal.status ?? 'ready';
   const isAnalyzing = status === 'analyzing';
@@ -102,7 +104,7 @@ export function MealCard({ meal }: MealCardProps) {
       className={canOpenDetail ? 'cursor-pointer ' : ''}
     >
       <CardContent className="flex justify-between flex-auto gap-3 p-2 ">
-        <div className="h-20 w-20 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="relative h-20 w-20 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
           {imageSrc ? (
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
           ) : isAnalyzing && !analyzingStale ? (
@@ -111,6 +113,11 @@ export function MealCard({ meal }: MealCardProps) {
             <AlertCircle className="h-6 w-6 text-destructive" />
           ) : (
             <Utensils className="h-6 w-6 text-emerald-600" />
+          )}
+          {photoCount > 1 && (
+            <span className="absolute bottom-1 right-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white">
+              {photoCount}
+            </span>
           )}
         </div>
 

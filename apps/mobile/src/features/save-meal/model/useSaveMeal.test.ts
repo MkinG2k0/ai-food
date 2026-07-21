@@ -37,7 +37,9 @@ vi.mock('@/shared/lib', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/shared/lib')>();
   return {
     ...actual,
-    saveMealImage: vi.fn().mockResolvedValue('meal-images/test.jpg'),
+    saveMealImage: vi.fn().mockImplementation(async (file: File) => {
+      return `meal-images/${file.name}`;
+    }),
   };
 });
 
@@ -126,7 +128,7 @@ describe('useSaveMeal', () => {
     expect(isSameDay(new Date(meal.timestamp), past)).toBe(true);
   });
 
-  it('passes all images to analyzeFoodApi and keeps first as diary preview', async () => {
+  it('passes all images to analyzeFoodApi and saves all uris in diary', async () => {
     const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
     const a = new File(['a'], 'a.jpg', { type: 'image/jpeg' });
     const b = new File(['b'], 'b.jpg', { type: 'image/jpeg' });
@@ -142,6 +144,8 @@ describe('useSaveMeal', () => {
     const meal = useDiaryStore.getState().meals[0];
     expect(meal.status).toBe('ready');
     expect(meal.imageUri).toBeTruthy();
+    expect(meal.imageUris).toHaveLength(2);
+    expect(meal.imageUris?.[0]).toBe(meal.imageUri);
   });
 
   it('maps multiple analyze items to FoodItem[] with unique ids', async () => {

@@ -60,7 +60,13 @@ export interface Meal {
   totalCalories: number;
   /** Short dish title; omitted on legacy persisted meals */
   name?: string;
+  /** Primary / first photo path; omitted when meal has no photos */
   imageUri?: string;
+  /**
+   * All photo paths (multi-angle). When present, prefer over `[imageUri]`.
+   * Omitted on legacy meals that only have `imageUri`.
+   */
+  imageUris?: string[];
   status?: MealStatus;
   /** Servings multiplier; omitted on legacy meals → treat as 1 */
   portions?: number;

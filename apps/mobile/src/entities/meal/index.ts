@@ -4,6 +4,10 @@ export {
   type FoodMacrosBadgesProps,
 } from './ui/FoodMacrosBadges';
 export {
+  MealPhotoSlider,
+  type MealPhotoSliderProps,
+} from './ui/MealPhotoSlider';
+export {
   useDiaryStore,
   recoverStaleAnalyzingMeals,
 } from './model/useDiaryStore';
@@ -13,6 +17,8 @@ export {
   isMealAnalyzeInFlight,
 } from './model/analyzeInFlight';
 export { useMealImage } from './model/useMealImage';
+export { useMealImages } from './model/useMealImages';
+export { resolveMealImageUris } from './model/resolveMealImageUris';
 export { mealDisplayName } from './model/mealDisplayName';
 export {
   sanitizeNutrient,

@@ -3,7 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, PenLine, Star, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ApiError } from '@ai-food/shared-types';
-import { useDiaryStore, useMealImage } from '@/entities/meal';
+import {
+  MealPhotoSlider,
+  resolveMealImageUris,
+  useDiaryStore,
+  useMealImages,
+} from '@/entities/meal';
 import { MealCustomContentBlock } from '@/features/analyze-food';
 import {
   useConfirmDeleteMeal,
@@ -19,12 +24,14 @@ import { useFavoritesStore } from '@/features/favorites';
 import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
 import { useSettingsStore } from '@/features/settings';
 import { Button, ImageLightbox } from '@/shared/ui';
+
 export function MealDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const meals = useDiaryStore((s) => s.meals);
   const meal = meals.find((m) => m.id === id);
-  const imageSrc = useMealImage(meal?.imageUri);
+  const imageUris = meal ? resolveMealImageUris(meal) : [];
+  const imageSrcs = useMealImages(imageUris);
   const featureComposition = useSettingsStore((s) => s.featureComposition);
   const isFavorite = useFavoritesStore((s) =>
     meal ? s.isFavorite(meal.id) : false,
@@ -32,6 +39,7 @@ export function MealDetailPage() {
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
   const [refineOpen, setRefineOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [isRefining, setIsRefining] = useState(false);
   const refine = useRefineMeal();
   const {
@@ -59,6 +67,7 @@ export function MealDetailPage() {
 
   const currentMeal = meal;
   const mealId = currentMeal.id;
+  const lightboxSrcs = imageSrcs.filter((s): s is string => Boolean(s));
 
   function handleConfirmMealDelete() {
     const deletedId = confirmMealDelete();
@@ -101,6 +110,11 @@ export function MealDetailPage() {
     } else if (result === 'limit') {
       toast.error('Достигнут лимит избранного (50)');
     }
+  }
+
+  function handleOpenPhoto(index: number) {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
   }
 
   return (
@@ -148,19 +162,8 @@ export function MealDetailPage() {
       </header>
 
       <main className="flex-1 px-4 py-5 space-y-5 pb-safe">
-        {imageSrc && (
-          <button
-            type="button"
-            className="w-full rounded-xl overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={() => setLightboxOpen(true)}
-            aria-label="Открыть фото"
-          >
-            <img
-              src={imageSrc}
-              alt=""
-              className="w-full aspect-[4/3] object-cover"
-            />
-          </button>
+        {imageUris.length > 0 && (
+          <MealPhotoSlider imageUris={imageUris} onOpen={handleOpenPhoto} />
         )}
 
         <MealSummaryEditor meal={currentMeal} />
@@ -217,10 +220,11 @@ export function MealDetailPage() {
         onClose={() => setRefineOpen(false)}
         onSubmit={(correction) => void handleRefine(correction)}
       />
-      {imageSrc && (
+      {lightboxSrcs.length > 0 && (
         <ImageLightbox
           open={lightboxOpen}
-          src={imageSrc}
+          srcs={lightboxSrcs}
+          initialIndex={lightboxIndex}
           onClose={() => setLightboxOpen(false)}
         />
       )}

@@ -142,6 +142,39 @@ describe('useRetryAnalyzeMeal', () => {
     expect(meal.confidence).toBe(0.92);
   });
 
+  it('retries multi-angle meal with all saved photos', async () => {
+    const a = new File(['a'], 'a.jpg', { type: 'image/jpeg' });
+    const b = new File(['b'], 'b.jpg', { type: 'image/jpeg' });
+    vi.mocked(loadMealImageAsFile)
+      .mockResolvedValueOnce(a)
+      .mockResolvedValueOnce(b);
+    useDiaryStore.setState({
+      meals: [
+        errorMeal({
+          imageUri: 'meal-images/a.jpg',
+          imageUris: ['meal-images/a.jpg', 'meal-images/b.jpg'],
+          name: undefined,
+        }),
+      ],
+    });
+
+    const { result } = renderHook(() => useRetryAnalyzeMeal(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current('meal-1');
+    });
+
+    expect(loadMealImageAsFile).toHaveBeenCalledWith('meal-images/a.jpg');
+    expect(loadMealImageAsFile).toHaveBeenCalledWith('meal-images/b.jpg');
+    expect(analyzeFoodApi).toHaveBeenCalledWith(
+      { images: [a, b] },
+      expect.objectContaining({}),
+    );
+    expect(useDiaryStore.getState().meals[0].status).toBe('ready');
+  });
+
   it('retries text meal with description when no imageUri', async () => {
     useDiaryStore.setState({
       meals: [errorMeal({ name: 'Домашний суп', imageUri: undefined })],

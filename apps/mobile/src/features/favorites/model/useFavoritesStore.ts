@@ -34,6 +34,7 @@ function mealToFavorite(meal: Meal): FavoriteFood {
     totalCalories: meal.totalCalories,
     portions: meal.portions,
     imageUri: meal.imageUri,
+    imageUris: meal.imageUris,
     healthiness: meal.healthiness,
     confidence: meal.confidence,
     micronutrients: meal.micronutrients

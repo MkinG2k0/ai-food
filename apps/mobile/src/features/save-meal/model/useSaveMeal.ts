@@ -15,7 +15,7 @@ import { analyzeErrorPatch } from './analyzeErrorPatch';
 
 export interface SubmitFoodInput {
   image?: File | null;
-  /** Several photos of the same dish (different angles). Diary keeps the first. */
+  /** Several photos of the same dish (different angles). All saved to diary. */
   images?: File[] | null;
   description?: string | null;
 }
@@ -34,7 +34,6 @@ export function useSaveMeal() {
   return async (input: SubmitFoodInput) => {
     const { description } = input;
     const imageList = resolveSubmitImages(input);
-    const primaryImage = imageList[0] ?? null;
     const mealId = crypto.randomUUID();
     const itemId = crypto.randomUUID();
     const trimmedDescription = description?.trim() || '';
@@ -71,7 +70,11 @@ export function useSaveMeal() {
       return;
     }
 
-    const imageUri = primaryImage ? await saveMealImage(primaryImage) : undefined;
+    const imageUris =
+      imageList.length > 0
+        ? await Promise.all(imageList.map((file) => saveMealImage(file)))
+        : undefined;
+    const imageUri = imageUris?.[0];
     const aiModel = useSettingsStore.getState().aiModel;
 
     const pendingMeal: Meal = {
@@ -82,6 +85,7 @@ export function useSaveMeal() {
       totalCalories: 0,
       portions: 1,
       imageUri,
+      imageUris,
       status: 'analyzing',
       aiModel,
     };
