@@ -29,7 +29,6 @@ export function StepAge({ onNext }: StepAgeProps) {
         max={MAX}
         value={value}
         inputText={inputText}
-        rangeSuffix="лет"
         onTextChange={handleTextChange}
         onTextBlur={handleTextBlur}
         onSliderChange={handleSliderChange}

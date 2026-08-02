@@ -30,7 +30,6 @@ export function StepHeight({ onNext }: StepHeightProps) {
         value={value}
         inputText={inputText}
         unit="см"
-        rangeSuffix="см"
         onTextChange={handleTextChange}
         onTextBlur={handleTextBlur}
         onSliderChange={handleSliderChange}

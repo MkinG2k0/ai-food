@@ -4,7 +4,6 @@ interface NumericRangeInputProps {
   value: number;
   inputText: string;
   unit?: string;
-  rangeSuffix: string;
   onTextChange: (text: string) => void;
   onTextBlur: (text: string) => void;
   onSliderChange: (value: number) => void;
@@ -16,7 +15,6 @@ export function NumericRangeInput({
   value,
   inputText,
   unit,
-  rangeSuffix,
   onTextChange,
   onTextBlur,
   onSliderChange,
@@ -47,9 +45,6 @@ export function NumericRangeInput({
         onChange={(e) => onSliderChange(Number(e.target.value))}
         className="w-full accent-primary"
       />
-      <span className="text-sm text-muted-foreground">
-        {min} — {max} {rangeSuffix}
-      </span>
     </div>
   );
 }

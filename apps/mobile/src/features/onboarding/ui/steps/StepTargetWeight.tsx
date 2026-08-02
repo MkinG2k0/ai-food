@@ -85,7 +85,6 @@ export function StepTargetWeight({
         value={value}
         inputText={inputText}
         unit="кг"
-        rangeSuffix="кг"
         onTextChange={handleTextChange}
         onTextBlur={handleTextBlur}
         onSliderChange={handleSliderChange}
