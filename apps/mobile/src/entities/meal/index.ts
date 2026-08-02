@@ -25,6 +25,7 @@ export {
   nutrientsFromPer100,
   nutrientsPer100FromPortion,
   scalePortionNutrientsByGrams,
+  sumItemCalories,
   type PortionNutrients,
   type NutrientKey,
 } from './model/mealNutritionMath';
