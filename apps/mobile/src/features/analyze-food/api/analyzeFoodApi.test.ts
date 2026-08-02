@@ -525,12 +525,15 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(PACKAGED_FOOD_PROMPT_RULE).toMatch(/один item/i);
   });
 
-  it('ITEM_COUNT_PROMPT_RULE treats one plated dish as 1 even with many pieces', () => {
+  it('ITEM_COUNT_PROMPT_RULE counts piece foods; non-countable dishes stay 1', () => {
     expect(ITEM_COUNT_PROMPT_RULE).toMatch(/itemCount/);
-    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/тарелка|порци/i);
-    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/наггетс|курин|кусоч/i);
+    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/поштучн|штук/i);
+    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/ролл|крылыш|наггетс/i);
+    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/5 ролл|itemCount\s*=\s*5|→\s*itemCount=5|→\s*5/i);
+    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/салат|паста|рагу/i);
     expect(ITEM_COUNT_PROMPT_RULE).toMatch(/itemCount\s*=\s*1|→\s*1/);
     expect(ITEM_COUNT_PROMPT_RULE).toMatch(/упаковк|йогурт/i);
+    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/ВСЕ видимые|на все штуки|целиком/i);
   });
 
   it('legacy SYSTEM_PROMPT embeds composition rules (non-Gemini models)', async () => {
@@ -564,7 +567,7 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(systemContent).toMatch(/portionReference|totals|addedSugar|disclaimers/i);
     expect(systemContent).toMatch(/itemCount/);
     expect(systemContent).toMatch(/totalGrams/);
-    expect(systemContent).toMatch(/наггетс|курин|кусоч|подач/i);
+    expect(systemContent).toMatch(/наггетс|крылыш|ролл|поштуч|салат|паста/i);
     expect(systemContent).toMatch(/amount_mg/);
     expect(systemContent).not.toContain(FOOD_NAME_PROMPT_RULE);
   });

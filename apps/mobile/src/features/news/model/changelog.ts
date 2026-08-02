@@ -7,6 +7,13 @@ export interface NewsRelease {
 /** User-facing changelog; newest first. Update manually when shipping features. */
 export const NEWS_CHANGELOG: NewsRelease[] = [
   {
+    date: '2026-08-03',
+    title: 'Поштучный подсчёт порций',
+    items: [
+      'Роллы, крылышки, наггетсы и похожие блюда считаются штуками, а не одной порцией с тарелки',
+    ],
+  },
+  {
     date: '2026-07-21',
     title: 'Данные и онбординг',
     items: [

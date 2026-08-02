@@ -57,7 +57,7 @@ unit строго по id: vitaminA/vitaminD/vitaminB12/folate → "µg"; vitami
 const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
 {
   "foodName": string (краткое название всего блюда/приёма на русском),
-  "itemCount": number (отдельные ПОРЦИИ/подачи, не куски внутри блюда: тарелка курицы кусочками → 1; 2 ролла → 2; НЕ равно длине items),
+  "itemCount": number (поштучные единицы: 5 роллов → 5; 8 крылышек → 8; салат/паста/рагу → 1; КБЖУ на все штуки; НЕ равно длине items),
   "totalGrams": number (оценка веса всего блюда в граммах; обычно ≈ сумма items[].grams),
   "calories": number (суммарные килокалории — сумма items),
   "protein": number (grams, сумма по составу),
@@ -90,7 +90,7 @@ ${COMPOSITION_PROMPT_RULE}
 ${ITEM_COUNT_PROMPT_RULE}
 ${PACKAGED_FOOD_PROMPT_RULE}
 ${REFINE_MICRONUTRIENTS_RULE}
-Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many separate servings were eaten (not pieces inside one dish). Update totalGrams to match the revised dish weight.
+Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many countable units were eaten (e.g. «съел 3 из 5 роллов» → itemCount=3; KBJU for those units). Update totalGrams to match the revised dish weight.
 Do not include any text outside the JSON object. No markdown fences.`;
 
 function buildRefineSystemPrompt(features: AnalyzeFeatures): string {
