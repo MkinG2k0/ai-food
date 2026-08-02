@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ImageIcon, Camera, PenLine, ArrowLeft, Star } from 'lucide-react';
+import { ImageIcon, Camera, PenLine, ArrowLeft, Star, Keyboard } from 'lucide-react';
 import { toast } from 'sonner';
 import { BottomSheet, Button, Textarea } from '@/shared/ui';
 import { useSaveMeal } from '@/features/save-meal';
@@ -110,6 +110,11 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
     navigate('/favorites');
   };
 
+  const handleManualClick = () => {
+    handleClose();
+    navigate('/manual-entry');
+  };
+
   const handleBackClick = () => {
     resetSheetState();
   };
@@ -151,7 +156,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  className="h-12 flex-1 justify-start gap-2 px-3"
+                  className="h-12 flex-1 justify-start gap-3"
                   onClick={handleCameraClick}
                 >
                   <Camera className="h-5 w-5 shrink-0 text-emerald-600" />
@@ -160,7 +165,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
 
                 <Button
                   variant="outline"
-                  className="h-12 flex-1 justify-start gap-2 px-3"
+                  className="h-12 flex-1 justify-start gap-3"
                   onClick={handleCameraDescribeClick}
                 >
                   <PenLine className="h-5 w-5 shrink-0 text-emerald-600" />
@@ -195,6 +200,15 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               >
                 <Star className="h-5 w-5 text-emerald-600" />
                 <span>Избранное</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="h-12 w-full justify-start gap-3"
+                onClick={handleManualClick}
+              >
+                <Keyboard className="h-5 w-5 text-emerald-600" />
+                <span>Вручную</span>
               </Button>
             </div>
 
