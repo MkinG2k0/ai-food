@@ -148,6 +148,24 @@ describe('useSaveMeal', () => {
     expect(meal.imageUris?.[0]).toBe(meal.imageUri);
   });
 
+  it('passes image with user description to analyzeFoodApi', async () => {
+    const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
+    const file = new File(['fake'], 'food.jpg', { type: 'image/jpeg' });
+
+    await act(async () => {
+      await result.current({ image: file, description: '  куриный салат  ' });
+    });
+
+    expect(analyzeFoodApi).toHaveBeenCalledWith(
+      { image: file, description: 'куриный салат' },
+      expect.objectContaining({}),
+    );
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.status).toBe('ready');
+    expect(meal.name).toBe('Test Food');
+    expect(meal.imageUri).toBeTruthy();
+  });
+
   it('maps multiple analyze items to FoodItem[] with unique ids', async () => {
     vi.mocked(analyzeFoodApi).mockResolvedValue({
       result: {

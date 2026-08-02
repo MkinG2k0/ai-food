@@ -84,7 +84,12 @@ export function useRetryAnalyzeMeal() {
         queryFn: () =>
           images.length > 0
             ? analyzeFoodApi(
-                images.length === 1 ? images[0] : { images },
+                {
+                  ...(images.length === 1
+                    ? { image: images[0] }
+                    : { images }),
+                  ...(description ? { description } : {}),
+                },
                 {
                   customInstructions,
                   dietType,

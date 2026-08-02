@@ -10,6 +10,7 @@ import {
   COMPOSITION_PROMPT_RULE,
   FOOD_NAME_PROMPT_RULE,
   ITEM_COUNT_PROMPT_RULE,
+  PACKAGED_FOOD_PROMPT_RULE,
   SINGLE_ITEM_COMPOSITION_RULE,
 } from './analyzeFoodApi';
 import {
@@ -87,6 +88,7 @@ const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user pro
 ${FOOD_NAME_PROMPT_RULE}
 ${COMPOSITION_PROMPT_RULE}
 ${ITEM_COUNT_PROMPT_RULE}
+${PACKAGED_FOOD_PROMPT_RULE}
 ${REFINE_MICRONUTRIENTS_RULE}
 Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many separate servings were eaten (not pieces inside one dish). Update totalGrams to match the revised dish weight.
 Do not include any text outside the JSON object. No markdown fences.`;

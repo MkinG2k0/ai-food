@@ -26,10 +26,10 @@ export function RefineMealSheet({ open, onClose, onSubmit }: RefineMealSheetProp
   return (
     <BottomSheet open={open} onClose={handleClose}>
       <div className="w-full space-y-4 px-2 py-2">
-        <h2 className="text-lg font-semibold text-foreground">Дополнить</h2>
+        <h2 className="text-lg font-semibold text-foreground">Уточнить блюдо</h2>
 
         <Textarea
-          placeholder="Напр.: съел половину / котлета не куриная а мясная"
+          placeholder="Например: съел половину или котлета из говядины, не куриная"
           value={text}
           onChange={(e) => setText(e.target.value)}
           className="min-h-32 resize-none"
@@ -40,7 +40,7 @@ export function RefineMealSheet({ open, onClose, onSubmit }: RefineMealSheetProp
           disabled={!text.trim()}
           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
         >
-          Применить
+          Пересчитать
         </Button>
       </div>
     </BottomSheet>

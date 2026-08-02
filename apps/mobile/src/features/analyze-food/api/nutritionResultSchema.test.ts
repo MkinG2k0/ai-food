@@ -6,6 +6,7 @@ import {
   normalizeMicronutrients,
   MICRONUTRIENTS_PROMPT_RULE,
   NO_FOOD_PROMPT_RULE,
+  GEMINI_NO_FOOD_PROMPT_RULE,
 } from './nutritionResultSchema';
 
 describe('nutritionResultSchema micronutrients', () => {
@@ -135,5 +136,13 @@ describe('nutritionResultSchema noFood', () => {
     expect(NO_FOOD_PROMPT_RULE).toMatch(/noFood/i);
     expect(NO_FOOD_PROMPT_RULE).toMatch(/животн|люди|человек/i);
     expect(NO_FOOD_PROMPT_RULE).toMatch(/Неизвестное блюдо|Нет еды|Человек/);
+    expect(NO_FOOD_PROMPT_RULE).toMatch(/НЕ noFood.*йогурт|йогурт.*анализируй/i);
+  });
+
+  it('GEMINI_NO_FOOD_PROMPT_RULE does not treat retail packaging as noFood', () => {
+    expect(GEMINI_NO_FOOD_PROMPT_RULE).toMatch(/НЕ noFood.*йогурт|йогурт.*анализируй/i);
+    expect(GEMINI_NO_FOOD_PROMPT_RULE).not.toMatch(
+      /упаковка продукта без видимой порции/,
+    );
   });
 });

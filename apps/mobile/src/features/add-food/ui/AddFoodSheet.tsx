@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ImageIcon, Camera, PenLine, ArrowLeft, Star } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,19 +13,37 @@ export interface AddFoodSheetProps {
   onClose: () => void;
 }
 
-type SheetMode = 'menu' | 'describe';
+type SheetMode = 'menu' | 'describe' | 'photo-describe';
 
 export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
   const navigate = useNavigate();
   const [mode, setMode] = useState<SheetMode>('menu');
   const [text, setText] = useState('');
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const cameraDescribeInputRef = useRef<HTMLInputElement>(null);
   const submitFood = useSaveMeal();
 
-  const handleClose = () => {
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const resetSheetState = () => {
     setMode('menu');
     setText('');
+    setPendingPhoto(null);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
+  const handleClose = () => {
+    resetSheetState();
     onClose();
   };
 
@@ -49,6 +67,10 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
     cameraInputRef.current?.click();
   };
 
+  const handleCameraDescribeClick = () => {
+    cameraDescribeInputRef.current?.click();
+  };
+
   const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.currentTarget.files ?? []);
     if (files.length > 0) {
@@ -65,6 +87,20 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
     }
   };
 
+  const handleCameraDescribeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0];
+    if (file) {
+      setPendingPhoto(file);
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(file);
+      });
+      setText('');
+      setMode('photo-describe');
+      e.currentTarget.value = '';
+    }
+  };
+
   const handleDescribeClick = () => {
     setMode('describe');
   };
@@ -75,8 +111,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
   };
 
   const handleBackClick = () => {
-    setMode('menu');
-    setText('');
+    resetSheetState();
   };
 
   const handleSubmitDescription = () => {
@@ -87,10 +122,22 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
     }
   };
 
+  const handleSubmitPhotoDescribe = () => {
+    if (!pendingPhoto || !text.trim()) return;
+    const description = text.trim();
+    const image = pendingPhoto;
+    handleClose();
+    void submitFood({ image, description });
+  };
+
   const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmitDescription();
+      if (mode === 'photo-describe') {
+        handleSubmitPhotoDescribe();
+      } else {
+        handleSubmitDescription();
+      }
     }
   };
 
@@ -101,9 +148,31 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
           <>
             <h2 className="text-lg font-semibold text-foreground">Добавить еду</h2>
             <div className="space-y-3">
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="h-12 flex-1 justify-start gap-2 px-3"
+                  onClick={handleCameraClick}
+                >
+                  <Camera className="h-5 w-5 shrink-0 text-emerald-600" />
+                  <span>Камера</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-12 flex-1 justify-start gap-2 px-3"
+                  onClick={handleCameraDescribeClick}
+                >
+                  <PenLine className="h-5 w-5 shrink-0 text-emerald-600" />
+                  <span className="text-left text-sm leading-tight">
+                    Камера + Описание
+                  </span>
+                </Button>
+              </div>
+
               <Button
                 variant="outline"
-                className="w-full justify-start gap-3 h-12"
+                className="h-12 w-full justify-start gap-3"
                 onClick={handleGalleryClick}
               >
                 <ImageIcon className="h-5 w-5 text-emerald-600" />
@@ -112,16 +181,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
 
               <Button
                 variant="outline"
-                className="w-full justify-start gap-3 h-12"
-                onClick={handleCameraClick}
-              >
-                <Camera className="h-5 w-5 text-emerald-600" />
-                <span>Камера</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-3 h-12"
+                className="h-12 w-full justify-start gap-3"
                 onClick={handleDescribeClick}
               >
                 <PenLine className="h-5 w-5 text-emerald-600" />
@@ -130,7 +190,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
 
               <Button
                 variant="outline"
-                className="w-full justify-start gap-3 h-12"
+                className="h-12 w-full justify-start gap-3"
                 onClick={handleFavoritesClick}
               >
                 <Star className="h-5 w-5 text-emerald-600" />
@@ -157,6 +217,59 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               className="hidden"
               aria-label="Съёмка камерой"
             />
+
+            <input
+              ref={cameraDescribeInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleCameraDescribeChange}
+              className="hidden"
+              aria-label="Съёмка камерой с описанием"
+            />
+          </>
+        ) : mode === 'photo-describe' ? (
+          <>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackClick}
+                className="px-0"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h2 className="text-lg font-semibold text-foreground">
+                Камера + Описание
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt="Снимок блюда"
+                  className="h-48 w-full rounded-xl object-cover"
+                />
+              ) : null}
+
+              <Textarea
+                placeholder="Напр.: куриный салат с рисом, без соуса"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={handleDescriptionKeyDown}
+                className="min-h-28 resize-none"
+                autoFocus
+              />
+
+              <Button
+                onClick={handleSubmitPhotoDescribe}
+                disabled={!text.trim() || !pendingPhoto}
+                className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                Отправить
+              </Button>
+            </div>
           </>
         ) : (
           <>
@@ -184,7 +297,7 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               <Button
                 onClick={handleSubmitDescription}
                 disabled={!text.trim()}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
               >
                 Отправить
               </Button>

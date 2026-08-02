@@ -129,7 +129,7 @@ describe('useRetryAnalyzeMeal', () => {
 
     expect(loadMealImageAsFile).toHaveBeenCalledWith('meal-images/abc.jpg');
     expect(analyzeFoodApi).toHaveBeenCalledWith(
-      file,
+      { image: file },
       expect.objectContaining({}),
     );
 

@@ -181,7 +181,7 @@ export function MealDetailPage() {
           ) : (
             <PenLine className="h-4 w-4 mr-2" />
           )}
-          {isRefining ? 'Дополняем…' : 'Дополнить'}
+          {isRefining ? 'Изменяем…' : 'Изменить'}
         </Button>
 
         {featureComposition && (

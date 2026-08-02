@@ -80,7 +80,7 @@ export function MealCustomContentBlock({ mealId }: MealCustomContentBlockProps) 
 
   const [question, setQuestion] = useState('');
   const [copied, setCopied] = useState(false);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     setCopied(false);
@@ -112,7 +112,7 @@ export function MealCustomContentBlock({ mealId }: MealCustomContentBlockProps) 
   }
 
   return (
-    <section className="space-y-3" aria-label="Дополнительно">
+    <section className="space-y-3" aria-label="Спросить о блюде">
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
@@ -127,7 +127,7 @@ export function MealCustomContentBlock({ mealId }: MealCustomContentBlockProps) 
               !expanded && '-rotate-90',
             )}
           />
-          Дополнительно
+          Спросить о блюде
           {(isLoading || isAsking) && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
@@ -227,7 +227,7 @@ export function MealCustomContentBlock({ mealId }: MealCustomContentBlockProps) 
               id="meal-custom-question"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Например: Ожидаемая энергия 1–5 через час"
+              placeholder="Например: как приготовить это блюдо?"
               className="min-h-20"
               disabled={isAsking}
               maxLength={500}
@@ -241,10 +241,10 @@ export function MealCustomContentBlock({ mealId }: MealCustomContentBlockProps) 
               {isAsking ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Спрашиваем…
+                  Ищем ответ…
                 </>
               ) : (
-                'Спросить'
+                'Узнать'
               )}
             </Button>
           </form>

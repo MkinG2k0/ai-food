@@ -8,6 +8,7 @@ import {
   ITEM_COUNT_PROMPT_RULE,
   NO_FOOD_PROMPT_RULE,
   MICRONUTRIENTS_PROMPT_RULE,
+  PACKAGED_FOOD_PROMPT_RULE,
 } from './analyzeFoodApi';
 import { noFoodResultToXml, nutritionResultToXml } from './parseNutritionXml';
 
@@ -311,7 +312,9 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
       cache_control?: unknown;
     }>;
     expect(userParts[0]?.type).toBe('text');
-    expect(userParts[0]?.text).toBe('Проанализируй изображение.');
+    expect(userParts[0]?.text).toBe(
+      'Проанализируй изображение. Если видна упаковка или этикетка с КБЖУ/весом — используй эти данные.',
+    );
     expect(userParts[0]?.cache_control).toBeUndefined();
     expect(userParts[1]?.type).toBe('image_url');
     expect(userParts[1]?.image_url?.url).toMatch(/^data:image\/png;base64,/);
@@ -515,11 +518,19 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(COMPOSITION_PROMPT_RULE).toMatch(/фри|один item|однородн|один элемент/i);
   });
 
+  it('PACKAGED_FOOD_PROMPT_RULE treats retail packaging as food, not noFood', () => {
+    expect(PACKAGED_FOOD_PROMPT_RULE).toMatch(/йогурт|сок|молоко/i);
+    expect(PACKAGED_FOOD_PROMPT_RULE).toMatch(/НЕ noFood|не noFood/i);
+    expect(PACKAGED_FOOD_PROMPT_RULE).toMatch(/этикетк|КБЖУ|OCR|пищевая ценность/i);
+    expect(PACKAGED_FOOD_PROMPT_RULE).toMatch(/один item/i);
+  });
+
   it('ITEM_COUNT_PROMPT_RULE treats one plated dish as 1 even with many pieces', () => {
     expect(ITEM_COUNT_PROMPT_RULE).toMatch(/itemCount/);
     expect(ITEM_COUNT_PROMPT_RULE).toMatch(/тарелка|порци/i);
     expect(ITEM_COUNT_PROMPT_RULE).toMatch(/наггетс|курин|кусоч/i);
     expect(ITEM_COUNT_PROMPT_RULE).toMatch(/itemCount\s*=\s*1|→\s*1/);
+    expect(ITEM_COUNT_PROMPT_RULE).toMatch(/упаковк|йогурт/i);
   });
 
   it('legacy SYSTEM_PROMPT embeds composition rules (non-Gemini models)', async () => {
@@ -533,6 +544,7 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(systemContent).toContain(FOOD_NAME_PROMPT_RULE);
     expect(systemContent).toContain(NO_FOOD_PROMPT_RULE);
     expect(systemContent).toContain(COMPOSITION_PROMPT_RULE);
+    expect(systemContent).toContain(PACKAGED_FOOD_PROMPT_RULE);
     expect(systemContent).toContain(MICRONUTRIENTS_PROMPT_RULE);
     expect(systemContent).toMatch(/micronutrients/i);
     expect(systemContent).toMatch(/атомарн.*ингредиент|атомарн.*слой|видимого ингредиента\/слоя/i);
@@ -573,9 +585,11 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(systemContent).toMatch(/healthiness/i);
     expect(systemContent).toMatch(/<noFood>true<\/noFood>/i);
     expect(systemContent).toMatch(/Пример B|пример B|селфи|человек/i);
+    expect(systemContent).toMatch(/Пример C|йогурт/i);
+    expect(systemContent).toMatch(/Упаковка еды\/напитка|упакованн/i);
   });
 
-  it('vision user text is short ANALYSIS_PROMPT; detailed rules stay in system', async () => {
+  it('vision user text hints at label OCR; detailed rules stay in system', async () => {
     mockStreamOk(nutritionResultToXml(validNutrition));
 
     const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
@@ -587,7 +601,8 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     }>;
 
     expect(userContent[0]?.type).toBe('text');
-    expect(userContent[0]?.text).toBe('Проанализируй изображение.');
+    expect(userContent[0]?.text).toMatch(/Проанализируй изображение/);
+    expect(userContent[0]?.text).toMatch(/этикетк|КБЖУ|упаковк/i);
     expect(userContent[1]?.type).toBe('image_url');
   });
 
@@ -714,6 +729,23 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(String(body.messages[1].content)).toMatch(/grams|порци/i);
     expect(String(body.messages[1].content)).toMatch(/XML/i);
     expect(systemText(body.messages[0].content)).toMatch(/опис|describe|текст/i);
+  });
+
+  it('includes user description in vision user text when image and description provided', async () => {
+    mockStreamOk(nutritionResultToXml(validNutrition));
+
+    const file = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
+    await analyzeFoodApi({ image: file, description: 'салат без соуса' });
+
+    const userContent = lastFetchBody().messages[1].content as Array<{
+      type: string;
+      text?: string;
+      image_url?: { url: string };
+    }>;
+    expect(userContent[0]?.type).toBe('text');
+    expect(userContent[0]?.text).toContain('салат без соуса');
+    expect(userContent[0]?.text).toMatch(/Уточнение пользователя/);
+    expect(userContent[1]?.type).toBe('image_url');
   });
 
   it('rejects INVALID_INPUT when neither image nor description is provided', async () => {

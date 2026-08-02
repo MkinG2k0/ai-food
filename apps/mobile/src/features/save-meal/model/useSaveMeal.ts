@@ -113,6 +113,7 @@ export function useSaveMeal() {
                 ...imageList.map(
                   (f) => `${f.name}:${f.size}:${f.lastModified}`,
                 ),
+                trimmedDescription,
                 customInstructions,
                 dietType,
                 aiModel,
@@ -130,9 +131,14 @@ export function useSaveMeal() {
         queryFn: () =>
           imageList.length > 0
             ? analyzeFoodApi(
-                imageList.length === 1
-                  ? imageList[0]
-                  : { images: imageList },
+                {
+                  ...(imageList.length === 1
+                    ? { image: imageList[0] }
+                    : { images: imageList }),
+                  ...(trimmedDescription
+                    ? { description: trimmedDescription }
+                    : {}),
+                },
                 analyzeOptions,
               )
             : analyzeFoodApi(

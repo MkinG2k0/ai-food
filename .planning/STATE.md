@@ -147,6 +147,8 @@ None yet.
 | 260721-rt6 | Settings: экспорт/импорт данных в JSON | 2026-07-21 | 9c629a7 | [260721-rt6-json](./quick/260721-rt6-json/) |
 | 260721-ruz | Multi-photo: save all angles + slider on meal detail | 2026-07-21 | — | [260721-ruz-multi-photo-meal](./quick/260721-ruz-multi-photo-meal/) |
 | fast | Add google/gemini-3.6-flash to AI model options | 2026-07-21 | a74d412 | — |
+| fast | Widen onboarding numeric ranges (age/height/weight) | 2026-08-03 | 913a219 | — |
+| fast | Remove onboarding slider range hint text | 2026-08-03 | ba4eea7 | — |
 
 ### Blockers/Concerns
 
