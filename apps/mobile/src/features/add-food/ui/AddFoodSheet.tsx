@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ImageIcon, Camera, PenLine, ArrowLeft, Star, Keyboard } from 'lucide-react';
+import {
+  ImageIcon,
+  Camera,
+  PenLine,
+  ArrowLeft,
+  Star,
+  Keyboard,
+  ScanBarcode,
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { takePhotoAsFile } from '@/shared/lib';
 import { BottomSheet, Button, Textarea } from '@/shared/ui';
 import { useSaveMeal } from '@/features/save-meal';
 
@@ -22,8 +31,6 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const cameraDescribeInputRef = useRef<HTMLInputElement>(null);
   const submitFood = useSaveMeal();
 
   useEffect(() => {
@@ -63,40 +70,36 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
     galleryInputRef.current?.click();
   };
 
-  const handleCameraClick = () => {
-    cameraInputRef.current?.click();
+  const capturePhoto = async (): Promise<File | null> => {
+    try {
+      return await takePhotoAsFile();
+    } catch {
+      toast.error('Не удалось открыть камеру');
+      return null;
+    }
   };
 
-  const handleCameraDescribeClick = () => {
-    cameraDescribeInputRef.current?.click();
+  const handleCameraClick = async () => {
+    const file = await capturePhoto();
+    if (file) handleImagesSelect([file]);
+  };
+
+  const handleCameraDescribeClick = async () => {
+    const file = await capturePhoto();
+    if (!file) return;
+    setPendingPhoto(file);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+    setText('');
+    setMode('photo-describe');
   };
 
   const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.currentTarget.files ?? []);
     if (files.length > 0) {
       handleImagesSelect(files);
-      e.currentTarget.value = '';
-    }
-  };
-
-  const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0];
-    if (file) {
-      handleImagesSelect([file]);
-      e.currentTarget.value = '';
-    }
-  };
-
-  const handleCameraDescribeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0];
-    if (file) {
-      setPendingPhoto(file);
-      setPreviewUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return URL.createObjectURL(file);
-      });
-      setText('');
-      setMode('photo-describe');
       e.currentTarget.value = '';
     }
   };
@@ -113,6 +116,11 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
   const handleManualClick = () => {
     handleClose();
     navigate('/manual-entry');
+  };
+
+  const handleBarcodeClick = () => {
+    handleClose();
+    navigate('/barcode');
   };
 
   const handleBackClick = () => {
@@ -210,6 +218,15 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
                 <Keyboard className="h-5 w-5 text-emerald-600" />
                 <span>Вручную</span>
               </Button>
+
+              <Button
+                variant="outline"
+                className="h-12 w-full justify-start gap-3"
+                onClick={handleBarcodeClick}
+              >
+                <ScanBarcode className="h-5 w-5 text-emerald-600" />
+                <span>Штрих код</span>
+              </Button>
             </div>
 
             <input
@@ -220,26 +237,6 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               onChange={handleGalleryChange}
               className="hidden"
               aria-label="Выбор из галереи (до 3 ракурсов)"
-            />
-
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleCameraChange}
-              className="hidden"
-              aria-label="Съёмка камерой"
-            />
-
-            <input
-              ref={cameraDescribeInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleCameraDescribeChange}
-              className="hidden"
-              aria-label="Съёмка камерой с описанием"
             />
           </>
         ) : mode === 'photo-describe' ? (

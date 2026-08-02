@@ -9,6 +9,7 @@ import { SettingsPage } from '@/pages/settings';
 import { NewsPage } from '@/pages/news';
 import { FavoritesPage } from '@/pages/favorites';
 import { ManualEntryPage } from '@/pages/manual-entry';
+import { BarcodePage } from '@/pages/barcode';
 import { ModelTestPage } from '@/pages/model-test';
 import { AppShell } from './AppShell';
 import { ProfileGuard } from './ProfileGuard';
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
       { path: '/news', element: <ProfileGuard><NewsPage /></ProfileGuard> },
       { path: '/favorites', element: <ProfileGuard><FavoritesPage /></ProfileGuard> },
       { path: '/manual-entry', element: <ProfileGuard><ManualEntryPage /></ProfileGuard> },
+      { path: '/barcode', element: <ProfileGuard><BarcodePage /></ProfileGuard> },
       { path: '/meal/:id', element: <ProfileGuard><MealDetailPage /></ProfileGuard> },
       {
         path: '/meal/:mealId/item/:itemId',

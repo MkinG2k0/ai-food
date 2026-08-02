@@ -17,3 +17,4 @@ export {
   AI_IMAGE_JPEG_QUALITY,
 } from './compressImage';
 export { capacitorStorage } from './capacitorStorage';
+export { takePhotoAsFile, mediaResultToFile } from './takePhoto';

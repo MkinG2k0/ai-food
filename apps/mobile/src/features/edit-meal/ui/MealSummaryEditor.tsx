@@ -113,7 +113,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
 
   return (
     <Card>
-      <CardHeader className="space-y-4 pb-2">
+      <CardHeader className="space-y-4 p-4 pb-2">
         <div className="space-y-1.5">
           <h2 className="text-base font-semibold text-foreground">{dishName}</h2>
           <p className="text-sm text-muted-foreground">
@@ -139,7 +139,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-5 pt-2">
+      <CardContent className="space-y-5 p-4 pt-2">
         <div className="flex items-end gap-3">
           <label className="block min-w-0 flex-1 space-y-1.5">
             <span className="text-xs text-muted-foreground">Калории, ккал</span>

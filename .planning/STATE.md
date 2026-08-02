@@ -150,6 +150,7 @@ None yet.
 | fast | Widen onboarding numeric ranges (age/height/weight) | 2026-08-03 | 913a219 | — |
 | fast | Remove onboarding slider range hint text | 2026-08-03 | ba4eea7 | — |
 | fast | Count piece foods (rolls/wings) via itemCount, not one plate = 1 | 2026-08-03 | 48dde42 | — |
+| 260803-3sp | Barcode scanner + Open Food Facts → diary meal | 2026-08-03 | — | [260803-3sp-barcode-scanner-with-open-food-facts-sca](./quick/260803-3sp-barcode-scanner-with-open-food-facts-sca/) |
 
 ### Blockers/Concerns
 
