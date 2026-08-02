@@ -4,8 +4,8 @@ import { useNumericRangeInput } from '../../model/useNumericRangeInput';
 import { NumericRangeInput } from '../NumericRangeInput';
 import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
-const MIN = 15;
-const MAX = 80;
+const MIN = 1;
+const MAX = 120;
 
 interface StepAgeProps {
   onNext: (data: Pick<UserProfile, 'age'>) => void;

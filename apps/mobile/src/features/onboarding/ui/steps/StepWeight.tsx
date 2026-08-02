@@ -4,8 +4,8 @@ import { useNumericRangeInput } from '../../model/useNumericRangeInput';
 import { NumericRangeInput } from '../NumericRangeInput';
 import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
-const MIN = 40;
-const MAX = 160;
+const MIN = 1;
+const MAX = 500;
 
 interface StepWeightProps {
   onNext: (data: Pick<UserProfile, 'weight'>) => void;

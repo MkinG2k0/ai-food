@@ -6,8 +6,8 @@ import { useNumericRangeInput } from '../../model/useNumericRangeInput';
 import { NumericRangeInput } from '../NumericRangeInput';
 import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
-const MIN = 40;
-const MAX = 160;
+const MIN = 1;
+const MAX = 500;
 const DEFAULT_DEADLINE_DAYS = 90;
 /** Suggest target ~15% above current so the slider isn't stuck on the same number. */
 const DEFAULT_TARGET_WEIGHT_FACTOR = 1.15;
