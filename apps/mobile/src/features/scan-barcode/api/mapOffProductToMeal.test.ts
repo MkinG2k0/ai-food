@@ -49,4 +49,15 @@ describe('buildBarcodeMeal', () => {
     expect(meal.totalCalories).toBe(539);
     expect(meal.items).toHaveLength(1);
   });
+
+  it('attaches local imageUri when provided', () => {
+    const meal = buildBarcodeMeal(product, 100, {
+      mealId: 'm2',
+      itemId: 'i2',
+      timestamp: '2026-08-03T00:00:00.000Z',
+      imageUri: 'meal-images/off.jpg',
+    });
+    expect(meal.imageUri).toBe('meal-images/off.jpg');
+    expect(meal.imageUris).toEqual(['meal-images/off.jpg']);
+  });
 });

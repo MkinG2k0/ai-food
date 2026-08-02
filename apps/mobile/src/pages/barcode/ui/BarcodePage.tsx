@@ -62,13 +62,15 @@ export function BarcodePage() {
     setLookupCode(null);
   };
 
-  const handleConfirm = (grams: number) => {
+  const handleConfirm = async (grams: number) => {
     if (!data) return;
     setSaving(true);
     try {
-      saveBarcodeMeal(data, grams);
+      await saveBarcodeMeal(data, grams);
       toast.success('Добавлено в дневник');
       navigate('/');
+    } catch {
+      toast.error('Не удалось сохранить');
     } finally {
       setSaving(false);
     }

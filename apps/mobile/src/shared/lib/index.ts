@@ -10,7 +10,7 @@ export {
   formatHeaderDate,
   timestampForSelectedDate,
 } from './dateUtils';
-export { saveMealImage, getMealImageSrc, loadMealImageAsFile } from './mealImage';
+export { saveMealImage, saveMealImageFromUrl, getMealImageSrc, loadMealImageAsFile } from './mealImage';
 export {
   compressImageForAi,
   AI_IMAGE_MAX_SIDE,

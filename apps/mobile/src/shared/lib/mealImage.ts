@@ -19,6 +19,21 @@ export async function saveMealImage(file: File): Promise<string> {
   return path;
 }
 
+/** Download a remote image (e.g. Open Food Facts) into local meal-images storage. */
+export async function saveMealImageFromUrl(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    const type = blob.type || 'image/jpeg';
+    const ext = type.includes('png') ? 'png' : 'jpg';
+    const file = new File([blob], `off.${ext}`, { type });
+    return await saveMealImage(file);
+  } catch {
+    return null;
+  }
+}
+
 export async function getMealImageSrc(path: string): Promise<string> {
   if (Capacitor.isNativePlatform()) {
     const { uri } = await Filesystem.getUri({ path, directory: Directory.Data });

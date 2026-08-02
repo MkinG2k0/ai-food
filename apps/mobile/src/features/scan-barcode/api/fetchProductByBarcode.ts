@@ -30,6 +30,7 @@ interface OffApiProduct {
   product_name_ru?: string;
   brands?: string;
   serving_size?: string;
+  image_front_url?: string;
   image_front_small_url?: string;
   nutriments?: OffNutriments;
 }
@@ -46,6 +47,7 @@ const OFF_FIELDS = [
   'brands',
   'serving_size',
   'nutriments',
+  'image_front_url',
   'image_front_small_url',
 ].join(',');
 
@@ -93,7 +95,8 @@ export function mapOffApiToProduct(
     name,
     brands: product.brands?.trim() || undefined,
     servingSize: product.serving_size?.trim() || undefined,
-    imageUrl: product.image_front_small_url || undefined,
+    imageUrl:
+      product.image_front_url || product.image_front_small_url || undefined,
     per100g: {
       calories,
       protein: nutrient(nutriments, 'proteins_100g'),

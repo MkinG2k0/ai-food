@@ -27,7 +27,12 @@ export function scaleOffProductToItem(
 export function buildBarcodeMeal(
   product: OffProduct,
   grams: number,
-  ids: { mealId: string; itemId: string; timestamp: string },
+  ids: {
+    mealId: string;
+    itemId: string;
+    timestamp: string;
+    imageUri?: string;
+  },
 ): Meal {
   const item = scaleOffProductToItem(product, grams, ids.itemId);
   return {
@@ -40,5 +45,8 @@ export function buildBarcodeMeal(
     portions: 1,
     status: 'ready',
     confidence: 1,
+    ...(ids.imageUri
+      ? { imageUri: ids.imageUri, imageUris: [ids.imageUri] }
+      : {}),
   };
 }
