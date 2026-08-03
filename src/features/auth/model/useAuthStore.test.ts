@@ -20,7 +20,7 @@ beforeEach(async () => {
   await act(async () => {
     await useAuthStore.persist.rehydrate();
   });
-  useAuthStore.setState({ session: null });
+  useAuthStore.setState({ session: null, userToken: null });
 });
 
 afterEach(() => {
@@ -61,11 +61,12 @@ describe('useAuthStore', () => {
         name: 'Test User',
         username: 'test_user',
         photo_url: 'https://example.com/avatar.png',
-      });
+      }, 'jwt-token');
       useAuthStore.getState().signOut();
     });
 
     expect(useAuthStore.getState().session).toBeNull();
+    expect(useAuthStore.getState().userToken).toBeNull();
     expect(useAuthStore.getState().isAuthenticated()).toBe(false);
   });
 });

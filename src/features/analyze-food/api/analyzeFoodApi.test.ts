@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ApiError, NutritionResult } from '@ai-food/shared-types';
+
+vi.mock('@capacitor/preferences', () => ({
+  Preferences: {
+    get: vi.fn().mockResolvedValue({ value: 'test-device-id' }),
+    set: vi.fn().mockResolvedValue(undefined),
+    remove: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import {
   analyzeFoodApi,
   appendDietPreference,
@@ -282,6 +291,8 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect(String(url)).toContain(GATEWAY_URL);
     expect((init as RequestInit).headers).toMatchObject({
       Authorization: `Bearer ${GATEWAY_KEY}`,
+      'X-Device-Id': 'test-device-id',
+      'X-Usage-Kind': 'analyze',
     });
     expect(body).toMatchObject({
       model: 'openai/gpt-4.1-mini',

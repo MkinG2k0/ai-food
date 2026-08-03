@@ -5,6 +5,7 @@ import type {
   NutritionResult,
 } from '@ai-food/shared-types';
 import { compressImageForAi } from '@/shared/lib';
+import { getQuotaHeaders } from '@/features/auth';
 import { isGeminiModel, temperatureForModel } from '@/features/settings';
 import {
   applyAnalyzeFeaturesToPrompt,
@@ -662,6 +663,7 @@ export async function analyzeFoodApi(
       apiKey,
       signal: controller.signal,
       onDelta: emitPartial,
+      extraHeaders: await getQuotaHeaders('analyze'),
       body: {
         model: options?.model,
         ...(temperature !== undefined ? { temperature } : {}),

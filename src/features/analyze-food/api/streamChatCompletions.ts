@@ -8,6 +8,8 @@ export interface StreamChatCompletionsParams {
   signal?: AbortSignal;
   /** Called with cumulative content after each delta */
   onDelta?: (accumulated: string) => void;
+  /** Extra headers (quota / user token) */
+  extraHeaders?: Record<string, string>;
 }
 
 function rejectApiError(message: string, code: string, status: number): never {
@@ -22,7 +24,7 @@ function rejectApiError(message: string, code: string, status: number): never {
 export async function streamChatCompletions(
   params: StreamChatCompletionsParams,
 ): Promise<string> {
-  const { gatewayUrl, apiKey, body, signal, onDelta } = params;
+  const { gatewayUrl, apiKey, body, signal, onDelta, extraHeaders } = params;
 
   let response: Response;
   try {
@@ -32,6 +34,7 @@ export async function streamChatCompletions(
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
+        ...extraHeaders,
       },
       body: JSON.stringify({ ...body, stream: true }),
       signal,
@@ -161,6 +164,14 @@ async function mapHttpError(response: Response): Promise<never> {
     // non-JSON error body
   }
 
+  if (gatewayCode === 'QUOTA_EXCEEDED' || response.status === 402) {
+    rejectApiError(
+      gatewayMessage ??
+        'Бесплатный лимит генераций исчерпан. Войдите через Telegram.',
+      'QUOTA_EXCEEDED',
+      402,
+    );
+  }
   if (gatewayCode === 'RATE_LIMITED' || response.status === 429) {
     rejectApiError(
       gatewayMessage ?? 'Превышен лимит запросов. Попробуйте позже.',
@@ -190,6 +201,7 @@ async function mapHttpError(response: Response): Promise<never> {
     'RATE_LIMITED',
     'ANALYSIS_TIMEOUT',
     'ANALYSIS_FAILED',
+    'QUOTA_EXCEEDED',
   ]);
 
   if (gatewayCode && APP_ERROR_CODES.has(gatewayCode)) {

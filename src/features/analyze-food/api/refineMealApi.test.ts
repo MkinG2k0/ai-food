@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ApiError, NutritionResult } from '@ai-food/shared-types';
 import axios from 'axios';
+
+vi.mock('@capacitor/preferences', () => ({
+  Preferences: {
+    get: vi.fn().mockResolvedValue({ value: 'test-device-id' }),
+    set: vi.fn().mockResolvedValue(undefined),
+    remove: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import { COMPOSITION_PROMPT_RULE, FOOD_NAME_PROMPT_RULE } from './analyzeFoodApi';
 import { refineMealApi } from './refineMealApi';
 
@@ -112,6 +121,8 @@ describe('refineMealApi (AI Gateway)', () => {
 
     expect(String(url)).toContain(`${GATEWAY_URL}/v1/chat/completions`);
     expect(config?.headers?.Authorization).toBe(`Bearer ${GATEWAY_KEY}`);
+    expect(config?.headers?.['X-Device-Id']).toBe('test-device-id');
+    expect(config?.headers?.['X-Usage-Kind']).toBe('refine');
     expect(body).toMatchObject({
       model: 'openai/gpt-4o-mini',
       response_format: { type: 'json_object' },

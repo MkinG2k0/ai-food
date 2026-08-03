@@ -18,3 +18,4 @@ export {
 } from './compressImage';
 export { capacitorStorage } from './capacitorStorage';
 export { takePhotoAsFile, mediaResultToFile } from './takePhoto';
+export { getDeviceId } from './deviceId';

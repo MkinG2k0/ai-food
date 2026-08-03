@@ -24,6 +24,7 @@ import {
   normalizeMicronutrients,
 } from './nutritionResultSchema';
 import { temperatureForModel } from '@/features/settings';
+import { getQuotaHeaders } from '@/features/auth';
 
 export interface RefineMealContextItem {
   name: string;
@@ -123,6 +124,14 @@ function mapGatewayError(error: unknown): never {
   const gatewayCode = axiosError.response?.data?.code;
   const gatewayMessage = axiosError.response?.data?.message;
 
+  if (gatewayCode === 'QUOTA_EXCEEDED') {
+    rejectApiError(
+      gatewayMessage ??
+        'Бесплатный лимит генераций исчерпан. Войдите через Telegram.',
+      'QUOTA_EXCEEDED',
+      402,
+    );
+  }
   if (gatewayCode === 'RATE_LIMITED') {
     rejectApiError(
       gatewayMessage ?? 'Превышен лимит запросов. Попробуйте позже.',
@@ -248,6 +257,7 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
+          ...(await getQuotaHeaders('refine')),
         },
         timeout: 30_000,
       }
