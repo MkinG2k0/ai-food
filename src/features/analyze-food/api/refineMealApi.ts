@@ -127,7 +127,7 @@ function mapGatewayError(error: unknown): never {
   if (gatewayCode === 'QUOTA_EXCEEDED') {
     rejectApiError(
       gatewayMessage ??
-        'Бесплатный лимит генераций исчерпан. Войдите через Telegram.',
+        'Бесплатный лимит генераций исчерпан. Войдите или оформите лицензию.',
       'QUOTA_EXCEEDED',
       402,
     );

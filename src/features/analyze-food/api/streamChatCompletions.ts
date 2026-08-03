@@ -167,7 +167,7 @@ async function mapHttpError(response: Response): Promise<never> {
   if (gatewayCode === 'QUOTA_EXCEEDED' || response.status === 402) {
     rejectApiError(
       gatewayMessage ??
-        'Бесплатный лимит генераций исчерпан. Войдите через Telegram.',
+        'Бесплатный лимит генераций исчерпан. Войдите или оформите лицензию.',
       'QUOTA_EXCEEDED',
       402,
     );

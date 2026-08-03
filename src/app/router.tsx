@@ -11,6 +11,7 @@ import { FavoritesPage } from '@/pages/favorites';
 import { ManualEntryPage } from '@/pages/manual-entry';
 import { BarcodePage } from '@/pages/barcode';
 import { LoginPage } from '@/pages/login';
+import { SubscribePage } from '@/pages/subscribe';
 import { ModelTestPage } from '@/pages/model-test';
 import { AppShell } from './AppShell';
 import { ProfileGuard } from './ProfileGuard';
@@ -24,6 +25,9 @@ const router = createBrowserRouter([
     children: [
       { path: '/onboarding', element: <OnboardingPage /> },
       { path: '/login', element: <LoginPage /> },
+      { path: '/subscribe', element: <SubscribePage /> },
+      { path: '/subscribe/success', element: <SubscribePage /> },
+      { path: '/subscribe/fail', element: <SubscribePage /> },
       { path: '/', element: <ProfileGuard><HomePage /></ProfileGuard> },
       { path: '/diary', element: <ProfileGuard><DiaryPage /></ProfileGuard> },
       { path: '/stats', element: <ProfileGuard><StatsPage /></ProfileGuard> },

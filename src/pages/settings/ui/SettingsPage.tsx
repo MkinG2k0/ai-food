@@ -6,6 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import type { DailyTargets, DietType, UserProfile } from '@ai-food/shared-types';
 import { recoverStaleAnalyzingMeals, useDiaryStore } from '@/entities/meal';
 import { signOut, useAuthStore, useUsage } from '@/features/auth';
+import { useBillingStatus } from '@/features/billing';
 import { useFavoritesStore } from '@/features/favorites';
 import { useProfileStore } from '@/features/onboarding';
 import {
@@ -109,7 +110,9 @@ export function SettingsPage() {
   const resetProfile = useProfileStore((s) => s.resetProfile);
 
   const session = useAuthStore((s) => s.session);
+  const userToken = useAuthStore((s) => s.userToken);
   const { data: usage } = useUsage();
+  const { data: billing } = useBillingStatus(Boolean(userToken));
 
   const handleSignOut = () => {
     signOut();
@@ -255,11 +258,14 @@ export function SettingsPage() {
           {usage && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                {usage.authenticated || usage.remaining === null
-                  ? 'Генерации: безлимит'
+                {usage.hasActiveSubscription ||
+                billing?.hasActiveSubscription ||
+                usage.remaining === null
+                  ? 'AI-генерации: безлимит (лицензия)'
                   : `Осталось ${usage.remaining} из ${usage.limit} бесплатных генераций`}
               </p>
-              {!usage.authenticated &&
+              {!usage.hasActiveSubscription &&
+                !billing?.hasActiveSubscription &&
                 usage.remaining !== null &&
                 usage.limit > 0 && (
                   <div
@@ -281,6 +287,31 @@ export function SettingsPage() {
                     />
                   </div>
                 )}
+            </div>
+          )}
+          {userToken && (
+            <div className="space-y-2 rounded-md border border-border px-3 py-3">
+              <p className="text-sm font-medium">Лицензия</p>
+              {billing?.hasActiveSubscription ? (
+                <p className="text-sm text-muted-foreground">
+                  Активна
+                  {billing.subscriptionExpiresAt
+                    ? ` до ${new Date(billing.subscriptionExpiresAt).toLocaleDateString('ru-RU')}`
+                    : ''}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Нет активной лицензии — после бесплатного лимита нужен год
+                  доступа к AI
+                </p>
+              )}
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate('/subscribe')}
+              >
+                {billing?.hasActiveSubscription ? 'Продлить' : 'Купить'}
+              </Button>
             </div>
           )}
           {session ? (

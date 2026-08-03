@@ -1,6 +1,6 @@
 # AI Gateway (sibling backend)
 
-**Последнее обновление:** 2026-08-03
+**Последнее обновление:** 2026-08-04
 
 ## Что это
 
@@ -10,10 +10,10 @@
 |---|---|
 | Путь | `d:\Project\Main\ai-app` (рядом с этим репо) |
 | npm-пакет | `openrouter-gateway` |
-| Роль | HTTP-прокси к [OpenRouter](https://openrouter.ai) (OpenAI-compatible API) |
-| Не делает | доменную логику еды, дневник, БД, auth пользователей |
+| Роль | HTTP-прокси к [OpenRouter](https://openrouter.ai) + optional Telegram auth, guest quota, billing |
+| Не делает | доменную логику еды, дневник на клиенте |
 
-Промпты, сжатие фото, парсинг XML/JSON КБЖУ — **на клиенте** (`src/features/analyze-food`, `onboarding`). Gateway только форвардит `chat/completions` (и служебные `/models`, `/embeddings`).
+Промпты, сжатие фото, парсинг XML/JSON КБЖУ — **на клиенте** (`src/features/analyze-food`, `onboarding`). Gateway форвардит `chat/completions` и обслуживает auth/usage/billing.
 
 ## Связка
 
@@ -23,12 +23,15 @@ ai-food (этот репо)
        │
        ▼
   POST {gateway}/v1/chat/completions   (+ Bearer / X-API-Key)
+  + X-Device-Id / X-User-Token / X-Usage-Kind (quota)
        │
 ai-app (openrouter-gateway)
   OPENROUTER_API_KEY (+ optional API_KEY для клиентов)
+  DATABASE_URL + AUTH_* + TBANK_* (subscription)
        │
        ▼
   https://openrouter.ai/api/v1
+  https://securepay.tinkoff.ru (Init / notifications)
 ```
 
 ## Env (фронт → бэк)
@@ -40,23 +43,33 @@ ai-app (openrouter-gateway)
 | — | `OPENROUTER_API_KEY` | Ключ провайдера (только на сервере) |
 | — | `PORT` | HTTP-порт (по умолчанию **3000**) |
 | — | `OPENROUTER_HTTP_REFERER` / `OPENROUTER_APP_TITLE` | Опциональные заголовки атрибуции OpenRouter |
+| — | `DATABASE_URL`, `AUTH_SECRET`, `TELEGRAM_BOT_TOKEN` | Auth + квота |
+| — | `FREE_GENERATION_LIMIT` | Guest AI budget (default 50) |
+| — | `SUBSCRIPTION_*`, `TBANK_*`, `PUBLIC_APP_URL` | Годовая лицензия (см. [SUBSCRIPTION.md](./SUBSCRIPTION.md)) |
 
-Локально: фронт `pnpm dev` (:5173), бэк в `ai-app` — `npm run dev` (:3000). В комментариях `.env` иногда фигурирует `:3001` — сверять с реальным `PORT` gateway.
+Локально: фронт `pnpm dev` (:5173), бэк в `ai-app` — `npm run dev` (:3000).
 
-`VITE_API_URL` в `src/shared/api/client.ts` — отдельный axios base (legacy/не основной AI-путь). AI ходит напрямую через `fetch`/`axios` на `VITE_AI_GATEWAY_URL`.
+`VITE_API_URL` в `src/shared/api/client.ts` — отдельный axios base (legacy). AI ходит через `fetch` на `VITE_AI_GATEWAY_URL`.
 
 ## Эндпоинты gateway
 
 | Метод | Путь | Auth | Заметки |
 |-------|------|------|---------|
 | `GET` | `/health` | нет | `{ "status": "ok" }` |
+| `POST` | `/auth/telegram` | нет* | Telegram Login → JWT; ответ включает `hasActiveSubscription` |
+| `GET` | `/auth/me` | `X-User-Token` | Профиль + `subscriptionExpiresAt` / `hasActiveSubscription` |
+| `GET` | `/usage` | device (+ optional JWT) | Квота: unlimited **только** при active лицензии |
+| `POST` | `/billing/subscribe` | `X-User-Token` | T-Bank Init / mock |
+| `POST` | `/billing/tbank/notification` | Token T-Bank | Активация лицензии |
+| `GET` | `/billing/status` | `X-User-Token` | Статус лицензии |
+| `POST` | `/billing/sync` | `X-User-Token` | GetState / mock confirm |
 | `GET` | `/v1/models` | да* | список моделей OpenRouter |
 | `POST` | `/v1/embeddings` | да* | embeddings |
-| `POST` | `/v1/chat/completions` | да* | JSON или SSE при `stream: true` |
+| `POST` | `/v1/chat/completions` | да* + quota | JSON или SSE; `402 QUOTA_EXCEEDED` |
 
-\* Auth: `Authorization: Bearer <API_KEY>` или `X-API-Key: <API_KEY>`, только если на бэке задан `API_KEY`.
+\* Gateway API key: `Authorization: Bearer <API_KEY>` или `X-API-Key`, только если задан `API_KEY`.
 
-Тело chat валидируется Zod (`model`, `messages`, опционально `stream`, `temperature`, `max_tokens`, `response_format`, `tools`, …). Лимит JSON body: **10 MB** (base64 vision). Upstream concurrency: **5**. SSE create timeout: **120 s**.
+**Важно:** логин ≠ unlimited. Unlimited AI только при `hasActiveSubscription` (см. [SUBSCRIPTION.md](./SUBSCRIPTION.md)).
 
 ## Кто вызывает gateway из ai-food
 
@@ -67,38 +80,36 @@ ai-app (openrouter-gateway)
 | `src/features/analyze-food/api/refineMealApi.ts` | Уточнение результата |
 | `src/features/analyze-food/api/fetchMealCustomContentApi.ts` | Доп. markdown-контент по блюду |
 | `src/features/onboarding/api/micronutrientTargetsApi.ts` | Цели по микронутриентам |
+| `src/features/auth/*` | Telegram login, `/usage` |
+| `src/features/billing/*` | Subscribe / status / sync |
 
-Ошибки gateway (`RATE_LIMITED`, `UPSTREAM_TIMEOUT`, `BAD_REQUEST`, `UPSTREAM_ERROR`, …) мапятся в клиентские `ApiError` в этих модулях.
+Ошибки gateway (`RATE_LIMITED`, `UPSTREAM_TIMEOUT`, `QUOTA_EXCEEDED`, …) мапятся в клиентские `ApiError`. При `402` UI ведёт гостя на `/login`, авторизованного — на `/subscribe`.
 
 ## Структура ai-app (кратко)
 
 ```
 ai-app/
-├── src/server.ts          # listen PORT
-├── src/app.ts             # createApp: cors, /health, /v1/*
-├── src/middleware/auth.ts # requireApiKey
-├── src/middleware/error.ts
-├── src/routes/{health,models,embeddings,chat}.ts
-├── lib/{openai,queue,errors,types}.ts
-└── docs/                  # ARCHITECTURE, API, CONFIGURATION, …
+├── src/server.ts
+├── src/app.ts             # /health, /auth, /usage, /billing, /v1/*
+├── src/middleware/{auth,quota,error}.ts
+├── src/routes/{health,models,embeddings,chat,auth,usage,billing}.ts
+├── src/lib/{quota,subscription,tbank,jwt,…}.ts
+└── prisma/                # User, Device, UsageEvent, Payment
 ```
-
-Документация бэка: `d:\Project\Main\ai-app\docs\` (особенно `ARCHITECTURE.md`, `API.md`).
 
 ## Важные ограничения / техдолг
 
-1. **Ключ gateway на клиенте** (`VITE_AI_GATEWAY_API_KEY`) — любой, кто видит бандл/`.env`, может бить в gateway. OpenRouter-ключ на сервере спрятан; gateway-секрет — нет.
-2. **Нет доменного API еды** на бэке — не ищи `/analyze-food` в ai-app; его убрали, логика на фронте.
-3. **Два репо** — правки прокси/auth/лимитов → `ai-app`; правки промптов/парсинга/UX анализа → `ai-food`.
-4. Исторические артефакты в `.planning/` могут ещё упоминать in-repo mock backend — актуальный источник по AI: этот файл.
+1. **Ключ gateway на клиенте** (`VITE_AI_GATEWAY_API_KEY`) — виден в бандле. OpenRouter-ключ и `TBANK_PASSWORD` — только на сервере.
+2. **Нет доменного API еды** на бэке — логика анализа на фронте.
+3. **Два репо** — прокси/auth/billing → `ai-app`; промпты/UX → `ai-food`.
 
 ## Команды (бэк)
 
 ```bash
 cd d:\Project\Main\ai-app
-cp .env.example .env   # задать OPENROUTER_API_KEY, опционально API_KEY
+cp .env.example .env
 npm install
-npm run dev            # tsx watch, http://0.0.0.0:3000
+npx prisma migrate deploy
+npm run dev            # http://0.0.0.0:3000
 npm test
-npm run type-check
 ```

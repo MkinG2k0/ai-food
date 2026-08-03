@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Meal } from '@ai-food/shared-types';
 import { Button, Card, CardContent, Skeleton } from '@/shared/ui';
 import { useRetryAnalyzeMeal } from '@/features/save-meal';
+import { useAuthStore } from '@/features/auth';
 import { useMealImage } from '../model/useMealImage';
 import { resolveMealImageUris } from '../model/resolveMealImageUris';
 import { mealDisplayName } from '../model/mealDisplayName';
@@ -62,9 +63,11 @@ export function MealCard({ meal }: MealCardProps) {
   const errorLabel =
     meal.analyzeErrorCode === 'NO_FOOD_DETECTED'
       ? 'На фото не обнаружена еда…'
-      : isError
-        ? 'Ошибка анализа…'
-        : 'Анализ не завершился…';
+      : meal.analyzeErrorCode === 'QUOTA_EXCEEDED'
+        ? 'Лимит генераций исчерпан…'
+        : isError
+          ? 'Ошибка анализа…'
+          : 'Анализ не завершился…';
 
   function goToDetail() {
     if (!canOpenDetail) return;
@@ -82,8 +85,19 @@ export function MealCard({ meal }: MealCardProps) {
   function handleRetry(e: React.MouseEvent) {
     e.stopPropagation();
     e.preventDefault();
+    if (meal.analyzeErrorCode === 'QUOTA_EXCEEDED') {
+      navigate(useAuthStore.getState().userToken ? '/subscribe' : '/login');
+      return;
+    }
     void retry(meal.id);
   }
+
+  const quotaCtaLabel =
+    meal.analyzeErrorCode === 'QUOTA_EXCEEDED'
+      ? useAuthStore.getState().userToken
+        ? 'Оформить лицензию'
+        : 'Войти'
+      : 'Повторить';
 
   return (
     <Card
@@ -184,7 +198,7 @@ export function MealCard({ meal }: MealCardProps) {
                 className="w-fit"
                 onClick={handleRetry}
               >
-                Повторить
+                {quotaCtaLabel}
               </Button>
             </>
           ) : (

@@ -13,6 +13,7 @@ export type UsageSnapshot = {
   limit: number;
   remaining: number | null;
   authenticated: boolean;
+  hasActiveSubscription?: boolean;
   degraded?: boolean;
 };
 
@@ -30,6 +31,7 @@ export function createDefaultGuestUsage(
     limit: GUEST_FREE_USAGE_LIMIT,
     remaining: GUEST_FREE_USAGE_LIMIT,
     authenticated,
+    hasActiveSubscription: false,
   };
 }
 

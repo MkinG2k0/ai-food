@@ -22,6 +22,7 @@ import {
 } from '@/features/edit-meal';
 import { useFavoritesStore } from '@/features/favorites';
 import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
+import { handleQuotaExceeded } from '@/features/billing';
 import { useSettingsStore } from '@/features/settings';
 import { Button, ImageLightbox, SubpageShell } from '@/shared/ui';
 export function MealDetailPage() {
@@ -89,6 +90,7 @@ export function MealDetailPage() {
       await refine(mealId, correction);
       toast.success('Приём обновлён');
     } catch (error) {
+      if (handleQuotaExceeded(error, navigate)) return;
       const apiError = error as Partial<ApiError>;
       toast.error(
         apiError.message ?? 'Не удалось обновить приём. Попробуйте ещё раз.',
