@@ -268,11 +268,35 @@ export function SettingsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-medium leading-none">Аккаунт</h2>
           {usage && (
-            <p className="text-sm text-muted-foreground">
-              {usage.authenticated || usage.remaining === null
-                ? 'Генерации: безлимит (после входа)'
-                : `Осталось ${usage.remaining} из ${usage.limit} бесплатных генераций`}
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                {usage.authenticated || usage.remaining === null
+                  ? 'Генерации: безлимит (после входа)'
+                  : `Осталось ${usage.remaining} из ${usage.limit} бесплатных генераций`}
+              </p>
+              {!usage.authenticated &&
+                usage.remaining !== null &&
+                usage.limit > 0 && (
+                  <div
+                    className="h-2 overflow-hidden rounded-full bg-muted"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={usage.limit}
+                    aria-valuenow={usage.remaining}
+                    aria-label="Остаток бесплатных генераций"
+                  >
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-300"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.max(0, (usage.remaining / usage.limit) * 100),
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                )}
+            </div>
           )}
           {session ? (
             <>
