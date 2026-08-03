@@ -5,9 +5,9 @@
 ## Test Framework
 
 **Runner:**
-- Vitest `^2.0.3` — `apps/mobile/package.json`
-- Config: `apps/mobile/vitest.config.ts`
-- Backend (`apps/backend`): no test runner, no test script
+- Vitest `^2.0.3` — `package.json`
+- Config: `vitest.config.ts`
+- Backend (`[removed-backend]`): no test runner, no test script
 
 **Assertion Library:**
 - Vitest built-in `expect`
@@ -21,12 +21,12 @@
 **Run Commands:**
 ```bash
 pnpm test                    # Root: turbo test (all packages with test script)
-pnpm --filter @ai-food/mobile test        # vitest run (single pass)
-pnpm --filter @ai-food/mobile test:watch  # vitest watch mode
-pnpm --filter @ai-food/mobile exec vitest run src/path/to/file.test.ts  # Single file
+pnpm test        # vitest run (single pass)
+pnpm test:watch  # vitest watch mode
+pnpm exec vitest run src/path/to/file.test.ts  # Single file
 ```
 
-**Vitest config highlights (`apps/mobile/vitest.config.ts`):**
+**Vitest config highlights (`vitest.config.ts`):**
 - `environment: 'jsdom'`
 - `setupFiles: ['./src/test/setup.ts']`
 - `globals: true` — Vitest globals available, but existing tests still import explicitly from `'vitest'`
@@ -41,10 +41,10 @@ pnpm --filter @ai-food/mobile exec vitest run src/path/to/file.test.ts  # Single
 **Current test files:**
 | File | Tests |
 |------|-------|
-| `apps/mobile/src/shared/lib/formatters.test.ts` | Pure utility functions |
-| `apps/mobile/src/features/add-food/model/useImageStore.test.ts` | Zustand store |
-| `apps/mobile/src/features/analyze-food/model/useAnalyzeFood.test.ts` | React Query hook + mocked API |
-| `apps/mobile/src/entities/meal/model/useDiaryStore.test.ts` | Zustand store with persist |
+| `src/shared/lib/formatters.test.ts` | Pure utility functions |
+| `src/features/add-food/model/useImageStore.test.ts` | Zustand store |
+| `src/features/analyze-food/model/useAnalyzeFood.test.ts` | React Query hook + mocked API |
+| `src/entities/meal/model/useDiaryStore.test.ts` | Zustand store with persist |
 
 **Naming:**
 - Suffix `.test.ts` (not `.spec.ts`)
@@ -53,7 +53,7 @@ pnpm --filter @ai-food/mobile exec vitest run src/path/to/file.test.ts  # Single
 
 **Structure:**
 ```
-apps/mobile/src/
+src/
 ├── test/
 │   └── setup.ts              # Global test setup (jest-dom, jsdom polyfills)
 ├── shared/lib/
@@ -72,7 +72,7 @@ apps/mobile/src/
 - Zustand stores → co-locate in `{slice}/model/`
 - React Query hooks → co-locate in `{feature}/model/`, mock `{feature}/api/`
 - Page/widget component tests → co-locate in `ui/` next to component (none exist yet)
-- Backend routes → no convention yet; would need new Vitest/Jest setup in `apps/backend`
+- Backend routes → no convention yet; would need new Vitest/Jest setup in `[removed-backend]`
 
 ## Test Structure
 
@@ -114,7 +114,7 @@ describe('useImageStore', () => {
 - Wrap state mutations in `act()` when testing hooks
 - Use `waitFor` for async React Query resolution
 
-**Pure function test pattern (`apps/mobile/src/shared/lib/formatters.test.ts`):**
+**Pure function test pattern (`src/shared/lib/formatters.test.ts`):**
 ```typescript
 import { describe, it, expect } from 'vitest';
 import { formatCalories, formatMacro, formatDate } from './formatters';
@@ -169,7 +169,7 @@ describe('useAnalyzeFood', () => {
 **What to Mock:**
 - HTTP API modules (`vi.mock('../api/analyzeFoodApi')`) — never hit real backend in unit tests
 - React Query: disable retries in test `QueryClient` (`retry: false`)
-- jsdom gaps: `URL.createObjectURL` / `revokeObjectURL` polyfilled in `apps/mobile/src/test/setup.ts`
+- jsdom gaps: `URL.createObjectURL` / `revokeObjectURL` polyfilled in `src/test/setup.ts`
 
 **What NOT to Mock:**
 - Zustand store implementation under test — test real store, reset with `setState` in `beforeEach`
@@ -227,7 +227,7 @@ const mockResponse: AnalyzeFoodResponse = {
 
 **Prescriptive for new fixtures:**
 - Define `mock*` constants in the test file unless reused across 3+ files
-- If shared, add `apps/mobile/src/test/fixtures/` (not present yet) and export from `apps/mobile/src/test/index.ts`
+- If shared, add `src/test/fixtures/` (not present yet) and export from `src/test/index.ts`
 
 ## Coverage
 
@@ -235,7 +235,7 @@ const mockResponse: AnalyzeFoodResponse = {
 
 **View Coverage:**
 ```bash
-pnpm --filter @ai-food/mobile exec vitest run --coverage
+pnpm exec vitest run --coverage
 ```
 Note: `@vitest/coverage-v8` is not installed; add it before using `--coverage`.
 
@@ -297,7 +297,7 @@ it('surfaces error state', async () => {
 });
 ```
 
-**Global setup (`apps/mobile/src/test/setup.ts`):**
+**Global setup (`src/test/setup.ts`):**
 ```typescript
 import '@testing-library/jest-dom';
 
@@ -310,7 +310,7 @@ if (!global.URL.revokeObjectURL) {
 ```
 Add new global polyfills here, not per-file.
 
-## Turbo / Monorepo
+## Package scripts
 
 **Root `package.json`:**
 - `"test": "turbo test"` orchestrates all workspace packages
@@ -336,7 +336,7 @@ Add new global polyfills here, not per-file.
 **Recommended next tests (in priority order):**
 1. `useSaveMeal` — mock `useDiaryStore`, `useImageStore`, `useNavigate`; assert meal shape and navigation
 2. `ResultPage` error/loading states — `render` with QueryClientProvider
-3. `analyze-food` route — add Vitest + supertest in `apps/backend` when backend grows beyond mock
+3. `analyze-food` route — add Vitest + supertest in `[removed-backend]` when backend grows beyond mock
 
 ---
 

@@ -22,7 +22,7 @@
 
 ### Route
 
-- `apps/mobile/src/app/router.tsx`: `{ path: '/news', element: <ProfileGuard><NewsPage /></ProfileGuard> }` внутри `AppShell`.
+- `src/app/router.tsx`: `{ path: '/news', element: <ProfileGuard><NewsPage /></ProfileGuard> }` внутри `AppShell`.
 - Назад с `/news` → `/settings`.
 
 ### Settings entry

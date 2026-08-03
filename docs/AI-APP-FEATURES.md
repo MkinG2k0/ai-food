@@ -12,22 +12,23 @@ AI Food — web/PWA дневник питания без auth и без серв
 Core loop: фото или текст → AI (клиентский AI Gateway chat/completions) →
 optimistic Meal (analyzing → ready|error) → локальный дневник (Capacitor Preferences).
 
-Экраны: /onboarding, / (home), /stats, /settings, /favorites, /meal/:id,
-/meal/:mealId/item/:itemId, /model-test. Отдельных /add и /result нет.
+Экраны: /onboarding, / (home), /stats, /settings, /favorites, /barcode,
+/meal/:id, /meal/:mealId/item/:itemId, /model-test. Отдельных /add и /result нет.
 
 Фичи: онбординг (профиль + КБЖУ-цели + AI-нормы микро), анализ фото/текста
 (stream XML), refine текстом, ручное редактирование состава, избранное
-(quick-add без AI), статистика недели + вес, settings (flags, custom
-instructions, aiModel), PWA.
+(quick-add без AI), barcode (Open Food Facts), статистика недели + вес,
+settings (flags, custom instructions, aiModel), PWA + Capacitor Android.
 
 Домен: Meal.items[] (FoodItem: КБЖУ, fiber, grams); healthiness, confidence,
 micronutrients (8 ids), portions, totalGrams. Persist: ai-food-diary,
 ai-food-profile, ai-food-settings, ai-food-favorites, ai-food-weight.
 
-Стек: Turborepo, React FSD, TanStack Query (server), Zustand (client),
-@ai-food/shared-types. Импорты между слайсами только через index.ts.
-Mobile НЕ вызывает backend /analyze-food — ключ VITE_AI_GATEWAY_* на клиенте.
-UI на русском. Нет: auth, sync, DB search, barcode, cloud diary.
+Стек: single-package pnpm (Vite/React FSD), TanStack Query (server),
+Zustand (client), типы в src/shared/types (@ai-food/shared-types alias).
+Импорты между слайсами только через index.ts.
+Анализ через клиентский AI Gateway — ключ VITE_AI_GATEWAY_* на клиенте.
+UI на русском. Нет: auth, sync, cloud diary.
 ```
 
 ---
@@ -44,16 +45,18 @@ UI на русском. Нет: auth, sync, DB search, barcode, cloud diary.
 
 | Слой | Технологии |
 |------|------------|
-| Monorepo | Turborepo + pnpm: `apps/mobile`, `apps/backend`, `packages/shared-types` |
+| Repo | Один пакет `ai-food` (pnpm); без Turborepo / workspace |
 | Frontend | React 18, Vite, FSD, Tailwind + shadcn, TanStack Query, Zustand |
+| Типы | `src/shared/types` (alias `@ai-food/shared-types`) |
 | AI | Клиентский **AI Gateway** (`VITE_AI_GATEWAY_URL` + `VITE_AI_GATEWAY_API_KEY`) → `/v1/chat/completions` |
 | Persist | Capacitor Preferences (+ миграция с localStorage); фото в Filesystem |
+| Native | Capacitor (`android/`); camera / filesystem / preferences |
 | Auth / DB | Нет |
 | Язык UI | Русский |
 
 **FSD:** `app → pages → widgets → features → entities → shared`. Импорты между слайсами только через `index.ts`.
 
-**Важно:** backend `POST /analyze-food` существует, но **mobile primary path его не использует** — анализ идёт с клиента на Gateway. Ключ API сейчас в клиентском `VITE_*` bundle.
+**Важно:** отдельного backend в репо нет — анализ идёт с клиента на Gateway. Ключ API сейчас в клиентском `VITE_*` bundle.
 
 ---
 
@@ -66,6 +69,7 @@ UI на русском. Нет: auth, sync, DB search, barcode, cloud diary.
 | `/stats` | Недельная статистика + вес |
 | `/settings` | Настройки анализа, инструкции, redo onboarding |
 | `/favorites` | Избранные блюда |
+| `/barcode` | Сканер штрихкода → Open Food Facts |
 | `/meal/:id` | Детали приёма, refine, favorite, delete, custom content |
 | `/meal/:mealId/item/:itemId` | Правка ингредиента |
 | `/diary` | История по датам (в роутере есть; основной nav с Home может отсутствовать) |
@@ -183,7 +187,7 @@ Meal {
 NutritionResult  // ответ AI до маппинга в Meal
 ```
 
-Источник типов: `packages/shared-types/src/index.ts`.
+Источник типов: `src/shared/types/index.ts` (импорт `@ai-food/shared-types`).
 
 8 микронутриентов: vitaminA/C/D/B12, iron, calcium, folate, magnesium (mg/µg).
 
@@ -218,18 +222,17 @@ NutritionResult  // ответ AI до маппинга в Meal
 ## PWA / Capacitor
 
 - **PWA:** `vite-plugin-pwa`, installable, safe-area
-- **Capacitor:** Preferences + Filesystem; config есть; нативных `android/`/`ios/` в репо нет
-- Камера = web file input
+- **Capacitor:** Preferences + Filesystem; `android/` в репо; `cap:sync` / `cap:open:android`
+- Камера = Capacitor Camera / web file input
 
 ---
 
 ## Явно НЕ в продукте
 
 - Auth, sync, cloud DB
-- Поиск по базе продуктов / barcode / voice
-- AI-коуч / meal plans
+- Голосовой ввод / meal plans / AI-коуч
 - Medical-grade nutrition
-- Primary path через backend OpenAI proxy (есть код, mobile его не зовёт)
+- Собственный backend / proxy в этом репозитории
 - UI `clearDiary`
 - Полноценное редактирование профиля без redo onboarding
 
@@ -240,9 +243,10 @@ NutritionResult  // ответ AI до маппинга в Meal
 1. Cross-slice импорты только через barrels
 2. AI-ответы не класть в Zustand «как server cache» — в diary только уже смапленный `Meal`
 3. Промпты/парсеры — `features/analyze-food/api/*`
-4. Shared domain — `@ai-food/shared-types`
+4. Shared domain — `src/shared/types` / `@ai-food/shared-types`
 5. Документы `.planning/PROJECT.md` / research июня **устарели** относительно текущего кода — ориентироваться на этот файл
+6. Команды: `pnpm dev` / `pnpm test` / `pnpm type-check` / `pnpm build` из корня (без `--filter`)
 
 ---
 
-*Сгенерировано: 2026-07-19 по состоянию кодовой базы.*
+*Обновлено: 2026-08-03 — single-package repo (без monorepo).*

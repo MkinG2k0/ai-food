@@ -44,7 +44,7 @@
 
 ### Route
 
-- `apps/mobile/src/app/router.tsx`:
+- `src/app/router.tsx`:
   `{ path: '/manual-entry', element: <ProfileGuard><ManualEntryPage /></ProfileGuard> }`
   внутри `AppShell`.
 - Назад с `/manual-entry` → `/` (или `navigate(-1)`), без записи в дневник.

@@ -64,8 +64,8 @@ Generic reusable primitive:
 
 ### Removed
 
-- `apps/mobile/src/pages/add-food/` (whole directory: `AddFoodPage.tsx`, `index.ts`).
-- `/add` route entry and `AddFoodPage` import in `apps/mobile/src/app/router.tsx`.
+- `src/pages/add-food/` (whole directory: `AddFoodPage.tsx`, `index.ts`).
+- `/add` route entry and `AddFoodPage` import in `src/app/router.tsx`.
 
 ## State — `useImageStore` (`features/add-food/model/useImageStore.ts`)
 
@@ -91,7 +91,7 @@ interface ImageState {
 
 ## API contract
 
-### `packages/shared-types/src/index.ts`
+### `src/shared/types/index.ts`
 
 ```ts
 export interface AnalyzeFoodRequest {
@@ -153,7 +153,7 @@ export function useAnalyzeFood(input: { image: File | null; description: string 
 No structural change: `imageUri` stays `undefined` when `selectedImage` is `null` (text-only
 flow), which the `Meal` type already supports (`imageUri?: string`).
 
-## Backend — `apps/backend/src/routes/analyze-food.ts`
+## Backend — (удалён из репо; раньше `apps/backend/src/routes/analyze-food.ts`)
 
 - `uploadMiddleware` (multer `.single('image')`) is unchanged — it already parses non-file
   text fields into `req.body` on `multipart/form-data` requests even when no file part is
@@ -203,7 +203,7 @@ flow), which the `Meal` type already supports (`imageUri?: string`).
 | Empty/invalid OpenAI response (either flow) | 500 | `ANALYSIS_FAILED` |
 
 Frontend does not currently branch on `ApiError.code` (verified — no references in
-`apps/mobile/src`), so these are purely for backend logging/clarity; no frontend changes are
+`src`), so these are purely for backend logging/clarity; no frontend changes are
 required to consume the new code.
 
 ## Testing notes for the implementation plan

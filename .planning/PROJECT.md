@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Web-first приложение для учёта питания: пользователь фотографирует еду, получает оценку КБЖУ через AI и сохраняет приёмы пищи в локальный дневник. Сейчас — brownfield-проект на Turborepo + React (FSD) с mock-бэкендом; цель ближайшего цикла — заменить mock на реальный OpenAI Vision и довести продукт до рабочего web-MVP, который можно показать пользователям.
+Web-first приложение для учёта питания: пользователь фотографирует еду, получает оценку КБЖУ через AI и сохраняет приёмы пищи в локальный дневник. Сейчас — brownfield single-package React (FSD) + Capacitor; AI через клиентский Gateway; цель ближайшего цикла — заменить mock на реальный OpenAI Vision и довести продукт до рабочего web-MVP, который можно показать пользователям.
 
 ## Core Value
 
@@ -12,7 +12,7 @@ Web-first приложение для учёта питания: пользов�
 
 ### Validated
 
-- ✓ Monorepo (Turborepo + pnpm) с `apps/mobile`, `apps/backend`, `packages/shared-types` — existing
+- ✓ Single-package pnpm repo + типы в src/shared/types — existing
 - ✓ FSD-архитектура фронтенда (app → pages → widgets → features → entities → shared) — existing
 - ✓ Маршруты Home / Add Food / Result / Diary с навигационным flow — existing
 - ✓ Загрузка фото через file picker (`add-food` + `useImageStore`) — existing
@@ -43,7 +43,7 @@ Web-first приложение для учёта питания: пользов�
 
 **Текущее состояние кодовой базы** (см. `.planning/codebase/`):
 - Фронтенд: React 18 + Vite + TypeScript, FSD, Zustand (UI state), TanStack Query (server state)
-- Бэкенд: Express mock на порту 3001, hardcoded ответ с задержкой 1.5–3 с, без анализа изображения
+- Отдельного backend в репо нет; AI через клиентский Gateway
 - Дневник: `useDiaryStore` в `entities/meal`, данные только в памяти (теряются при refresh)
 - Тесты: Vitest, co-located unit-тесты; покрытие неполное
 - Документация: утверждённый design spec (`docs/superpowers/specs/2026-06-24-ai-food-mvp-design.md`) описывает mock-MVP; часть пунктов (Capacitor, bottom nav, interceptors) ещё не реализована
@@ -54,7 +54,7 @@ Web-first приложение для учёта питания: пользов�
 - React Query Devtools в prod bundle
 - Хардкод дневной нормы калорий (2000) и макросов
 - `clearDiary()` есть в store, но нет в UI
-- Нет ESLint/Prettier на уровне monorepo
+- Нет ESLint/Prettier в репозитории
 
 **Направление пользователя:**
 - Сейчас внедрять AI (OpenAI Vision)
@@ -63,8 +63,8 @@ Web-first приложение для учёта питания: пользов�
 
 ## Constraints
 
-- **Tech stack**: Сохранить существующий monorepo (Turborepo, pnpm, React/FSD, Express) — не переписывать с нуля
-- **Security**: OpenAI API key только на бэкенде; не экспонировать в клиентский bundle
+- **Tech stack**: Сохранить стек pnpm + React/FSD/Vite (single package) — не переписывать с нуля
+- **Security**: AI Gateway ключ сейчас в VITE_* на клиенте (техдолг: вынести с клиента)
 - **Persistence**: localStorage на клиенте; без БД в этом цикле
 - **Auth**: Без авторизации в MVP — один пользователь на устройство/браузер
 - **Architecture**: API-вызовы только через TanStack Query hooks; Zustand не хранит server data
@@ -99,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-24 after initialization*
+*Last updated: 2026-08-03 — single-package repo*

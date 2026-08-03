@@ -60,7 +60,7 @@ Subsequent visits → ProfileGuard passes → /
 ### File Structure (FSD)
 
 ```
-packages/shared-types/src/index.ts      # UserProfile, DailyTargets, ActivityLevel, Goal
+src/shared/types/index.ts      # UserProfile, DailyTargets, ActivityLevel, Goal
 
 features/onboarding/
   model/

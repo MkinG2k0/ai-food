@@ -24,23 +24,23 @@
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `apps/mobile/src/shared/lib/dateUtils.ts` | **create** | Pure date helpers: getWeekStart, getWeekDays, isSameDay, formatDayLabel, formatHeaderDate |
-| `apps/mobile/src/shared/lib/dateUtils.test.ts` | **create** | Unit tests for all dateUtils helpers |
-| `apps/mobile/src/shared/lib/index.ts` | **modify** | Export dateUtils helpers |
-| `apps/mobile/src/widgets/daily-header/ui/WeekStrip.tsx` | **create** | 7-day strip with framer-motion swipe |
-| `apps/mobile/src/widgets/daily-header/ui/DailyHeader.tsx` | **modify** | Accept props, use isSameDay, embed WeekStrip |
-| `apps/mobile/src/widgets/meal-list/ui/MealList.tsx` | **modify** | Accept selectedDate prop |
-| `apps/mobile/src/pages/home/ui/HomePage.tsx` | **modify** | Own weekOffset + selectedDate state, wire props |
-| `apps/mobile/package.json` | **modify** | Add framer-motion dependency |
+| `src/shared/lib/dateUtils.ts` | **create** | Pure date helpers: getWeekStart, getWeekDays, isSameDay, formatDayLabel, formatHeaderDate |
+| `src/shared/lib/dateUtils.test.ts` | **create** | Unit tests for all dateUtils helpers |
+| `src/shared/lib/index.ts` | **modify** | Export dateUtils helpers |
+| `src/widgets/daily-header/ui/WeekStrip.tsx` | **create** | 7-day strip with framer-motion swipe |
+| `src/widgets/daily-header/ui/DailyHeader.tsx` | **modify** | Accept props, use isSameDay, embed WeekStrip |
+| `src/widgets/meal-list/ui/MealList.tsx` | **modify** | Accept selectedDate prop |
+| `src/pages/home/ui/HomePage.tsx` | **modify** | Own weekOffset + selectedDate state, wire props |
+| `package.json` | **modify** | Add framer-motion dependency |
 
 ---
 
 ## Task 1: Date utility helpers
 
 **Files:**
-- Create: `apps/mobile/src/shared/lib/dateUtils.ts`
-- Create: `apps/mobile/src/shared/lib/dateUtils.test.ts`
-- Modify: `apps/mobile/src/shared/lib/index.ts`
+- Create: `src/shared/lib/dateUtils.ts`
+- Create: `src/shared/lib/dateUtils.test.ts`
+- Modify: `src/shared/lib/index.ts`
 
 **Interfaces:**
 - Produces:
@@ -52,7 +52,7 @@
 
 - [ ] **Step 1: Write failing tests**
 
-Create `apps/mobile/src/shared/lib/dateUtils.test.ts`:
+Create `src/shared/lib/dateUtils.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -186,14 +186,14 @@ describe('formatHeaderDate', () => {
 - [ ] **Step 2: Run tests — confirm they fail**
 
 ```bash
-pnpm --filter @ai-food/mobile test -- --reporter=verbose dateUtils
+pnpm test -- --reporter=verbose dateUtils
 ```
 
 Expected: `Cannot find module './dateUtils'` or similar import error.
 
 - [ ] **Step 3: Implement dateUtils.ts**
 
-Create `apps/mobile/src/shared/lib/dateUtils.ts`:
+Create `src/shared/lib/dateUtils.ts`:
 
 ```ts
 const DAY_LABELS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'] as const;
@@ -237,7 +237,7 @@ export function formatHeaderDate(date: Date): string {
 
 - [ ] **Step 4: Export from shared/lib barrel**
 
-Edit `apps/mobile/src/shared/lib/index.ts` — add one line:
+Edit `src/shared/lib/index.ts` — add one line:
 
 ```ts
 export { cn } from './utils';
@@ -249,7 +249,7 @@ export { getWeekStart, getWeekDays, isSameDay, formatDayLabel, formatHeaderDate 
 - [ ] **Step 5: Run tests — confirm they pass**
 
 ```bash
-pnpm --filter @ai-food/mobile test -- --reporter=verbose dateUtils
+pnpm test -- --reporter=verbose dateUtils
 ```
 
 Expected: 16 tests pass, 0 failures.
@@ -257,7 +257,7 @@ Expected: 16 tests pass, 0 failures.
 - [ ] **Step 6: Type-check**
 
 ```bash
-pnpm --filter @ai-food/mobile type-check
+pnpm type-check
 ```
 
 Expected: no errors.
@@ -265,7 +265,7 @@ Expected: no errors.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add apps/mobile/src/shared/lib/dateUtils.ts apps/mobile/src/shared/lib/dateUtils.test.ts apps/mobile/src/shared/lib/index.ts
+git add src/shared/lib/dateUtils.ts src/shared/lib/dateUtils.test.ts src/shared/lib/index.ts
 git commit -m "feat(shared): add date utility helpers for week navigation"
 ```
 
@@ -274,8 +274,8 @@ git commit -m "feat(shared): add date utility helpers for week navigation"
 ## Task 2: Install framer-motion + WeekStrip component
 
 **Files:**
-- Modify: `apps/mobile/package.json`
-- Create: `apps/mobile/src/widgets/daily-header/ui/WeekStrip.tsx`
+- Modify: `package.json`
+- Create: `src/widgets/daily-header/ui/WeekStrip.tsx`
 
 **Interfaces:**
 - Consumes:
@@ -298,14 +298,14 @@ git commit -m "feat(shared): add date utility helpers for week navigation"
 - [ ] **Step 1: Install framer-motion**
 
 ```bash
-pnpm --filter @ai-food/mobile add framer-motion
+pnpm add framer-motion
 ```
 
 Expected: `package.json` now lists `"framer-motion": "^11.x.x"` in `dependencies`.
 
 - [ ] **Step 2: Create WeekStrip.tsx**
 
-Create `apps/mobile/src/widgets/daily-header/ui/WeekStrip.tsx`:
+Create `src/widgets/daily-header/ui/WeekStrip.tsx`:
 
 ```tsx
 import { motion, type PanInfo } from 'framer-motion';
@@ -385,7 +385,7 @@ export function WeekStrip({
 - [ ] **Step 3: Type-check**
 
 ```bash
-pnpm --filter @ai-food/mobile type-check
+pnpm type-check
 ```
 
 Expected: no errors. (WeekStrip is not yet imported anywhere, so no barrel update needed yet — that happens in Task 3.)
@@ -393,7 +393,7 @@ Expected: no errors. (WeekStrip is not yet imported anywhere, so no barrel updat
 - [ ] **Step 4: Commit**
 
 ```bash
-git add apps/mobile/package.json pnpm-lock.yaml apps/mobile/src/widgets/daily-header/ui/WeekStrip.tsx
+git add package.json pnpm-lock.yaml src/widgets/daily-header/ui/WeekStrip.tsx
 git commit -m "feat(daily-header): add WeekStrip component with framer-motion swipe"
 ```
 
@@ -402,7 +402,7 @@ git commit -m "feat(daily-header): add WeekStrip component with framer-motion sw
 ## Task 3: Update DailyHeader to accept props and embed WeekStrip
 
 **Files:**
-- Modify: `apps/mobile/src/widgets/daily-header/ui/DailyHeader.tsx`
+- Modify: `src/widgets/daily-header/ui/DailyHeader.tsx`
 
 **Interfaces:**
 - Consumes:
@@ -423,7 +423,7 @@ Note: `DailyHeader` still reads `meals` and `targets` from stores internally —
 
 - [ ] **Step 1: Rewrite DailyHeader.tsx**
 
-Replace the full contents of `apps/mobile/src/widgets/daily-header/ui/DailyHeader.tsx`:
+Replace the full contents of `src/widgets/daily-header/ui/DailyHeader.tsx`:
 
 ```tsx
 import { useDiaryStore } from '@/entities/meal';
@@ -486,7 +486,7 @@ export function DailyHeader({
 - [ ] **Step 2: Type-check**
 
 ```bash
-pnpm --filter @ai-food/mobile type-check
+pnpm type-check
 ```
 
 Expected: TypeScript will report an error in `HomePage.tsx` because `DailyHeader` now requires props that aren't passed yet. That's expected — will be fixed in Task 5.
@@ -494,7 +494,7 @@ Expected: TypeScript will report an error in `HomePage.tsx` because `DailyHeader
 - [ ] **Step 3: Commit**
 
 ```bash
-git add apps/mobile/src/widgets/daily-header/ui/DailyHeader.tsx
+git add src/widgets/daily-header/ui/DailyHeader.tsx
 git commit -m "feat(daily-header): accept selectedDate/weekOffset props, embed WeekStrip"
 ```
 
@@ -503,7 +503,7 @@ git commit -m "feat(daily-header): accept selectedDate/weekOffset props, embed W
 ## Task 4: Update MealList to accept selectedDate prop
 
 **Files:**
-- Modify: `apps/mobile/src/widgets/meal-list/ui/MealList.tsx`
+- Modify: `src/widgets/meal-list/ui/MealList.tsx`
 
 **Interfaces:**
 - Consumes: `isSameDay` from `@/shared/lib`
@@ -517,7 +517,7 @@ git commit -m "feat(daily-header): accept selectedDate/weekOffset props, embed W
 
 - [ ] **Step 1: Rewrite MealList.tsx**
 
-Replace the full contents of `apps/mobile/src/widgets/meal-list/ui/MealList.tsx`:
+Replace the full contents of `src/widgets/meal-list/ui/MealList.tsx`:
 
 ```tsx
 import { useNavigate } from 'react-router-dom';
@@ -573,7 +573,7 @@ export function MealList({ selectedDate }: MealListProps) {
 - [ ] **Step 2: Type-check**
 
 ```bash
-pnpm --filter @ai-food/mobile type-check
+pnpm type-check
 ```
 
 Expected: error in `HomePage.tsx` (MealList now requires `selectedDate` prop not yet passed). That's expected.
@@ -581,7 +581,7 @@ Expected: error in `HomePage.tsx` (MealList now requires `selectedDate` prop not
 - [ ] **Step 3: Commit**
 
 ```bash
-git add apps/mobile/src/widgets/meal-list/ui/MealList.tsx
+git add src/widgets/meal-list/ui/MealList.tsx
 git commit -m "feat(meal-list): accept selectedDate prop, filter by selected day"
 ```
 
@@ -590,7 +590,7 @@ git commit -m "feat(meal-list): accept selectedDate prop, filter by selected day
 ## Task 5: Wire state in HomePage
 
 **Files:**
-- Modify: `apps/mobile/src/pages/home/ui/HomePage.tsx`
+- Modify: `src/pages/home/ui/HomePage.tsx`
 
 **Interfaces:**
 - Consumes:
@@ -601,7 +601,7 @@ git commit -m "feat(meal-list): accept selectedDate prop, filter by selected day
 
 - [ ] **Step 1: Rewrite HomePage.tsx**
 
-Replace the full contents of `apps/mobile/src/pages/home/ui/HomePage.tsx`:
+Replace the full contents of `src/pages/home/ui/HomePage.tsx`:
 
 ```tsx
 import { useState } from 'react';
@@ -654,7 +654,7 @@ export function HomePage() {
 - [ ] **Step 2: Type-check — must be clean**
 
 ```bash
-pnpm --filter @ai-food/mobile type-check
+pnpm type-check
 ```
 
 Expected: **0 errors**.
@@ -662,7 +662,7 @@ Expected: **0 errors**.
 - [ ] **Step 3: Run full test suite**
 
 ```bash
-pnpm --filter @ai-food/mobile test
+pnpm test
 ```
 
 Expected: all existing tests + new dateUtils tests pass. (WeekStrip and DailyHeader have no unit tests — they are visual components tested manually.)
@@ -684,6 +684,6 @@ Open `http://localhost:5173`. Verify:
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/mobile/src/pages/home/ui/HomePage.tsx
+git add src/pages/home/ui/HomePage.tsx
 git commit -m "feat(home): wire week navigation state, connect DailyHeader and MealList"
 ```

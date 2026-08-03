@@ -10,61 +10,61 @@
 
 ## Global Constraints
 
-- All files under `apps/mobile/src/` use 2-space indentation, single quotes, semicolons, trailing commas
+- All files under `src/` use 2-space indentation, single quotes, semicolons, trailing commas
 - FSD import rule: cross-slice imports MUST go through `index.ts` barrels only
 - FSD layer order: `app → pages → widgets → features → entities → shared` — higher layers import from lower only
 - Named exports only (no default exports except Express routers which are unrelated)
 - Types and interfaces in PascalCase; hooks with `use` prefix; handler callbacks with `handle` prefix
-- New shared domain types go in `packages/shared-types/src/index.ts`
+- New shared domain types go in `src/shared/types/index.ts`
 - localStorage persist key for profile: `ai-food-profile`
 - Zustand stores store client/UI state only — never API responses
 - Test files: co-located, same base name + `.test.ts` or `.test.tsx`
-- Run tests with: `pnpm --filter @ai-food/mobile test` (or `pnpm test` from root via Turbo)
-- Run type-check with: `pnpm --filter @ai-food/mobile type-check`
+- Run tests with: `pnpm test` (or `pnpm test` from root via Turbo)
+- Run type-check with: `pnpm type-check`
 
 ---
 
 ## File Map
 
 **Create:**
-- `packages/shared-types/src/index.ts` — add `UserProfile`, `DailyTargets`, `ActivityLevel`, `Goal` (modify existing)
-- `apps/mobile/src/features/onboarding/model/useProfileStore.ts` — Zustand persist store
-- `apps/mobile/src/features/onboarding/model/useProfileStore.test.ts`
-- `apps/mobile/src/features/onboarding/model/calculateTargets.ts` — pure Mifflin-St Jeor calculation
-- `apps/mobile/src/features/onboarding/model/calculateTargets.test.ts`
-- `apps/mobile/src/features/onboarding/model/useOnboarding.ts` — wizard step/draft hook
-- `apps/mobile/src/features/onboarding/model/useOnboarding.test.ts`
-- `apps/mobile/src/features/onboarding/ui/steps/StepGender.tsx`
-- `apps/mobile/src/features/onboarding/ui/steps/StepAge.tsx`
-- `apps/mobile/src/features/onboarding/ui/steps/StepHeight.tsx`
-- `apps/mobile/src/features/onboarding/ui/steps/StepWeight.tsx`
-- `apps/mobile/src/features/onboarding/ui/steps/StepActivity.tsx`
-- `apps/mobile/src/features/onboarding/ui/steps/StepGoal.tsx`
-- `apps/mobile/src/features/onboarding/ui/OnboardingResult.tsx`
-- `apps/mobile/src/features/onboarding/ui/OnboardingPage.tsx`
-- `apps/mobile/src/features/onboarding/index.ts`
-- `apps/mobile/src/pages/onboarding/ui/OnboardingPage.tsx`
-- `apps/mobile/src/pages/onboarding/index.ts`
-- `apps/mobile/src/app/ProfileGuard.tsx`
+- `src/shared/types/index.ts` — add `UserProfile`, `DailyTargets`, `ActivityLevel`, `Goal` (modify existing)
+- `src/features/onboarding/model/useProfileStore.ts` — Zustand persist store
+- `src/features/onboarding/model/useProfileStore.test.ts`
+- `src/features/onboarding/model/calculateTargets.ts` — pure Mifflin-St Jeor calculation
+- `src/features/onboarding/model/calculateTargets.test.ts`
+- `src/features/onboarding/model/useOnboarding.ts` — wizard step/draft hook
+- `src/features/onboarding/model/useOnboarding.test.ts`
+- `src/features/onboarding/ui/steps/StepGender.tsx`
+- `src/features/onboarding/ui/steps/StepAge.tsx`
+- `src/features/onboarding/ui/steps/StepHeight.tsx`
+- `src/features/onboarding/ui/steps/StepWeight.tsx`
+- `src/features/onboarding/ui/steps/StepActivity.tsx`
+- `src/features/onboarding/ui/steps/StepGoal.tsx`
+- `src/features/onboarding/ui/OnboardingResult.tsx`
+- `src/features/onboarding/ui/OnboardingPage.tsx`
+- `src/features/onboarding/index.ts`
+- `src/pages/onboarding/ui/OnboardingPage.tsx`
+- `src/pages/onboarding/index.ts`
+- `src/app/ProfileGuard.tsx`
 
 **Modify:**
-- `packages/shared-types/src/index.ts` — append new types
-- `apps/mobile/src/app/router.tsx` — add `/onboarding` route, wrap `/` with `ProfileGuard`
-- `apps/mobile/src/widgets/daily-header/ui/DailyHeader.tsx` — replace hardcoded `DAILY_GOAL` with `useProfileStore`
+- `src/shared/types/index.ts` — append new types
+- `src/app/router.tsx` — add `/onboarding` route, wrap `/` with `ProfileGuard`
+- `src/widgets/daily-header/ui/DailyHeader.tsx` — replace hardcoded `DAILY_GOAL` with `useProfileStore`
 
 ---
 
 ### Task 1: Add shared types
 
 **Files:**
-- Modify: `packages/shared-types/src/index.ts`
+- Modify: `src/shared/types/index.ts`
 
 **Interfaces:**
 - Produces: `UserProfile`, `DailyTargets`, `ActivityLevel`, `Goal` — consumed by Tasks 2, 3, 4, 7
 
 - [ ] **Step 1: Append types to shared-types**
 
-Open `packages/shared-types/src/index.ts` and append at the end:
+Open `src/shared/types/index.ts` and append at the end:
 
 ```ts
 export type ActivityLevel = 'low' | 'medium' | 'high';
@@ -91,15 +91,15 @@ export interface DailyTargets {
 - [ ] **Step 2: Verify type-check passes**
 
 ```bash
-pnpm --filter @ai-food/shared-types type-check 2>/dev/null || pnpm type-check
+pnpm type-check
 ```
 
-Expected: no errors (shared-types has no build step, types-only package).
+Expected: no errors.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add packages/shared-types/src/index.ts
+git add src/shared/types/index.ts
 git commit -m "feat(shared-types): add UserProfile, DailyTargets, ActivityLevel, Goal"
 ```
 
@@ -108,8 +108,8 @@ git commit -m "feat(shared-types): add UserProfile, DailyTargets, ActivityLevel,
 ### Task 2: Pure calculation function
 
 **Files:**
-- Create: `apps/mobile/src/features/onboarding/model/calculateTargets.ts`
-- Create: `apps/mobile/src/features/onboarding/model/calculateTargets.test.ts`
+- Create: `src/features/onboarding/model/calculateTargets.ts`
+- Create: `src/features/onboarding/model/calculateTargets.test.ts`
 
 **Interfaces:**
 - Consumes: `UserProfile`, `DailyTargets` from `@ai-food/shared-types`
@@ -117,7 +117,7 @@ git commit -m "feat(shared-types): add UserProfile, DailyTargets, ActivityLevel,
 
 - [ ] **Step 1: Write failing tests**
 
-Create `apps/mobile/src/features/onboarding/model/calculateTargets.test.ts`:
+Create `src/features/onboarding/model/calculateTargets.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -205,14 +205,14 @@ describe('calculateTargets', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-pnpm --filter @ai-food/mobile test src/features/onboarding/model/calculateTargets.test.ts
+pnpm test src/features/onboarding/model/calculateTargets.test.ts
 ```
 
 Expected: FAIL — `calculateTargets` not found.
 
 - [ ] **Step 3: Implement calculateTargets**
 
-Create `apps/mobile/src/features/onboarding/model/calculateTargets.ts`:
+Create `src/features/onboarding/model/calculateTargets.ts`:
 
 ```ts
 import type { UserProfile, DailyTargets } from '@ai-food/shared-types';
@@ -250,7 +250,7 @@ export function calculateTargets(profile: UserProfile): DailyTargets {
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-pnpm --filter @ai-food/mobile test src/features/onboarding/model/calculateTargets.test.ts
+pnpm test src/features/onboarding/model/calculateTargets.test.ts
 ```
 
 Expected: 5 passing.
@@ -258,8 +258,8 @@ Expected: 5 passing.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/mobile/src/features/onboarding/model/calculateTargets.ts \
-        apps/mobile/src/features/onboarding/model/calculateTargets.test.ts
+git add src/features/onboarding/model/calculateTargets.ts \
+        src/features/onboarding/model/calculateTargets.test.ts
 git commit -m "feat(onboarding): add calculateTargets with Mifflin-St Jeor formula"
 ```
 
@@ -268,8 +268,8 @@ git commit -m "feat(onboarding): add calculateTargets with Mifflin-St Jeor formu
 ### Task 3: Profile store
 
 **Files:**
-- Create: `apps/mobile/src/features/onboarding/model/useProfileStore.ts`
-- Create: `apps/mobile/src/features/onboarding/model/useProfileStore.test.ts`
+- Create: `src/features/onboarding/model/useProfileStore.ts`
+- Create: `src/features/onboarding/model/useProfileStore.test.ts`
 
 **Interfaces:**
 - Consumes: `UserProfile`, `DailyTargets` from `@ai-food/shared-types`
@@ -277,7 +277,7 @@ git commit -m "feat(onboarding): add calculateTargets with Mifflin-St Jeor formu
 
 - [ ] **Step 1: Write failing tests**
 
-Create `apps/mobile/src/features/onboarding/model/useProfileStore.test.ts`:
+Create `src/features/onboarding/model/useProfileStore.test.ts`:
 
 ```ts
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -323,14 +323,14 @@ describe('useProfileStore', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-pnpm --filter @ai-food/mobile test src/features/onboarding/model/useProfileStore.test.ts
+pnpm test src/features/onboarding/model/useProfileStore.test.ts
 ```
 
 Expected: FAIL — `useProfileStore` not found.
 
 - [ ] **Step 3: Implement store**
 
-Create `apps/mobile/src/features/onboarding/model/useProfileStore.ts`:
+Create `src/features/onboarding/model/useProfileStore.ts`:
 
 ```ts
 import { create } from 'zustand';
@@ -360,7 +360,7 @@ export const useProfileStore = create<ProfileState>()(
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-pnpm --filter @ai-food/mobile test src/features/onboarding/model/useProfileStore.test.ts
+pnpm test src/features/onboarding/model/useProfileStore.test.ts
 ```
 
 Expected: 4 passing.
@@ -368,8 +368,8 @@ Expected: 4 passing.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/mobile/src/features/onboarding/model/useProfileStore.ts \
-        apps/mobile/src/features/onboarding/model/useProfileStore.test.ts
+git add src/features/onboarding/model/useProfileStore.ts \
+        src/features/onboarding/model/useProfileStore.test.ts
 git commit -m "feat(onboarding): add useProfileStore with persist"
 ```
 
@@ -378,8 +378,8 @@ git commit -m "feat(onboarding): add useProfileStore with persist"
 ### Task 4: Wizard hook
 
 **Files:**
-- Create: `apps/mobile/src/features/onboarding/model/useOnboarding.ts`
-- Create: `apps/mobile/src/features/onboarding/model/useOnboarding.test.ts`
+- Create: `src/features/onboarding/model/useOnboarding.ts`
+- Create: `src/features/onboarding/model/useOnboarding.test.ts`
 
 **Interfaces:**
 - Consumes: `useProfileStore.setProfile`, `calculateTargets`, `UserProfile` from `@ai-food/shared-types`
@@ -387,7 +387,7 @@ git commit -m "feat(onboarding): add useProfileStore with persist"
 
 - [ ] **Step 1: Write failing tests**
 
-Create `apps/mobile/src/features/onboarding/model/useOnboarding.test.ts`:
+Create `src/features/onboarding/model/useOnboarding.test.ts`:
 
 ```ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -449,14 +449,14 @@ describe('useOnboarding', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-pnpm --filter @ai-food/mobile test src/features/onboarding/model/useOnboarding.test.ts
+pnpm test src/features/onboarding/model/useOnboarding.test.ts
 ```
 
 Expected: FAIL — `useOnboarding` not found.
 
 - [ ] **Step 3: Implement hook**
 
-Create `apps/mobile/src/features/onboarding/model/useOnboarding.ts`:
+Create `src/features/onboarding/model/useOnboarding.ts`:
 
 ```ts
 import { useState } from 'react';
@@ -494,7 +494,7 @@ export function useOnboarding() {
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-pnpm --filter @ai-food/mobile test src/features/onboarding/model/useOnboarding.test.ts
+pnpm test src/features/onboarding/model/useOnboarding.test.ts
 ```
 
 Expected: 4 passing.
@@ -502,8 +502,8 @@ Expected: 4 passing.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/mobile/src/features/onboarding/model/useOnboarding.ts \
-        apps/mobile/src/features/onboarding/model/useOnboarding.test.ts
+git add src/features/onboarding/model/useOnboarding.ts \
+        src/features/onboarding/model/useOnboarding.test.ts
 git commit -m "feat(onboarding): add useOnboarding wizard hook"
 ```
 
@@ -512,13 +512,13 @@ git commit -m "feat(onboarding): add useOnboarding wizard hook"
 ### Task 5: Step components + OnboardingResult
 
 **Files:**
-- Create: `apps/mobile/src/features/onboarding/ui/steps/StepGender.tsx`
-- Create: `apps/mobile/src/features/onboarding/ui/steps/StepAge.tsx`
-- Create: `apps/mobile/src/features/onboarding/ui/steps/StepHeight.tsx`
-- Create: `apps/mobile/src/features/onboarding/ui/steps/StepWeight.tsx`
-- Create: `apps/mobile/src/features/onboarding/ui/steps/StepActivity.tsx`
-- Create: `apps/mobile/src/features/onboarding/ui/steps/StepGoal.tsx`
-- Create: `apps/mobile/src/features/onboarding/ui/OnboardingResult.tsx`
+- Create: `src/features/onboarding/ui/steps/StepGender.tsx`
+- Create: `src/features/onboarding/ui/steps/StepAge.tsx`
+- Create: `src/features/onboarding/ui/steps/StepHeight.tsx`
+- Create: `src/features/onboarding/ui/steps/StepWeight.tsx`
+- Create: `src/features/onboarding/ui/steps/StepActivity.tsx`
+- Create: `src/features/onboarding/ui/steps/StepGoal.tsx`
+- Create: `src/features/onboarding/ui/OnboardingResult.tsx`
 
 **Interfaces:**
 - Consumes: `Button`, `Card` from `@/shared/ui`; `DailyTargets`, `UserProfile` from `@ai-food/shared-types`
@@ -527,7 +527,7 @@ git commit -m "feat(onboarding): add useOnboarding wizard hook"
 
 - [ ] **Step 1: Create StepGender**
 
-Create `apps/mobile/src/features/onboarding/ui/steps/StepGender.tsx`:
+Create `src/features/onboarding/ui/steps/StepGender.tsx`:
 
 ```tsx
 import { useState } from 'react';
@@ -584,7 +584,7 @@ export function StepGender({ onNext }: StepGenderProps) {
 
 - [ ] **Step 2: Create SliderInput shared component inline in steps**
 
-Create `apps/mobile/src/features/onboarding/ui/steps/StepAge.tsx`:
+Create `src/features/onboarding/ui/steps/StepAge.tsx`:
 
 ```tsx
 import { useState } from 'react';
@@ -644,7 +644,7 @@ export function StepAge({ onNext }: StepAgeProps) {
 
 - [ ] **Step 3: Create StepHeight**
 
-Create `apps/mobile/src/features/onboarding/ui/steps/StepHeight.tsx`:
+Create `src/features/onboarding/ui/steps/StepHeight.tsx`:
 
 ```tsx
 import { useState } from 'react';
@@ -704,7 +704,7 @@ export function StepHeight({ onNext }: StepHeightProps) {
 
 - [ ] **Step 4: Create StepWeight**
 
-Create `apps/mobile/src/features/onboarding/ui/steps/StepWeight.tsx`:
+Create `src/features/onboarding/ui/steps/StepWeight.tsx`:
 
 ```tsx
 import { useState } from 'react';
@@ -764,7 +764,7 @@ export function StepWeight({ onNext }: StepWeightProps) {
 
 - [ ] **Step 5: Create StepActivity**
 
-Create `apps/mobile/src/features/onboarding/ui/steps/StepActivity.tsx`:
+Create `src/features/onboarding/ui/steps/StepActivity.tsx`:
 
 ```tsx
 import { useState } from 'react';
@@ -825,7 +825,7 @@ export function StepActivity({ onNext }: StepActivityProps) {
 
 - [ ] **Step 6: Create StepGoal**
 
-Create `apps/mobile/src/features/onboarding/ui/steps/StepGoal.tsx`:
+Create `src/features/onboarding/ui/steps/StepGoal.tsx`:
 
 ```tsx
 import { useState } from 'react';
@@ -886,7 +886,7 @@ export function StepGoal({ onNext }: StepGoalProps) {
 
 - [ ] **Step 7: Create OnboardingResult**
 
-Create `apps/mobile/src/features/onboarding/ui/OnboardingResult.tsx`:
+Create `src/features/onboarding/ui/OnboardingResult.tsx`:
 
 ```tsx
 import { Button } from '@/shared/ui';
@@ -933,7 +933,7 @@ export function OnboardingResult({ targets, onStart }: OnboardingResultProps) {
 - [ ] **Step 8: Commit step components**
 
 ```bash
-git add apps/mobile/src/features/onboarding/ui/
+git add src/features/onboarding/ui/
 git commit -m "feat(onboarding): add step components and result screen"
 ```
 
@@ -942,10 +942,10 @@ git commit -m "feat(onboarding): add step components and result screen"
 ### Task 6: OnboardingPage wizard shell + barrel
 
 **Files:**
-- Create: `apps/mobile/src/features/onboarding/ui/OnboardingPage.tsx`
-- Create: `apps/mobile/src/features/onboarding/index.ts`
-- Create: `apps/mobile/src/pages/onboarding/ui/OnboardingPage.tsx`
-- Create: `apps/mobile/src/pages/onboarding/index.ts`
+- Create: `src/features/onboarding/ui/OnboardingPage.tsx`
+- Create: `src/features/onboarding/index.ts`
+- Create: `src/pages/onboarding/ui/OnboardingPage.tsx`
+- Create: `src/pages/onboarding/index.ts`
 
 **Interfaces:**
 - Consumes: `useOnboarding`, `useProfileStore`; all Step components; `OnboardingResult`
@@ -953,7 +953,7 @@ git commit -m "feat(onboarding): add step components and result screen"
 
 - [ ] **Step 1: Create feature OnboardingPage (wizard shell)**
 
-Create `apps/mobile/src/features/onboarding/ui/OnboardingPage.tsx`:
+Create `src/features/onboarding/ui/OnboardingPage.tsx`:
 
 ```tsx
 import { useOnboarding } from '../model/useOnboarding';
@@ -1025,7 +1025,7 @@ export function OnboardingPage() {
 
 - [ ] **Step 2: Create feature barrel**
 
-Create `apps/mobile/src/features/onboarding/index.ts`:
+Create `src/features/onboarding/index.ts`:
 
 ```ts
 export { OnboardingPage } from './ui/OnboardingPage';
@@ -1034,7 +1034,7 @@ export { useProfileStore } from './model/useProfileStore';
 
 - [ ] **Step 3: Create page wrapper**
 
-Create `apps/mobile/src/pages/onboarding/ui/OnboardingPage.tsx`:
+Create `src/pages/onboarding/ui/OnboardingPage.tsx`:
 
 ```tsx
 import { OnboardingPage as OnboardingFeature } from '@/features/onboarding';
@@ -1046,7 +1046,7 @@ export function OnboardingPage() {
 
 - [ ] **Step 4: Create page barrel**
 
-Create `apps/mobile/src/pages/onboarding/index.ts`:
+Create `src/pages/onboarding/index.ts`:
 
 ```ts
 export { OnboardingPage } from './ui/OnboardingPage';
@@ -1055,9 +1055,9 @@ export { OnboardingPage } from './ui/OnboardingPage';
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/mobile/src/features/onboarding/ui/OnboardingPage.tsx \
-        apps/mobile/src/features/onboarding/index.ts \
-        apps/mobile/src/pages/onboarding/
+git add src/features/onboarding/ui/OnboardingPage.tsx \
+        src/features/onboarding/index.ts \
+        src/pages/onboarding/
 git commit -m "feat(onboarding): add OnboardingPage wizard shell and barrels"
 ```
 
@@ -1066,16 +1066,16 @@ git commit -m "feat(onboarding): add OnboardingPage wizard shell and barrels"
 ### Task 7: ProfileGuard + routing + DailyHeader update
 
 **Files:**
-- Create: `apps/mobile/src/app/ProfileGuard.tsx`
-- Modify: `apps/mobile/src/app/router.tsx`
-- Modify: `apps/mobile/src/widgets/daily-header/ui/DailyHeader.tsx`
+- Create: `src/app/ProfileGuard.tsx`
+- Modify: `src/app/router.tsx`
+- Modify: `src/widgets/daily-header/ui/DailyHeader.tsx`
 
 **Interfaces:**
 - Consumes: `useProfileStore` from `@/features/onboarding`; `OnboardingPage` from `@/pages/onboarding`
 
 - [ ] **Step 1: Create ProfileGuard**
 
-Create `apps/mobile/src/app/ProfileGuard.tsx`:
+Create `src/app/ProfileGuard.tsx`:
 
 ```tsx
 import { Navigate } from 'react-router-dom';
@@ -1094,7 +1094,7 @@ export function ProfileGuard({ children }: ProfileGuardProps) {
 
 - [ ] **Step 2: Update router**
 
-Replace contents of `apps/mobile/src/app/router.tsx`:
+Replace contents of `src/app/router.tsx`:
 
 ```tsx
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -1120,7 +1120,7 @@ export function AppRouter() {
 
 - [ ] **Step 3: Update DailyHeader to use profile targets**
 
-Replace contents of `apps/mobile/src/widgets/daily-header/ui/DailyHeader.tsx`:
+Replace contents of `src/widgets/daily-header/ui/DailyHeader.tsx`:
 
 ```tsx
 import { useDiaryStore } from '@/entities/meal';
@@ -1164,7 +1164,7 @@ export function DailyHeader() {
 - [ ] **Step 4: Run type-check**
 
 ```bash
-pnpm --filter @ai-food/mobile type-check
+pnpm type-check
 ```
 
 Expected: no errors.
@@ -1172,7 +1172,7 @@ Expected: no errors.
 - [ ] **Step 5: Run all tests**
 
 ```bash
-pnpm --filter @ai-food/mobile test
+pnpm test
 ```
 
 Expected: all passing (including new onboarding tests).
@@ -1180,8 +1180,8 @@ Expected: all passing (including new onboarding tests).
 - [ ] **Step 6: Commit**
 
 ```bash
-git add apps/mobile/src/app/ProfileGuard.tsx \
-        apps/mobile/src/app/router.tsx \
-        apps/mobile/src/widgets/daily-header/ui/DailyHeader.tsx
+git add src/app/ProfileGuard.tsx \
+        src/app/router.tsx \
+        src/widgets/daily-header/ui/DailyHeader.tsx
 git commit -m "feat(onboarding): wire ProfileGuard, routing, and DailyHeader to profile store"
 ```

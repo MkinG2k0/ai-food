@@ -22,18 +22,18 @@
 
 | File | Role |
 | --- | --- |
-| `packages/shared-types/src/index.ts` | `Meal.customContent?`, `NutritionResult.customContent?` |
-| `apps/mobile/src/pages/settings/ui/SettingsPage.tsx` | Updated copy |
-| `apps/mobile/src/features/analyze-food/api/fetchMealCustomContentApi.ts` | Second AI call |
-| `apps/mobile/src/features/analyze-food/api/fetchMealCustomContentApi.test.ts` | API tests |
-| `apps/mobile/src/features/analyze-food/model/useMealCustomContent.ts` | Query + persist |
-| `apps/mobile/src/features/analyze-food/ui/MealCustomContentBlock.tsx` | Loading / MD / error |
-| `apps/mobile/src/features/analyze-food/index.ts` | Barrel exports |
-| `apps/mobile/src/pages/meal-detail/ui/MealDetailPage.tsx` | Mount block |
-| `apps/mobile/src/features/analyze-food/api/refineMealApi.ts` | Optional field in prompt |
-| `apps/mobile/src/features/analyze-food/api/nutritionResultSchema.ts` | Accept optional string |
-| `apps/mobile/src/features/refine-meal/model/useRefineMeal.ts` | Merge only if defined |
-| `apps/mobile/package.json` | `react-markdown`, `remark-gfm` |
+| `src/shared/types/index.ts` | `Meal.customContent?`, `NutritionResult.customContent?` |
+| `src/pages/settings/ui/SettingsPage.tsx` | Updated copy |
+| `src/features/analyze-food/api/fetchMealCustomContentApi.ts` | Second AI call |
+| `src/features/analyze-food/api/fetchMealCustomContentApi.test.ts` | API tests |
+| `src/features/analyze-food/model/useMealCustomContent.ts` | Query + persist |
+| `src/features/analyze-food/ui/MealCustomContentBlock.tsx` | Loading / MD / error |
+| `src/features/analyze-food/index.ts` | Barrel exports |
+| `src/pages/meal-detail/ui/MealDetailPage.tsx` | Mount block |
+| `src/features/analyze-food/api/refineMealApi.ts` | Optional field in prompt |
+| `src/features/analyze-food/api/nutritionResultSchema.ts` | Accept optional string |
+| `src/features/refine-meal/model/useRefineMeal.ts` | Merge only if defined |
+| `package.json` | `react-markdown`, `remark-gfm` |
 
 ---
 
@@ -41,7 +41,7 @@
 
 - [ ] Add `customContent?: string` to `Meal` and `NutritionResult` with JSDoc: Markdown from lazy custom-instructions answer; omit on legacy.
 - [ ] Update Settings description + placeholder per spec.
-- [ ] `pnpm --filter @ai-food/mobile add react-markdown remark-gfm`
+- [ ] `pnpm add react-markdown remark-gfm`
 - [ ] Commit: `feat: add customContent type and settings copy`
 
 ### Task 2: `fetchMealCustomContentApi`
@@ -87,5 +87,5 @@ export interface MealCustomContentInput {
 
 ### Task 5: Verify
 
-- [ ] `pnpm --filter @ai-food/mobile test` (relevant suites)
-- [ ] `pnpm --filter @ai-food/mobile type-check`
+- [ ] `pnpm test` (relevant suites)
+- [ ] `pnpm type-check`

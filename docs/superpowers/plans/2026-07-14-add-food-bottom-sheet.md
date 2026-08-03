@@ -24,15 +24,15 @@
 ### Task 1: Extend `useImageStore` with `description`
 
 **Files:**
-- Modify: `apps/mobile/src/features/add-food/model/useImageStore.ts`
-- Modify: `apps/mobile/src/features/add-food/model/useImageStore.test.ts`
+- Modify: `src/features/add-food/model/useImageStore.ts`
+- Modify: `src/features/add-food/model/useImageStore.test.ts`
 
 **Interfaces:**
 - Produces: `useImageStore` state shape `{ selectedImage: File | null; previewUrl: string | null; description: string | null; setImage: (file: File) => void; setDescription: (text: string) => void; clear: () => void }`. All later tasks (`AddFoodSheet`, `ResultPage`, `useSaveMeal`) read/write these exact fields.
 
 - [ ] **Step 1: Write the failing tests**
 
-Replace the full contents of `apps/mobile/src/features/add-food/model/useImageStore.test.ts` with:
+Replace the full contents of `src/features/add-food/model/useImageStore.test.ts` with:
 
 ```ts
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -88,12 +88,12 @@ describe('useImageStore', () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @ai-food/mobile test -- useImageStore.test.ts`
+Run: `pnpm test -- useImageStore.test.ts`
 Expected: FAIL — `result.current.setDescription is not a function` (and `description` undefined instead of `null`).
 
 - [ ] **Step 3: Implement `setDescription` and the `description` field**
 
-Replace the full contents of `apps/mobile/src/features/add-food/model/useImageStore.ts` with:
+Replace the full contents of `src/features/add-food/model/useImageStore.ts` with:
 
 ```ts
 import { create } from 'zustand';
@@ -129,13 +129,13 @@ export const useImageStore = create<ImageState>((set, get) => ({
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `pnpm --filter @ai-food/mobile test -- useImageStore.test.ts`
+Run: `pnpm test -- useImageStore.test.ts`
 Expected: PASS (4 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/mobile/src/features/add-food/model/useImageStore.ts apps/mobile/src/features/add-food/model/useImageStore.test.ts
+git add src/features/add-food/model/useImageStore.ts src/features/add-food/model/useImageStore.test.ts
 git commit -m "feat(add-food): add description field to useImageStore"
 ```
 
@@ -144,16 +144,16 @@ git commit -m "feat(add-food): add description field to useImageStore"
 ### Task 2: `shared/ui/textarea.tsx`
 
 **Files:**
-- Create: `apps/mobile/src/shared/ui/textarea.tsx`
-- Modify: `apps/mobile/src/shared/ui/index.ts`
+- Create: `src/shared/ui/textarea.tsx`
+- Modify: `src/shared/ui/index.ts`
 
 **Interfaces:**
-- Consumes: `cn` from `@/shared/lib` (already exported, see `apps/mobile/src/shared/lib/index.ts:1`).
+- Consumes: `cn` from `@/shared/lib` (already exported, see `src/shared/lib/index.ts:1`).
 - Produces: `Textarea` component, `TextareaProps` type — a `forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>` that `AddFoodSheet` (Task 4) renders directly.
 
 - [ ] **Step 1: Create the component**
 
-Create `apps/mobile/src/shared/ui/textarea.tsx`:
+Create `src/shared/ui/textarea.tsx`:
 
 ```tsx
 import * as React from 'react';
@@ -180,7 +180,7 @@ export { Textarea };
 
 - [ ] **Step 2: Add to the barrel**
 
-In `apps/mobile/src/shared/ui/index.ts`, add after the `Badge` export line:
+In `src/shared/ui/index.ts`, add after the `Badge` export line:
 
 ```ts
 export { Textarea, type TextareaProps } from './textarea';
@@ -188,13 +188,13 @@ export { Textarea, type TextareaProps } from './textarea';
 
 - [ ] **Step 3: Type-check**
 
-Run: `pnpm --filter @ai-food/mobile type-check`
+Run: `pnpm type-check`
 Expected: no errors.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add apps/mobile/src/shared/ui/textarea.tsx apps/mobile/src/shared/ui/index.ts
+git add src/shared/ui/textarea.tsx src/shared/ui/index.ts
 git commit -m "feat(shared-ui): add Textarea component"
 ```
 
@@ -203,16 +203,16 @@ git commit -m "feat(shared-ui): add Textarea component"
 ### Task 3: `shared/ui/bottom-sheet.tsx`
 
 **Files:**
-- Create: `apps/mobile/src/shared/ui/bottom-sheet.tsx`
-- Modify: `apps/mobile/src/shared/ui/index.ts`
+- Create: `src/shared/ui/bottom-sheet.tsx`
+- Modify: `src/shared/ui/index.ts`
 
 **Interfaces:**
-- Consumes: `cn` from `@/shared/lib`; `framer-motion`'s `motion` and `AnimatePresence` (already in `apps/mobile/package.json` dependencies — verified via `grep "framer-motion" apps/mobile/package.json`).
+- Consumes: `cn` from `@/shared/lib`; `framer-motion`'s `motion` and `AnimatePresence` (already in `package.json` dependencies — verified via `grep "framer-motion" package.json`).
 - Produces: `BottomSheet` component with props `{ open: boolean; onClose: () => void; children: React.ReactNode }`. Task 4 (`AddFoodSheet`) renders its content inside this.
 
 - [ ] **Step 1: Create the component**
 
-Create `apps/mobile/src/shared/ui/bottom-sheet.tsx`:
+Create `src/shared/ui/bottom-sheet.tsx`:
 
 ```tsx
 import { useEffect } from 'react';
@@ -264,7 +264,7 @@ export function BottomSheet({ open, onClose, children }: BottomSheetProps) {
 
 - [ ] **Step 2: Add to the barrel**
 
-In `apps/mobile/src/shared/ui/index.ts`, add:
+In `src/shared/ui/index.ts`, add:
 
 ```ts
 export { BottomSheet } from './bottom-sheet';
@@ -272,13 +272,13 @@ export { BottomSheet } from './bottom-sheet';
 
 - [ ] **Step 3: Type-check**
 
-Run: `pnpm --filter @ai-food/mobile type-check`
+Run: `pnpm type-check`
 Expected: no errors.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add apps/mobile/src/shared/ui/bottom-sheet.tsx apps/mobile/src/shared/ui/index.ts
+git add src/shared/ui/bottom-sheet.tsx src/shared/ui/index.ts
 git commit -m "feat(shared-ui): add BottomSheet component"
 ```
 
@@ -287,9 +287,9 @@ git commit -m "feat(shared-ui): add BottomSheet component"
 ### Task 4: `AddFoodSheet` — replace `ImagePicker`
 
 **Files:**
-- Create: `apps/mobile/src/features/add-food/ui/AddFoodSheet.tsx`
-- Delete: `apps/mobile/src/features/add-food/ui/ImagePicker.tsx`
-- Modify: `apps/mobile/src/features/add-food/index.ts`
+- Create: `src/features/add-food/ui/AddFoodSheet.tsx`
+- Delete: `src/features/add-food/ui/ImagePicker.tsx`
+- Modify: `src/features/add-food/index.ts`
 
 **Interfaces:**
 - Consumes: `useImageStore` (Task 1) — `setImage`, `setDescription`; `BottomSheet` (Task 3), `Button`, `Textarea` (Task 2) from `@/shared/ui`; `useNavigate` from `react-router-dom`.
@@ -297,7 +297,7 @@ git commit -m "feat(shared-ui): add BottomSheet component"
 
 - [ ] **Step 1: Create `AddFoodSheet.tsx`**
 
-Create `apps/mobile/src/features/add-food/ui/AddFoodSheet.tsx`:
+Create `src/features/add-food/ui/AddFoodSheet.tsx`:
 
 ```tsx
 import { useRef, useState } from 'react';
@@ -420,12 +420,12 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
 - [ ] **Step 2: Delete `ImagePicker.tsx`**
 
 ```bash
-rm apps/mobile/src/features/add-food/ui/ImagePicker.tsx
+rm src/features/add-food/ui/ImagePicker.tsx
 ```
 
 - [ ] **Step 3: Update the barrel**
 
-Replace the full contents of `apps/mobile/src/features/add-food/index.ts` with:
+Replace the full contents of `src/features/add-food/index.ts` with:
 
 ```ts
 export { AddFoodSheet } from './ui/AddFoodSheet';
@@ -434,14 +434,14 @@ export { useImageStore } from './model/useImageStore';
 
 - [ ] **Step 4: Type-check**
 
-Run: `pnpm --filter @ai-food/mobile type-check`
-Expected: errors referencing `ImagePicker` in `apps/mobile/src/pages/add-food/ui/AddFoodPage.tsx` (this file is deleted in Task 6 — that's expected at this point). No other errors should reference `AddFoodSheet.tsx` itself.
+Run: `pnpm type-check`
+Expected: errors referencing `ImagePicker` in `src/pages/add-food/ui/AddFoodPage.tsx` (this file is deleted in Task 6 — that's expected at this point). No other errors should reference `AddFoodSheet.tsx` itself.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/mobile/src/features/add-food/ui/AddFoodSheet.tsx apps/mobile/src/features/add-food/index.ts
-git rm apps/mobile/src/features/add-food/ui/ImagePicker.tsx
+git add src/features/add-food/ui/AddFoodSheet.tsx src/features/add-food/index.ts
+git rm src/features/add-food/ui/ImagePicker.tsx
 git commit -m "feat(add-food): replace ImagePicker with AddFoodSheet (gallery/camera/describe)"
 ```
 
@@ -450,14 +450,14 @@ git commit -m "feat(add-food): replace ImagePicker with AddFoodSheet (gallery/ca
 ### Task 5: Wire `AddFoodSheet` into `HomePage`
 
 **Files:**
-- Modify: `apps/mobile/src/pages/home/ui/HomePage.tsx`
+- Modify: `src/pages/home/ui/HomePage.tsx`
 
 **Interfaces:**
 - Consumes: `AddFoodSheet` from `@/features/add-food` (Task 4).
 
 - [ ] **Step 1: Update `HomePage.tsx`**
 
-Replace the full contents of `apps/mobile/src/pages/home/ui/HomePage.tsx` with:
+Replace the full contents of `src/pages/home/ui/HomePage.tsx` with:
 
 ```tsx
 import { useState } from 'react';
@@ -510,13 +510,13 @@ export function HomePage() {
 
 - [ ] **Step 2: Type-check**
 
-Run: `pnpm --filter @ai-food/mobile type-check`
+Run: `pnpm type-check`
 Expected: same pre-existing errors from Task 4 Step 4 (referencing the not-yet-deleted `AddFoodPage.tsx`/`/add` route), no new errors from `HomePage.tsx`.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add apps/mobile/src/pages/home/ui/HomePage.tsx
+git add src/pages/home/ui/HomePage.tsx
 git commit -m "feat(home): open AddFoodSheet from the + FAB instead of navigating to /add"
 ```
 
@@ -525,9 +525,9 @@ git commit -m "feat(home): open AddFoodSheet from the + FAB instead of navigatin
 ### Task 6: Remove `/add` route and `AddFoodPage`
 
 **Files:**
-- Delete: `apps/mobile/src/pages/add-food/ui/AddFoodPage.tsx`
-- Delete: `apps/mobile/src/pages/add-food/index.ts`
-- Modify: `apps/mobile/src/app/router.tsx`
+- Delete: `src/pages/add-food/ui/AddFoodPage.tsx`
+- Delete: `src/pages/add-food/index.ts`
+- Modify: `src/app/router.tsx`
 
 **Interfaces:**
 - None produced — this is a pure removal task.
@@ -535,12 +535,12 @@ git commit -m "feat(home): open AddFoodSheet from the + FAB instead of navigatin
 - [ ] **Step 1: Delete the page directory**
 
 ```bash
-rm -rf apps/mobile/src/pages/add-food
+rm -rf src/pages/add-food
 ```
 
 - [ ] **Step 2: Update the router**
 
-Replace the full contents of `apps/mobile/src/app/router.tsx` with:
+Replace the full contents of `src/app/router.tsx` with:
 
 ```tsx
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -566,14 +566,14 @@ export function AppRouter() {
 
 - [ ] **Step 3: Type-check**
 
-Run: `pnpm --filter @ai-food/mobile type-check`
+Run: `pnpm type-check`
 Expected: no errors. Deleting `AddFoodPage.tsx` also removes the "ImagePicker not exported" error introduced in Task 4 Step 4, since the only file referencing it is gone. `ResultPage.tsx`'s `navigate('/add')` calls are plain strings — react-router doesn't type-check route paths, so they compile fine even though `/add` no longer resolves to anything at runtime. That broken navigation is fixed in Task 9.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add apps/mobile/src/app/router.tsx
-git rm -r apps/mobile/src/pages/add-food
+git add src/app/router.tsx
+git rm -r src/pages/add-food
 git commit -m "refactor(router): remove /add route and AddFoodPage"
 ```
 
@@ -582,14 +582,14 @@ git commit -m "refactor(router): remove /add route and AddFoodPage"
 ### Task 7: `shared-types` — `AnalyzeFoodRequest` accepts image or description
 
 **Files:**
-- Modify: `packages/shared-types/src/index.ts:29-31`
+- Modify: `src/shared/types/index.ts:29-31`
 
 **Interfaces:**
 - Produces: `AnalyzeFoodRequest { image?: File; description?: string }`. Task 8 (`analyzeFoodApi`) uses this type as its input shape (informally — see note in Task 8).
 
 - [ ] **Step 1: Update the type**
 
-In `packages/shared-types/src/index.ts`, replace:
+In `src/shared/types/index.ts`, replace:
 
 ```ts
 export interface AnalyzeFoodRequest {
@@ -614,7 +614,7 @@ Expected: no errors (this type isn't imported anywhere else yet — verified via
 - [ ] **Step 3: Commit**
 
 ```bash
-git add packages/shared-types/src/index.ts
+git add src/shared/types/index.ts
 git commit -m "feat(shared-types): AnalyzeFoodRequest accepts image or description"
 ```
 
@@ -623,9 +623,9 @@ git commit -m "feat(shared-types): AnalyzeFoodRequest accepts image or descripti
 ### Task 8: `analyzeFoodApi` + `useAnalyzeFood` accept image or description
 
 **Files:**
-- Modify: `apps/mobile/src/features/analyze-food/api/analyzeFoodApi.ts`
-- Modify: `apps/mobile/src/features/analyze-food/model/useAnalyzeFood.ts`
-- Modify: `apps/mobile/src/features/analyze-food/model/useAnalyzeFood.test.ts` (existing file, not covered by the original spec — found during baseline verification; calls the old single-argument `useAnalyzeFood(image)` / `analyzeFoodApi(file)` signatures and must be updated in this task or it will fail after Step 1-2)
+- Modify: `src/features/analyze-food/api/analyzeFoodApi.ts`
+- Modify: `src/features/analyze-food/model/useAnalyzeFood.ts`
+- Modify: `src/features/analyze-food/model/useAnalyzeFood.test.ts` (existing file, not covered by the original spec — found during baseline verification; calls the old single-argument `useAnalyzeFood(image)` / `analyzeFoodApi(file)` signatures and must be updated in this task or it will fail after Step 1-2)
 
 **Interfaces:**
 - Consumes: `AnalyzeFoodResponse` from `@ai-food/shared-types` (unchanged).
@@ -633,7 +633,7 @@ git commit -m "feat(shared-types): AnalyzeFoodRequest accepts image or descripti
 
 - [ ] **Step 1: Update `analyzeFoodApi.ts`**
 
-Replace the full contents of `apps/mobile/src/features/analyze-food/api/analyzeFoodApi.ts` with:
+Replace the full contents of `src/features/analyze-food/api/analyzeFoodApi.ts` with:
 
 ```ts
 import { apiClient } from '@/shared/api';
@@ -662,7 +662,7 @@ export async function analyzeFoodApi(input: AnalyzeFoodInput): Promise<AnalyzeFo
 
 - [ ] **Step 2: Update `useAnalyzeFood.ts`**
 
-Replace the full contents of `apps/mobile/src/features/analyze-food/model/useAnalyzeFood.ts` with:
+Replace the full contents of `src/features/analyze-food/model/useAnalyzeFood.ts` with:
 
 ```ts
 import { useQuery } from '@tanstack/react-query';
@@ -694,7 +694,7 @@ export function useAnalyzeFood(input: UseAnalyzeFoodInput) {
 
 - [ ] **Step 3: Update `useAnalyzeFood.test.ts`**
 
-Replace the full contents of `apps/mobile/src/features/analyze-food/model/useAnalyzeFood.test.ts` with:
+Replace the full contents of `src/features/analyze-food/model/useAnalyzeFood.test.ts` with:
 
 ```ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -775,18 +775,18 @@ describe('useAnalyzeFood', () => {
 
 - [ ] **Step 4: Run the analyze-food tests to verify they pass**
 
-Run: `pnpm --filter @ai-food/mobile test -- useAnalyzeFood.test.ts`
+Run: `pnpm test -- useAnalyzeFood.test.ts`
 Expected: PASS (3 tests)
 
 - [ ] **Step 5: Type-check**
 
-Run: `pnpm --filter @ai-food/mobile type-check`
-Expected: errors now surface only from `apps/mobile/src/pages/result/ui/ResultPage.tsx` calling `useAnalyzeFood(selectedImage)` with the old single-argument signature — fixed in Task 9.
+Run: `pnpm type-check`
+Expected: errors now surface only from `src/pages/result/ui/ResultPage.tsx` calling `useAnalyzeFood(selectedImage)` with the old single-argument signature — fixed in Task 9.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add apps/mobile/src/features/analyze-food/api/analyzeFoodApi.ts apps/mobile/src/features/analyze-food/model/useAnalyzeFood.ts apps/mobile/src/features/analyze-food/model/useAnalyzeFood.test.ts
+git add src/features/analyze-food/api/analyzeFoodApi.ts src/features/analyze-food/model/useAnalyzeFood.ts src/features/analyze-food/model/useAnalyzeFood.test.ts
 git commit -m "feat(analyze-food): accept image or text description in the analyze request"
 ```
 
@@ -795,14 +795,14 @@ git commit -m "feat(analyze-food): accept image or text description in the analy
 ### Task 9: `ResultPage` supports the text-description flow
 
 **Files:**
-- Modify: `apps/mobile/src/pages/result/ui/ResultPage.tsx`
+- Modify: `src/pages/result/ui/ResultPage.tsx`
 
 **Interfaces:**
 - Consumes: `useImageStore` (Task 1) — `selectedImage`, `previewUrl`, `description`; `useAnalyzeFood({ image, description })` (Task 8).
 
 - [ ] **Step 1: Update `ResultPage.tsx`**
 
-Replace the full contents of `apps/mobile/src/pages/result/ui/ResultPage.tsx` with:
+Replace the full contents of `src/pages/result/ui/ResultPage.tsx` with:
 
 ```tsx
 import { useEffect } from 'react';
@@ -905,18 +905,18 @@ export function ResultPage() {
 
 - [ ] **Step 2: Type-check**
 
-Run: `pnpm --filter @ai-food/mobile type-check`
-Expected: no errors anywhere in `apps/mobile`.
+Run: `pnpm type-check`
+Expected: no errors anywhere in `src (root package)`.
 
 - [ ] **Step 3: Run the full mobile test suite**
 
-Run: `pnpm --filter @ai-food/mobile test`
+Run: `pnpm test`
 Expected: all existing tests pass (including the Task 1 `useImageStore` tests).
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add apps/mobile/src/pages/result/ui/ResultPage.tsx
+git add src/pages/result/ui/ResultPage.tsx
 git commit -m "feat(result): show description text and support text-only analysis flow"
 ```
 
@@ -925,15 +925,15 @@ git commit -m "feat(result): show description text and support text-only analysi
 ### Task 10: Backend — text-description analysis branch
 
 **Files:**
-- Modify: `apps/backend/src/routes/analyze-food.ts`
-- Modify: `apps/backend/src/routes/analyze-food.test.ts`
+- Modify: `[removed backend]/src/routes/analyze-food.ts`
+- Modify: `[removed backend]/src/routes/analyze-food.test.ts`
 
 **Interfaces:**
 - Produces: `POST /analyze-food` accepts either a multipart `image` file field (existing Vision flow, unchanged) or a multipart `description` text field (new text flow), both returning `AnalyzeFoodResponse`. Requests with neither now return `400 INVALID_INPUT` instead of `400 INVALID_IMAGE`.
 
 - [ ] **Step 1: Write the failing tests**
 
-In `apps/backend/src/routes/analyze-food.test.ts`, first update the existing "no file" test — replace:
+In `[removed backend]/src/routes/analyze-food.test.ts`, first update the existing "no file" test — replace:
 
 ```ts
   // ERR-03a: No file attached returns 400 INVALID_IMAGE
@@ -1054,12 +1054,12 @@ Then append these two new test cases at the end of the `describe('POST /analyze-
 
 - [ ] **Step 2: Run tests to verify the new ones fail**
 
-Run: `pnpm --filter @ai-food/backend test`
+Run: `pnpm test`
 Expected: FAIL — `ERR-03a` fails because the route still returns `INVALID_IMAGE`; `AI-03` and `AI-04` fail because a description-only request currently returns 400.
 
 - [ ] **Step 3: Implement the branch in `analyze-food.ts`**
 
-Replace the full contents of `apps/backend/src/routes/analyze-food.ts` with:
+Replace the full contents of `[removed backend]/src/routes/analyze-food.ts` with:
 
 ```ts
 import { Router, Request, Response } from 'express';
@@ -1212,18 +1212,18 @@ Note: when both `req.file` and `description` are present, the image branch runs 
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `pnpm --filter @ai-food/backend test`
+Run: `pnpm test`
 Expected: PASS (all 6 tests: AI-01, AI-02, ERR-03a through ERR-03d, plus new AI-03, AI-04 — 8 total).
 
 - [ ] **Step 5: Type-check**
 
-Run: `pnpm --filter @ai-food/backend type-check`
+Run: `pnpm type-check`
 Expected: no errors.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add apps/backend/src/routes/analyze-food.ts apps/backend/src/routes/analyze-food.test.ts
+git add [removed backend]/src/routes/analyze-food.ts [removed backend]/src/routes/analyze-food.test.ts
 git commit -m "feat(backend): analyze a text food description when no image is provided"
 ```
 
@@ -1236,7 +1236,7 @@ git commit -m "feat(backend): analyze a text food description when no image is p
 - [ ] **Step 1: Run full test suite**
 
 Run: `pnpm test`
-Expected: all tests pass across `apps/mobile` and `apps/backend`.
+Expected: all tests pass across `src (root package)` and `[removed backend]`.
 
 - [ ] **Step 2: Run full type-check**
 
@@ -1249,7 +1249,7 @@ Start both dev servers (`mobile` on :5173, `backend` on :3001 — reuse `.claude
 1. Load `/`, confirm the "+" FAB opens the bottom sheet (no navigation to `/add` — that route no longer exists).
 2. Click "Choose from Gallery" — confirm the hidden file input is triggered (can't complete a real OS file picker in headless preview, but confirm the sheet closes and no console errors appear when a `File` is programmatically dispatched via `preview_eval`, mirroring the approach used earlier in this session for the meal-card click).
 3. Reopen the sheet, click "Describe what you ate" — confirm the textarea view appears, "Analyze" is disabled when empty, type text, click "Analyze" — confirm navigation to `/result` and that the typed text renders in the "You described:" card.
-4. On `/result` with a description-only meal, confirm `isLoading`/`isError`/success states all render sensibly (backend calls will hit the real `/analyze-food` endpoint — if `OPENAI_API_KEY` isn't configured in `apps/backend/.env` for this environment, expect and document an `isError` state here rather than treating it as a regression; the backend unit tests in Task 10 already cover the branch logic with mocked OpenAI).
+4. On `/result` with a description-only meal, confirm `isLoading`/`isError`/success states all render sensibly (backend calls will hit the real `/analyze-food` endpoint — if `OPENAI_API_KEY` isn't configured in `[removed backend]/.env` for this environment, expect and document an `isError` state here rather than treating it as a regression; the backend unit tests in Task 10 already cover the branch logic with mocked OpenAI).
 5. Confirm `preview_console_logs` and `preview_logs` (mobile + backend) show no new errors.
 
 - [ ] **Step 4: Report results**

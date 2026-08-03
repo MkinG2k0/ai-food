@@ -121,7 +121,7 @@ No explicit arrow buttons — navigation is swipe-only. The `[←]` / `[→]` in
 
 ## Dependencies
 
-Add to `apps/mobile/package.json`:
+Add to `package.json`:
 ```
 "framer-motion": "^11.0.0"
 ```
@@ -137,7 +137,7 @@ Add to `apps/mobile/package.json`:
 | `widgets/daily-header/index.ts` | no change to public API |
 | `widgets/meal-list/ui/MealList.tsx` | accept selectedDate prop |
 | `pages/home/ui/HomePage.tsx` | own state, wire props |
-| `apps/mobile/package.json` | add framer-motion |
+| `package.json` | add framer-motion |
 
 ## Out of Scope
 

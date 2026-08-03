@@ -40,10 +40,10 @@
 ### Task 1: `buildManualMeal` pure builder
 
 **Files:**
-- Create: `apps/mobile/src/features/manual-entry/model/buildManualMeal.ts`
-- Create: `apps/mobile/src/features/manual-entry/model/buildManualMeal.test.ts`
-- Modify: `apps/mobile/src/entities/meal/index.ts` (export `sumItemCalories`)
-- Create: `apps/mobile/src/features/manual-entry/index.ts` (partial — export builder types)
+- Create: `src/features/manual-entry/model/buildManualMeal.ts`
+- Create: `src/features/manual-entry/model/buildManualMeal.test.ts`
+- Modify: `src/entities/meal/index.ts` (export `sumItemCalories`)
+- Create: `src/features/manual-entry/index.ts` (partial — export builder types)
 
 **Interfaces:**
 - Produces:
@@ -53,7 +53,7 @@
 
 - [ ] **Step 1: Export `sumItemCalories` from entities barrel**
 
-In `apps/mobile/src/entities/meal/index.ts`, add `sumItemCalories` to the existing `mealNutritionMath` export block:
+In `src/entities/meal/index.ts`, add `sumItemCalories` to the existing `mealNutritionMath` export block:
 
 ```ts
 export {
@@ -69,7 +69,7 @@ export {
 
 - [ ] **Step 2: Write the failing tests**
 
-Create `apps/mobile/src/features/manual-entry/model/buildManualMeal.test.ts`:
+Create `src/features/manual-entry/model/buildManualMeal.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -219,13 +219,13 @@ describe('buildManualMeal', () => {
 
 - [ ] **Step 3: Run tests to verify they fail**
 
-Run: `pnpm --filter @ai-food/mobile test -- buildManualMeal.test.ts`
+Run: `pnpm test -- buildManualMeal.test.ts`
 
 Expected: FAIL — module `./buildManualMeal` not found.
 
 - [ ] **Step 4: Implement `buildManualMeal`**
 
-Create `apps/mobile/src/features/manual-entry/model/buildManualMeal.ts`:
+Create `src/features/manual-entry/model/buildManualMeal.ts`:
 
 ```ts
 import type { FoodItem, Meal } from '@ai-food/shared-types';
@@ -333,7 +333,7 @@ export function buildManualMeal(
 }
 ```
 
-Create `apps/mobile/src/features/manual-entry/index.ts`:
+Create `src/features/manual-entry/index.ts`:
 
 ```ts
 export {
@@ -346,17 +346,17 @@ export {
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `pnpm --filter @ai-food/mobile test -- buildManualMeal.test.ts`
+Run: `pnpm test -- buildManualMeal.test.ts`
 
 Expected: PASS (all tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add apps/mobile/src/entities/meal/index.ts \
-  apps/mobile/src/features/manual-entry/model/buildManualMeal.ts \
-  apps/mobile/src/features/manual-entry/model/buildManualMeal.test.ts \
-  apps/mobile/src/features/manual-entry/index.ts
+git add src/entities/meal/index.ts \
+  src/features/manual-entry/model/buildManualMeal.ts \
+  src/features/manual-entry/model/buildManualMeal.test.ts \
+  src/features/manual-entry/index.ts
 git commit -m "feat: add buildManualMeal for manual diary entry"
 ```
 
@@ -365,9 +365,9 @@ git commit -m "feat: add buildManualMeal for manual diary entry"
 ### Task 2: `useSaveManualMeal` hook
 
 **Files:**
-- Create: `apps/mobile/src/features/manual-entry/model/useSaveManualMeal.ts`
-- Create: `apps/mobile/src/features/manual-entry/model/useSaveManualMeal.test.ts`
-- Modify: `apps/mobile/src/features/manual-entry/index.ts`
+- Create: `src/features/manual-entry/model/useSaveManualMeal.ts`
+- Create: `src/features/manual-entry/model/useSaveManualMeal.test.ts`
+- Modify: `src/features/manual-entry/index.ts`
 
 **Interfaces:**
 - Consumes: `buildManualMeal`, `BuildManualMealInput` (composition without needing File in builder)
@@ -378,7 +378,7 @@ git commit -m "feat: add buildManualMeal for manual diary entry"
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `apps/mobile/src/features/manual-entry/model/useSaveManualMeal.test.ts`:
+Create `src/features/manual-entry/model/useSaveManualMeal.test.ts`:
 
 ```ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -523,13 +523,13 @@ describe('useSaveManualMeal', () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm --filter @ai-food/mobile test -- useSaveManualMeal.test.ts`
+Run: `pnpm test -- useSaveManualMeal.test.ts`
 
 Expected: FAIL — module not found / `useSaveManualMeal` undefined.
 
 - [ ] **Step 3: Implement the hook**
 
-Create `apps/mobile/src/features/manual-entry/model/useSaveManualMeal.ts`:
+Create `src/features/manual-entry/model/useSaveManualMeal.ts`:
 
 ```ts
 import { useDiaryStore } from '@/entities/meal';
@@ -578,7 +578,7 @@ export function useSaveManualMeal() {
 }
 ```
 
-Update `apps/mobile/src/features/manual-entry/index.ts`:
+Update `src/features/manual-entry/index.ts`:
 
 ```ts
 export {
@@ -595,16 +595,16 @@ export {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `pnpm --filter @ai-food/mobile test -- useSaveManualMeal.test.ts`
+Run: `pnpm test -- useSaveManualMeal.test.ts`
 
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/mobile/src/features/manual-entry/model/useSaveManualMeal.ts \
-  apps/mobile/src/features/manual-entry/model/useSaveManualMeal.test.ts \
-  apps/mobile/src/features/manual-entry/index.ts
+git add src/features/manual-entry/model/useSaveManualMeal.ts \
+  src/features/manual-entry/model/useSaveManualMeal.test.ts \
+  src/features/manual-entry/index.ts
 git commit -m "feat: add useSaveManualMeal hook"
 ```
 
@@ -613,8 +613,8 @@ git commit -m "feat: add useSaveManualMeal hook"
 ### Task 3: `ManualCompositionDraft` UI
 
 **Files:**
-- Create: `apps/mobile/src/features/manual-entry/ui/ManualCompositionDraft.tsx`
-- Modify: `apps/mobile/src/features/manual-entry/index.ts`
+- Create: `src/features/manual-entry/ui/ManualCompositionDraft.tsx`
+- Modify: `src/features/manual-entry/index.ts`
 
 **Interfaces:**
 - Consumes: `ManualCompositionDraftItem`
@@ -630,7 +630,7 @@ No separate unit test file required if page smoke is heavy — keep component pr
 
 - [ ] **Step 1: Implement the component**
 
-Create `apps/mobile/src/features/manual-entry/ui/ManualCompositionDraft.tsx`:
+Create `src/features/manual-entry/ui/ManualCompositionDraft.tsx`:
 
 ```tsx
 import { Plus, Trash2 } from 'lucide-react';
@@ -780,7 +780,7 @@ export function ManualCompositionDraft({
 
 - [ ] **Step 2: Export from barrel**
 
-Add to `apps/mobile/src/features/manual-entry/index.ts`:
+Add to `src/features/manual-entry/index.ts`:
 
 ```ts
 export {
@@ -791,15 +791,15 @@ export {
 
 - [ ] **Step 3: Type-check**
 
-Run: `pnpm --filter @ai-food/mobile type-check`
+Run: `pnpm type-check`
 
 Expected: PASS (no errors in new files).
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add apps/mobile/src/features/manual-entry/ui/ManualCompositionDraft.tsx \
-  apps/mobile/src/features/manual-entry/index.ts
+git add src/features/manual-entry/ui/ManualCompositionDraft.tsx \
+  src/features/manual-entry/index.ts
 git commit -m "feat: add ManualCompositionDraft UI"
 ```
 
@@ -808,9 +808,9 @@ git commit -m "feat: add ManualCompositionDraft UI"
 ### Task 4: `ManualEntryPage` + route
 
 **Files:**
-- Create: `apps/mobile/src/pages/manual-entry/ui/ManualEntryPage.tsx`
-- Create: `apps/mobile/src/pages/manual-entry/index.ts`
-- Modify: `apps/mobile/src/app/router.tsx`
+- Create: `src/pages/manual-entry/ui/ManualEntryPage.tsx`
+- Create: `src/pages/manual-entry/index.ts`
+- Modify: `src/app/router.tsx`
 
 **Interfaces:**
 - Consumes: `useSaveManualMeal`, `ManualCompositionDraft`, `ManualCompositionDraftItem`
@@ -822,7 +822,7 @@ git commit -m "feat: add ManualCompositionDraft UI"
 
 - [ ] **Step 1: Implement the page**
 
-Create `apps/mobile/src/pages/manual-entry/ui/ManualEntryPage.tsx`:
+Create `src/pages/manual-entry/ui/ManualEntryPage.tsx`:
 
 ```tsx
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -1085,7 +1085,7 @@ export function ManualEntryPage() {
 }
 ```
 
-Create `apps/mobile/src/pages/manual-entry/index.ts`:
+Create `src/pages/manual-entry/index.ts`:
 
 ```ts
 export { ManualEntryPage } from './ui/ManualEntryPage';
@@ -1093,7 +1093,7 @@ export { ManualEntryPage } from './ui/ManualEntryPage';
 
 - [ ] **Step 2: Register the route**
 
-In `apps/mobile/src/app/router.tsx`, add import:
+In `src/app/router.tsx`, add import:
 
 ```ts
 import { ManualEntryPage } from '@/pages/manual-entry';
@@ -1107,15 +1107,15 @@ Inside `AppShell` children (next to `/favorites`):
 
 - [ ] **Step 3: Type-check**
 
-Run: `pnpm --filter @ai-food/mobile type-check`
+Run: `pnpm type-check`
 
 Expected: PASS.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add apps/mobile/src/pages/manual-entry \
-  apps/mobile/src/app/router.tsx
+git add src/pages/manual-entry \
+  src/app/router.tsx
 git commit -m "feat: add manual entry page and route"
 ```
 
@@ -1124,7 +1124,7 @@ git commit -m "feat: add manual entry page and route"
 ### Task 5: «Вручную» button in `AddFoodSheet`
 
 **Files:**
-- Modify: `apps/mobile/src/features/add-food/ui/AddFoodSheet.tsx`
+- Modify: `src/features/add-food/ui/AddFoodSheet.tsx`
 
 **Interfaces:**
 - Produces: menu button that closes sheet and `navigate('/manual-entry')`
@@ -1160,7 +1160,7 @@ const handleManualClick = () => {
 
 - [ ] **Step 2: Manual smoke check**
 
-Run: `pnpm --filter @ai-food/mobile type-check`
+Run: `pnpm type-check`
 
 Expected: PASS.
 
@@ -1169,7 +1169,7 @@ Optional manual: open app → «+» → «Вручную» → fill name + kcal 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add apps/mobile/src/features/add-food/ui/AddFoodSheet.tsx
+git add src/features/add-food/ui/AddFoodSheet.tsx
 git commit -m "feat: add manual entry button to AddFoodSheet"
 ```
 
@@ -1178,7 +1178,7 @@ git commit -m "feat: add manual entry button to AddFoodSheet"
 ### Task 6: Changelog + final verification
 
 **Files:**
-- Modify: `apps/mobile/src/features/news/model/changelog.ts`
+- Modify: `src/features/news/model/changelog.ts`
 
 - [ ] **Step 1: Add news entry**
 
@@ -1209,8 +1209,8 @@ Prefer merging into the existing `2026-08-03` block to keep one date heading.
 Run:
 
 ```bash
-pnpm --filter @ai-food/mobile test -- buildManualMeal.test.ts useSaveManualMeal.test.ts
-pnpm --filter @ai-food/mobile type-check
+pnpm test -- buildManualMeal.test.ts useSaveManualMeal.test.ts
+pnpm type-check
 ```
 
 Expected: all PASS.
@@ -1218,7 +1218,7 @@ Expected: all PASS.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add apps/mobile/src/features/news/model/changelog.ts
+git add src/features/news/model/changelog.ts
 git commit -m "docs: mention manual food entry in changelog"
 ```
 

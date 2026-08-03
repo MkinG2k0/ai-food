@@ -39,7 +39,7 @@ Users can already set global **Кастомные инструкции** (diet, 
 
 ## Data model
 
-### `packages/shared-types`
+### `src/shared/types`
 
 Add optional fields:
 
@@ -162,7 +162,7 @@ Settings.customInstructions
 
 - Follow FSD: API under `features/analyze-food` (or `features/meal-custom-content` if preferred), UI block as small component used by `pages/meal-detail`, store update on `entities/meal`.
 - Cross-slice imports via barrels only.
-- Add `react-markdown` (and `remark-gfm` if lists/tables need it) to `@ai-food/mobile`.
+- Add `react-markdown` (and `remark-gfm` if lists/tables need it) via `pnpm add`.
 - GSD workflow: implement via `/gsd-quick` or plan after this spec is accepted.
 
 ## Open points resolved in discussion
