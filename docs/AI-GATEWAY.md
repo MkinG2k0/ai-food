@@ -45,6 +45,7 @@ ai-app (openrouter-gateway)
 | — | `OPENROUTER_HTTP_REFERER` / `OPENROUTER_APP_TITLE` | Опциональные заголовки атрибуции OpenRouter |
 | — | `DATABASE_URL`, `AUTH_SECRET`, `TELEGRAM_BOT_TOKEN` | Auth + квота |
 | — | `FREE_GENERATION_LIMIT` | Guest AI budget (default 50) |
+| — | `AUTH_LOGIN_GENERATION_BONUS` | Extra AI after Telegram login (default 100; summed with free → 150) |
 | — | `SUBSCRIPTION_*`, `TBANK_*`, `PUBLIC_APP_URL` | Годовая лицензия (см. [SUBSCRIPTION.md](./SUBSCRIPTION.md)) |
 
 Локально: фронт `pnpm dev` (:5173), бэк в `ai-app` — `npm run dev` (:3000).

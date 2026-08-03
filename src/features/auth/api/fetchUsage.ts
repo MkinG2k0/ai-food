@@ -5,8 +5,19 @@ import {
   type UsageKindHeader,
 } from '../model/quotaHeaders';
 
-/** Guest free analyze/refine quota (must match gateway). */
+/** Guest free analyze/refine quota (must match gateway FREE_GENERATION_LIMIT). */
 export const GUEST_FREE_USAGE_LIMIT = 50;
+
+/** Extra generations after Telegram login (must match AUTH_LOGIN_GENERATION_BONUS). */
+export const AUTH_LOGIN_GENERATION_BONUS = 100;
+
+/** Guest: free only. Authenticated (no sub): free + login bonus. */
+export function getEffectiveFreeLimit(authenticated: boolean): number {
+  return (
+    GUEST_FREE_USAGE_LIMIT +
+    (authenticated ? AUTH_LOGIN_GENERATION_BONUS : 0)
+  );
+}
 
 export type UsageSnapshot = {
   used: number;
@@ -26,10 +37,11 @@ let hydratePromise: Promise<UsageSnapshot> | null = null;
 export function createDefaultGuestUsage(
   authenticated = false,
 ): UsageSnapshot {
+  const limit = getEffectiveFreeLimit(authenticated);
   return {
     used: 0,
-    limit: GUEST_FREE_USAGE_LIMIT,
-    remaining: GUEST_FREE_USAGE_LIMIT,
+    limit,
+    remaining: limit,
     authenticated,
     hasActiveSubscription: false,
   };
@@ -74,7 +86,7 @@ function writeLocalStorageCache(snap: UsageSnapshot): void {
 }
 
 /**
- * Immediate value for UI: memory → localStorage → default 50.
+ * Immediate value for UI: memory → localStorage → default (50 guest / 150 auth).
  * Never returns null, so the settings bar does not jump from empty.
  */
 export function getCachedUsage(): UsageSnapshot {

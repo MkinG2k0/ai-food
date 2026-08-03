@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
+  AUTH_LOGIN_GENERATION_BONUS,
   GUEST_FREE_USAGE_LIMIT,
+  getEffectiveFreeLimit,
   isAuthMockEnabled,
   signInWithMockTelegram,
   signOut,
@@ -57,9 +59,11 @@ export function LoginPage() {
         <section className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Гостям доступно {GUEST_FREE_USAGE_LIMIT} бесплатных
-            анализов/дополнений. После лимита войдите через Telegram, затем
-            при необходимости оформите годовую лицензию. Дневник, ручной ввод и
-            статистика работают без оплаты.
+            анализов/дополнений. После входа через Telegram — ещё{' '}
+            {AUTH_LOGIN_GENERATION_BONUS} (итого{' '}
+            {getEffectiveFreeLimit(true)}). Когда лимит кончится, оформите
+            годовую лицензию. Дневник, ручной ввод и статистика работают без
+            оплаты.
           </p>
 
           <div className="rounded-md border border-border bg-card px-4 py-5">

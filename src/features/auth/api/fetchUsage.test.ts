@@ -48,11 +48,20 @@ describe('fetchUsage cache', () => {
   });
 
   it('defaults to GUEST_FREE_USAGE_LIMIT without network', async () => {
-    const { getCachedUsage, GUEST_FREE_USAGE_LIMIT, createDefaultGuestUsage } =
-      await import('./fetchUsage');
+    const {
+      getCachedUsage,
+      GUEST_FREE_USAGE_LIMIT,
+      AUTH_LOGIN_GENERATION_BONUS,
+      createDefaultGuestUsage,
+      getEffectiveFreeLimit,
+    } = await import('./fetchUsage');
 
     expect(GUEST_FREE_USAGE_LIMIT).toBe(50);
+    expect(AUTH_LOGIN_GENERATION_BONUS).toBe(100);
+    expect(getEffectiveFreeLimit(false)).toBe(50);
+    expect(getEffectiveFreeLimit(true)).toBe(150);
     expect(getCachedUsage()).toEqual(createDefaultGuestUsage(false));
+    expect(createDefaultGuestUsage(true).limit).toBe(150);
   });
 
   it('persists to localStorage and restores sync', async () => {

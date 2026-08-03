@@ -10,7 +10,7 @@ export const usageQueryKey = ['usage'] as const;
 
 /**
  * Guest/auth quota from gateway `/usage`.
- * Shows localStorage/default (50) immediately; refreshes in background.
+ * Shows localStorage/default (50 guest / 150 auth) immediately; refreshes in background.
  */
 export function useUsage() {
   const sessionId = useAuthStore((s) => s.session?.id ?? null);
