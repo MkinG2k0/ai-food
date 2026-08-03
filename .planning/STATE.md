@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260803-wue
-last_updated: "2026-08-03T20:58:32.000Z"
-last_activity: 2026-08-03
-last_activity_desc: "Completed quick task 260803-wue: Telegram auth mock"
+stopped_at: Completed quick task 260804-3gx
+last_updated: "2026-08-04T00:41:00.000Z"
+last_activity: 2026-08-04
+last_activity_desc: "Completed quick task 260804-3gx: T-Bank yearly license + paywall"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -94,6 +94,7 @@ Recent decisions affecting current work:
 - 260716-53i: features/favorites (ai-food-favorites, max 50); MealDetail star; AddFoodSheet «Избранное» → quick-add for selectedDate
 - 260716-5gj: vite-plugin-pwa autoUpdate + safe-area; Meal Detail thicker Полезность/Точность bars, 2×2 macros
 - 260803-wue: features/auth mock Telegram session (ai-food-auth); /login optional; Settings Аккаунт; no next-auth
+- 260804-3gx: one-time T-Bank yearly license (ai-app billing) + paywall; login ≠ unlimited; hasActiveSubscription gates AI
 
 ### Pending Todos
 
@@ -153,6 +154,7 @@ None yet.
 | fast | Count piece foods (rolls/wings) via itemCount, not one plate = 1 | 2026-08-03 | 48dde42 | — |
 | 260803-3sp | Barcode scanner + Open Food Facts → diary meal | 2026-08-03 | — | [260803-3sp-barcode-scanner-with-open-food-facts-sca](./quick/260803-3sp-barcode-scanner-with-open-food-facts-sca/) |
 | 260803-wue | Telegram auth mock (Auth.js-shaped client, /login, Settings) | 2026-08-03 | fb97749, 12752f5, 5521fa0, 7e42e0c | [260803-wue-telegram-auth-js](./quick/260803-wue-telegram-auth-js/) |
+| 260804-3gx | One-time T-Bank yearly license + paywall (ai-app + ai-food) | 2026-08-04 | ai-app: 6f15ad3,cc016b3,af7d95b,281b401; ai-food: aced7b9 | [260804-3gx-one-time-t-bank-backend-ai-app-paywall-a](./quick/260804-3gx-one-time-t-bank-backend-ai-app-paywall-a/) |
 
 ### Blockers/Concerns
 
@@ -161,7 +163,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-03T20:58:32Z
-Stopped at: Completed quick task 260803-wue
+Last session: 2026-08-04T00:41:00Z
+Stopped at: Completed quick task 260804-3gx
 Resume file: None
-Next: Run /gsd-plan-phase for Phase 2 (Photo Capture & Analysis Loading)
+Next: Run /gsd-plan-phase for Phase 2 (Photo Capture & Analysis Loading) or smoke-test billing with TBANK_MOCK=true
