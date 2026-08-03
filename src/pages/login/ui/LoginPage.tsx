@@ -4,6 +4,7 @@ import {
   isAuthMockEnabled,
   signInWithMockTelegram,
   signOut,
+  TelegramLoginButton,
   useAuthStore,
 } from '@/features/auth';
 import { Button, SubpageShell } from '@/shared/ui';
@@ -15,7 +16,7 @@ export function LoginPage() {
 
   const handleMockSignIn = () => {
     if (!mockEnabled) {
-      toast.message('Реальный Telegram Login Widget ещё не подключён');
+      toast.message('Демо-вход выключен (VITE_AUTH_MOCK=false)');
       return;
     }
     signInWithMockTelegram();
@@ -25,6 +26,11 @@ export function LoginPage() {
   const handleSignOut = () => {
     signOut();
     toast.success('Вы вышли');
+  };
+
+  const handleTelegramSuccess = () => {
+    toast.success('Вход выполнен');
+    navigate('/', { replace: true });
   };
 
   return (
@@ -50,37 +56,27 @@ export function LoginPage() {
         <section className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Гостям доступно 50 бесплатных анализов/дополнений. После лимита
-            войдите через Telegram. Сейчас доступен демо-вход без сервера —
-            приложение работает и без авторизации.
+            войдите через Telegram — приложение работает и без входа, пока есть
+            лимит.
           </p>
 
-          <Button
-            className="w-full"
-            disabled={!mockEnabled}
-            onClick={handleMockSignIn}
-          >
-            Войти через Telegram (демо)
-          </Button>
-
-          {!mockEnabled && (
-            <p className="text-sm text-muted-foreground">
-              Реальный Telegram Login Widget ещё не подключён. Включите
-              VITE_AUTH_MOCK=true для демо-входа.
-            </p>
-          )}
-
-          {/* Future: Telegram Login Widget (domain ai-food-mobile.vercel.app) */}
-          <div
-            className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-6 text-center"
-            aria-hidden="true"
-          >
-            <p className="text-sm text-muted-foreground">
-              Здесь появится Telegram Login Widget
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Domain: ai-food-mobile.vercel.app
+          <div className="rounded-md border border-border bg-card px-4 py-5">
+            <p className="mb-3 text-center text-sm font-medium">Telegram</p>
+            <TelegramLoginButton
+              onSuccess={handleTelegramSuccess}
+              onError={(message) => toast.error(message)}
+            />
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Виджет работает на домене из BotFather (например
+              ai-food-mobile.vercel.app). На localhost может не открыться.
             </p>
           </div>
+
+          {mockEnabled && (
+            <Button variant="outline" className="w-full" onClick={handleMockSignIn}>
+              Войти (демо, без сервера)
+            </Button>
+          )}
         </section>
       )}
     </SubpageShell>

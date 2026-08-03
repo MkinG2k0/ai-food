@@ -7,3 +7,10 @@ export {
 } from './model/mockTelegramAuth';
 export { getQuotaHeaders, type UsageKindHeader } from './model/quotaHeaders';
 export { fetchUsage, type UsageSnapshot } from './api/fetchUsage';
+export {
+  signInWithTelegram,
+  getTelegramBotUsername,
+  mapTelegramUserToSession,
+  type TelegramLoginPayload,
+} from './api/signInWithTelegram';
+export { TelegramLoginButton } from './ui/TelegramLoginButton';
