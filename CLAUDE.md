@@ -3,18 +3,18 @@
 
 **AI Food**
 
-Web-first приложение для учёта питания: пользователь фотографирует еду, получает оценку КБЖУ через AI и сохраняет приёмы пищи в локальный дневник. Сейчас — brownfield single-package React (FSD) + Capacitor; AI через клиентский Gateway; цель ближайшего цикла — заменить mock на реальный OpenAI Vision и довести продукт до рабочего web-MVP, который можно показать пользователям.
+Web-first ?????????? ??? ????? ???????: ???????????? ????????????? ???, ???????? ?????? ???? ????? AI ? ????????? ?????? ???? ? ????????? ???????. ?????? ? brownfield single-package React (FSD) + Capacitor; AI ????? ?????????? Gateway; ???? ?????????? ????? ? ???????? mock ?? ???????? OpenAI Vision ? ??????? ??????? ?? ???????? web-MVP, ??????? ????? ???????? ?????????????.
 
-**Core Value:** Сфотографировал еду → получил правдоподобные данные о питании → сохранил в дневник — без лишних шагов и без потери данных при перезагрузке.
+**Core Value:** ??????????????? ??? ? ??????? ?????????????? ?????? ? ??????? ? ???????? ? ??????? ? ??? ?????? ????? ? ??? ?????? ?????? ??? ????????????.
 
 ### Constraints
 
-- **Tech stack**: Сохранить стек pnpm + React/FSD/Vite (single package) — не переписывать с нуля
-- **Security**: AI Gateway ключ сейчас в VITE_* на клиенте (техдолг: вынести с клиента)
-- **Persistence**: localStorage на клиенте; без БД в этом цикле
-- **Auth**: Без авторизации в MVP — один пользователь на устройство/браузер
-- **Architecture**: API-вызовы только через TanStack Query hooks; Zustand не хранит server data
-- **Compatibility**: Web-first; мобильный UX через responsive layout, не нативное приложение
+- **Tech stack**: ????????? ???? pnpm + React/FSD/Vite (single package) ? ?? ???????????? ? ????
+- **Security**: AI Gateway ???? ?????? ? VITE_* ?? ??????? (???????: ??????? ? ???????)
+- **Persistence**: localStorage ?? ???????; ??? ?? ? ???? ?????
+- **Auth**: ??? ??????????? ? MVP ? ???? ???????????? ?? ??????????/???????
+- **Architecture**: API-?????? ?????? ????? TanStack Query hooks; Zustand ?? ?????? server data
+- **Compatibility**: Web-first; ????????? UX ????? responsive layout, ?? ???????? ??????????
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:codebase/STACK.md -->
@@ -25,81 +25,81 @@ Web-first приложение для учёта питания: пользов�
 ## Languages
 
 **Primary:**
-- TypeScript 5.9.3 (resolved via `pnpm-lock.yaml`) — application code in `src/`
-- TSX/JSX — React components in `src/**/*.tsx`
+- TypeScript 5.9.3 (resolved via `pnpm-lock.yaml`) ? application code in `src/`
+- TSX/JSX ? React components in `src/**/*.tsx`
 
 **Secondary:**
-- HTML — `index.html` (Vite entry shell)
-- CSS — `src/app/styles/global.css` (Tailwind directives + CSS variables for shadcn/ui)
-- JSON — `package.json`, `components.json`
+- HTML ? `index.html` (Vite entry shell)
+- CSS ? `src/app/styles/global.css` (Tailwind directives + CSS variables for shadcn/ui)
+- JSON ? `package.json`, `components.json`
 
 ## Runtime
 
 **Environment:**
 - Node.js >= 18 (declared in root `package.json` `engines`)
-- Browser (Chromium/WebKit) — Vite SPA; Capacitor Android shell for native builds
+- Browser (Chromium/WebKit) ? Vite SPA; Capacitor Android shell for native builds
 
 **Package Manager:**
 - pnpm 9.6.0 (pinned in root `package.json` `packageManager`)
 - Lockfile: present (`pnpm-lock.yaml`)
-- Single package — no pnpm workspaces / Turborepo
+- Single package ? no pnpm workspaces / Turborepo
 
 ## Frameworks
 
 **Core:**
-- React 18.3.1 — UI in `src/`
-- React Router DOM 6.24.1 — routing in `src/app/router.tsx`
+- React 18.3.1 ? UI in `src/`
+- React Router DOM 6.24.1 ? routing in `src/app/router.tsx`
 
 **Testing:**
-- Vitest 2.1.9 — unit tests (`vitest.config.ts`)
+- Vitest 2.1.9 ? unit tests (`vitest.config.ts`)
 - Testing Library (`@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`)
-- jsdom — DOM environment for Vitest (`src/test/setup.ts`)
+- jsdom ? DOM environment for Vitest (`src/test/setup.ts`)
 
 **Build/Dev:**
-- Vite 5.4.21 — dev server and production bundle (`vite.config.ts`)
-- `@vitejs/plugin-react` — React Fast Refresh
-- TypeScript compiler (`tsc`) — `type-check` / build (`tsc && vite build`)
-- Capacitor 8 — native Android (`android/`, `capacitor.config.ts`)
+- Vite 5.4.21 ? dev server and production bundle (`vite.config.ts`)
+- `@vitejs/plugin-react` ? React Fast Refresh
+- TypeScript compiler (`tsc`) ? `type-check` / build (`tsc && vite build`)
+- Capacitor 8 ? native Android (`android/`, `capacitor.config.ts`)
 
 ## Key Dependencies
 
 **Critical:**
-- `@tanstack/react-query` — server/async state for food analysis
-- `axios` — HTTP client (`src/shared/api/client.ts`)
-- `zustand` — client state: image selection, diary, profile, settings
-- `react-router-dom` — SPA routing
-- `sonner` — toast notifications (`src/app/providers.tsx`)
+- `@tanstack/react-query` ? server/async state for food analysis
+- `axios` ? HTTP client (`src/shared/api/client.ts`)
+- `zustand` ? client state: image selection, diary, profile, settings
+- `react-router-dom` ? SPA routing
+- `sonner` ? toast notifications (`src/app/providers.tsx`)
 - Domain types in `src/shared/types` (import alias `@ai-food/shared-types`)
 
 **UI / styling:**
 - Tailwind CSS + `tailwindcss-animate`
-- shadcn/ui pattern — `components.json`; components in `src/shared/ui/`
+- shadcn/ui pattern ? `components.json`; components in `src/shared/ui/`
 - `@radix-ui/react-slot`, `class-variance-authority`, `clsx`, `tailwind-merge`
-- `lucide-react` — icons
-- `framer-motion` — motion / week strip
+- `lucide-react` ? icons
+- `framer-motion` ? motion / week strip
 
 **Native / storage:**
 - `@capacitor/core`, `@capacitor/android`, `@capacitor/app`
 - `@capacitor/camera`, `@capacitor/filesystem`, `@capacitor/preferences`
 
 **Infrastructure:**
-- Not detected — no Docker, Kubernetes, cloud SDKs, or IaC in repo
+- Not detected ? no Docker, Kubernetes, cloud SDKs, or IaC in repo
 
 ## Configuration
 
 **Environment:**
 - AI Gateway: `VITE_AI_GATEWAY_URL`, `VITE_AI_GATEWAY_API_KEY` (client-side)
 - Optional `VITE_API_URL` in `src/shared/api/client.ts`
-- `.env` listed in `.gitignore` — may exist locally; no `.env.example` committed
+- `.env` listed in `.gitignore` ? may exist locally; no `.env.example` committed
 
 **Build:**
 - Root `package.json` scripts: `pnpm dev`, `pnpm build`, `pnpm test`, `pnpm type-check`
 - Capacitor: `pnpm cap:sync`, `pnpm cap:build`, `pnpm cap:open:android`
-- `vite.config.ts` — `@` → `./src`, `@ai-food/shared-types` → `./src/shared/types`
-- `tsconfig.json` — strict mode, path aliases `@/*` and `@ai-food/shared-types`
+- `vite.config.ts` ? `@` ? `./src`, `@ai-food/shared-types` ? `./src/shared/types`
+- `tsconfig.json` ? strict mode, path aliases `@/*` and `@ai-food/shared-types`
 
 **Linting / formatting:**
-- Not detected — no ESLint, Prettier, or Biome config files
+- Not detected ? no ESLint, Prettier, or Biome config files
 
 ## Platform Requirements
 
@@ -113,7 +113,7 @@ Web-first приложение для учёта питания: пользов�
   ```
 
 **Production:**
-- Static SPA build via `pnpm build` → Vite `dist/`
+- Static SPA build via `pnpm build` ? Vite `dist/`
 - Native: `pnpm cap:build` then open Android Studio
 - No hosting platform, CI/CD, or container definitions detected
 
@@ -130,47 +130,47 @@ Web-first приложение для учёта питания: пользов�
 ## Naming Patterns
 
 **Files:**
-- React components and pages: PascalCase — `HomePage.tsx`, `MealCard.tsx`, `NutritionCard.tsx`
-- Hooks and stores: camelCase with `use` prefix — `useAnalyzeFood.ts`, `useImageStore.ts`, `useDiaryStore.ts`
-- API modules: camelCase with `Api` suffix — `analyzeFoodApi.ts`
-- Utilities: camelCase — `formatters.ts`, `utils.ts`, `queryClient.ts`
+- React components and pages: PascalCase ? `HomePage.tsx`, `MealCard.tsx`, `NutritionCard.tsx`
+- Hooks and stores: camelCase with `use` prefix ? `useAnalyzeFood.ts`, `useImageStore.ts`, `useDiaryStore.ts`
+- API modules: camelCase with `Api` suffix ? `analyzeFoodApi.ts`
+- Utilities: camelCase ? `formatters.ts`, `utils.ts`, `queryClient.ts`
 - Barrel files: always `index.ts` at the public boundary of each slice
-- Tests: co-located, same base name + `.test.ts` — `useImageStore.test.ts`, `formatters.test.ts`
+- Tests: co-located, same base name + `.test.ts` ? `useImageStore.test.ts`, `formatters.test.ts`
 
 **Directories (FSD segments):**
-- `ui/` — presentational components (`ImagePicker.tsx`, `MealCard.tsx`)
-- `model/` — hooks, Zustand stores, business logic (`useSaveMeal.ts`, `useDiaryStore.ts`)
-- `api/` — HTTP client calls (`analyzeFoodApi.ts`)
-- Slice root — `index.ts` barrel only; no implementation files at slice root
+- `ui/` ? presentational components (`ImagePicker.tsx`, `MealCard.tsx`)
+- `model/` ? hooks, Zustand stores, business logic (`useSaveMeal.ts`, `useDiaryStore.ts`)
+- `api/` ? HTTP client calls (`analyzeFoodApi.ts`)
+- Slice root ? `index.ts` barrel only; no implementation files at slice root
 
 **Functions:**
-- camelCase for all functions — `formatCalories`, `analyzeFoodApi`, `setImage`
-- Custom hooks: `use` prefix — `useAnalyzeFood`, `useSaveMeal`
-- Event handlers in components: `handle` prefix — `handleImageSelect`, `handleFileChange`
+- camelCase for all functions ? `formatCalories`, `analyzeFoodApi`, `setImage`
+- Custom hooks: `use` prefix ? `useAnalyzeFood`, `useSaveMeal`
+- Event handlers in components: `handle` prefix ? `handleImageSelect`, `handleFileChange`
 
 **Variables:**
-- camelCase — `todayMeals`, `previewUrl`, `mockResponse`
-- Constants: UPPER_SNAKE_CASE for module-level config — `DAILY_GOAL`, `API_BASE_URL`, `MOCK_RESPONSE`
+- camelCase ? `todayMeals`, `previewUrl`, `mockResponse`
+- Constants: UPPER_SNAKE_CASE for module-level config ? `DAILY_GOAL`, `API_BASE_URL`, `MOCK_RESPONSE`
 
 **Types:**
-- PascalCase for interfaces and types — `Meal`, `NutritionResult`, `ButtonProps`, `DiaryState`
-- Props interfaces: `{ComponentName}Props` — `ImagePickerProps`, `NutritionCardProps`, `MealCardProps`
-- Store state interfaces: descriptive noun + `State` — `ImageState`, `DiaryState`
+- PascalCase for interfaces and types ? `Meal`, `NutritionResult`, `ButtonProps`, `DiaryState`
+- Props interfaces: `{ComponentName}Props` ? `ImagePickerProps`, `NutritionCardProps`, `MealCardProps`
+- Store state interfaces: descriptive noun + `State` ? `ImageState`, `DiaryState`
 - Shared domain types live in `src/shared/types/index.ts` and are imported as `@ai-food/shared-types`
 - Prefer `interface` for object shapes; use `type` for imports (`import type { Meal }`)
 
 **Packages:**
-- Scoped workspace names — `@ai-food/mobile`, `@ai-food/backend`, `@ai-food/shared-types`
+- Scoped workspace names ? `@ai-food/mobile`, `@ai-food/backend`, `@ai-food/shared-types`
 
 ## Code Style
 
 **Formatting:**
-- No ESLint, Prettier, Biome, or EditorConfig detected — style is enforced implicitly by TypeScript strict mode and team convention
+- No ESLint, Prettier, Biome, or EditorConfig detected ? style is enforced implicitly by TypeScript strict mode and team convention
 - 2-space indentation throughout observed source
 - Semicolons at statement ends (dominant style)
-- Single quotes for strings in most files; double quotes appear in `src/app/providers.tsx` — prefer single quotes for new code
+- Single quotes for strings in most files; double quotes appear in `src/app/providers.tsx` ? prefer single quotes for new code
 - Trailing commas in multiline objects and arrays
-- Numeric separators for readability — `30_000`, `5 * 60 * 1000`
+- Numeric separators for readability ? `30_000`, `5 * 60 * 1000`
 - `type: "module"` in `package.json`; ESM imports with explicit `.ts` extensions not required (bundler resolution)
 
 **Linting:**
@@ -180,36 +180,36 @@ Web-first приложение для учёта питания: пользов�
   - `noUnusedLocals: true`
   - `noUnusedParameters: true`
   - `noFallthroughCasesInSwitch: true`
-- Run `pnpm type-check` from root (Turbo) or `pnpm type-check` in `apps/mobile`
+- Run `pnpm type-check` from repo root
 
 **React / UI:**
-- Named function exports for components — `export function HomePage()`, not default exports
-- shadcn/ui primitives use `React.forwardRef` with `displayName` — see `src/shared/ui/button.tsx`
+- Named function exports for components ? `export function HomePage()`, not default exports
+- shadcn/ui primitives use `React.forwardRef` with `displayName` ? see `src/shared/ui/button.tsx`
 - Variant styling via `class-variance-authority` (`cva`) + `cn()` from `src/shared/lib/utils.ts`
 - Tailwind utility classes inline on JSX elements; semantic color tokens (`bg-background`, `text-muted-foreground`, `text-destructive`)
 - Icons from `lucide-react`, sized with `h-N w-N` classes
-- Accessibility: `aria-label` on icon-only buttons — `src/pages/home/ui/HomePage.tsx`
+- Accessibility: `aria-label` on icon-only buttons ? `src/pages/home/ui/HomePage.tsx`
 
 ## Import Organization
 
 **Order:**
 1. React / framework (`react`, `react-router-dom`)
 2. Third-party libraries (`@tanstack/react-query`, `zustand`, `lucide-react`, `axios`)
-3. Internal aliases — higher FSD layers first when applicable (`@/widgets/*`, `@/features/*`, `@/entities/*`, `@/shared/*`)
-4. Relative imports — only within the same slice (`../api/analyzeFoodApi` inside `features/analyze-food`)
-5. Type-only imports — `import type { ... }` on a separate line or grouped at end
+3. Internal aliases ? higher FSD layers first when applicable (`@/widgets/*`, `@/features/*`, `@/entities/*`, `@/shared/*`)
+4. Relative imports ? only within the same slice (`../api/analyzeFoodApi` inside `features/analyze-food`)
+5. Type-only imports ? `import type { ... }` on a separate line or grouped at end
 
 **Path Aliases:**
-- `@/*` → `src/*` — configured in `tsconfig.json` and `vite.config.ts`
-- shadcn aliases in `components.json`: `components`/`ui` → `@/shared/ui`, `lib` → `@/shared/lib`
+- `@/*` ? `src/*` ? configured in `tsconfig.json` and `vite.config.ts`
+- shadcn aliases in `components.json`: `components`/`ui` ? `@/shared/ui`, `lib` ? `@/shared/lib`
 
 **Barrel / FSD import rules (prescriptive):**
-- Cross-slice imports MUST go through `index.ts` barrels — documented in `.cursor/rules/index-reexports.mdc`
+- Cross-slice imports MUST go through `index.ts` barrels ? documented in `.cursor/rules/index-reexports.mdc`
 - Correct: `import { ImagePicker, useImageStore } from '@/features/add-food'`
 - Correct: `import { Button } from '@/shared/ui'`
 - Wrong: `import { ImagePicker } from '@/features/add-food/ui/ImagePicker'`
-- Within a slice, relative paths are allowed — `export { Button } from './button'` in `src/shared/ui/index.ts`
-- FSD layer order (high → low): `app → pages → widgets → features → entities → shared`
+- Within a slice, relative paths are allowed ? `export { Button } from './button'` in `src/shared/ui/index.ts`
+- FSD layer order (high ? low): `app ? pages ? widgets ? features ? entities ? shared`
 - Higher layers import from lower only; no same-layer cross-imports between features
 
 **Zustand selector pattern:**
@@ -222,13 +222,13 @@ Use atomic selectors; avoid destructuring the whole store in components.
 ## Error Handling
 
 **Patterns:**
-- HTTP errors centralized in Axios response interceptor — `src/shared/api/client.ts`
+- HTTP errors centralized in Axios response interceptor ? `src/shared/api/client.ts`
 - Interceptor maps Axios errors to `ApiError` shape from `@ai-food/shared-types` and re-throws via `Promise.reject(apiError)`
 - API functions (`analyzeFoodApi`) do not wrap try/catch; callers rely on rejection
-- React Query hooks declare error type — `useQuery<AnalyzeFoodResponse, Error>` in `src/features/analyze-food/model/useAnalyzeFood.ts`
-- UI consumes query state — `isError` branch with user-facing message in `src/pages/result/ui/ResultPage.tsx`
+- React Query hooks declare error type ? `useQuery<AnalyzeFoodResponse, Error>` in `src/features/analyze-food/model/useAnalyzeFood.ts`
+- UI consumes query state ? `isError` branch with user-facing message in `src/pages/result/ui/ResultPage.tsx`
 - Navigation guards via `useEffect` + `navigate(..., { replace: true })` when required state is missing
-- Backend mock (`apps/backend/src/routes/analyze-food.ts`) has no error paths; always returns mock JSON after delay
+- No in-repo backend mock; AI errors come from Gateway responses
 - No global error boundary component detected
 
 **When adding API calls:**
@@ -242,15 +242,15 @@ Use atomic selectors; avoid destructuring the whole store in components.
 **Framework:** `console` only
 
 **Patterns:**
-- `console.log` used once for server startup — `../backend/src/index.ts`
+- `console.log` used once for server startup ? `../backend/src/index.ts`
 - No structured logging, no client-side logging framework
-- `sonner` Toaster is mounted in `src/app/providers.tsx` but `toast()` is not called anywhere yet — use for user notifications when needed
+- `sonner` Toaster is mounted in `src/app/providers.tsx` but `toast()` is not called anywhere yet ? use for user notifications when needed
 
 ## Comments
 
 **When to Comment:**
-- Non-obvious environment workarounds — jsdom polyfill in `src/test/setup.ts`
-- Distinguishing similar elements — gallery vs camera inputs in `src/features/add-food/ui/ImagePicker.tsx`
+- Non-obvious environment workarounds ? jsdom polyfill in `src/test/setup.ts`
+- Distinguishing similar elements ? gallery vs camera inputs in `src/features/add-food/ui/ImagePicker.tsx`
 - Do not add comments for self-explanatory code; the codebase is lightly commented
 
 **JSDoc/TSDoc:**
@@ -262,18 +262,18 @@ Use atomic selectors; avoid destructuring the whole store in components.
 - Keep hooks and components focused; pages compose widgets/features without heavy logic
 - Extract formatting to `src/shared/lib/formatters.ts`
 - Extract API calls to `api/` segment files
-- Business orchestration in `model/` hooks — `useSaveMeal` builds `Meal` and navigates
+- Business orchestration in `model/` hooks ? `useSaveMeal` builds `Meal` and navigates
 
 **Parameters:**
-- Props destructured in function signature — `export function MealCard({ meal }: MealCardProps)`
-- Optional props with defaults in destructuring — `NutritionRow` in `src/entities/nutrition/ui/NutritionRow.tsx`
+- Props destructured in function signature ? `export function MealCard({ meal }: MealCardProps)`
+- Optional props with defaults in destructuring ? `NutritionRow` in `src/entities/nutrition/ui/NutritionRow.tsx`
 - Callback props: `onImageSelect: (file: File) => void`
 
 **Return Values:**
 - Components return JSX directly
 - Hooks return React Query result objects or store selectors
-- Pure functions return typed primitives/strings — `formatCalories(kcal: number): string`
-- Custom action hooks may return a function — `useSaveMeal()` returns `(result: NutritionResult) => void`
+- Pure functions return typed primitives/strings ? `formatCalories(kcal: number): string`
+- Custom action hooks may return a function ? `useSaveMeal()` returns `(result: NutritionResult) => void`
 
 ## Module Design
 
@@ -284,7 +284,7 @@ Use atomic selectors; avoid destructuring the whole store in components.
   - `src/entities/meal/index.ts`
   - `src/shared/ui/index.ts`
   - `src/shared/lib/index.ts`
-- Export types alongside values when needed — `export { Button, type ButtonProps, buttonVariants }`
+- Export types alongside values when needed ? `export { Button, type ButtonProps, buttonVariants }`
 
 **Barrel Files:**
 - Required at every public FSD segment boundary (`features/*`, `entities/*`, `widgets/*`, `pages/*`, `shared/*`)
@@ -292,9 +292,9 @@ Use atomic selectors; avoid destructuring the whole store in components.
 - `src/shared/types` exports all domain interfaces from `src/shared/types/index.ts`
 
 **State management split (prescriptive):**
-- Zustand — client/UI state only (`useImageStore`, `useDiaryStore`); never store API responses
-- TanStack Query — server/async state (`useAnalyzeFood`)
-- `useDiaryStore` uses `persist` middleware with key `ai-food-diary` — `src/entities/meal/model/useDiaryStore.ts`
+- Zustand ? client/UI state only (`useImageStore`, `useDiaryStore`); never store API responses
+- TanStack Query ? server/async state (`useAnalyzeFood`)
+- `useDiaryStore` uses `persist` middleware with key `ai-food-diary` ? `src/entities/meal/model/useDiaryStore.ts`
 
 
 ---
@@ -316,7 +316,7 @@ Use atomic selectors; avoid destructuring the whole store in components.
 - FSD layers with strict top-down import direction
 - Server/async state via TanStack Query; client/UI state via Zustand
 - Domain types in `src/shared/types` (alias `@ai-food/shared-types`)
-- AI via client-side AI Gateway (`VITE_AI_GATEWAY_*`); no in-repo backend
+- AI via sibling OpenRouter gateway repo `ai-app` (`VITE_AI_GATEWAY_*`); no in-repo backend ? see `docs/AI-GATEWAY.md`
 
 ## Layers
 
@@ -393,6 +393,19 @@ Use atomic selectors; avoid destructuring the whole store in components.
 
 *Architecture analysis: 2026-08-03 (single-package repo)*
 <!-- GSD:architecture-end -->
+
+<!-- manual:sibling-backend ? keep in sync with docs/AI-GATEWAY.md -->
+## Sibling Backend (ai-app)
+
+?????? **?? ? ???? ????**. ????????? ??????:
+
+- **????:** `d:\Project\Main\ai-app` (????? `openrouter-gateway`)
+- **????:** Express-?????? ? OpenRouter (`/v1/chat/completions`, `/v1/models`, `/v1/embeddings`, `/health`)
+- **??????:** `VITE_AI_GATEWAY_URL` + `VITE_AI_GATEWAY_API_KEY` ? gateway `API_KEY`; upstream-???? ?????? ?? ???? (`OPENROUTER_API_KEY`)
+- **????? ???:** ???????, vision, ??????? ???? ? ?? ?????? (`features/analyze-food`), ?? ? gateway
+- **?????? ????:** [`docs/AI-GATEWAY.md`](docs/AI-GATEWAY.md) � ??????????: [`.planning/codebase/INTEGRATIONS.md`](.planning/codebase/INTEGRATIONS.md)
+
+??? ??????? ??? AI proxy / auth gateway / OpenRouter ? ??????? `ai-app`. ??? ????????, XML, UX ??????? ? ??????? `ai-food`.
 
 <!-- GSD:skills-start source:skills/ -->
 ## Project Skills

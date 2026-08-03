@@ -1,130 +1,88 @@
 # External Integrations
 
-**Analysis Date:** 2026-06-24
+**Analysis Date:** 2026-08-03
 
-## APIs & External Services
+## Sibling backend (AI Gateway)
 
-**Food analysis (mock only):**
-- Internal Express mock server — simulates AI nutrition analysis
-  - Client: `axios` via `src/shared/api/client.ts`
-  - API wrapper: `src/features/analyze-food/api/analyzeFoodApi.ts`
-  - Endpoint: `POST /analyze-food` (`[removed-backend]/src/routes/analyze-food.ts`)
-  - Auth: none
-  - Behavior: accepts `multipart/form-data` field `image`, ignores file content, returns hardcoded `AnalyzeFoodResponse` after 1.5–3s delay
-  - Base URL: `VITE_API_URL` env var or `http://localhost:3001`
+**Repo:** `d:\Project\Main\ai-app` (package `openrouter-gateway`)  
+**Role:** Express OpenAI-compatible proxy to OpenRouter — not an in-repo backend and not food-domain API.  
+**Canonical agent doc:** `docs/AI-GATEWAY.md`
 
-**Real AI / vision APIs:**
-- Not integrated — no OpenAI, Google Vision, Clarifai, or similar SDKs in dependencies or source
+```
+ai-food → VITE_AI_GATEWAY_* → ai-app /v1/* → OpenRouter
+```
 
-**Health check:**
-- `GET /health` on backend (`[removed-backend]/src/index.ts`) — returns `{ status: 'ok' }`; not called from mobile app
+### AI chat (primary)
+
+- **Upstream:** OpenRouter via sibling gateway (`OPENROUTER_API_KEY` server-side only)
+- **Client env:** `VITE_AI_GATEWAY_URL`, `VITE_AI_GATEWAY_API_KEY` (maps to gateway `API_KEY`)
+- **Contract:** `POST /v1/chat/completions` (JSON + SSE `stream: true`); also `GET /v1/models`, `POST /v1/embeddings`, `GET /health`
+- **Auth:** `Authorization: Bearer` or `X-API-Key` when gateway `API_KEY` is set
+- **Call sites:**
+  - `src/features/analyze-food/api/analyzeFoodApi.ts` (+ `streamChatCompletions.ts`)
+  - `src/features/analyze-food/api/refineMealApi.ts`
+  - `src/features/analyze-food/api/fetchMealCustomContentApi.ts`
+  - `src/features/onboarding/api/micronutrientTargetsApi.ts`
+- **Domain logic on client:** prompts, image compress, XML/JSON nutrition parse — not on gateway
+- **Error codes from gateway:** `RATE_LIMITED`, `UPSTREAM_TIMEOUT`, `BAD_REQUEST`, `UPSTREAM_ERROR`, `UNAUTHORIZED`, `VALIDATION_ERROR` — mapped in client APIs
+
+### Legacy / unused AI path
+
+- `src/shared/api/client.ts` axios `VITE_API_URL` (default `http://localhost:3001`) — not the main AI Gateway path
+- Old in-repo Express mock `/analyze-food` — **removed**; do not restore from stale planning notes
 
 ## Data Storage
 
 **Databases:**
-- None — no ORM, no Prisma schema, no SQL/NoSQL client packages
-- Backend explicitly stateless (`docs/superpowers/specs/2026-06-24-ai-food-mvp-design.md`, `[removed-backend]/src/routes/analyze-food.ts`)
+- None in ai-food or required by ai-app gateway (stateless proxy)
 
 **Client-side persistence:**
-- Browser `localStorage` via Zustand `persist` middleware
-  - Store key: `ai-food-diary` (`src/entities/meal/model/useDiaryStore.ts`)
-  - Data: `Meal[]` diary entries survive page reloads
-  - Image preview state (`useImageStore`) is **not** persisted — in-memory only
+- Capacitor Preferences / localStorage via Zustand `persist` (diary, profile, settings, favorites)
+- Image selection store is ephemeral unless saved into a meal
 
 **File Storage:**
-- Upload path: in-memory only on backend (`multer.memoryStorage()` in `[removed-backend]/src/routes/analyze-food.ts`)
-- No S3, Cloudinary, or filesystem persistence for images
-- Frontend: `File` objects and `URL.createObjectURL` for previews (`src/features/add-food/model/useImageStore.ts`)
+- Meal images via Capacitor Filesystem where configured; AI uploads are base64 data URLs in chat messages (body limit on gateway: 10 MB)
 
 **Caching:**
-- TanStack Query in-memory cache for analyze-food responses (`src/features/analyze-food/model/useAnalyzeFood.ts`, `src/shared/lib/queryClient.ts`)
-- No Redis or CDN caching layer
+- TanStack Query for async AI calls
+- OpenRouter prompt cache via block-level `cache_control` in analyze messages (gateway Zod must allow nested message content fields)
 
 ## Authentication & Identity
 
-**Auth Provider:**
-- None — MVP explicitly excludes auth (`docs/superpowers/specs/2026-06-24-ai-food-mvp-design.md` Non-Goals)
-- No JWT, OAuth, session cookies, or API keys in mobile or backend code
-- Backend CORS: `cors()` with default open settings (`[removed-backend]/src/index.ts`)
-- Axios client has no request interceptor for auth headers (`src/shared/api/client.ts`)
+**User auth:** none in MVP (single device user)  
+**Gateway auth:** shared secret `VITE_AI_GATEWAY_API_KEY` ↔ `API_KEY` (tech debt: secret shipped in client bundle)
 
 ## Monitoring & Observability
 
-**Error Tracking:**
-- None — no Sentry, Datadog, or similar
-
-**Logs:**
-- Backend: `console.log` on startup (`[removed-backend]/src/index.ts`)
-- Frontend: axios response interceptor maps errors to `ApiError` shape (`src/shared/api/client.ts`); no structured logging framework
-- User-facing errors: Sonner toasts (configured in `src/app/providers.tsx`)
+- No Sentry/Datadog
+- Client: `console` + Sonner toasts where wired
+- Gateway: `console.error` on upstream failures
 
 ## CI/CD & Deployment
 
-**Hosting:**
-- Not configured — no Vercel, Netlify, Railway, Fly.io, or cloud manifests
-
-**CI Pipeline:**
-- Not detected — no `.github/workflows/`, GitLab CI, or similar
+- ai-food: static SPA / Capacitor; no CI manifests detected in-repo
+- ai-app: deployable Node service (example prod URL may appear in local `.env` as `VITE_AI_GATEWAY_URL`)
 
 ## Environment Configuration
 
-**Required env vars:**
+| Variable | App | Purpose |
+|----------|-----|---------|
+| `VITE_AI_GATEWAY_URL` | ai-food | Gateway base URL (no `/v1` suffix) |
+| `VITE_AI_GATEWAY_API_KEY` | ai-food | Caller secret for gateway |
+| `VITE_API_URL` | ai-food | Optional axios base (legacy) |
+| `OPENROUTER_API_KEY` | ai-app | Upstream provider key |
+| `API_KEY` | ai-app | Optional caller auth |
+| `PORT` | ai-app | Listen port (default 3000) |
+| `OPENROUTER_HTTP_REFERER` / `OPENROUTER_APP_TITLE` | ai-app | Optional OpenRouter attribution |
 
-| Variable | App | Purpose | Default |
-|----------|-----|---------|---------|
-| `VITE_API_URL` | mobile | Backend base URL for axios | `http://localhost:3001` |
-| `PORT` | backend | HTTP listen port | `3001` |
+`.env` is gitignored in both repos; ai-app has `.env.example`.
 
-**Optional / not used:**
-- No database connection strings
-- No AI provider API keys
-- No auth secrets
+## See also
 
-**Secrets location:**
-- `.env` gitignored (`.gitignore`) — local developer config only
-- No committed secrets files or `.env.example` template
-
-## Webhooks & Callbacks
-
-**Incoming:**
-- None — only REST endpoints `/analyze-food` and `/health` on Express
-
-**Outgoing:**
-- None — backend does not call external services; mobile only calls the local/mock backend
-
-## Integration Data Contracts
-
-Shared types in `src/shared/types/index.ts` define the mobile ↔ backend contract:
-
-```typescript
-// POST /analyze-food response
-AnalyzeFoodResponse { result: NutritionResult; processingTime: number }
-NutritionResult { foodName, calories, protein, carbs, fat, fiber, confidence }
-
-// Error normalization (client-side)
-ApiError { message, code, status }
-```
-
-Upload format: `FormData` with single field `image` (`src/features/analyze-food/api/analyzeFoodApi.ts`).
-
-## Browser / Device APIs
-
-**File and camera (web APIs, not native plugins):**
-- `HTMLInputElement` with `accept="image/*"` and `capture="environment"` for camera (`src/features/add-food/ui/ImagePicker.tsx`)
-- `URL.createObjectURL` / `revokeObjectURL` for image previews (mocked in Vitest setup: `src/test/setup.ts`)
-
-**Capacitor (planned, not integrated):**
-- Referenced in design spec only; no `@capacitor/*` packages in workspace
-
-## Future Integration Points (from design, not implemented)
-
-Per `docs/superpowers/specs/2026-06-24-ai-food-mvp-design.md` non-goals and architecture notes:
-- Real AI image recognition API
-- User authentication / accounts
-- Backend database persistence
-- Payment processing
-- `useDiary()` backend sync (currently reads Zustand store only)
+- `docs/AI-GATEWAY.md` — full sibling-backend contract for agents
+- `d:\Project\Main\ai-app\docs\ARCHITECTURE.md` — gateway architecture
+- `d:\Project\Main\ai-app\docs\API.md` — gateway HTTP API
 
 ---
 
-*Integration audit: 2026-06-24*
+*Integration analysis: 2026-08-03*

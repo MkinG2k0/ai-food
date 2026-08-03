@@ -43,7 +43,7 @@ Web-first приложение для учёта питания: пользов�
 
 **Текущее состояние кодовой базы** (см. `.planning/codebase/`):
 - Фронтенд: React 18 + Vite + TypeScript, FSD, Zustand (UI state), TanStack Query (server state)
-- Отдельного backend в репо нет; AI через клиентский Gateway
+- Отдельного backend в этом репо нет; AI через sibling gateway `d:\Project\Main\ai-app` (`openrouter-gateway`) — см. `docs/AI-GATEWAY.md`
 - Дневник: `useDiaryStore` в `entities/meal`, данные только в памяти (теряются при refresh)
 - Тесты: Vitest, co-located unit-тесты; покрытие неполное
 - Документация: утверждённый design spec (`docs/superpowers/specs/2026-06-24-ai-food-mvp-design.md`) описывает mock-MVP; часть пунктов (Capacitor, bottom nav, interceptors) ещё не реализована

@@ -55,7 +55,7 @@
   - `noUnusedLocals: true`
   - `noUnusedParameters: true`
   - `noFallthroughCasesInSwitch: true`
-- Run `pnpm type-check` from root (Turbo) or `pnpm type-check` in `apps/mobile`
+- Run `pnpm type-check` from repo root
 
 **React / UI:**
 - Named function exports for components — `export function HomePage()`, not default exports
@@ -103,7 +103,7 @@ Use atomic selectors; avoid destructuring the whole store in components.
 - React Query hooks declare error type — `useQuery<AnalyzeFoodResponse, Error>` in `src/features/analyze-food/model/useAnalyzeFood.ts`
 - UI consumes query state — `isError` branch with user-facing message in `src/pages/result/ui/ResultPage.tsx`
 - Navigation guards via `useEffect` + `navigate(..., { replace: true })` when required state is missing
-- Backend mock (`apps/backend/src/routes/analyze-food.ts`) has no error paths; always returns mock JSON after delay
+- No in-repo backend mock; AI errors come from Gateway responses
 - No global error boundary component detected
 
 **When adding API calls:**

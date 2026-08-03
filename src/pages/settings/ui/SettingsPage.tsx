@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import type { DietType, UserProfile } from '@ai-food/shared-types';
+import type { DailyTargets, DietType, UserProfile } from '@ai-food/shared-types';
 import { recoverStaleAnalyzingMeals, useDiaryStore } from '@/entities/meal';
 import { signOut, useAuthStore } from '@/features/auth';
 import { useFavoritesStore } from '@/features/favorites';
@@ -18,6 +18,7 @@ import {
   useSettingsStore,
 } from '@/features/settings';
 import { useWeightStore } from '@/features/stats';
+import { cn } from '@/shared/lib';
 import { BottomSheet, Button, SubpageShell, Textarea } from '@/shared/ui';
 
 const GENDER_LABELS: Record<UserProfile['gender'], string> = {
@@ -44,12 +45,43 @@ const DIET_LABELS: Record<DietType, string> = {
   vegetarian: 'Вегетарианство',
 };
 
+const targetInputClassName = cn(
+  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm tabular-nums',
+  'ring-offset-background placeholder:text-muted-foreground',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+);
+
+function parseTargetValue(raw: string): number {
+  const n = Number(raw.replace(',', '.'));
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.round(n));
+}
+
+type TargetDraft = {
+  kcal: string;
+  protein: string;
+  fat: string;
+  carbs: string;
+};
+
+function draftFromTargets(targets: DailyTargets): TargetDraft {
+  return {
+    kcal: String(targets.kcal),
+    protein: String(targets.protein),
+    fat: String(targets.fat),
+    carbs: String(targets.carbs),
+  };
+}
+
 export function SettingsPage() {
   const navigate = useNavigate();
   const [redoOpen, setRedoOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [editTargetsOpen, setEditTargetsOpen] = useState(false);
+  const [targetDraft, setTargetDraft] = useState<TargetDraft | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [dataOpen, setDataOpen] = useState(false);
   const [pendingImport, setPendingImport] = useState<ReturnType<
     typeof parseAppDataExport
   > | null>(null);
@@ -73,6 +105,7 @@ export function SettingsPage() {
 
   const profile = useProfileStore((s) => s.profile);
   const targets = useProfileStore((s) => s.targets);
+  const updateTargets = useProfileStore((s) => s.updateTargets);
   const resetProfile = useProfileStore((s) => s.resetProfile);
 
   const session = useAuthStore((s) => s.session);
@@ -86,6 +119,35 @@ export function SettingsPage() {
     resetProfile();
     setRedoOpen(false);
     navigate('/onboarding', { replace: true });
+  };
+
+  const handleOpenEditTargets = () => {
+    if (!targets) return;
+    setTargetDraft(draftFromTargets(targets));
+    setEditTargetsOpen(true);
+  };
+
+  const handleCloseEditTargets = () => {
+    setEditTargetsOpen(false);
+    setTargetDraft(null);
+  };
+
+  const handleSaveTargets = () => {
+    if (!targets || !targetDraft) return;
+    const next: DailyTargets = {
+      kcal: parseTargetValue(targetDraft.kcal),
+      protein: parseTargetValue(targetDraft.protein),
+      fat: parseTargetValue(targetDraft.fat),
+      carbs: parseTargetValue(targetDraft.carbs),
+      fiber: targets.fiber,
+    };
+    if (next.kcal <= 0) {
+      toast.error('Укажите калории больше нуля');
+      return;
+    }
+    updateTargets(next);
+    handleCloseEditTargets();
+    toast.success('Цели обновлены');
   };
 
   const handleExport = async () => {
@@ -339,6 +401,15 @@ export function SettingsPage() {
                   Профиль ещё не заполнен.
                 </p>
               )}
+              {targets && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleOpenEditTargets}
+                >
+                  Изменить КБЖУ
+                </Button>
+              )}
               <Button
                 variant="outline"
                 className="w-full"
@@ -459,36 +530,52 @@ export function SettingsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-medium leading-none">Данные</h2>
-          <p className="text-sm text-muted-foreground">
-            Экспорт дневника, профиля, настроек, избранного и веса в JSON.
-            Импорт полностью заменит текущие данные на устройстве.
-          </p>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            onChange={(e) => void handleImportFile(e.target.files?.[0])}
-          />
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              variant="outline"
-              className="w-full"
-              disabled={backupBusy}
-              onClick={() => void handleExport()}
-            >
-              Экспорт JSON
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full"
-              disabled={backupBusy}
-              onClick={() => importInputRef.current?.click()}
-            >
-              Импорт JSON
-            </Button>
-          </div>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 text-left"
+            aria-expanded={dataOpen}
+            onClick={() => setDataOpen((open) => !open)}
+          >
+            <h2 className="text-sm font-medium leading-none">Данные</h2>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                dataOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          {dataOpen && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Экспорт дневника, профиля, настроек, избранного и веса в JSON.
+                Импорт полностью заменит текущие данные на устройстве.
+              </p>
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => void handleImportFile(e.target.files?.[0])}
+              />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={backupBusy}
+                  onClick={() => void handleExport()}
+                >
+                  Экспорт JSON
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={backupBusy}
+                  onClick={() => importInputRef.current?.click()}
+                >
+                  Импорт JSON
+                </Button>
+              </div>
+            </>
+          )}
         </section>
 
         <section className="space-y-3">
@@ -529,6 +616,59 @@ export function SettingsPage() {
           </section>
         )}
     </SubpageShell>
+
+      <BottomSheet open={editTargetsOpen} onClose={handleCloseEditTargets}>
+        <div className="w-full space-y-4 px-2 py-2">
+          <h2 className="text-lg font-semibold text-foreground">
+            Изменить КБЖУ
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Задайте свои дневные нормы КБЖУ — они заменят рассчитанные
+            значения.
+          </p>
+          {targetDraft && (
+            <div className="space-y-3">
+              {(
+                [
+                  ['kcal', 'Калории, ккал'],
+                  ['protein', 'Белки, г'],
+                  ['fat', 'Жиры, г'],
+                  ['carbs', 'Углеводы, г'],
+                ] as const
+              ).map(([field, label]) => (
+                <label key={field} className="block space-y-1.5">
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    aria-label={label}
+                    className={targetInputClassName}
+                    value={targetDraft[field]}
+                    onChange={(e) =>
+                      setTargetDraft((prev) =>
+                        prev ? { ...prev, [field]: e.target.value } : prev,
+                      )
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleCloseEditTargets}
+            >
+              Отмена
+            </Button>
+            <Button className="flex-1" onClick={handleSaveTargets}>
+              Сохранить
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
 
       <BottomSheet open={redoOpen} onClose={() => setRedoOpen(false)}>
         <div className="w-full space-y-4 px-2 py-2">

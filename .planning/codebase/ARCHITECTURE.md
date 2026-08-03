@@ -11,7 +11,7 @@
 - FSD layers with strict top-down import direction
 - Server/async state via TanStack Query; client/UI state via Zustand
 - Domain types in `src/shared/types` (alias `@ai-food/shared-types`)
-- AI via client-side AI Gateway (`VITE_AI_GATEWAY_*`); no in-repo backend
+- AI via sibling OpenRouter gateway repo `ai-app` (`VITE_AI_GATEWAY_*`); no in-repo backend ? see `docs/AI-GATEWAY.md`
 
 ## Layers
 

@@ -83,6 +83,16 @@ describe('useProfileStore', () => {
     expect(useProfileStore.getState().isComplete()).toBe(true);
   });
 
+  it('updateTargets replaces daily targets', async () => {
+    const custom = { kcal: 2200, protein: 160, fat: 70, carbs: 200, fiber: 30 };
+    await act(async () => {
+      useProfileStore.getState().setProfile(mockProfile, mockTargets);
+      useProfileStore.getState().updateTargets(custom);
+    });
+    expect(useProfileStore.getState().targets).toEqual(custom);
+    expect(useProfileStore.getState().profile).toEqual(mockProfile);
+  });
+
   it('updateDietType patches profile.dietType when profile exists', async () => {
     await act(async () => {
       useProfileStore.getState().setProfile(mockProfile, mockTargets);
