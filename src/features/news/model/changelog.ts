@@ -7,6 +7,15 @@ export interface NewsRelease {
 /** User-facing changelog; newest first. Update manually when shipping features. */
 export const NEWS_CHANGELOG: NewsRelease[] = [
   {
+    date: '2026-08-04',
+    title: 'Аккаунт и лимиты',
+    items: [
+      'Вход через Telegram и блок аккаунта в настройках',
+      'Счётчик бесплатных генераций с прогресс-баром; безлимит после входа',
+      'Редактор КБЖУ в настройках: свои дневные нормы калорий, белков, жиров и углеводов',
+    ],
+  },
+  {
     date: '2026-08-03',
     title: 'Камера, штрихкод и ручной ввод',
     items: [
