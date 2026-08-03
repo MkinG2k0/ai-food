@@ -15,3 +15,7 @@ export {
   ImageLightbox,
   type ImageLightboxProps,
 } from './image-lightbox';
+export {
+  SubpageShell,
+  type SubpageShellProps,
+} from './subpage-shell';

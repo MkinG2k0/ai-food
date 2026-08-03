@@ -1,26 +1,13 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { NEWS_CHANGELOG, formatNewsDate } from '@/features/news';
-import { Button } from '@/shared/ui';
+import { SubpageShell } from '@/shared/ui';
 
 export function NewsPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="flex items-center px-4 py-4 border-b">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/settings')}
-          aria-label="Назад"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-lg font-semibold ml-2">Новости</h1>
-      </header>
-
-      <main className="flex-1 px-4 py-6 space-y-8">
+    <SubpageShell title="Новости" onBack={() => navigate('/settings')}>
+      <div className="space-y-8">
         {NEWS_CHANGELOG.map((release) => (
           <section key={release.date} className="space-y-2">
             <p className="text-sm text-muted-foreground">
@@ -36,7 +23,7 @@ export function NewsPage() {
             </ul>
           </section>
         ))}
-      </main>
-    </div>
+      </div>
+    </SubpageShell>
   );
 }

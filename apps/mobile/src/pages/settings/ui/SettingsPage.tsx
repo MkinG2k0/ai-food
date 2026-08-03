@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import type { DietType, UserProfile } from '@ai-food/shared-types';
 import { recoverStaleAnalyzingMeals, useDiaryStore } from '@/entities/meal';
@@ -17,8 +17,7 @@ import {
   useSettingsStore,
 } from '@/features/settings';
 import { useWeightStore } from '@/features/stats';
-import { BottomSheet, Button, Textarea } from '@/shared/ui';
-
+import { BottomSheet, Button, SubpageShell, Textarea } from '@/shared/ui';
 const GENDER_LABELS: Record<UserProfile['gender'], string> = {
   male: 'Мужской',
   female: 'Женский',
@@ -173,20 +172,12 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="flex items-center px-4 py-4 border-b">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/')}
-          aria-label="Назад"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-lg font-semibold ml-2">Настройки</h1>
-      </header>
-
-      <main className="flex-1 px-4 py-6 space-y-8">
+    <>
+    <SubpageShell
+      title="Настройки"
+      onBack={() => navigate('/')}
+      mainClassName="space-y-8"
+    >
         <section className="space-y-3">
           <button
             type="button"
@@ -494,7 +485,7 @@ export function SettingsPage() {
             </Button>
           </section>
         )}
-      </main>
+    </SubpageShell>
 
       <BottomSheet open={redoOpen} onClose={() => setRedoOpen(false)}>
         <div className="w-full space-y-4 px-2 py-2">
@@ -554,6 +545,6 @@ export function SettingsPage() {
           </div>
         </div>
       </BottomSheet>
-    </div>
+    </>
   );
 }

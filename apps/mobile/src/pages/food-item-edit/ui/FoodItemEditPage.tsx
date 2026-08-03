@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   formatItemGrams,
@@ -17,7 +17,7 @@ import {
   useConfirmDeleteMealItem,
   DeleteItemConfirmSheet,
 } from '@/features/edit-meal';
-import { Button } from '@/shared/ui';
+import { Button, SubpageShell } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 
 const inputClassName = cn(
@@ -220,21 +220,12 @@ export function FoodItemEditPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="flex items-center px-4 py-4 border-b">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleBack}
-          aria-label="Назад"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-lg font-semibold ml-2 flex-1">Ингредиент</h1>
-      </header>
-
-      <main className="flex-1 px-4 py-4 space-y-4">
+    <>
+      <SubpageShell
+        title="Ингредиент"
+        onBack={handleBack}
+        mainClassName="space-y-4"
+      >
         <div className="space-y-2">
           <p className="text-base font-semibold text-foreground">{item.name}</p>
           <label className="block space-y-1">
@@ -339,13 +330,13 @@ export function FoodItemEditPage() {
           <Trash2 className="h-4 w-4 mr-2" />
           Удалить ингредиент
         </Button>
-      </main>
+      </SubpageShell>
 
       <DeleteItemConfirmSheet
         open={isItemDeleteOpen}
         onClose={closeItemDelete}
         onConfirm={handleConfirmItemDelete}
       />
-    </div>
+    </>
   );
 }

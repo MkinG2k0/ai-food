@@ -143,8 +143,8 @@ export function ModelTestPage() {
     : null;
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b bg-background/95 px-4 py-3 backdrop-blur">
+    <div className="min-h-dvh bg-zinc-50">
+      <header className="sticky top-0 z-10 flex items-center gap-2 bg-zinc-50/95 px-4 pt-safe-header pb-3 backdrop-blur">
         <Button
           variant="ghost"
           size="icon"
@@ -153,7 +153,7 @@ export function ModelTestPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-semibold">Тест моделей</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Тест моделей</h1>
         <div className="ml-auto flex items-center gap-2">
           {isRunning ? (
             <Button variant="destructive" onClick={stopTest}>
@@ -176,7 +176,7 @@ export function ModelTestPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-4 px-4 py-6">
+      <main className="mx-auto max-w-6xl space-y-4 px-4 py-4">
         <p className="text-sm text-muted-foreground">
           Эталоны КБЖУ из <code className="text-xs">nutrition_en.jsonl</code>,
           названия — из{' '}

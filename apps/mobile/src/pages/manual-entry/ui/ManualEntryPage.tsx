@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, Trash2 } from 'lucide-react';
+import { ImagePlus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   ManualCompositionDraft,
   useSaveManualMeal,
   type ManualCompositionDraftItem,
 } from '@/features/manual-entry';
-import { Button } from '@/shared/ui';
+import { Button, SubpageShell } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 
 const inputClassName = cn(
@@ -132,21 +132,24 @@ export function ManualEntryPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex items-center gap-2 border-b px-4 py-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(-1)}
-          aria-label="Назад"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-lg font-semibold text-foreground">Вручную</h1>
-      </header>
-
-      <main className="flex-1 space-y-6 px-4 py-4 pb-28">
-        <section className="space-y-3">
+    <SubpageShell
+      title="Вручную"
+      onBack={() => navigate(-1)}
+      mainClassName="space-y-6 pb-28"
+      footer={
+        <div className="sticky bottom-0 border-t border-border/70 bg-zinc-50 px-4 py-4">
+          <Button
+            type="button"
+            className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
+            disabled={!canSave}
+            onClick={() => void handleSave()}
+          >
+            {saving ? 'Сохранение…' : 'Сохранить'}
+          </Button>
+        </div>
+      }
+    >
+      <section className="space-y-3">
           <h2 className="text-sm font-medium text-foreground">Фото</h2>
           {previewUrl ? (
             <div className="relative">
@@ -241,18 +244,6 @@ export function ManualEntryPage() {
         </section>
 
         <ManualCompositionDraft items={composition} onChange={setComposition} />
-      </main>
-
-      <div className="sticky bottom-0 border-t bg-background px-4 py-4">
-        <Button
-          type="button"
-          className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
-          disabled={!canSave}
-          onClick={() => void handleSave()}
-        >
-          {saving ? 'Сохранение…' : 'Сохранить'}
-        </Button>
-      </div>
-    </div>
+    </SubpageShell>
   );
 }

@@ -201,14 +201,6 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
                 <span>Описать</span>
               </Button>
 
-              <Button
-                variant="outline"
-                className="h-12 w-full justify-start gap-3"
-                onClick={handleFavoritesClick}
-              >
-                <Star className="h-5 w-5 text-emerald-600" />
-                <span>Избранное</span>
-              </Button>
 
               <Button
                 variant="outline"
@@ -226,6 +218,16 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
               >
                 <ScanBarcode className="h-5 w-5 text-emerald-600" />
                 <span>Штрих код</span>
+              </Button>
+
+              
+              <Button
+                variant="outline"
+                className="h-12 w-full justify-start gap-3"
+                onClick={handleFavoritesClick}
+              >
+                <Star className="h-5 w-5 text-emerald-600" />
+                <span>Избранное</span>
               </Button>
             </div>
 

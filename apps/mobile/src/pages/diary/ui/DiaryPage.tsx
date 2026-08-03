@@ -1,8 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { useDiaryStore } from '@/entities/meal';
 import { SwipeableMealCard } from '@/features/delete-meal';
-import { Button } from '@/shared/ui';
+import { Button, SubpageShell } from '@/shared/ui';
 import { formatDate } from '@/shared/lib';
 import type { Meal } from '@ai-food/shared-types';
 
@@ -17,38 +16,29 @@ export function DiaryPage() {
   }, {});
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="flex items-center px-4 py-4 border-b">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-lg font-semibold ml-2">Дневник питания</h1>
-      </header>
-
-      <main className="flex-1 px-4 py-4">
-        {meals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <p className="text-lg font-medium">Пока нет приёмов пищи</p>
-            <p className="text-sm mt-1">Добавьте первый приём пищи</p>
-            <Button className="mt-4" onClick={() => navigate('/')}>
-              Добавить еду
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {Object.entries(grouped).map(([date, dateMeals]) => (
-              <div key={date}>
-                <h2 className="text-sm font-medium text-muted-foreground mb-3">{date}</h2>
-                <div className="space-y-3">
-                  {dateMeals.map((meal) => (
-                    <SwipeableMealCard key={meal.id} meal={meal} />
-                  ))}
-                </div>
+    <SubpageShell title="Дневник питания" onBack={() => navigate('/')}>
+      {meals.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+          <p className="text-lg font-medium">Пока нет приёмов пищи</p>
+          <p className="text-sm mt-1">Добавьте первый приём пищи</p>
+          <Button className="mt-4" onClick={() => navigate('/')}>
+            Добавить еду
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {Object.entries(grouped).map(([date, dateMeals]) => (
+            <div key={date}>
+              <h2 className="text-sm font-medium text-muted-foreground mb-3">{date}</h2>
+              <div className="space-y-3">
+                {dateMeals.map((meal) => (
+                  <SwipeableMealCard key={meal.id} meal={meal} />
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </SubpageShell>
   );
 }

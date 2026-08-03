@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, PenLine, Star, Trash2 } from 'lucide-react';
+import { Loader2, PenLine, Star, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ApiError } from '@ai-food/shared-types';
 import {
@@ -23,8 +23,7 @@ import {
 import { useFavoritesStore } from '@/features/favorites';
 import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
 import { useSettingsStore } from '@/features/settings';
-import { Button, ImageLightbox } from '@/shared/ui';
-
+import { Button, ImageLightbox, SubpageShell } from '@/shared/ui';
 export function MealDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -118,50 +117,43 @@ export function MealDetailPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="flex items-center px-4 pt-safe-header pb-3 border-b">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/')}
-          aria-label="Назад"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="ml-2 flex-1 min-w-0">
-          <h1 className="text-lg font-semibold truncate">Детали приёма</h1>
-        </div>
-        {canFavorite && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={handleToggleFavorite}
-            aria-label={
-              isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'
-            }
-          >
-            <Star
-              className={
-                isFavorite
-                  ? 'h-5 w-5 fill-current text-amber-500'
-                  : 'h-5 w-5 text-muted-foreground'
-              }
-            />
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => openMealDelete(mealId)}
-          aria-label="Удалить приём пищи"
-        >
-          <Trash2 className="h-5 w-5 text-destructive" />
-        </Button>
-      </header>
-
-      <main className="flex-1 px-4 py-5 space-y-5 pb-safe">
+    <>
+      <SubpageShell
+        title="Детали приёма"
+        onBack={() => navigate('/')}
+        mainClassName="space-y-5 pb-safe"
+        actions={
+          <>
+            {canFavorite && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleToggleFavorite}
+                aria-label={
+                  isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'
+                }
+              >
+                <Star
+                  className={
+                    isFavorite
+                      ? 'h-5 w-5 fill-current text-amber-500'
+                      : 'h-5 w-5 text-muted-foreground'
+                  }
+                />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => openMealDelete(mealId)}
+              aria-label="Удалить приём пищи"
+            >
+              <Trash2 className="h-5 w-5 text-destructive" />
+            </Button>
+          </>
+        }
+      >
         {imageUris.length > 0 && (
           <MealPhotoSlider imageUris={imageUris} onOpen={handleOpenPhoto} />
         )}
@@ -203,7 +195,7 @@ export function MealDetailPage() {
             )}
           </div>
         )}
-      </main>
+      </SubpageShell>
 
       <DeleteMealConfirmSheet
         open={isMealDeleteOpen}
@@ -228,6 +220,6 @@ export function MealDetailPage() {
           onClose={() => setLightboxOpen(false)}
         />
       )}
-    </div>
+    </>
   );
 }
