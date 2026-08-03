@@ -10,6 +10,7 @@ import { NewsPage } from '@/pages/news';
 import { FavoritesPage } from '@/pages/favorites';
 import { ManualEntryPage } from '@/pages/manual-entry';
 import { BarcodePage } from '@/pages/barcode';
+import { LoginPage } from '@/pages/login';
 import { ModelTestPage } from '@/pages/model-test';
 import { AppShell } from './AppShell';
 import { ProfileGuard } from './ProfileGuard';
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { path: '/onboarding', element: <OnboardingPage /> },
+      { path: '/login', element: <LoginPage /> },
       { path: '/', element: <ProfileGuard><HomePage /></ProfileGuard> },
       { path: '/diary', element: <ProfileGuard><DiaryPage /></ProfileGuard> },
       { path: '/stats', element: <ProfileGuard><StatsPage /></ProfileGuard> },
