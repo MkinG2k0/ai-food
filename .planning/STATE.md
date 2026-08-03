@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260721-ruz
-last_updated: "2026-07-21T17:10:00.000Z"
-last_activity: 2026-07-21
-last_activity_desc: "Completed quick task 260721-ruz: multi-photo meal slider"
+stopped_at: Completed quick task 260803-wue
+last_updated: "2026-08-03T20:58:32.000Z"
+last_activity: 2026-08-03
+last_activity_desc: "Completed quick task 260803-wue: Telegram auth mock"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-07-21 - Completed quick task 260721-ruz: multi-photo meal slider
+Last activity: 2026-08-03 - Completed quick task 260803-wue: вход по Telegram через Auth.js с моками без бэка
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -93,6 +93,7 @@ Recent decisions affecting current work:
 - 260716-51m: MealCard error «Повторить» → useRetryAnalyzeMeal; applyAnalyzeResultToMeal shared with useSaveMeal; loadMealImageAsFile
 - 260716-53i: features/favorites (ai-food-favorites, max 50); MealDetail star; AddFoodSheet «Избранное» → quick-add for selectedDate
 - 260716-5gj: vite-plugin-pwa autoUpdate + safe-area; Meal Detail thicker Полезность/Точность bars, 2×2 macros
+- 260803-wue: features/auth mock Telegram session (ai-food-auth); /login optional; Settings Аккаунт; no next-auth
 
 ### Pending Todos
 
@@ -151,6 +152,7 @@ None yet.
 | fast | Remove onboarding slider range hint text | 2026-08-03 | ba4eea7 | — |
 | fast | Count piece foods (rolls/wings) via itemCount, not one plate = 1 | 2026-08-03 | 48dde42 | — |
 | 260803-3sp | Barcode scanner + Open Food Facts → diary meal | 2026-08-03 | — | [260803-3sp-barcode-scanner-with-open-food-facts-sca](./quick/260803-3sp-barcode-scanner-with-open-food-facts-sca/) |
+| 260803-wue | Telegram auth mock (Auth.js-shaped client, /login, Settings) | 2026-08-03 | fb97749, 12752f5, 5521fa0, 7e42e0c | [260803-wue-telegram-auth-js](./quick/260803-wue-telegram-auth-js/) |
 
 ### Blockers/Concerns
 
@@ -159,7 +161,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T17:10:00.000Z
-Stopped at: Completed quick task 260721-ruz
+Last session: 2026-08-03T20:58:32Z
+Stopped at: Completed quick task 260803-wue
 Resume file: None
 Next: Run /gsd-plan-phase for Phase 2 (Photo Capture & Analysis Loading)
