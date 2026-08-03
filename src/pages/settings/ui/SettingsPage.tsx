@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import type { DietType, UserProfile } from '@ai-food/shared-types';
 import { recoverStaleAnalyzingMeals, useDiaryStore } from '@/entities/meal';
+import { signOut, useAuthStore } from '@/features/auth';
 import { useFavoritesStore } from '@/features/favorites';
 import { useProfileStore } from '@/features/onboarding';
 import {
@@ -18,6 +19,7 @@ import {
 } from '@/features/settings';
 import { useWeightStore } from '@/features/stats';
 import { BottomSheet, Button, SubpageShell, Textarea } from '@/shared/ui';
+
 const GENDER_LABELS: Record<UserProfile['gender'], string> = {
   male: 'Мужской',
   female: 'Женский',
@@ -72,6 +74,13 @@ export function SettingsPage() {
   const profile = useProfileStore((s) => s.profile);
   const targets = useProfileStore((s) => s.targets);
   const resetProfile = useProfileStore((s) => s.resetProfile);
+
+  const session = useAuthStore((s) => s.session);
+
+  const handleSignOut = () => {
+    signOut();
+    toast.success('Вы вышли');
+  };
 
   const handleRedoConfirm = () => {
     resetProfile();
@@ -178,6 +187,40 @@ export function SettingsPage() {
       onBack={() => navigate('/')}
       mainClassName="space-y-8"
     >
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium leading-none">Аккаунт</h2>
+          {session ? (
+            <>
+              <div className="flex items-center gap-3">
+                <img
+                  src={session.photo_url}
+                  alt={session.name}
+                  className="h-10 w-10 rounded-full object-cover bg-muted"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{session.name}</p>
+                  {session.username ? (
+                    <p className="truncate text-sm text-muted-foreground">
+                      @{session.username}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+              <Button variant="outline" className="w-full" onClick={handleSignOut}>
+                Выйти
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate('/login')}
+            >
+              Войти
+            </Button>
+          )}
+        </section>
+
         <section className="space-y-3">
           <button
             type="button"
