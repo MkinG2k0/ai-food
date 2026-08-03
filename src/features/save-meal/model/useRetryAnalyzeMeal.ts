@@ -7,6 +7,7 @@ import {
   useDiaryStore,
 } from '@/entities/meal';
 import { analyzeFoodApi } from '@/features/analyze-food';
+import { usageQueryKey } from '@/features/auth';
 import { useProfileStore } from '@/features/onboarding';
 import { getActiveCustomInstructions, getAnalyzeFeaturesFromSettings, useSettingsStore } from '@/features/settings';
 import { loadMealImageAsFile } from '@/shared/lib';
@@ -120,6 +121,7 @@ export function useRetryAnalyzeMeal() {
               ),
       });
       applyAnalyzeResultToMeal(mealId, response.result, meal.items[0]?.id);
+      void queryClient.invalidateQueries({ queryKey: usageQueryKey });
     } catch (error) {
       updateMeal(mealId, analyzeErrorPatch(error));
     } finally {

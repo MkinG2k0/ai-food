@@ -4,6 +4,7 @@ import {
   endMealAnalyze,
   useDiaryStore,
 } from '@/entities/meal';
+import { usageQueryKey } from '@/features/auth';
 import { analyzeFoodApi, type PartialNutritionXml } from '@/features/analyze-food';
 import { useProfileStore } from '@/features/onboarding';
 import { useSettingsStore, getActiveCustomInstructions, getAnalyzeFeaturesFromSettings } from '@/features/settings';
@@ -147,6 +148,7 @@ export function useSaveMeal() {
               ),
       });
       applyAnalyzeResultToMeal(mealId, response.result, itemId);
+      void queryClient.invalidateQueries({ queryKey: usageQueryKey });
     } catch (error) {
       updateMeal(mealId, analyzeErrorPatch(error));
     } finally {

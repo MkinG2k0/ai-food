@@ -2,8 +2,10 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import type { ApiError, FoodItem, Meal } from '@ai-food/shared-types';
 import { normalizePortions, resolveItemGrams, sumItemGrams, useDiaryStore } from '@/entities/meal';
 import { refineMealApi } from '@/features/analyze-food';
+import { usageQueryKey } from '@/features/auth';
 import { useProfileStore } from '@/features/onboarding';
 import { getActiveCustomInstructions, getAnalyzeFeaturesFromSettings, useSettingsStore } from '@/features/settings';
+import { queryClient } from '@/shared/lib';
 
 function rejectApiError(message: string, code: string, status: number): never {
   const apiError: ApiError = { message, code, status };
@@ -146,5 +148,6 @@ export function useRefineMeal() {
         ? { customContent: result.customContent }
         : {}),
     });
+    void queryClient.invalidateQueries({ queryKey: usageQueryKey });
   };
 }

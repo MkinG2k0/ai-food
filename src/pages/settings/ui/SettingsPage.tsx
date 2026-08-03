@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import type { DailyTargets, DietType, UserProfile } from '@ai-food/shared-types';
 import { recoverStaleAnalyzingMeals, useDiaryStore } from '@/entities/meal';
-import { fetchUsage, signOut, useAuthStore, type UsageSnapshot } from '@/features/auth';
+import { signOut, useAuthStore, useUsage } from '@/features/auth';
 import { useFavoritesStore } from '@/features/favorites';
 import { useProfileStore } from '@/features/onboarding';
 import {
@@ -109,22 +109,7 @@ export function SettingsPage() {
   const resetProfile = useProfileStore((s) => s.resetProfile);
 
   const session = useAuthStore((s) => s.session);
-  const userToken = useAuthStore((s) => s.userToken);
-  const [usage, setUsage] = useState<UsageSnapshot | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetchUsage()
-      .then((snap) => {
-        if (!cancelled) setUsage(snap);
-      })
-      .catch(() => {
-        if (!cancelled) setUsage(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [session, userToken]);
+  const { data: usage } = useUsage();
 
   const handleSignOut = () => {
     signOut();
@@ -271,7 +256,7 @@ export function SettingsPage() {
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
                 {usage.authenticated || usage.remaining === null
-                  ? 'Генерации: безлимит (после входа)'
+                  ? 'Генерации: безлимит'
                   : `Осталось ${usage.remaining} из ${usage.limit} бесплатных генераций`}
               </p>
               {!usage.authenticated &&
