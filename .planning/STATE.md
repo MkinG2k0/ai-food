@@ -155,6 +155,7 @@ None yet.
 | 260803-3sp | Barcode scanner + Open Food Facts → diary meal | 2026-08-03 | — | [260803-3sp-barcode-scanner-with-open-food-facts-sca](./quick/260803-3sp-barcode-scanner-with-open-food-facts-sca/) |
 | 260803-wue | Telegram auth mock (Auth.js-shaped client, /login, Settings) | 2026-08-03 | fb97749, 12752f5, 5521fa0, 7e42e0c | [260803-wue-telegram-auth-js](./quick/260803-wue-telegram-auth-js/) |
 | 260804-3gx | One-time T-Bank yearly license + paywall (ai-app + ai-food) | 2026-08-04 | ai-app: 6f15ad3,cc016b3,af7d95b,281b401; ai-food: aced7b9 | [260804-3gx-one-time-t-bank-backend-ai-app-paywall-a](./quick/260804-3gx-one-time-t-bank-backend-ai-app-paywall-a/) |
+| fast | Login quota: 50 guest + 100 after auth (sum 150) | 2026-08-04 | 9e935d1 | — |
 
 ### Blockers/Concerns
 
