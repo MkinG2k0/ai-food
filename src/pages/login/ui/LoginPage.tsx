@@ -66,10 +66,6 @@ export function LoginPage() {
               onSuccess={handleTelegramSuccess}
               onError={(message) => toast.error(message)}
             />
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              Виджет работает на домене из BotFather (например
-              ai-food-mobile.vercel.app). На localhost может не открыться.
-            </p>
           </div>
 
           {mockEnabled && (

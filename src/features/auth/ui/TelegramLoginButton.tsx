@@ -74,7 +74,7 @@ export function TelegramLoginButton({ onSuccess, onError }: TelegramLoginButtonP
     <div className="space-y-2">
       <div
         ref={containerRef}
-        className="flex min-h-[40px] justify-center"
+        className="flex min-h-[40px] justify-center [color-scheme:light] [&_iframe]:bg-transparent"
         aria-busy={busy}
       />
       {busy && (
