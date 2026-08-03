@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@ai-food/shared-types': path.resolve(__dirname, './src/shared/types/index.ts'),
     },
   },
 });
