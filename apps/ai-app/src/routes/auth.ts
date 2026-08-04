@@ -3,7 +3,12 @@ import { z } from 'zod';
 import { ApiError } from '../../lib/errors.js';
 import { asyncHandler } from '../middleware/error.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
-import { assertAuthConfigured, verifyUserToken } from '../lib/jwt.js';
+import {
+  assertAuthConfigured,
+  signUserToken,
+  verifyUserToken,
+} from '../lib/jwt.js';
+import { ensureDevice } from '../lib/quota.js';
 import {
   consumeLoginChallenge,
   createLoginChallenge,
@@ -19,6 +24,28 @@ import { subscriptionPublicFields } from '../lib/subscription.js';
 const StartBodySchema = z.object({
   deviceId: z.string().min(1).optional(),
 });
+
+const DEMO_TELEGRAM_ID = '100000001';
+const DEMO_PROFILE = {
+  username: 'demo_user',
+  firstName: 'Демо',
+  lastName: 'пользователь',
+  photoUrl: null as string | null,
+};
+
+const DemoLoginBodySchema = z.object({
+  deviceId: z.string().min(1).optional(),
+});
+
+function assertDemoLoginEnabled() {
+  if (process.env.AUTH_MOCK === 'false') {
+    throw new ApiError(
+      403,
+      'DEMO_LOGIN_DISABLED',
+      'Demo login is disabled (AUTH_MOCK=false).',
+    );
+  }
+}
 
 function requireDb() {
   if (!isDatabaseConfigured()) {
@@ -140,6 +167,37 @@ authRouter.get(
       token: consumed.token,
       user: publicUser(user),
     });
+  }),
+);
+
+authRouter.post(
+  '/demo/login',
+  asyncHandler(async (req, res) => {
+    assertDemoLoginEnabled();
+    const prisma = requireDb();
+    assertAuthConfigured();
+
+    const parsed = DemoLoginBodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid demo login payload.');
+    }
+
+    const user = await prisma.user.upsert({
+      where: { telegramId: DEMO_TELEGRAM_ID },
+      create: { telegramId: DEMO_TELEGRAM_ID, ...DEMO_PROFILE },
+      update: { ...DEMO_PROFILE },
+    });
+
+    if (parsed.data.deviceId) {
+      await ensureDevice(prisma, parsed.data.deviceId, user.id);
+    }
+
+    const token = await signUserToken({
+      sub: user.id,
+      telegramId: user.telegramId,
+    });
+
+    res.json({ token, user: publicUser(user) });
   }),
 );
 

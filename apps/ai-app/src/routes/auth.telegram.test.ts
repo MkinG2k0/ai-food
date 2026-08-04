@@ -34,6 +34,10 @@ vi.mock('../lib/prisma.js', () => ({
 vi.mock('../lib/jwt.js', () => ({
   verifyUserToken: mocks.verifyUserToken,
   assertAuthConfigured: mocks.assertAuthConfigured,
+  signUserToken: vi.fn(),
+}));
+vi.mock('../lib/quota.js', () => ({
+  ensureDevice: vi.fn(),
 }));
 
 const { authRouter } = await import('./auth.js');
