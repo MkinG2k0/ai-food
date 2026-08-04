@@ -80,4 +80,28 @@ describe('billingApi', () => {
       }),
     );
   });
+
+  it('fetchSubscriptionPrice GETs /billing/price without user headers', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        amountKopecks: 10_000,
+        currency: 'RUB',
+        durationDays: 365,
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { fetchSubscriptionPrice } = await import('./billingApi');
+    const result = await fetchSubscriptionPrice();
+    expect(result).toEqual({
+      amountKopecks: 10_000,
+      currency: 'RUB',
+      durationDays: 365,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://gw.test/billing/price',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
 });

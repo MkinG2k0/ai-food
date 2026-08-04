@@ -49,6 +49,12 @@ export type SyncBillingResult = {
   subscriptionStatus?: string;
 };
 
+export type SubscriptionPrice = {
+  amountKopecks: number;
+  currency: string;
+  durationDays: number;
+};
+
 export async function subscribe(): Promise<SubscribeResult> {
   const headers = await getQuotaHeaders('other');
   const res = await fetch(`${gatewayBase()}/billing/subscribe`, {
@@ -86,4 +92,12 @@ export async function syncBilling(
   });
   if (!res.ok) await parseError(res);
   return (await res.json()) as SyncBillingResult;
+}
+
+export async function fetchSubscriptionPrice(): Promise<SubscriptionPrice> {
+  const res = await fetch(`${gatewayBase()}/billing/price`, {
+    method: 'GET',
+  });
+  if (!res.ok) await parseError(res);
+  return (await res.json()) as SubscriptionPrice;
 }
