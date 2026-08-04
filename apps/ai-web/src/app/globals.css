@@ -1,0 +1,34 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.landing {
+  text-align: center;
+}
+
+.landing h1 {
+  margin: 0;
+  font-size: 48px;
+}
+
+.landing p {
+  margin: 8px 0 0;
+  color: #8c8c8c;
+  font-size: 18px;
+}

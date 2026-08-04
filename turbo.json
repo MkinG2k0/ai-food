@@ -5,7 +5,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.env*.local"],
-      "outputs": ["dist/**", "src/generated/**"],
+      "outputs": ["dist/**", ".next/**", "src/generated/**"],
       "env": [
         "VITE_AI_GATEWAY_URL",
         "VITE_AI_GATEWAY_API_KEY",
@@ -15,6 +15,12 @@
         "VITE_AUTH_MOCK",
         "DATABASE_URL",
         "NODE_ENV"
+      ],
+      "passThroughEnv": [
+        "ADMIN_PASSWORD",
+        "ADMIN_SESSION_SECRET",
+        "ADMIN_API_KEY",
+        "AI_GATEWAY_URL"
       ]
     },
     "dev": {
@@ -32,7 +38,10 @@
         "OPENROUTER_HTTP_REFERER",
         "OPENROUTER_APP_TITLE",
         "API_KEY",
+        "ADMIN_PASSWORD",
+        "ADMIN_SESSION_SECRET",
         "ADMIN_API_KEY",
+        "AI_GATEWAY_URL",
         "PORT",
         "IS_LOCAL",
         "DATABASE_URL",
@@ -85,7 +94,13 @@
     },
     "start": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "ADMIN_PASSWORD",
+        "ADMIN_SESSION_SECRET",
+        "ADMIN_API_KEY",
+        "AI_GATEWAY_URL"
+      ]
     },
     "start:prod": {
       "cache": false,
