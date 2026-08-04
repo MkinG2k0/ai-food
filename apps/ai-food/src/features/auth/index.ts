@@ -17,10 +17,6 @@ export {
   type UsageSnapshot,
 } from './api/fetchUsage';
 export { useUsage, usageQueryKey } from './model/useUsage';
-export {
-  signInWithTelegram,
-  getTelegramBotUsername,
-  mapTelegramUserToSession,
-  type TelegramLoginPayload,
-} from './api/signInWithTelegram';
-export { TelegramLoginButton } from './ui/TelegramLoginButton';
+export { mapTelegramUserToSession } from './api/signInWithTelegram';
+export { signInWithTelegramBot } from './api/signInWithTelegramBot';
+export { TelegramBotLoginButton } from './ui/TelegramBotLoginButton';

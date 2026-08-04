@@ -7,7 +7,7 @@ import {
   isAuthMockEnabled,
   signInWithMockTelegram,
   signOut,
-  TelegramLoginButton,
+  TelegramBotLoginButton,
   useAuthStore,
 } from '@/features/auth';
 import { Button, SubpageShell } from '@/shared/ui';
@@ -68,7 +68,7 @@ export function LoginPage() {
 
           <div className="rounded-md border border-border bg-card px-4 py-5">
             <p className="mb-3 text-center text-sm font-medium">Telegram</p>
-            <TelegramLoginButton
+            <TelegramBotLoginButton
               onSuccess={handleTelegramSuccess}
               onError={(message) => toast.error(message)}
             />
