@@ -11,6 +11,7 @@ import { chatRouter } from './routes/chat.js';
 import { authRouter } from './routes/auth.js';
 import { usageRouter } from './routes/usage.js';
 import { billingRouter } from './routes/billing.js';
+import { adminRouter } from './routes/admin.js';
 import { telegramWebhookRouter } from './routes/telegramWebhook.js';
 
 export function createApp() {
@@ -19,7 +20,7 @@ export function createApp() {
   app.use(
     cors({
       origin: '*',
-      methods: ['GET', 'POST', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
       allowedHeaders: [
         'Content-Type',
         'Authorization',
@@ -27,6 +28,7 @@ export function createApp() {
         'X-Device-Id',
         'X-User-Token',
         'X-Usage-Kind',
+        'X-Admin-Key',
       ],
     }),
   );
@@ -36,6 +38,7 @@ export function createApp() {
   app.use('/auth', authRouter);
   app.use('/usage', usageRouter);
   app.use('/billing', billingRouter);
+  app.use('/admin', adminRouter);
   app.use('/telegram/webhook', telegramWebhookRouter);
 
   const v1 = express.Router();
