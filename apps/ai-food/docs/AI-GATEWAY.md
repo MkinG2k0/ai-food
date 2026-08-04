@@ -69,7 +69,8 @@ ai-app (openrouter-gateway)
 | `POST` | `/telegram/webhook` | `X-Telegram-Bot-Api-Secret-Token` | Telegram Bot API updates; подтверждение challenge |
 | `GET` | `/auth/me` | `X-User-Token` | Профиль + `subscriptionExpiresAt` / `hasActiveSubscription` |
 | `GET` | `/usage` | device (+ optional JWT) | Квота: unlimited **только** при active лицензии |
-| `POST` | `/billing/subscribe` | `X-User-Token` | T-Bank Init / mock |
+| `POST` | `/billing/promo/validate` | `X-User-Token` | Проверка промокода и цена со скидкой |
+| `POST` | `/billing/subscribe` | `X-User-Token` | T-Bank Init / mock; опционально `{ promoCode }`; ответ: `amount`, `originalAmount`, `promoCode` |
 | `POST` | `/billing/tbank/notification` | Token T-Bank | Активация лицензии |
 | `GET` | `/billing/status` | `X-User-Token` | Статус лицензии |
 | `POST` | `/billing/sync` | `X-User-Token` | GetState / mock confirm |
