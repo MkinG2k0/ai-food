@@ -128,7 +128,7 @@ export function SubscribePage() {
     return (
       <SubpageShell
         title="Оплата"
-        onBack={() => navigate('/subscribe')}
+        onBack={() => navigate('/', { replace: true })}
         mainClassName="space-y-6"
       >
         <section className="space-y-4">
