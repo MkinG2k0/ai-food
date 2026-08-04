@@ -1,10 +1,32 @@
+# Dependencies
 node_modules/
+.pnpm-store/
+
+# Turbo
+.turbo/
+
+# Build
 dist/
-*.local
+coverage/
+*.tsbuildinfo
+
+# Env (keep examples)
 .env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs / OS
+*.log
 .DS_Store
 .idea/
-android/.gradle/
-android/app/build/
-android/build/
-android/capacitor-cordova-android-plugins/
+
+# Deploy
+.vercel/
+
+# App-specific
+apps/ai-app/src/generated/prisma
+apps/ai-food/android/.gradle/
+apps/ai-food/android/app/build/
+apps/ai-food/android/build/
+apps/ai-food/android/capacitor-cordova-android-plugins/

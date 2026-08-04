@@ -1,0 +1,13 @@
+{
+  "byCat": {
+    "file": 95,
+    "api": 11,
+    "function": 7,
+    "command": 23
+  },
+  "skipped": 11,
+  "failures": [],
+  "sampleFail": [],
+  "total": 136,
+  "checked": 125
+}

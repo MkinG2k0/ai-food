@@ -1,0 +1,15 @@
+# Don't hash these for turbo (no root git yet — avoid scanning junk)
+**/.git/**
+**/node_modules/**
+**/.turbo/**
+**/dist/**
+**/coverage/**
+**/android/.gradle/**
+**/android/app/build/**
+**/android/build/**
+**/.planning/**
+**/.claude/**
+**/.superpowers/**
+**/.agents/**
+**/.windsurf/**
+**/android/capacitor-cordova-android-plugins/**

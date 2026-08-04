@@ -1,0 +1,85 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.env*.local"],
+      "outputs": ["dist/**", "src/generated/**"],
+      "env": [
+        "VITE_AI_GATEWAY_URL",
+        "VITE_AI_GATEWAY_API_KEY",
+        "VITE_API_URL",
+        "VITE_TELEGRAM_BOT_USERNAME",
+        "VITE_APP_URL",
+        "VITE_AUTH_MOCK",
+        "DATABASE_URL",
+        "NODE_ENV"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"],
+      "passThroughEnv": [
+        "VITE_AI_GATEWAY_URL",
+        "VITE_AI_GATEWAY_API_KEY",
+        "VITE_API_URL",
+        "VITE_TELEGRAM_BOT_USERNAME",
+        "VITE_APP_URL",
+        "VITE_AUTH_MOCK",
+        "OPENROUTER_API_KEY",
+        "OPENROUTER_HTTP_REFERER",
+        "OPENROUTER_APP_TITLE",
+        "API_KEY",
+        "PORT",
+        "IS_LOCAL",
+        "DATABASE_URL",
+        "AUTH_SECRET",
+        "FLASHCALL_API_KEY",
+        "TELEGRAM_BOT_TOKEN",
+        "FREE_GENERATION_LIMIT",
+        "AUTH_LOGIN_GENERATION_BONUS",
+        "QUOTA_ENFORCE",
+        "SUBSCRIPTION_PRICE_KOPECKS",
+        "SUBSCRIPTION_DURATION_DAYS",
+        "PUBLIC_APP_URL",
+        "TBANK_TERMINAL_KEY",
+        "TBANK_PASSWORD",
+        "TBANK_API_URL",
+        "TBANK_MOCK",
+        "NODE_ENV"
+      ]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"],
+      "passThroughEnv": [
+        "VITE_AI_GATEWAY_URL",
+        "VITE_AI_GATEWAY_API_KEY",
+        "VITE_API_URL",
+        "VITE_AUTH_MOCK",
+        "OPENROUTER_API_KEY",
+        "API_KEY",
+        "AUTH_SECRET",
+        "DATABASE_URL",
+        "FLASHCALL_API_KEY",
+        "FREE_GENERATION_LIMIT",
+        "AUTH_LOGIN_GENERATION_BONUS",
+        "QUOTA_ENFORCE",
+        "SUBSCRIPTION_PRICE_KOPECKS",
+        "SUBSCRIPTION_DURATION_DAYS",
+        "PUBLIC_APP_URL",
+        "TBANK_TERMINAL_KEY",
+        "TBANK_PASSWORD",
+        "TBANK_API_URL",
+        "TBANK_MOCK",
+        "VITEST",
+        "NODE_ENV"
+      ]
+    },
+    "type-check": {
+      "dependsOn": ["^build"]
+    }
+  }
+}

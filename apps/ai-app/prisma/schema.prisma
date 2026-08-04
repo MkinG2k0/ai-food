@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SubscriptionStatus {
+  none
+  active
+  canceled
+  past_due
+}
+
+enum PaymentStatus {
+  pending
+  confirmed
+  rejected
+  refunded
+}
+
+model User {
+  id                     String             @id @default(cuid())
+  phone                  String             @unique
+  subscriptionStatus     SubscriptionStatus @default(none)
+  subscriptionExpiresAt  DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  devices                Device[]
+  usageEvents            UsageEvent[]
+  payments               Payment[]
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  amount         Int
+  status         PaymentStatus @default(pending)
+  tbankPaymentId String?       @unique
+  tbankOrderId   String        @unique
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([userId, status])
+}
+
+model Device {
+  id          String       @id @default(cuid())
+  deviceId    String       @unique
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  usageEvents UsageEvent[]
+}
+
+model UsageEvent {
+  id        String   @id @default(cuid())
+  kind      String
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [id])
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([deviceId, kind])
+  @@index([userId, kind])
+}
