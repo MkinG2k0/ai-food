@@ -1,25 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import {
   App,
   Button,
+  Flex,
   Form,
   Input,
   InputNumber,
   Modal,
   Popconfirm,
+  Segmented,
   Space,
   Table,
   Tag,
   Typography,
 } from 'antd';
 
+import { PageHeader } from '@/components/PageHeader';
 import { adminApi } from '@/lib/adminApi';
 
 type SubscriptionAction = 'activate' | 'extend' | 'revoke';
+type StatusFilter = 'all' | 'active' | 'inactive';
 
 type User = {
   id: string;
@@ -57,6 +61,7 @@ export default function SubscriptionsPage() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [modal, setModal] = useState<ActionModal | null>(null);
   const [form] = Form.useForm<ActionFormValues>();
   const usersQuery = useQuery({
@@ -100,6 +105,22 @@ export default function SubscriptionsPage() {
     onError: (error) => message.error(error.message),
   });
 
+  const filteredUsers = useMemo(() => {
+    const users = usersQuery.data?.users ?? [];
+    if (statusFilter === 'active') {
+      return users.filter((user) => user.hasActiveSubscription);
+    }
+    if (statusFilter === 'inactive') {
+      return users.filter((user) => !user.hasActiveSubscription);
+    }
+    return users;
+  }, [statusFilter, usersQuery.data?.users]);
+
+  const activeCount = useMemo(
+    () => filteredUsers.filter((user) => user.hasActiveSubscription).length,
+    [filteredUsers],
+  );
+
   const openAction = (user: User, action: 'activate' | 'extend') => {
     form.resetFields();
     setModal({ action, user });
@@ -136,17 +157,19 @@ export default function SubscriptionsPage() {
     {
       key: 'status',
       render: (_, user) => (
-        <Tag color={user.hasActiveSubscription ? 'green' : 'default'}>
+        <Tag color={user.hasActiveSubscription ? 'success' : 'default'}>
           {user.hasActiveSubscription ? 'Активна' : 'Не активна'}
         </Tag>
       ),
       title: 'Статус',
+      width: 140,
     },
     {
       dataIndex: 'subscriptionExpiresAt',
       key: 'expiresAt',
       render: formatDate,
       title: 'Действует до',
+      width: 180,
     },
     {
       fixed: 'right',
@@ -184,26 +207,50 @@ export default function SubscriptionsPage() {
 
   return (
     <>
-      <Typography.Title level={2}>Подписки</Typography.Title>
-      <Input.Search
-        allowClear
-        enterButton="Найти"
-        onSearch={(value) => setQuery(value.trim())}
-        placeholder="ID, Telegram ID или имя пользователя"
-        style={{ marginBottom: 16, maxWidth: 560 }}
+      <PageHeader
+        subtitle="Поиск пользователей и управление подписками"
+        title="Подписки"
       />
+      <Flex gap={12} justify="space-between" vertical={false} wrap="wrap">
+        <Space wrap>
+          <Input.Search
+            allowClear
+            enterButton="Найти"
+            onSearch={(value) => setQuery(value.trim())}
+            placeholder="ID, Telegram ID или имя пользователя"
+            style={{ maxWidth: 420, width: '100%' }}
+          />
+          <Segmented<StatusFilter>
+            onChange={setStatusFilter}
+            options={[
+              { label: 'Все', value: 'all' },
+              { label: 'Активные', value: 'active' },
+              { label: 'Неактивные', value: 'inactive' },
+            ]}
+            value={statusFilter}
+          />
+        </Space>
+        <Typography.Text type="secondary">
+          Найдено {filteredUsers.length} · активных {activeCount}
+        </Typography.Text>
+      </Flex>
       <Table<User>
         columns={columns}
-        dataSource={usersQuery.data?.users ?? []}
+        dataSource={filteredUsers}
         loading={usersQuery.isLoading}
         locale={{
           emptyText: usersQuery.error
             ? usersQuery.error.message
             : 'Пользователи не найдены',
         }}
-        pagination={false}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `Всего ${total}`,
+        }}
         rowKey="id"
         scroll={{ x: 900 }}
+        size="middle"
       />
       <Modal
         cancelText="Отмена"
