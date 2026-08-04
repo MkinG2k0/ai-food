@@ -5,11 +5,10 @@ import {
   fetchBillingStatus,
   subscribe,
   syncBilling,
+  useSubscriptionPrice,
 } from '@/features/billing';
 import { useAuthStore } from '@/features/auth';
 import { Button, SubpageShell } from '@/shared/ui';
-
-const PRICE_RUB = 100;
 
 function openPaymentUrl(url: string): void {
   window.location.assign(url);
@@ -32,6 +31,11 @@ export function SubscribePage() {
 
   const paymentId = searchParams.get('paymentId') ?? undefined;
   const isMock = searchParams.get('mock') === '1';
+  const { data: price, isLoading: priceLoading, isError: priceError } =
+    useSubscriptionPrice();
+  const priceRub =
+    price != null ? Math.round(price.amountKopecks / 100) : null;
+  const durationDays = price?.durationDays;
 
   const pollUntilActive = useCallback(async () => {
     setPollStatus('polling');
@@ -153,13 +157,29 @@ export function SubscribePage() {
     >
       <section className="space-y-3">
         <p className="text-3xl font-semibold tabular-nums">
-          {PRICE_RUB.toLocaleString('ru-RU')} ₽
-          <span className="ml-2 text-base font-normal text-muted-foreground">
-            / год
-          </span>
+          {priceLoading && (
+            <span className="text-base font-normal text-muted-foreground">
+              Загрузка цены…
+            </span>
+          )}
+          {priceError && (
+            <span className="text-base font-normal text-muted-foreground">
+              Цена недоступна
+            </span>
+          )}
+          {priceRub != null && (
+            <>
+              {priceRub.toLocaleString('ru-RU')} ₽
+              <span className="ml-2 text-base font-normal text-muted-foreground">
+                / {durationDays != null ? `${durationDays} дн.` : 'срок'}
+              </span>
+            </>
+          )}
         </p>
         <p className="text-sm text-muted-foreground">
-          Разовая оплата — доступ к AI на 365 дней. Без автосписаний.
+          Разовая оплата — доступ к AI на{' '}
+          {durationDays != null ? `${durationDays} дней` : 'срок лицензии'}.
+          Без автосписаний.
         </p>
       </section>
 
