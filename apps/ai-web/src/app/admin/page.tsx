@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Card, Col, Row, Statistic, Typography } from 'antd';
 
+import { PageHeader } from '@/components/PageHeader';
 import { adminApi } from '@/lib/adminApi';
 
 type Stats = {
@@ -29,28 +30,12 @@ export default function AdminPage() {
     queryFn: () => adminApi<Stats>('stats'),
   });
 
-  const cards = [
-    { title: 'Всего пользователей', value: data?.usersTotal },
-    { title: 'Активные подписки', value: data?.activeSubscriptions },
-    {
-      title: 'Подтверждённые платежи',
-      value: data?.paymentsConfirmedCount,
-    },
-    {
-      formatter: () =>
-        data ? formatRubles(data.paymentsConfirmedSumKopecks) : '—',
-      title: 'Сумма платежей',
-      value: data?.paymentsConfirmedSumKopecks,
-    },
-    { title: 'Анализы за 7 дней', value: data?.usageAnalyzeLast7Days },
-    { title: 'Уточнения за 7 дней', value: data?.usageRefineLast7Days },
-    { title: 'Анализы за 30 дней', value: data?.usageAnalyzeLast30Days },
-    { title: 'Уточнения за 30 дней', value: data?.usageRefineLast30Days },
-  ];
-
   return (
     <>
-      <Typography.Title level={2}>Обзор</Typography.Title>
+      <PageHeader
+        subtitle="Сводка по пользователям, платежам и usage"
+        title="Обзор"
+      />
       {error ? (
         <Alert
           description={error.message}
@@ -59,20 +44,106 @@ export default function AdminPage() {
           type="error"
         />
       ) : null}
-      <Row gutter={[16, 16]}>
-        {cards.map((card) => (
-          <Col key={card.title} lg={6} md={8} sm={12} xs={24}>
-            <Card>
+
+      <div>
+        <Typography.Title className="admin-section-title" level={4}>
+          Пользователи
+        </Typography.Title>
+        <Row gutter={[16, 16]}>
+          <Col lg={6} md={8} sm={12} xs={24}>
+            <Card size="small">
               <Statistic
-                formatter={card.formatter}
                 loading={isLoading}
-                title={card.title}
-                value={card.value ?? 0}
+                title="Всего пользователей"
+                value={data?.usersTotal ?? 0}
               />
             </Card>
           </Col>
-        ))}
-      </Row>
+          <Col lg={6} md={8} sm={12} xs={24}>
+            <Card size="small">
+              <Statistic
+                loading={isLoading}
+                title="Активные подписки"
+                value={data?.activeSubscriptions ?? 0}
+                valueStyle={{ color: '#3f8600' }}
+              />
+            </Card>
+          </Col>
+        </Row>
+      </div>
+
+      <div>
+        <Typography.Title className="admin-section-title" level={4}>
+          Платежи
+        </Typography.Title>
+        <Row gutter={[16, 16]}>
+          <Col lg={6} md={8} sm={12} xs={24}>
+            <Card size="small">
+              <Statistic
+                loading={isLoading}
+                title="Подтверждённые платежи"
+                value={data?.paymentsConfirmedCount ?? 0}
+              />
+            </Card>
+          </Col>
+          <Col lg={6} md={8} sm={12} xs={24}>
+            <Card size="small">
+              <Statistic
+                formatter={() =>
+                  data ? formatRubles(data.paymentsConfirmedSumKopecks) : '—'
+                }
+                loading={isLoading}
+                title="Сумма платежей"
+                value={data?.paymentsConfirmedSumKopecks ?? 0}
+              />
+            </Card>
+          </Col>
+        </Row>
+      </div>
+
+      <div>
+        <Typography.Title className="admin-section-title" level={4}>
+          Usage
+        </Typography.Title>
+        <Row gutter={[16, 16]}>
+          <Col lg={6} md={8} sm={12} xs={24}>
+            <Card size="small">
+              <Statistic
+                loading={isLoading}
+                title="Анализы за 7 дней"
+                value={data?.usageAnalyzeLast7Days ?? 0}
+              />
+            </Card>
+          </Col>
+          <Col lg={6} md={8} sm={12} xs={24}>
+            <Card size="small">
+              <Statistic
+                loading={isLoading}
+                title="Уточнения за 7 дней"
+                value={data?.usageRefineLast7Days ?? 0}
+              />
+            </Card>
+          </Col>
+          <Col lg={6} md={8} sm={12} xs={24}>
+            <Card size="small">
+              <Statistic
+                loading={isLoading}
+                title="Анализы за 30 дней"
+                value={data?.usageAnalyzeLast30Days ?? 0}
+              />
+            </Card>
+          </Col>
+          <Col lg={6} md={8} sm={12} xs={24}>
+            <Card size="small">
+              <Statistic
+                loading={isLoading}
+                title="Уточнения за 30 дней"
+                value={data?.usageRefineLast30Days ?? 0}
+              />
+            </Card>
+          </Col>
+        </Row>
+      </div>
     </>
   );
 }
