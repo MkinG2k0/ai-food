@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260804-3gx
-last_updated: "2026-08-04T00:41:00.000Z"
+stopped_at: Completed fast task — Vercel SPA rewrite
+last_updated: "2026-08-04T14:56:00.000Z"
 last_activity: 2026-08-04
-last_activity_desc: "Completed quick task 260804-3gx: T-Bank yearly license + paywall"
+last_activity_desc: "Completed fast: vercel.json SPA rewrite for deep-link hard reload"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -156,6 +156,7 @@ None yet.
 | 260803-wue | Telegram auth mock (Auth.js-shaped client, /login, Settings) | 2026-08-03 | fb97749, 12752f5, 5521fa0, 7e42e0c | [260803-wue-telegram-auth-js](./quick/260803-wue-telegram-auth-js/) |
 | 260804-3gx | One-time T-Bank yearly license + paywall (ai-app + ai-food) | 2026-08-04 | ai-app: 6f15ad3,cc016b3,af7d95b,281b401; ai-food: aced7b9 | [260804-3gx-one-time-t-bank-backend-ai-app-paywall-a](./quick/260804-3gx-one-time-t-bank-backend-ai-app-paywall-a/) |
 | fast | Login quota: 50 guest + 100 after auth (sum 150) | 2026-08-04 | 9e935d1 | — |
+| fast | Vercel SPA rewrite: hard reload on deep routes no longer 404 | 2026-08-04 | 617650e | — |
 
 ### Blockers/Concerns
 
