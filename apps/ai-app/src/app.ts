@@ -11,6 +11,7 @@ import { chatRouter } from './routes/chat.js';
 import { authRouter } from './routes/auth.js';
 import { usageRouter } from './routes/usage.js';
 import { billingRouter } from './routes/billing.js';
+import { telegramWebhookRouter } from './routes/telegramWebhook.js';
 
 export function createApp() {
   const app = express();
@@ -35,6 +36,7 @@ export function createApp() {
   app.use('/auth', authRouter);
   app.use('/usage', usageRouter);
   app.use('/billing', billingRouter);
+  app.use('/telegram/webhook', telegramWebhookRouter);
 
   const v1 = express.Router();
   v1.use(requireApiKey);

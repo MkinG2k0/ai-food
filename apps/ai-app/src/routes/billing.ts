@@ -293,7 +293,7 @@ billingRouter.post(
     }
 
     const state = await getPaymentState(payment.tbankPaymentId);
-    if (state.status === 'CONFIRMED' && payment.status !== 'confirmed') {
+    if (state.status === 'CONFIRMED') {
       const paidAt = new Date();
       await prisma.payment.update({
         where: { id: payment.id },

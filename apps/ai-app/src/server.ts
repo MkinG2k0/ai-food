@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { createApp } from './app.js';
+import { setupTelegramWebhook } from './lib/telegramWebhookSetup.js';
 
 const port = Number(process.env.PORT) || 3000;
 const isLocal = process.env.IS_LOCAL === 'true';
@@ -8,4 +9,7 @@ const app = createApp();
 
 app.listen(port, host, () => {
   console.log(`openrouter-gateway listening on http://${host}:${port}`);
+  void setupTelegramWebhook().catch((error) => {
+    console.error('Telegram webhook setup failed:', error);
+  });
 });
