@@ -178,4 +178,3 @@ pnpm --filter openrouter-gateway dev
 - Полноценный лендинг на `/`
 - Promo catalog в админке
 - Audit log действий админа
-}
