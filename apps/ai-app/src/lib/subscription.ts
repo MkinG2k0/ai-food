@@ -5,14 +5,66 @@ export type SubscriptionUserFields = {
   subscriptionExpiresAt: Date | null;
 };
 
-export function getSubscriptionPriceKopecks(): number {
+export type PricingSource = 'db' | 'env';
+
+export type PricingSnapshot = {
+  priceKopecks: number;
+  durationDays: number;
+  priceSource: PricingSource;
+  durationSource: PricingSource;
+};
+
+function envPriceKopecks(): number {
   const n = Number(process.env.SUBSCRIPTION_PRICE_KOPECKS);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 10_000;
 }
 
-export function getSubscriptionDurationDays(): number {
+function envDurationDays(): number {
   const n = Number(process.env.SUBSCRIPTION_DURATION_DAYS);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 365;
+}
+
+async function loadSettings(prisma?: PrismaClient | null) {
+  if (!prisma) return null;
+  try {
+    return await prisma.appSettings.findUnique({ where: { id: 1 } });
+  } catch {
+    return null;
+  }
+}
+
+export async function getSubscriptionPriceKopecks(
+  prisma?: PrismaClient | null,
+): Promise<number> {
+  const row = await loadSettings(prisma);
+  const db = row?.subscriptionPriceKopecks;
+  if (db != null && Number.isFinite(db) && db > 0) return Math.floor(db);
+  return envPriceKopecks();
+}
+
+export async function getSubscriptionDurationDays(
+  prisma?: PrismaClient | null,
+): Promise<number> {
+  const row = await loadSettings(prisma);
+  const db = row?.subscriptionDurationDays;
+  if (db != null && Number.isFinite(db) && db > 0) return Math.floor(db);
+  return envDurationDays();
+}
+
+export async function getPricingSnapshot(
+  prisma?: PrismaClient | null,
+): Promise<PricingSnapshot> {
+  const row = await loadSettings(prisma);
+  const dbPrice = row?.subscriptionPriceKopecks;
+  const dbDays = row?.subscriptionDurationDays;
+  const priceFromDb = dbPrice != null && Number.isFinite(dbPrice) && dbPrice > 0;
+  const daysFromDb = dbDays != null && Number.isFinite(dbDays) && dbDays > 0;
+  return {
+    priceKopecks: priceFromDb ? Math.floor(dbPrice!) : envPriceKopecks(),
+    durationDays: daysFromDb ? Math.floor(dbDays!) : envDurationDays(),
+    priceSource: priceFromDb ? 'db' : 'env',
+    durationSource: daysFromDb ? 'db' : 'env',
+  };
 }
 
 /** Active only when status suggests active AND expiresAt is in the future. */
@@ -42,7 +94,7 @@ export async function activateYearLicense(
   userId: string,
   paidAt: Date,
 ): Promise<void> {
-  const days = getSubscriptionDurationDays();
+  const days = await getSubscriptionDurationDays(prisma);
   const expiresAt = new Date(paidAt.getTime());
   expiresAt.setUTCDate(expiresAt.getUTCDate() + days);
   await prisma.user.update({
