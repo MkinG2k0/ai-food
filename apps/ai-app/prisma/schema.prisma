@@ -74,3 +74,10 @@ model UsageEvent {
   @@index([deviceId, kind])
   @@index([userId, kind])
 }
+
+model AppSettings {
+  id                       Int      @id @default(1)
+  subscriptionPriceKopecks Int?
+  subscriptionDurationDays Int?
+  updatedAt                DateTime @updatedAt
+}
