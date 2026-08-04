@@ -1,9 +1,11 @@
 export {
   subscribe,
+  validatePromo,
   fetchBillingStatus,
   syncBilling,
   fetchSubscriptionPrice,
   type SubscribeResult,
+  type PromoValidateResult,
   type BillingStatus,
   type SyncBillingResult,
   type SubscriptionPrice,

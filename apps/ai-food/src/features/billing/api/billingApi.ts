@@ -26,6 +26,17 @@ async function parseError(res: Response): Promise<never> {
 export type SubscribeResult = {
   paymentUrl: string;
   paymentId: string;
+  amount: number;
+  originalAmount: number;
+  promoCode: string | null;
+};
+
+export type PromoValidateResult = {
+  valid: true;
+  code: string;
+  discountPercent: number;
+  originalAmount: number;
+  finalAmount: number;
 };
 
 export type BillingStatus = {
@@ -55,7 +66,23 @@ export type SubscriptionPrice = {
   durationDays: number;
 };
 
-export async function subscribe(): Promise<SubscribeResult> {
+export async function validatePromo(
+  promoCode: string,
+): Promise<PromoValidateResult> {
+  const headers = await getQuotaHeaders('other');
+  const res = await fetch(`${gatewayBase()}/billing/promo/validate`, {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ promoCode }),
+  });
+  if (!res.ok) await parseError(res);
+  return (await res.json()) as PromoValidateResult;
+}
+
+export async function subscribe(promoCode?: string): Promise<SubscribeResult> {
   const headers = await getQuotaHeaders('other');
   const res = await fetch(`${gatewayBase()}/billing/subscribe`, {
     method: 'POST',
@@ -63,6 +90,7 @@ export async function subscribe(): Promise<SubscribeResult> {
       ...headers,
       'Content-Type': 'application/json',
     },
+    body: JSON.stringify(promoCode ? { promoCode } : {}),
   });
   if (!res.ok) await parseError(res);
   return (await res.json()) as SubscribeResult;

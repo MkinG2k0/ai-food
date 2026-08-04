@@ -24,6 +24,9 @@ describe('billingApi', () => {
       json: async () => ({
         paymentUrl: 'https://pay.example/x',
         paymentId: 'pay_1',
+        amount: 10_000,
+        originalAmount: 10_000,
+        promoCode: null,
       }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -33,10 +36,67 @@ describe('billingApi', () => {
     expect(result).toEqual({
       paymentUrl: 'https://pay.example/x',
       paymentId: 'pay_1',
+      amount: 10_000,
+      originalAmount: 10_000,
+      promoCode: null,
     });
     expect(fetchMock).toHaveBeenCalledWith(
       'https://gw.test/billing/subscribe',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({}),
+      }),
+    );
+  });
+
+  it('validatePromo POSTs /billing/promo/validate', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        valid: true,
+        code: 'new80',
+        discountPercent: 80,
+        originalAmount: 10_000,
+        finalAmount: 2_000,
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { validatePromo } = await import('./billingApi');
+    const result = await validatePromo('new80');
+    expect(result.finalAmount).toBe(2_000);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://gw.test/billing/promo/validate',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ promoCode: 'new80' }),
+      }),
+    );
+  });
+
+  it('subscribe sends promoCode when provided', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        paymentUrl: 'https://pay.example/x',
+        paymentId: 'pay_1',
+        amount: 5_000,
+        originalAmount: 10_000,
+        promoCode: 'new50',
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { subscribe } = await import('./billingApi');
+    const result = await subscribe('new50');
+    expect(result.promoCode).toBe('new50');
+    expect(result.amount).toBe(5_000);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://gw.test/billing/subscribe',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ promoCode: 'new50' }),
+      }),
     );
   });
 
