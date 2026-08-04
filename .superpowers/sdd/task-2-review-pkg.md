@@ -1,56 +1,14 @@
-﻿BASE: f8b7a608ac79ee8b5a682286b9f325cb9dc675a1
-HEAD: cdde860d493cf62d2fa015b9739f409254ae183a
+﻿# Review package Task 2
+Base: 2580e630a780de65c97ff96bd80c68337637f654
+Head: 26cf1310f4892797ec29fcd2bcfc3b76a12b4497
 
-cdde860 feat(ai-app): migrate User identity back to telegramId
- .../20260804180000_telegram_bot_user/migration.sql           | 12 ++++++++++++
- apps/ai-app/prisma/schema.prisma                             |  6 +++++-
- 2 files changed, 17 insertions(+), 1 deletion(-)
-diff --git a/apps/ai-app/prisma/migrations/20260804180000_telegram_bot_user/migration.sql b/apps/ai-app/prisma/migrations/20260804180000_telegram_bot_user/migration.sql
-new file mode 100644
-index 0000000..1f10a71
---- /dev/null
-+++ b/apps/ai-app/prisma/migrations/20260804180000_telegram_bot_user/migration.sql
-@@ -0,0 +1,12 @@
-+-- Flash-Call phone identities are not migrated to Telegram.
-+DELETE FROM "Payment";
-+DELETE FROM "User";
-+
-+ALTER TABLE "User" DROP COLUMN "phone",
-+ADD COLUMN "telegramId" TEXT NOT NULL,
-+ADD COLUMN "username" TEXT,
-+ADD COLUMN "firstName" TEXT,
-+ADD COLUMN "lastName" TEXT,
-+ADD COLUMN "photoUrl" TEXT;
-+
-+CREATE UNIQUE INDEX "User_telegramId_key" ON "User"("telegramId");
-diff --git a/apps/ai-app/prisma/schema.prisma b/apps/ai-app/prisma/schema.prisma
-index 2b715bf..d2ea3b9 100644
---- a/apps/ai-app/prisma/schema.prisma
-+++ b/apps/ai-app/prisma/schema.prisma
-@@ -16,21 +16,25 @@ enum SubscriptionStatus {
- 
- enum PaymentStatus {
-   pending
-   confirmed
-   rejected
-   refunded
- }
- 
- model User {
-   id                     String             @id @default(cuid())
--  phone                  String             @unique
-+  telegramId             String             @unique
-+  username               String?
-+  firstName              String?
-+  lastName               String?
-+  photoUrl               String?
-   subscriptionStatus     SubscriptionStatus @default(none)
-   subscriptionExpiresAt  DateTime?
-   createdAt              DateTime           @default(now())
-   updatedAt              DateTime           @updatedAt
-   devices                Device[]
-   usageEvents            UsageEvent[]
-   payments               Payment[]
- }
- 
- model Payment {
+## Commits
+26cf131 feat(ai-food): fetch subscription price from gateway
+
+## Stat
+ .../src/features/billing/api/billingApi.test.ts    | 24 ++++++++++++++++++++++  .../ai-food/src/features/billing/api/billingApi.ts | 14 +++++++++++++  apps/ai-food/src/features/billing/index.ts         |  6 ++++++  .../features/billing/model/useSubscriptionPrice.ts | 15 ++++++++++++++  4 files changed, 59 insertions(+)
+
+## Diff
+```diff
+diff --git a/apps/ai-food/src/features/billing/api/billingApi.test.ts b/apps/ai-food/src/features/billing/api/billingApi.test.ts index 1554486..04f01f1 100644 --- a/apps/ai-food/src/features/billing/api/billingApi.test.ts +++ b/apps/ai-food/src/features/billing/api/billingApi.test.ts @@ -73,11 +73,35 @@ describe('billingApi', () => {      const result = await syncBilling('pay_1');      expect(result.hasActiveSubscription).toBe(true);      expect(fetchMock).toHaveBeenCalledWith(        'https://gw.test/billing/sync',        expect.objectContaining({          method: 'POST',          body: JSON.stringify({ paymentId: 'pay_1' }),        }),      );    }); + +  it('fetchSubscriptionPrice GETs /billing/price without user headers', async () => { +    const fetchMock = vi.fn().mockResolvedValue({ +      ok: true, +      json: async () => ({ +        amountKopecks: 10_000, +        currency: 'RUB', +        durationDays: 365, +      }), +    }); +    vi.stubGlobal('fetch', fetchMock); + +    const { fetchSubscriptionPrice } = await import('./billingApi'); +    const result = await fetchSubscriptionPrice(); +    expect(result).toEqual({ +      amountKopecks: 10_000, +      currency: 'RUB', +      durationDays: 365, +    }); +    expect(fetchMock).toHaveBeenCalledWith( +      'https://gw.test/billing/price', +      expect.objectContaining({ method: 'GET' }), +    ); +  });  }); diff --git a/apps/ai-food/src/features/billing/api/billingApi.ts b/apps/ai-food/src/features/billing/api/billingApi.ts index 5fc8e28..054cdce 100644 --- a/apps/ai-food/src/features/billing/api/billingApi.ts +++ b/apps/ai-food/src/features/billing/api/billingApi.ts @@ -42,20 +42,26 @@ export type BillingStatus = {  };    export type SyncBillingResult = {    paymentId: string;    paymentStatus: string;    hasActiveSubscription?: boolean;    subscriptionExpiresAt?: string | null;    subscriptionStatus?: string;  };   +export type SubscriptionPrice = { +  amountKopecks: number; +  currency: string; +  durationDays: number; +}; +  export async function subscribe(): Promise<SubscribeResult> {    const headers = await getQuotaHeaders('other');    const res = await fetch(`${gatewayBase()}/billing/subscribe`, {      method: 'POST',      headers: {        ...headers,        'Content-Type': 'application/json',      },    });    if (!res.ok) await parseError(res); @@ -80,10 +86,18 @@ export async function syncBilling(      method: 'POST',      headers: {        ...headers,        'Content-Type': 'application/json',      },      body: JSON.stringify(paymentId ? { paymentId } : {}),    });    if (!res.ok) await parseError(res);    return (await res.json()) as SyncBillingResult;  } + +export async function fetchSubscriptionPrice(): Promise<SubscriptionPrice> { +  const res = await fetch(`${gatewayBase()}/billing/price`, { +    method: 'GET', +  }); +  if (!res.ok) await parseError(res); +  return (await res.json()) as SubscriptionPrice; +} diff --git a/apps/ai-food/src/features/billing/index.ts b/apps/ai-food/src/features/billing/index.ts index a039b90..30948b9 100644 --- a/apps/ai-food/src/features/billing/index.ts +++ b/apps/ai-food/src/features/billing/index.ts @@ -1,14 +1,20 @@  export {    subscribe,    fetchBillingStatus,    syncBilling, +  fetchSubscriptionPrice,    type SubscribeResult,    type BillingStatus,    type SyncBillingResult, +  type SubscriptionPrice,  } from './api/billingApi';  export { useBillingStatus, billingStatusQueryKey } from './model/useBillingStatus'; +export { +  useSubscriptionPrice, +  subscriptionPriceQueryKey, +} from './model/useSubscriptionPrice';  export {    isQuotaExceededError,    quotaExceededPath,    handleQuotaExceeded,  } from './model/quotaPaywall'; diff --git a/apps/ai-food/src/features/billing/model/useSubscriptionPrice.ts b/apps/ai-food/src/features/billing/model/useSubscriptionPrice.ts new file mode 100644 index 0000000..519a561 --- /dev/null +++ b/apps/ai-food/src/features/billing/model/useSubscriptionPrice.ts @@ -0,0 +1,15 @@ +import { useQuery } from '@tanstack/react-query'; +import { +  fetchSubscriptionPrice, +  type SubscriptionPrice, +} from '../api/billingApi'; + +export const subscriptionPriceQueryKey = ['billing', 'price'] as const; + +export function useSubscriptionPrice() { +  return useQuery<SubscriptionPrice, Error>({ +    queryKey: subscriptionPriceQueryKey, +    queryFn: fetchSubscriptionPrice, +    staleTime: 5 * 60_000, +  }); +}
+```

@@ -8,6 +8,7 @@ export async function getQuotaHeaders(
   usageKind: UsageKindHeader,
 ): Promise<Record<string, string>> {
   const deviceId = await getDeviceId();
+  console.log(deviceId)
   const headers: Record<string, string> = {
     'X-Device-Id': deviceId,
     'X-Usage-Kind': usageKind,

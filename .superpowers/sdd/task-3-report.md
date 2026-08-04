@@ -1,42 +1,40 @@
-# Task 3 Report: In-memory Telegram login challenges
+# Task 3 Report: SubscribePage uses API price
 
 ## Status
-**Complete**
+**DONE** — hardcoded price removed, API hook wired, tsc clean, committed.
 
-## Commits
-- `feat(ai-app): add Telegram login challenge store`
+## What was implemented
 
-## Files Created
-- `apps/ai-app/src/lib/telegramLoginChallenge.ts`
-- `apps/ai-app/src/lib/telegramLoginChallenge.test.ts`
+### `SubscribePage.tsx`
+- Removed `const PRICE_RUB = 100`
+- Imported `useSubscriptionPrice` from `@/features/billing`
+- Hook called at top of component (before success/fail early returns)
+- Price block shows loading (`Загрузка цены…`), error (`Цена недоступна`), or API data
+- `priceRub = Math.round(amountKopecks / 100)` with `toLocaleString('ru-RU')`
+- Duration from `price.durationDays` in both price line and description
+- «Оплатить» left enabled during price load (server sets payment amount)
 
-## Tests
-```
-pnpm exec vitest run src/lib/telegramLoginChallenge.test.ts
-✓ 3 passed (3)
-```
+## Verification
 
-| Test | Result |
+| Step | Result |
 |------|--------|
-| create → confirm → consume → second consume null | PASS |
-| rejects confirm for unknown nonce | PASS |
-| expires pending challenges | PASS |
+| `pnpm --filter ai-food exec tsc --noEmit` | PASS (exit 0) |
+| Linter (SubscribePage.tsx) | No issues |
 
-## TDD Flow
-1. Wrote failing tests first — module not found (expected FAIL)
-2. Implemented `telegramLoginChallenge.ts` per brief
-3. Re-ran tests — all PASS
+## Commit
+```
+4692d31 feat(ai-food): show subscription price from API on subscribe page
+```
+Files: `apps/ai-food/src/pages/subscribe/ui/SubscribePage.tsx` only
 
-## Implementation Notes
-- In-memory store with dual index: `byId` + `byNonce`
-- Default TTL: 5 minutes
-- Status lifecycle: `pending` → `confirmed` → `consumed`
-- Expired/consumed challenges purged on access
-- Expiry test uses `ttlMs: -1` (no spin wait) per brief recommendation
+## Self-review
+
+| Check | Verdict |
+|-------|---------|
+| Rules of Hooks — hook before early returns | OK |
+| No hardcoded PRICE_RUB | OK |
+| Loading/error/success UI states | OK |
+| durationDays fallback text | OK |
 
 ## Concerns
-- In-memory only — challenges lost on process restart; acceptable for MVP per design spec
-- No periodic cleanup of expired pending challenges; relies on lazy purge on access
-
-## Next Task
-Task 4: Telegram bot deep link + auth routes (consumes this module)
+- None blocking. Manual smoke on `/subscribe` with live gateway recommended to confirm price display.

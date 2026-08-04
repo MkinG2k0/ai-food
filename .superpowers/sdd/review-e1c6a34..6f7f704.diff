@@ -1,0 +1,207 @@
+﻿# Review package: e1c6a34..6f7f704
+
+## Commits
+6f7f704 feat(ai-food): add terms and privacy pages in settings
+
+## Files changed
+ apps/ai-food/src/app/router.tsx                    |  3 ++
+ apps/ai-food/src/pages/legal/index.ts              |  2 +
+ .../src/pages/legal/ui/LegalDocumentPage.tsx       | 43 ++++++++++++++++++++++
+ apps/ai-food/src/pages/legal/ui/PrivacyPage.tsx    | 15 ++++++++
+ apps/ai-food/src/pages/legal/ui/TermsPage.tsx      | 23 ++++++++++++
+ .../ai-food/src/pages/settings/ui/SettingsPage.tsx | 16 ++++++++
+ 6 files changed, 102 insertions(+)
+
+## Diff
+diff --git a/apps/ai-food/src/app/router.tsx b/apps/ai-food/src/app/router.tsx
+index 423f2e2..ae3cf79 100644
+--- a/apps/ai-food/src/app/router.tsx
++++ b/apps/ai-food/src/app/router.tsx
+@@ -5,36 +5,39 @@ import { OnboardingPage } from '@/pages/onboarding';
+ import { MealDetailPage } from '@/pages/meal-detail';
+ import { FoodItemEditPage } from '@/pages/food-item-edit';
+ import { StatsPage } from '@/pages/stats';
+ import { SettingsPage } from '@/pages/settings';
+ import { NewsPage } from '@/pages/news';
+ import { FavoritesPage } from '@/pages/favorites';
+ import { ManualEntryPage } from '@/pages/manual-entry';
+ import { BarcodePage } from '@/pages/barcode';
+ import { LoginPage } from '@/pages/login';
+ import { SubscribePage } from '@/pages/subscribe';
++import { TermsPage, PrivacyPage } from '@/pages/legal';
+ import { ModelTestPage } from '@/pages/model-test';
+ import { AppShell } from './AppShell';
+ import { ProfileGuard } from './ProfileGuard';
+ 
+ const router = createBrowserRouter([
+   ...(import.meta.env.DEV
+     ? [{ path: '/model-test', element: <ModelTestPage /> }]
+     : []),
+   {
+     element: <AppShell />,
+     children: [
+       { path: '/onboarding', element: <OnboardingPage /> },
+       { path: '/login', element: <LoginPage /> },
+       { path: '/subscribe', element: <SubscribePage /> },
+       { path: '/subscribe/success', element: <SubscribePage /> },
+       { path: '/subscribe/fail', element: <SubscribePage /> },
++      { path: '/legal/terms', element: <TermsPage /> },
++      { path: '/legal/privacy', element: <PrivacyPage /> },
+       { path: '/', element: <ProfileGuard><HomePage /></ProfileGuard> },
+       { path: '/diary', element: <ProfileGuard><DiaryPage /></ProfileGuard> },
+       { path: '/stats', element: <ProfileGuard><StatsPage /></ProfileGuard> },
+       { path: '/settings', element: <ProfileGuard><SettingsPage /></ProfileGuard> },
+       { path: '/news', element: <ProfileGuard><NewsPage /></ProfileGuard> },
+       { path: '/favorites', element: <ProfileGuard><FavoritesPage /></ProfileGuard> },
+       { path: '/manual-entry', element: <ProfileGuard><ManualEntryPage /></ProfileGuard> },
+       { path: '/barcode', element: <ProfileGuard><BarcodePage /></ProfileGuard> },
+       { path: '/meal/:id', element: <ProfileGuard><MealDetailPage /></ProfileGuard> },
+       {
+diff --git a/apps/ai-food/src/pages/legal/index.ts b/apps/ai-food/src/pages/legal/index.ts
+new file mode 100644
+index 0000000..a84db33
+--- /dev/null
++++ b/apps/ai-food/src/pages/legal/index.ts
+@@ -0,0 +1,2 @@
++export { TermsPage } from './ui/TermsPage';
++export { PrivacyPage } from './ui/PrivacyPage';
+diff --git a/apps/ai-food/src/pages/legal/ui/LegalDocumentPage.tsx b/apps/ai-food/src/pages/legal/ui/LegalDocumentPage.tsx
+new file mode 100644
+index 0000000..4115b0e
+--- /dev/null
++++ b/apps/ai-food/src/pages/legal/ui/LegalDocumentPage.tsx
+@@ -0,0 +1,43 @@
++import { SubpageShell } from '@/shared/ui';
++import type { LegalSection } from '@/shared/legal/types';
++import { legalConfig } from '@/shared/legal/legalConfig';
++
++type Props = {
++  title: string;
++  onBack: () => void;
++  sections: LegalSection[];
++  loadingHint?: string | null;
++};
++
++export function LegalDocumentPage({
++  title,
++  onBack,
++  sections,
++  loadingHint,
++}: Props) {
++  return (
++    <SubpageShell title={title} onBack={onBack} mainClassName="space-y-6">
++      <p className="text-sm text-muted-foreground">
++        ╨а╨╡╨┤╨░╨║╤Ж╨╕╤П ╨╛╤В{' '}
++        {new Date(legalConfig.revisionDate + 'T00:00:00').toLocaleDateString(
++          'ru-RU',
++        )}
++      </p>
++      {loadingHint ? (
++        <p className="text-sm text-muted-foreground">{loadingHint}</p>
++      ) : null}
++      {sections.map((section) => (
++        <section key={section.title} className="space-y-2">
++          <h2 className="text-base font-semibold text-foreground">
++            {section.title}
++          </h2>
++          {section.paragraphs.map((p) => (
++            <p key={p.slice(0, 48)} className="text-sm text-muted-foreground">
++              {p}
++            </p>
++          ))}
++        </section>
++      ))}
++    </SubpageShell>
++  );
++}
+diff --git a/apps/ai-food/src/pages/legal/ui/PrivacyPage.tsx b/apps/ai-food/src/pages/legal/ui/PrivacyPage.tsx
+new file mode 100644
+index 0000000..aa4a190
+--- /dev/null
++++ b/apps/ai-food/src/pages/legal/ui/PrivacyPage.tsx
+@@ -0,0 +1,15 @@
++import { useNavigate } from 'react-router-dom';
++import { buildPrivacySections } from '@/shared/legal/privacyContent';
++import { LegalDocumentPage } from './LegalDocumentPage';
++
++export function PrivacyPage() {
++  const navigate = useNavigate();
++  const sections = buildPrivacySections();
++  return (
++    <LegalDocumentPage
++      title="╨Я╤А╨╕╨▓╨░╤В╨╜╨╛╤Б╤В╤М"
++      onBack={() => navigate('/settings')}
++      sections={sections}
++    />
++  );
++}
+diff --git a/apps/ai-food/src/pages/legal/ui/TermsPage.tsx b/apps/ai-food/src/pages/legal/ui/TermsPage.tsx
+new file mode 100644
+index 0000000..8142c81
+--- /dev/null
++++ b/apps/ai-food/src/pages/legal/ui/TermsPage.tsx
+@@ -0,0 +1,23 @@
++import { useNavigate } from 'react-router-dom';
++import { useSubscriptionPrice } from '@/features/billing';
++import { buildTermsSections } from '@/shared/legal/termsContent';
++import { LegalDocumentPage } from './LegalDocumentPage';
++
++export function TermsPage() {
++  const navigate = useNavigate();
++  const { data, isLoading, isError } = useSubscriptionPrice();
++  const sections = buildTermsSections({
++    amountKopecks: isError ? null : (data?.amountKopecks ?? null),
++    durationDays: isError ? null : (data?.durationDays ?? null),
++  });
++  return (
++    <LegalDocumentPage
++      title="╨г╤Б╨╗╨╛╨▓╨╕╤П"
++      onBack={() => navigate('/settings')}
++      sections={sections}
++      loadingHint={
++        isLoading ? '╨Ч╨░╨│╤А╤Г╨╢╨░╨╡╨╝ ╨░╨║╤В╤Г╨░╨╗╤М╨╜╤Л╨╣ ╤В╨░╤А╨╕╤ДтАж' : null
++      }
++    />
++  );
++}
+diff --git a/apps/ai-food/src/pages/settings/ui/SettingsPage.tsx b/apps/ai-food/src/pages/settings/ui/SettingsPage.tsx
+index cdf3a4e..7221807 100644
+--- a/apps/ai-food/src/pages/settings/ui/SettingsPage.tsx
++++ b/apps/ai-food/src/pages/settings/ui/SettingsPage.tsx
+@@ -644,20 +644,36 @@ export function SettingsPage() {
+         <section className="space-y-3">
+           <h2 className="text-sm font-medium leading-none">╨Ю ╨┐╤А╨╕╨╗╨╛╨╢╨╡╨╜╨╕╨╕</h2>
+           <Button
+             variant="outline"
+             className="w-full justify-between"
+             onClick={() => navigate('/news')}
+           >
+             ╨Э╨╛╨▓╨╛╤Б╤В╨╕
+             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+           </Button>
++          <Button
++            variant="outline"
++            className="w-full justify-between"
++            onClick={() => navigate('/legal/terms')}
++          >
++            ╨г╤Б╨╗╨╛╨▓╨╕╤П
++            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
++          </Button>
++          <Button
++            variant="outline"
++            className="w-full justify-between"
++            onClick={() => navigate('/legal/privacy')}
++          >
++            ╨Я╤А╨╕╨▓╨░╤В╨╜╨╛╤Б╤В╤М
++            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
++          </Button>
+           <Button variant="outline" className="w-full justify-between" asChild>
+             <a
+               href="https://t.me/double_cumboy"
+               target="_blank"
+               rel="noopener noreferrer"
+             >
+               Telegram
+               <span className="text-muted-foreground">@double_cumboy</span>
+             </a>
+           </Button>

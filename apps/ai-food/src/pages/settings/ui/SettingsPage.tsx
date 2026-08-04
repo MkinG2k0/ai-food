@@ -254,7 +254,6 @@ export function SettingsPage() {
       mainClassName="space-y-8"
     >
         <section className="space-y-3">
-          <h2 className="text-sm font-medium leading-none">Аккаунт</h2>
           {usage && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
@@ -289,61 +288,56 @@ export function SettingsPage() {
                 )}
             </div>
           )}
-          {userToken && (
-            <div className="space-y-2 rounded-md border border-border px-3 py-3">
-              <p className="text-sm font-medium">Лицензия</p>
-              {billing?.hasActiveSubscription ? (
-                <p className="text-sm text-muted-foreground">
-                  Активна
-                  {billing.subscriptionExpiresAt
-                    ? ` до ${new Date(billing.subscriptionExpiresAt).toLocaleDateString('ru-RU')}`
-                    : ''}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Нет активной лицензии — после бесплатного лимита нужен год
-                  доступа к AI
-                </p>
-              )}
+          <div className="space-y-3 rounded-md border border-border px-3 py-3">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Аккаунт</p>
+              {userToken ? (
+                billing?.hasActiveSubscription ? (
+                  <p className="text-sm text-muted-foreground">
+                    Лицензия активна
+                    {billing.subscriptionExpiresAt
+                      ? ` до ${new Date(billing.subscriptionExpiresAt).toLocaleDateString('ru-RU')}`
+                      : ''}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Нет активной лицензии — после бесплатного лимита нужен год
+                    доступа к AI
+                  </p>
+                )
+              ) : null}
+            </div>
+            {session ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={session.photo_url}
+                    alt={session.name}
+                    className="h-10 w-10 rounded-full object-cover bg-muted"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{session.name}</p>
+                    {session.username ? (
+                      <p className="truncate text-sm text-muted-foreground">
+                        @{session.username}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full" onClick={handleSignOut}>
+                  Выйти
+                </Button>
+              </>
+            ) : (
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => navigate('/subscribe')}
+                onClick={() => navigate('/login')}
               >
-                {billing?.hasActiveSubscription ? 'Продлить' : 'Купить'}
+                Войти
               </Button>
-            </div>
-          )}
-          {session ? (
-            <>
-              <div className="flex items-center gap-3">
-                <img
-                  src={session.photo_url}
-                  alt={session.name}
-                  className="h-10 w-10 rounded-full object-cover bg-muted"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{session.name}</p>
-                  {session.username ? (
-                    <p className="truncate text-sm text-muted-foreground">
-                      @{session.username}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-              <Button variant="outline" className="w-full" onClick={handleSignOut}>
-                Выйти
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => navigate('/login')}
-            >
-              Войти
-            </Button>
-          )}
+            )}
+          </div>
         </section>
 
         <section className="space-y-3">

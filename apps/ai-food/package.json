@@ -20,6 +20,7 @@
     "@capacitor/app": "^8",
     "@capacitor/camera": "^8",
     "@capacitor/core": "^8.4.1",
+    "@capacitor/device": "^8",
     "@capacitor/filesystem": "^8",
     "@capacitor/preferences": "^8.0.0",
     "@ionic/pwa-elements": "^3.4.0",

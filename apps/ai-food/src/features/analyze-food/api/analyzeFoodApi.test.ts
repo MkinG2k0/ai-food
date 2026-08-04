@@ -3,9 +3,15 @@ import type { ApiError, NutritionResult } from '@ai-food/shared-types';
 
 vi.mock('@capacitor/preferences', () => ({
   Preferences: {
-    get: vi.fn().mockResolvedValue({ value: 'test-device-id' }),
+    get: vi.fn().mockResolvedValue({ value: null }),
     set: vi.fn().mockResolvedValue(undefined),
     remove: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+vi.mock('@capacitor/device', () => ({
+  Device: {
+    getId: vi.fn().mockResolvedValue({ identifier: 'test-device-id' }),
   },
 }));
 

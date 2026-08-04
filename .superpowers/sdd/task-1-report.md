@@ -1,101 +1,105 @@
-# Task 1 Report: JWT — `phone` → `telegramId`
+# Task 1 Report: GET /billing/price (ai-app)
 
-**Status:** DONE  
-**Branch:** `feat/telegram-bot-auth`  
-**Commit:** `f8b7a60` — `refactor(ai-app): JWT claims use telegramId instead of phone`
+## Status
+
+**DONE**
 
 ## Summary
 
-JWT user token payload and claims migrated from `phone` to `telegramId` per the telegram-bot-auth plan. Only JWT module and related test mocks were changed; Flash-Call routes and Prisma were left untouched as instructed.
+Added public `GET /billing/price` endpoint to `billingRouter` that returns subscription tariff from existing env helpers — no auth, no DB.
 
-## TDD Steps Executed
+Response shape:
 
-### Step 1 — Update failing expectations in `jwt.test.ts`
-
-- Renamed test `round-trips sub and phone` → `round-trips sub and telegramId`
-- Payload changed from `{ sub: 'user_1', phone: '+79991234567' }` to `{ sub: 'user_1', telegramId: '42' }`
-- Updated `does not set exp claim` test to use `telegramId: '42'`
-
-### Step 2 — Run test, expect FAIL
-
-```
-pnpm exec vitest run src/lib/jwt.test.ts
-```
-
-**Result:** FAIL (1 failed, 2 passed)
-
-- `round-trips sub and telegramId` failed with `ApiError: Invalid or expired user token.` — implementation still signed/verified `phone` claim while test expected `telegramId`.
-
-### Step 3 — Implement JWT
-
-Replaced `apps/ai-app/src/lib/jwt.ts`:
-
-- `UserTokenPayload`: `{ sub: string; telegramId: string }`
-- `signUserToken`: signs `{ telegramId: payload.telegramId }` in JWT body
-- `verifyUserToken`: extracts and validates `telegramId` as string claim
-
-### Step 4 — Fix test mocks
-
-| File | Change |
-|------|--------|
-| `quota.test.ts` (2 mocks) | `{ sub: 'u1', phone: '+79991234567' }` → `{ sub: 'u1', telegramId: '42' }` |
-| `billing.test.ts` (1 mock) | `{ sub: 'user-1', phone: '+79991234567' }` → `{ sub: 'user-1', telegramId: '42' }` |
-
-### Step 5 — Run tests, expect PASS
-
-```
-pnpm exec vitest run src/lib/jwt.test.ts src/middleware/quota.test.ts src/routes/billing.test.ts
-```
-
-**Result:** PASS — 3 files, 15 tests, all green.
-
-### Step 6 — Commit
-
-```
-git add apps/ai-app/src/lib/jwt.ts apps/ai-app/src/lib/jwt.test.ts apps/ai-app/src/middleware/quota.test.ts apps/ai-app/src/routes/billing.test.ts
-git commit -m "refactor(ai-app): JWT claims use telegramId instead of phone"
+```json
+{
+  "amountKopecks": number,
+  "currency": "RUB",
+  "durationDays": number
+}
 ```
 
 ## Files Changed
 
-| File | Lines changed |
-|------|---------------|
-| `apps/ai-app/src/lib/jwt.ts` | Type + sign/verify logic |
-| `apps/ai-app/src/lib/jwt.test.ts` | Test expectations |
-| `apps/ai-app/src/middleware/quota.test.ts` | Mock payloads (×2) |
-| `apps/ai-app/src/routes/billing.test.ts` | Mock payload (×1) |
+| File | Change |
+|------|--------|
+| `apps/ai-app/src/routes/billing.ts` | Added `GET /price` route; imported `getSubscriptionDurationDays` |
+| `apps/ai-app/src/routes/billing.test.ts` | Added `mockDuration`, two new tests, updated `beforeEach` defaults |
+
+## TDD Evidence
+
+### RED (Step 2)
+
+Command:
+
+```bash
+pnpm --filter openrouter-gateway test -- src/routes/billing.test.ts
+```
+
+Result: **FAIL** — 2 failed, 7 passed
+
+```
+× GET /billing/price returns amount and duration without auth
+  → expected 404 to be 200
+× GET /billing/price reflects env helpers
+  → expected 404 to be 200
+```
+
+Existing subscribe/notification/status tests continued to pass (7/7).
+
+### GREEN (Step 4)
+
+Same command after implementing route in `billing.ts`.
+
+Result: **PASS** — 9/9 tests
+
+```
+✓ src/routes/billing.test.ts (9 tests) 47ms
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+```
+
+## Implementation Details
+
+Route placed at top of `billingRouter` (before auth-required `/subscribe`), per plan:
+
+```ts
+billingRouter.get(
+  '/price',
+  asyncHandler(async (_req, res) => {
+    res.json({
+      amountKopecks: getSubscriptionPriceKopecks(),
+      currency: 'RUB',
+      durationDays: getSubscriptionDurationDays(),
+    });
+  }),
+);
+```
+
+Mounted at `/billing/price` via existing `createApp()` wiring.
 
 ## Self-Review
 
-### Scope compliance
+| Check | Result |
+|-------|--------|
+| Matches plan verbatim | ✓ Route, imports, test mocks/tests match brief |
+| No auth required | ✓ No `requireUser`, no headers in tests |
+| No DB access | ✓ Route only calls subscription helpers |
+| Existing tests unaffected | ✓ 7 original tests still pass |
+| Linter | ✓ No errors on changed files |
+| Scope | ✓ Only 2 files committed |
 
-- ✅ Only JWT claims and related test mocks modified
-- ✅ `auth.ts` still uses `phone` — intentionally untouched
-- ✅ Prisma schema untouched
-- ✅ Flash-Call routes untouched
-- ✅ Did not run `auth.flashcall.test.ts` suite
+### Note on `beforeEach` default
 
-### Known follow-ups (expected, not blockers)
+`mockPrice` default changed from `199000` to `10_000` per brief. Existing subscribe tests do not assert on price amount from mock; notification test hardcodes `amount: 199000` in fixture data. No regressions observed.
 
-1. **`auth.ts`** — `signUserToken({ sub, phone })` will fail type-check once full app is type-checked; addressed in later tasks.
-2. **`auth.flashcall.test.ts`** — still expects `phone` in `signUserToken` call; will fail until Flash-Call routes are replaced/updated in later tasks.
-3. **No `exp` claim** — preserved existing behavior (test `does not set exp claim` still passes).
+## Commit
 
-### Code quality
+```
+2580e63 feat(ai-app): expose GET /billing/price for subscription tariff
+```
 
-- Implementation matches plan verbatim
-- Error handling unchanged (`AUTH_MISCONFIGURED`, `INVALID_USER_TOKEN`)
-- No stray `phone` references in modified JWT files
-
-## Test Summary
-
-| Suite | Tests | Result |
-|-------|-------|--------|
-| `jwt.test.ts` | 3 | PASS |
-| `quota.test.ts` | 5 | PASS |
-| `billing.test.ts` | 7 | PASS |
-| **Total** | **15** | **PASS** |
+Only `billing.ts` and `billing.test.ts` staged — unrelated dirty files left unstaged.
 
 ## Concerns
 
-None for this task scope. Type errors in `auth.ts` and flashcall tests are expected until subsequent tasks.
+None.
