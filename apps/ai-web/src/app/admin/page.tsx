@@ -49,9 +49,9 @@ export default function AdminPage() {
         <Typography.Title className="admin-section-title" level={4}>
           Пользователи
         </Typography.Title>
-        <Row gutter={[16, 16]}>
-          <Col lg={6} md={8} sm={12} xs={24}>
-            <Card size="small">
+        <Row className="admin-stat-row" gutter={[16, 16]}>
+          <Col lg={12} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
               <Statistic
                 loading={isLoading}
                 title="Всего пользователей"
@@ -59,8 +59,8 @@ export default function AdminPage() {
               />
             </Card>
           </Col>
-          <Col lg={6} md={8} sm={12} xs={24}>
-            <Card size="small">
+          <Col lg={12} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
               <Statistic
                 loading={isLoading}
                 title="Активные подписки"
@@ -76,9 +76,9 @@ export default function AdminPage() {
         <Typography.Title className="admin-section-title" level={4}>
           Платежи
         </Typography.Title>
-        <Row gutter={[16, 16]}>
-          <Col lg={6} md={8} sm={12} xs={24}>
-            <Card size="small">
+        <Row className="admin-stat-row" gutter={[16, 16]}>
+          <Col lg={12} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
               <Statistic
                 loading={isLoading}
                 title="Подтверждённые платежи"
@@ -86,8 +86,8 @@ export default function AdminPage() {
               />
             </Card>
           </Col>
-          <Col lg={6} md={8} sm={12} xs={24}>
-            <Card size="small">
+          <Col lg={12} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
               <Statistic
                 formatter={() =>
                   data ? formatRubles(data.paymentsConfirmedSumKopecks) : '—'
@@ -105,9 +105,9 @@ export default function AdminPage() {
         <Typography.Title className="admin-section-title" level={4}>
           Usage
         </Typography.Title>
-        <Row gutter={[16, 16]}>
-          <Col lg={6} md={8} sm={12} xs={24}>
-            <Card size="small">
+        <Row className="admin-stat-row" gutter={[16, 16]}>
+          <Col lg={6} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
               <Statistic
                 loading={isLoading}
                 title="Анализы за 7 дней"
@@ -115,8 +115,8 @@ export default function AdminPage() {
               />
             </Card>
           </Col>
-          <Col lg={6} md={8} sm={12} xs={24}>
-            <Card size="small">
+          <Col lg={6} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
               <Statistic
                 loading={isLoading}
                 title="Уточнения за 7 дней"
@@ -124,8 +124,8 @@ export default function AdminPage() {
               />
             </Card>
           </Col>
-          <Col lg={6} md={8} sm={12} xs={24}>
-            <Card size="small">
+          <Col lg={6} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
               <Statistic
                 loading={isLoading}
                 title="Анализы за 30 дней"
@@ -133,8 +133,8 @@ export default function AdminPage() {
               />
             </Card>
           </Col>
-          <Col lg={6} md={8} sm={12} xs={24}>
-            <Card size="small">
+          <Col lg={6} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
               <Statistic
                 loading={isLoading}
                 title="Уточнения за 30 дней"

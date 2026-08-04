@@ -189,6 +189,22 @@ main:not(.legal-doc) {
   margin: 0 0 12px !important;
 }
 
+.admin-stat-row > .ant-col {
+  display: flex;
+}
+
+.admin-stat-card {
+  display: flex;
+  width: 100%;
+  min-height: 112px;
+}
+
+.admin-stat-card .ant-card-body {
+  display: flex;
+  flex: 1;
+  align-items: center;
+}
+
 @media (max-width: 575px) {
   .admin-header,
   .admin-content {
