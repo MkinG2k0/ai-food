@@ -114,15 +114,21 @@ authRouter.get(
       return;
     }
 
-    const consumed = consumeLoginChallenge(challengeId);
-    if (!consumed) {
-      res.json({ status: 'expired' });
+    let user;
+    try {
+      const prisma = requireDb();
+      user = await prisma.user.findUnique({ where: { id: challenge.userId } });
+    } catch {
+      res.json({ status: 'pending' });
+      return;
+    }
+    if (!user) {
+      res.json({ status: 'pending' });
       return;
     }
 
-    const prisma = requireDb();
-    const user = await prisma.user.findUnique({ where: { id: consumed.userId } });
-    if (!user) {
+    const consumed = consumeLoginChallenge(challengeId);
+    if (!consumed) {
       res.json({ status: 'expired' });
       return;
     }

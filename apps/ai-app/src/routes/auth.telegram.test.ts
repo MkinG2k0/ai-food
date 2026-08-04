@@ -154,6 +154,27 @@ describe('Telegram bot auth routes', () => {
     expect(response.body).toEqual({ status: 'expired' });
   });
 
+  it('keeps a confirmed challenge pending when the user query fails', async () => {
+    mocks.getLoginChallengeById.mockReturnValue({
+      id: challengeId,
+      status: 'confirmed',
+      nonce: 'nonce1',
+      expiresAt: Date.now() + 60_000,
+      userId: user.id,
+      token: 'jwt-1',
+    });
+    mocks.findUnique.mockRejectedValue(new Error('database unavailable'));
+
+    const response = await request(createApp()).get(
+      `/auth/telegram/status?challengeId=${challengeId}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ status: 'pending' });
+    expect(mocks.findUnique).toHaveBeenCalledWith({ where: { id: user.id } });
+    expect(mocks.consumeLoginChallenge).not.toHaveBeenCalled();
+  });
+
   it('returns expired for an unknown challenge id', async () => {
     mocks.getLoginChallengeById.mockReturnValue(null);
 
