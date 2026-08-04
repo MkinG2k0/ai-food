@@ -10,11 +10,7 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 import { useAuthStore } from './useAuthStore';
-import {
-  isAuthMockEnabled,
-  signInWithMockTelegram,
-  signOut,
-} from './mockTelegramAuth';
+import { isAuthMockEnabled, signOut } from './mockTelegramAuth';
 
 beforeEach(async () => {
   await act(async () => {
@@ -72,22 +68,14 @@ describe('useAuthStore', () => {
 });
 
 describe('mockTelegramAuth', () => {
-  it('signInWithMockTelegram sets session with id, name, username, photo_url', async () => {
-    await act(async () => {
-      signInWithMockTelegram();
-    });
-
-    const session = useAuthStore.getState().session;
-    expect(session).not.toBeNull();
-    expect(session?.id).toBeTruthy();
-    expect(session?.name).toBeTruthy();
-    expect(session?.username).toBeTruthy();
-    expect(session?.photo_url).toBeTruthy();
-  });
-
   it('signOut clears session via store', async () => {
     await act(async () => {
-      signInWithMockTelegram();
+      useAuthStore.getState().signIn({
+        id: 'tg-1',
+        name: 'Test User',
+        username: 'test_user',
+        photo_url: 'https://example.com/avatar.png',
+      });
       signOut();
     });
 

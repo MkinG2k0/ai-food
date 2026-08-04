@@ -5,7 +5,7 @@ import {
   GUEST_FREE_USAGE_LIMIT,
   getEffectiveFreeLimit,
   isAuthMockEnabled,
-  signInWithMockTelegram,
+  signInWithDemo,
   signOut,
   TelegramBotLoginButton,
   useAuthStore,
@@ -17,13 +17,18 @@ export function LoginPage() {
   const session = useAuthStore((s) => s.session);
   const mockEnabled = isAuthMockEnabled();
 
-  const handleMockSignIn = () => {
+  const handleDemoSignIn = async () => {
     if (!mockEnabled) {
       toast.message('Демо-вход выключен (VITE_AUTH_MOCK=false)');
       return;
     }
-    signInWithMockTelegram();
-    navigate('/', { replace: true });
+    try {
+      await signInWithDemo();
+      toast.success('Вход выполнен');
+      navigate('/', { replace: true });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Демо-вход не удался');
+    }
   };
 
   const handleSignOut = () => {
@@ -75,8 +80,8 @@ export function LoginPage() {
           </div>
 
           {mockEnabled && (
-            <Button variant="outline" className="w-full" onClick={handleMockSignIn}>
-              Войти (демо, без сервера)
+            <Button variant="outline" className="w-full" onClick={() => void handleDemoSignIn()}>
+              Войти (демо)
             </Button>
           )}
         </section>
