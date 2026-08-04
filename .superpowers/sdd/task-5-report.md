@@ -1,3 +1,48 @@
+# Task 5 Report: Admin pricing, stats, users, and subscriptions
+
+**Status:** DONE  
+**Branch:** `feat/admin-web`  
+**Base:** `62ec2bd`  
+**Commit:** `92a0873` — `feat(ai-app): add /admin stats pricing and subscription management API`
+
+## What was done
+
+- Added an authenticated Express router mounted at `/admin`; every route is protected by the existing fail-closed `requireAdminKey` middleware.
+- Added `GET /admin/pricing` with DB/env fallback reporting and the specified single `source` field.
+- Added validated `PUT /admin/pricing`, backed by the singleton `AppSettings` upsert.
+- Added `GET /admin/stats` for total users, active subscriptions, confirmed payment count/sum, and analyze/refine usage over 7/30 days.
+- Added `GET /admin/users?q=` search across user id, Telegram id, and case-insensitive username, ordered newest-first and limited to 20.
+- Added `POST /admin/users/:id/subscription` with activate, extend, and revoke behavior, including configured-duration fallback and 404/validation errors.
+- Added `PUT` and `X-Admin-Key` to CORS, documented `ADMIN_API_KEY`, and passed it through Turbo `dev`/`test` tasks.
+
+## TDD evidence
+
+- RED: `pnpm exec vitest run src/routes/admin.test.ts` — 8 expected failures because `/admin` was not mounted (404 instead of 200/401); the unknown-user test initially matched the generic 404 and was later strengthened to assert `User not found.`.
+- GREEN: `pnpm exec vitest run src/routes/admin.test.ts src/middleware/adminAuth.test.ts` — 2 files, 12/12 tests passed.
+- Route tests cover auth, pricing get/upsert, stats shape, user search, activate/extend/revoke, and unknown-user handling.
+
+## Verification
+
+- `pnpm test` in `apps/ai-app` — 18 files, 107/107 tests passed.
+- `pnpm run type-check` in `apps/ai-app` — passed.
+- IDE diagnostics for changed TypeScript files — no linter errors.
+
+## Scope
+
+Commit `92a0873` contains only:
+
+- `apps/ai-app/src/routes/admin.ts`
+- `apps/ai-app/src/routes/admin.test.ts`
+- `apps/ai-app/src/app.ts`
+- `apps/ai-app/.env.example`
+- `turbo.json`
+
+The report itself is intentionally written after the implementation commit. Existing `apps/ai-food` legal/news changes, prior SDD files, and review diffs were not staged or committed.
+
+## Concerns
+
+- No blocking concerns.
+- Full tests emit existing intentional stderr from error-mapping and rate-limit test cases; all assertions pass.
 # Task 5 Report: Legal pages + routes + Settings links
 
 ## Статус: DONE_WITH_CONCERNS
@@ -76,3 +121,17 @@ Smoke-тест через dev server не выполнялся — новый с
 ```
 
 `git status --short` после коммита показывает прежний набор чужих `M`/`??` файлов (android/gradle, package.json, deviceId, quotaHeaders, analyze-food тесты, pnpm-lock.yaml, promo-* файлы, `.superpowers/sdd/*`) плюс `SettingsPage.tsx` как `M` (только чужой unrelated hunk секции «Аккаунт», без моих кнопок — они уже в коммите).
+
+## Review fix: activate days validation (Important)
+
+**Finding:** `POST /admin/users/:id/subscription` with `action: "activate"` and `days: 0.5` was accepted; `Math.floor(0.5) → 0` created an already-expired active subscription.
+
+**Fix:** When `days` is provided for activate, it must be a positive integer (`>= 1`), matching extend validation spirit. Omitted/undefined `days` still defaults to `getSubscriptionDurationDays(prisma)`. Removed `Math.floor`; fractional or `< 1` values return `400 VALIDATION_ERROR` with message `days must be a positive integer.`
+
+**Tests:** Added `it.each([0.5, 0])` cases expecting 400/`VALIDATION_ERROR`.
+
+```
+cd apps/ai-app && pnpm exec vitest run src/routes/admin.test.ts
+```
+Result: **PASS** — 1 file, 11/11 tests passed.
+

@@ -242,6 +242,20 @@ describe('admin routes', () => {
     );
   });
 
+  it.each([0.5, 0])(
+    'POST /admin/users/:id/subscription rejects activate with invalid days=%s',
+    async (days) => {
+      const response = await request(createApp())
+        .post('/admin/users/user-1/subscription')
+        .set('X-Admin-Key', 'test-admin')
+        .send({ action: 'activate', days });
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+      expect(response.body.message).toBe('days must be a positive integer.');
+    },
+  );
+
   it('POST /admin/users/:id/subscription extends from a future expiry', async () => {
     const currentExpiry = users[1].subscriptionExpiresAt!;
     const response = await request(createApp())

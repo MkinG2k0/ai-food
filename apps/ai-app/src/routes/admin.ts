@@ -237,19 +237,19 @@ adminRouter.post(
       if (
         requestedDays !== undefined &&
         (typeof requestedDays !== 'number' ||
-          !Number.isFinite(requestedDays) ||
-          requestedDays <= 0)
+          !Number.isInteger(requestedDays) ||
+          requestedDays < 1)
       ) {
         throw new ApiError(
           400,
           'VALIDATION_ERROR',
-          'days must be a positive number.',
+          'days must be a positive integer.',
         );
       }
       const days =
         requestedDays === undefined
           ? await getSubscriptionDurationDays(prisma)
-          : Math.floor(requestedDays);
+          : requestedDays;
       const expiresAt = new Date(now);
       expiresAt.setUTCDate(expiresAt.getUTCDate() + days);
       data = {
