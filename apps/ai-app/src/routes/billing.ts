@@ -16,6 +16,7 @@ import {
   isTbankMock,
   verifyTbankToken,
 } from '../lib/tbank.js';
+import { resolvePromo } from '../lib/promos.js';
 
 function requireDb() {
   if (!isDatabaseConfigured()) {
@@ -50,6 +51,29 @@ async function requireUser(req: { header: (name: string) => string | undefined }
   return { prisma, user, payload };
 }
 
+function resolveSubscribeAmount(promoCodeRaw: unknown): {
+  amount: number;
+  originalAmount: number;
+  promoCode: string | null;
+} {
+  const originalAmount = getSubscriptionPriceKopecks();
+  if (promoCodeRaw == null || promoCodeRaw === '') {
+    return { amount: originalAmount, originalAmount, promoCode: null };
+  }
+  if (typeof promoCodeRaw !== 'string') {
+    throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
+  }
+  const resolved = resolvePromo(promoCodeRaw, originalAmount);
+  if (!resolved) {
+    throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
+  }
+  return {
+    amount: resolved.finalAmount,
+    originalAmount: resolved.originalAmount,
+    promoCode: resolved.code,
+  };
+}
+
 function publicAppUrl(): string {
   return (
     process.env.PUBLIC_APP_URL?.trim().replace(/\/$/, '') ||
@@ -81,6 +105,29 @@ billingRouter.get(
 );
 
 billingRouter.post(
+  '/promo/validate',
+  asyncHandler(async (req, res) => {
+    await requireUser(req);
+    const originalAmount = getSubscriptionPriceKopecks();
+    const raw = req.body?.promoCode;
+    if (typeof raw !== 'string') {
+      throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
+    }
+    const resolved = resolvePromo(raw, originalAmount);
+    if (!resolved) {
+      throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
+    }
+    res.json({
+      valid: true,
+      code: resolved.code,
+      discountPercent: resolved.discountPercent,
+      originalAmount: resolved.originalAmount,
+      finalAmount: resolved.finalAmount,
+    });
+  }),
+);
+
+billingRouter.post(
   '/subscribe',
   asyncHandler(async (req, res) => {
     const { prisma, user } = await requireUser(req);
@@ -93,7 +140,9 @@ billingRouter.post(
       );
     }
 
-    const amount = getSubscriptionPriceKopecks();
+    const { amount, originalAmount, promoCode } = resolveSubscribeAmount(
+      req.body?.promoCode,
+    );
     // Create then set tbankOrderId = Payment.id (D-05 OrderId)
     const payment = await prisma.payment.create({
       data: {
@@ -121,7 +170,13 @@ billingRouter.post(
         data: { tbankPaymentId: mockTbankId },
       });
       const paymentUrl = `${appUrl}/subscribe/success?mock=1&paymentId=${updated.id}`;
-      res.json({ paymentUrl, paymentId: updated.id });
+      res.json({
+        paymentUrl,
+        paymentId: updated.id,
+        amount,
+        originalAmount,
+        promoCode,
+      });
       return;
     }
 
@@ -140,7 +195,13 @@ billingRouter.post(
       data: { tbankPaymentId: init.paymentId },
     });
 
-    res.json({ paymentUrl: init.paymentUrl, paymentId: updated.id });
+    res.json({
+      paymentUrl: init.paymentUrl,
+      paymentId: updated.id,
+      amount,
+      originalAmount,
+      promoCode,
+    });
   }),
 );
 

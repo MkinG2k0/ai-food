@@ -211,6 +211,9 @@ describe('billing routes', () => {
     expect(res.body).toEqual({
       paymentUrl: 'https://pay.tbank/1',
       paymentId: 'pay_1',
+      amount: 10_000,
+      originalAmount: 10_000,
+      promoCode: null,
     });
     expect(mockInitPayment).toHaveBeenCalled();
     expect(paymentStore.get('pay_1')?.tbankPaymentId).toBe('tb-100');
@@ -289,6 +292,58 @@ describe('billing routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.amountKopecks).toBe(250_000);
     expect(res.body.durationDays).toBe(30);
+  });
+
+  it('POST /billing/promo/validate returns discounted amounts for new80', async () => {
+    mockPrice.mockReturnValue(10_000);
+    const res = await request(createApp())
+      .post('/billing/promo/validate')
+      .set('X-User-Token', 'jwt')
+      .send({ promoCode: ' New80 ' });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      valid: true,
+      code: 'new80',
+      discountPercent: 80,
+      originalAmount: 10_000,
+      finalAmount: 2_000,
+    });
+  });
+
+  it('POST /billing/promo/validate rejects unknown code', async () => {
+    const res = await request(createApp())
+      .post('/billing/promo/validate')
+      .set('X-User-Token', 'jwt')
+      .send({ promoCode: 'nope' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_PROMO');
+  });
+
+  it('POST /billing/subscribe with new50 stores discounted amount', async () => {
+    mockIsTbankMock.mockReturnValue(true);
+    mockPrice.mockReturnValue(10_000);
+    const res = await request(createApp())
+      .post('/billing/subscribe')
+      .set('X-User-Token', 'jwt')
+      .send({ promoCode: 'new50' });
+    expect(res.status).toBe(200);
+    expect(res.body.amount).toBe(5_000);
+    expect(res.body.originalAmount).toBe(10_000);
+    expect(res.body.promoCode).toBe('new50');
+    expect(paymentStore.get(res.body.paymentId)?.amount).toBe(5_000);
+  });
+
+  it('POST /billing/subscribe with bad promo does not create payment', async () => {
+    mockIsTbankMock.mockReturnValue(true);
+    mockPrice.mockReturnValue(10_000);
+    const before = paymentStore.size;
+    const res = await request(createApp())
+      .post('/billing/subscribe')
+      .set('X-User-Token', 'jwt')
+      .send({ promoCode: 'bad' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_PROMO');
+    expect(paymentStore.size).toBe(before);
   });
 
   it('GET /billing/status returns subscription snapshot', async () => {
