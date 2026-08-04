@@ -19,4 +19,5 @@ export {
 export { useUsage, usageQueryKey } from './model/useUsage';
 export { mapTelegramUserToSession } from './api/signInWithTelegram';
 export { signInWithTelegramBot } from './api/signInWithTelegramBot';
+export { signInWithDemo } from './api/signInWithDemo';
 export { TelegramBotLoginButton } from './ui/TelegramBotLoginButton';
