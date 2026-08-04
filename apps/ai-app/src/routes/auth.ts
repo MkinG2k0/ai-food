@@ -3,31 +3,22 @@ import { z } from 'zod';
 import { ApiError } from '../../lib/errors.js';
 import { asyncHandler } from '../middleware/error.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
-import { signUserToken, verifyUserToken } from '../lib/jwt.js';
-import { normalizePhone } from '../lib/phone.js';
-import { sendFlashCall } from '../lib/flashcall.js';
+import { verifyUserToken } from '../lib/jwt.js';
 import {
-  consumeChallengeOnSuccess,
-  countActiveForPhone,
-  createChallenge,
-  getChallenge,
-  registerFailedAttempt,
-} from '../lib/flashcallChallenge.js';
-import { ensureDevice } from '../lib/quota.js';
+  consumeLoginChallenge,
+  createLoginChallenge,
+  getLoginChallengeById,
+} from '../lib/telegramLoginChallenge.js';
+import {
+  buildBotDeepLink,
+  getTelegramBotToken,
+  getTelegramBotUsername,
+} from '../lib/telegramBotApi.js';
 import { subscriptionPublicFields } from '../lib/subscription.js';
 
-const FlashCallStartBodySchema = z.object({
-  phone: z.string().min(1),
+const StartBodySchema = z.object({
   deviceId: z.string().min(1).optional(),
 });
-
-const FlashCallVerifyBodySchema = z.object({
-  challengeId: z.string().uuid(),
-  code: z.string().length(4),
-  deviceId: z.string().min(1).optional(),
-});
-
-const MAX_ACTIVE_CHALLENGES_PER_PHONE = 3;
 
 function requireDb() {
   if (!isDatabaseConfigured()) {
@@ -48,83 +39,98 @@ function requireDb() {
   return prisma;
 }
 
+function requireTelegramConfigured() {
+  if (!getTelegramBotToken() || !getTelegramBotUsername()) {
+    throw new ApiError(
+      503,
+      'TELEGRAM_MISCONFIGURED',
+      'TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_USERNAME must be configured.',
+    );
+  }
+}
+
+function publicUser(user: {
+  id: string;
+  telegramId: string;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  photoUrl: string | null;
+  subscriptionStatus: Parameters<typeof subscriptionPublicFields>[0]['subscriptionStatus'];
+  subscriptionExpiresAt: Date | null;
+}) {
+  return {
+    id: user.id,
+    telegramId: user.telegramId,
+    username: user.username,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    photoUrl: user.photoUrl,
+    ...subscriptionPublicFields(user),
+  };
+}
+
 export const authRouter = Router();
 
 authRouter.post(
-  '/flashcall/start',
+  '/telegram/start',
   asyncHandler(async (req, res) => {
-    const parsed = FlashCallStartBodySchema.safeParse(req.body);
+    requireTelegramConfigured();
+    const parsed = StartBodySchema.safeParse(req.body ?? {});
     if (!parsed.success) {
-      throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid Flash-Call start payload.');
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid Telegram start payload.');
     }
 
-    const phone = normalizePhone(parsed.data.phone);
-    if (!phone) {
-      throw new ApiError(
-        400,
-        'VALIDATION_ERROR',
-        'Invalid Russian mobile phone number.',
-      );
-    }
-
-    if (countActiveForPhone(phone) >= MAX_ACTIVE_CHALLENGES_PER_PHONE) {
-      throw new ApiError(
-        429,
-        'FLASHCALL_RATE_LIMITED',
-        'Too many active Flash-Call challenges. Try again later.',
-      );
-    }
-
-    const flashCall = await sendFlashCall(phone);
-    const challenge = createChallenge({
-      phone,
-      code: flashCall.code,
-      providerId: flashCall.id,
+    const created = createLoginChallenge({
+      deviceId: parsed.data.deviceId,
     });
+    const botDeepLink = buildBotDeepLink(created.nonce);
 
     res.json({
-      challengeId: challenge.id,
-      expiresAt: challenge.expiresAt.toISOString(),
+      challengeId: created.id,
+      botDeepLink,
+      expiresAt: created.expiresAt.toISOString(),
     });
   }),
 );
 
-authRouter.post(
-  '/flashcall/verify',
+authRouter.get(
+  '/telegram/status',
   asyncHandler(async (req, res) => {
-    const parsed = FlashCallVerifyBodySchema.safeParse(req.body);
-    if (!parsed.success) {
-      throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid Flash-Call verification payload.');
+    const challengeId =
+      typeof req.query.challengeId === 'string' ? req.query.challengeId : '';
+    if (!challengeId) {
+      res.json({ status: 'expired' });
+      return;
     }
 
-    const body = parsed.data;
-    const challenge = getChallenge(body.challengeId);
+    const challenge = getLoginChallengeById(challengeId);
     if (!challenge) {
-      throw new ApiError(401, 'INVALID_CHALLENGE', 'Flash-Call challenge is invalid or expired.');
+      res.json({ status: 'expired' });
+      return;
+    }
+    if (challenge.status === 'pending') {
+      res.json({ status: 'pending' });
+      return;
     }
 
-    if (body.code !== challenge.code) {
-      registerFailedAttempt(body.challengeId);
-      throw new ApiError(401, 'INVALID_CODE', 'Flash-Call code is invalid.');
+    const consumed = consumeLoginChallenge(challengeId);
+    if (!consumed) {
+      res.json({ status: 'expired' });
+      return;
     }
-
-    consumeChallengeOnSuccess(body.challengeId);
 
     const prisma = requireDb();
-    const user = await prisma.user.upsert({
-      where: { phone: challenge.phone },
-      create: { phone: challenge.phone },
-      update: {},
-    });
-
-    if (body.deviceId) {
-      await ensureDevice(prisma, body.deviceId, user.id);
+    const user = await prisma.user.findUnique({ where: { id: consumed.userId } });
+    if (!user) {
+      res.json({ status: 'expired' });
+      return;
     }
 
-    const token = await signUserToken({ sub: user.id, phone: user.phone });
     res.json({
-      token,
-      user: { id: user.id, phone: user.phone, ...subscriptionPublicFields(user) },
+      status: 'ok',
+      token: consumed.token,
+      user: publicUser(user),
     });
   }),
 );
@@ -136,16 +142,14 @@ authRouter.get(
     if (!header) {
       throw new ApiError(401, 'INVALID_USER_TOKEN', 'X-User-Token required.');
     }
+
     const payload = await verifyUserToken(header);
     const prisma = requireDb();
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) {
       throw new ApiError(401, 'INVALID_USER_TOKEN', 'User not found.');
     }
-    res.json({
-      id: user.id,
-      phone: user.phone,
-      ...subscriptionPublicFields(user),
-    });
+
+    res.json(publicUser(user));
   }),
 );
