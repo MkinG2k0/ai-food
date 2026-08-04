@@ -44,7 +44,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <main>
+    <main className="admin-auth">
       {messageContextHolder}
       <Card style={{ maxWidth: 400, width: '100%' }}>
         <Typography.Title level={3} style={{ marginTop: 0 }}>
