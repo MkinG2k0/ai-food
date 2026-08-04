@@ -1,24 +1,36 @@
-# Task 7 report
+# Task 7 Report: Admin session auth (login / logout / middleware)
 
-Status: DONE
+## Status
 
-Commit: `81271ed feat(ai-food): Telegram bot deep-link login instead of Login Widget`
+Completed.
 
-Implemented:
-- Added `signInWithTelegramBot` challenge start, deep-link opening, polling, session mapping, and JWT persistence.
-- Added fake-timer happy-path coverage for `pending` → `ok`.
-- Replaced the Telegram Login Widget UI with a normal loading button that aborts polling on unmount.
-- Removed all `telegram-widget.js`, widget callback, payload, username, and legacy sign-in usage.
-- Preserved `mapTelegramUserToSession` and `VITE_AUTH_MOCK`.
+## Commit
 
-TDD:
-- RED: focused test failed because `signInWithTelegramBot` did not exist.
-- GREEN: focused test passed after the bot flow implementation.
+- `a05ced8 feat(ai-web): add admin password login and session middleware`
+- Base: `3fe72f3`
 
-Verification:
-- `pnpm exec vitest run src/features/auth` — PASS, 4 files / 14 tests.
-- `pnpm exec tsc --noEmit` — PASS.
-- IDE lints for changed files — no errors.
-- Source search for widget/legacy symbols — no matches.
+## Implemented
 
-Concerns: none.
+- **`adminSession.ts` / `adminSessionToken.ts`**: HS256 JWT via `jose` with `{ role: 'admin' }`, 7-day expiry, secret from `ADMIN_SESSION_SECRET` (min 32 chars). Re-exported `createAdminSessionToken`, `verifyAdminSessionToken`, and `timingSafeEqualString` (length check + `crypto.timingSafeEqual`).
+- **`POST /api/admin/login`**: JSON `{ password }`; 500 if `ADMIN_PASSWORD` unset; 401 `{ error: 'Неверный пароль' }` on mismatch; sets httpOnly `admin_session` cookie (`path=/`, `sameSite=lax`, `secure` in production, maxAge 7d).
+- **`POST /api/admin/logout`**: Clears `admin_session` cookie; returns `{ ok: true }`.
+- **`/admin/login`**: Ant Design Card + Form + Input.Password; success → `router.push('/admin')`; errors via `message.error`.
+- **`middleware.ts`**: Matcher `/admin/:path*`; login page allowed without cookie; missing/invalid session → redirect `/admin/login`; valid session on login page → redirect `/admin`.
+- **`/admin` placeholder**: Minimal «Админка» page so post-login redirect is not a 404 until Task 8.
+
+## Verification
+
+- `pnpm --filter ai-web type-check` — PASS.
+- Brief requirements reviewed — all critical items present.
+
+## Concerns
+
+- Manual smoke (`pnpm --filter ai-web dev` → `/admin` → login → password) not run in this session; requires local `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` in `.env`.
+- JWT helpers split into `adminSessionToken.ts`; middleware imports token module directly — exports remain available from `adminSession.ts` as specified.
+
+## Review fix (Task 7 Important)
+
+- **Issue**: `/admin` placeholder used Ant Design `Typography` in a Server Component → `pnpm --filter ai-web build` failed.
+- **Fix**: Replaced Ant Typography with plain HTML (`h1`/`p`) and existing `.landing` styles from `globals.css` (same pattern as `/`).
+- **Commit**: `fix(ai-web): make admin placeholder compatible with RSC`
+- **Build**: `pnpm --filter ai-web build` — PASS (compile, lint, type-check, static generation for `/admin`).
