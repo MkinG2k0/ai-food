@@ -22,6 +22,12 @@ const menuItems = [
   },
 ];
 
+const pageTitles: Record<string, string> = {
+  '/admin': 'Обзор',
+  '/admin/pricing': 'Цены',
+  '/admin/subscriptions': 'Подписки',
+};
+
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -42,21 +48,31 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const selectedKey =
+    menuItems.find((item) =>
+      item.key === '/admin' ? pathname === '/admin' : pathname.startsWith(item.key),
+    )?.key ?? '/admin';
+
+  const headerTitle = pageTitles[selectedKey] ?? 'Панель управления';
+
   return (
     <Layout className="admin-layout">
-      <Sider breakpoint="lg" collapsedWidth={0}>
-        <div className="admin-logo">AI Food</div>
+      <Sider breakpoint="lg" collapsedWidth={0} theme="dark">
+        <div className="admin-logo">
+          <span className="admin-logo-title">AI Food</span>
+          <span className="admin-logo-subtitle">Admin</span>
+        </div>
         <Menu
           items={menuItems}
           mode="inline"
           onClick={({ key }) => router.push(key)}
-          selectedKeys={[pathname]}
+          selectedKeys={[selectedKey]}
           theme="dark"
         />
       </Sider>
       <Layout>
         <Header className="admin-header">
-          <Typography.Text strong>Панель управления</Typography.Text>
+          <Typography.Text strong>{headerTitle}</Typography.Text>
           <Button
             icon={<LogoutOutlined />}
             loading={isLoggingOut}
@@ -65,7 +81,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             Выйти
           </Button>
         </Header>
-        <Content className="admin-content">{children}</Content>
+        <Content className="admin-content">
+          <div className="admin-page">{children}</div>
+        </Content>
       </Layout>
     </Layout>
   );
