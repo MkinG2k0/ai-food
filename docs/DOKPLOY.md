@@ -2,27 +2,27 @@
 
 Два **отдельных** Application в одном Git-репо (`ai-food`). Build context / path — **корень monorepo** (`.`).
 
-| App в Dokploy | Package | Dockerfile | Port |
-|---------------|---------|------------|------|
-| Gateway | `openrouter-gateway` (`apps/ai-app`) | `apps/ai-app/Dockerfile` | **3000** |
-| Frontend | `ai-food` (`apps/ai-food`) | `apps/ai-food/Dockerfile` | **80** |
+| App в Dokploy | Build Path | Docker File | Port |
+|---------------|------------|-------------|------|
+| Gateway | `/apps/ai-app` | `Dockerfile` | **3000** |
+| Frontend | `/apps/ai-food` | `Dockerfile` | **80** |
 
 Рекомендуемый build type: **Dockerfile** (production). Nixpacks — запасной вариант (см. ниже).
 
 ## 1. Gateway (`openrouter-gateway`)
 
-**General**
+**General** (Dokploy часто ставит context = Build Path — поэтому собираем **из папки приложения**):
 
-- Repository: `ai-food` (этот monorepo)
-- Branch: `master` (или твой deploy-branch)
-- **Build Path: `/`** (корень monorepo — не `/apps/ai-app`, иначе не будет `packageManager` / workspace)
-- Build type: **Dockerfile**
-- Dockerfile path: `apps/ai-app/Dockerfile`
-- Docker context: `.`
-- Docker Build Stage: *(пусто)*
-- Port: `3000`
+| Поле | Значение |
+|------|----------|
+| **Build Path** | `/apps/ai-app` |
+| **Build Type** | Dockerfile |
+| **Docker File** | `Dockerfile` ← не `apps/ai-app/Dockerfile` |
+| **Docker Context Path** | `.` |
+| **Docker Build Stage** | *(пусто)* |
+| **Port** | `3000` |
 
-**Watch paths (опционально):** `apps/ai-app/**`, `pnpm-lock.yaml`, `package.json`, `turbo.json`
+**Watch paths (опционально):** `apps/ai-app/**`
 
 **Environment** (runtime — вкладка Env):
 
@@ -54,13 +54,15 @@ TBANK_API_URL=https://securepay.tinkoff.ru
 
 **General**
 
-- Тот же репозиторий / branch
-- Build type: **Dockerfile**
-- Dockerfile path: `apps/ai-food/Dockerfile`
-- Docker context: `.`
-- Port: **80**
+| Поле | Значение |
+|------|----------|
+| **Build Path** | `/apps/ai-food` |
+| **Build Type** | Dockerfile |
+| **Docker File** | `Dockerfile` |
+| **Docker Context Path** | `.` |
+| **Port** | `80` |
 
-**Watch paths:** `apps/ai-food/**`, `pnpm-lock.yaml`, `package.json`, `turbo.json`
+**Watch paths:** `apps/ai-food/**`
 
 **Environment** — переменные **на этапе build** (Vite вшивает `VITE_*` в бандл). В Dokploy задай их в Env приложения **до** деплоя; для Docker они должны попасть в build (Build Arguments / env available at build — зависит от версии Dokploy). Минимум:
 
@@ -111,15 +113,7 @@ NIXPACKS_BUILD_CMD=pnpm exec turbo run build --filter=ai-food
 ## Локальная проверка Docker
 
 ```bash
-# Gateway
-docker build -f apps/ai-app/Dockerfile -t ai-food-gateway .
+# Gateway (context = apps/ai-app)
+docker build -f apps/ai-app/Dockerfile -t ai-food-gateway apps/ai-app
 docker run --rm -p 3000:3000 --env-file apps/ai-app/.env ai-food-gateway
-
-# Frontend
-docker build -f apps/ai-food/Dockerfile -t ai-food-web \
-  --build-arg VITE_AI_GATEWAY_URL=http://127.0.0.1:3000 \
-  --build-arg VITE_AI_GATEWAY_API_KEY=dev \
-  --build-arg VITE_AUTH_MOCK=true \
-  .
-docker run --rm -p 8080:80 ai-food-web
 ```

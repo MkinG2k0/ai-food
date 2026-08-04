@@ -1,19 +1,18 @@
 # syntax=docker/dockerfile:1
-# Dokploy: Build Path = `/`  |  Docker File = `apps/ai-food/Dockerfile`  |  Context = `.`
+#
+# Dokploy:
+#   Build Path          = /apps/ai-food
+#   Docker File         = Dockerfile
+#   Docker Context Path = .
+#   Port                = 80
 
-FROM node:22-bookworm-slim AS base
+FROM node:22-bookworm-slim AS builder
 RUN corepack enable && corepack prepare pnpm@9.6.0 --activate
 WORKDIR /app
 
-FROM base AS builder
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .npmrc ./
-RUN node -e "const p=require('./package.json'); if (p.name !== 'ai-food-base' || !p.packageManager) { console.error('\\nERROR: Docker context must be the monorepo root.\\nIn Dokploy set Build Path=/ and Docker Context Path=.\\n'); process.exit(1); }"
-
-COPY apps/ai-app/package.json ./apps/ai-app/
-COPY apps/ai-food/package.json ./apps/ai-food/
-RUN pnpm install --frozen-lockfile --filter=ai-food...
-
-COPY apps/ai-food ./apps/ai-food
+COPY package.json ./
+RUN pnpm install --no-frozen-lockfile
+COPY . .
 
 ARG VITE_AI_GATEWAY_URL
 ARG VITE_AI_GATEWAY_API_KEY
@@ -28,10 +27,10 @@ ENV VITE_AI_GATEWAY_URL=$VITE_AI_GATEWAY_URL \
     VITE_APP_URL=$VITE_APP_URL \
     VITE_AUTH_MOCK=$VITE_AUTH_MOCK
 
-RUN pnpm --filter ai-food run build
+RUN pnpm run build
 
 FROM nginx:1.27-alpine AS runner
-COPY --from=builder /app/apps/ai-food/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/apps/ai-food/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

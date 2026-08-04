@@ -35,10 +35,10 @@ pnpm type-check
 
 Два Application из одного репо — см. [docs/DOKPLOY.md](./docs/DOKPLOY.md).
 
-| App | Dockerfile | Port |
-|-----|------------|------|
-| Gateway | `apps/ai-app/Dockerfile` (context `.`) | 3000 |
-| Frontend | `apps/ai-food/Dockerfile` (context `.`) | 80 |
+| App | Build Path | Docker File | Port |
+|-----|------------|-------------|------|
+| Gateway | `/apps/ai-app` | `Dockerfile` | 3000 |
+| Frontend | `/apps/ai-food` | `Dockerfile` | 80 |
 
 ## Git
 
