@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { errorHandler } from '../middleware/error.js';
@@ -12,6 +12,9 @@ const mocks = vi.hoisted(() => ({
   getTelegramBotUsername: vi.fn(),
   findUnique: vi.fn(),
   verifyUserToken: vi.fn(),
+  assertAuthConfigured: vi.fn(),
+  isDatabaseConfigured: vi.fn(),
+  getPrisma: vi.fn(),
 }));
 
 vi.mock('../lib/telegramLoginChallenge.js', () => ({
@@ -25,13 +28,12 @@ vi.mock('../lib/telegramBotApi.js', () => ({
   getTelegramBotUsername: mocks.getTelegramBotUsername,
 }));
 vi.mock('../lib/prisma.js', () => ({
-  isDatabaseConfigured: () => true,
-  getPrisma: () => ({
-    user: { findUnique: mocks.findUnique },
-  }),
+  isDatabaseConfigured: mocks.isDatabaseConfigured,
+  getPrisma: mocks.getPrisma,
 }));
 vi.mock('../lib/jwt.js', () => ({
   verifyUserToken: mocks.verifyUserToken,
+  assertAuthConfigured: mocks.assertAuthConfigured,
 }));
 
 const { authRouter } = await import('./auth.js');
@@ -57,6 +59,13 @@ const user = {
 };
 
 describe('Telegram bot auth routes', () => {
+  beforeEach(() => {
+    mocks.isDatabaseConfigured.mockReturnValue(true);
+    mocks.getPrisma.mockReturnValue({
+      user: { findUnique: mocks.findUnique },
+    });
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -94,6 +103,18 @@ describe('Telegram bot auth routes', () => {
 
     expect(response.status).toBe(503);
     expect(response.body.code).toBe('TELEGRAM_MISCONFIGURED');
+    expect(mocks.createLoginChallenge).not.toHaveBeenCalled();
+  });
+
+  it('returns 503 without creating a challenge when the database is unavailable', async () => {
+    mocks.getTelegramBotToken.mockReturnValue('1:tok');
+    mocks.getTelegramBotUsername.mockReturnValue('MyBot');
+    mocks.isDatabaseConfigured.mockReturnValue(false);
+
+    const response = await request(createApp()).post('/auth/telegram/start').send({});
+
+    expect(response.status).toBe(503);
+    expect(response.body.code).toBe('DATABASE_UNAVAILABLE');
     expect(mocks.createLoginChallenge).not.toHaveBeenCalled();
   });
 

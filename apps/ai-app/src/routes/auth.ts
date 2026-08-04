@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { ApiError } from '../../lib/errors.js';
 import { asyncHandler } from '../middleware/error.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
-import { verifyUserToken } from '../lib/jwt.js';
+import { assertAuthConfigured, verifyUserToken } from '../lib/jwt.js';
 import {
   consumeLoginChallenge,
   createLoginChallenge,
@@ -76,6 +76,8 @@ authRouter.post(
   '/telegram/start',
   asyncHandler(async (req, res) => {
     requireTelegramConfigured();
+    requireDb();
+    assertAuthConfigured();
     const parsed = StartBodySchema.safeParse(req.body ?? {});
     if (!parsed.success) {
       throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid Telegram start payload.');

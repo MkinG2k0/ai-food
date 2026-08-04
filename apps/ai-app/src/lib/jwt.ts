@@ -7,6 +7,10 @@ export type UserTokenPayload = {
 };
 
 function getSecretKey(): Uint8Array {
+  return new TextEncoder().encode(assertAuthConfigured());
+}
+
+export function assertAuthConfigured(): string {
   const secret = process.env.AUTH_SECRET?.trim();
   if (!secret || secret.length < 32) {
     throw new ApiError(
@@ -15,7 +19,7 @@ function getSecretKey(): Uint8Array {
       'AUTH_SECRET must be set (at least 32 characters).',
     );
   }
-  return new TextEncoder().encode(secret);
+  return secret;
 }
 
 export async function signUserToken(payload: UserTokenPayload): Promise<string> {
