@@ -6,6 +6,7 @@ import {
   subscribe,
   syncBilling,
   useSubscriptionPrice,
+  validatePromo,
 } from '@/features/billing';
 import { useAuthStore } from '@/features/auth';
 import { Button, SubpageShell } from '@/shared/ui';
@@ -25,6 +26,14 @@ export function SubscribePage() {
   const isFail = pathname.endsWith('/subscribe/fail') || variant === 'fail';
   const userToken = useAuthStore((s) => s.userToken);
   const [paying, setPaying] = useState(false);
+  const [promoInput, setPromoInput] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [applied, setApplied] = useState<{
+    code: string;
+    discountPercent: number;
+    originalAmount: number;
+    finalAmount: number;
+  } | null>(null);
   const [pollStatus, setPollStatus] = useState<
     'idle' | 'polling' | 'active' | 'timeout'
   >('idle');
@@ -64,6 +73,41 @@ export function SubscribePage() {
     void pollUntilActive();
   }, [isSuccess, userToken, pollUntilActive]);
 
+  function clearAppliedIfEdited(next: string) {
+    setPromoInput(next);
+    if (applied && next.trim().toLowerCase() !== applied.code) {
+      setApplied(null);
+    }
+  }
+
+  async function handleApplyPromo() {
+    if (!userToken) {
+      navigate('/login', { replace: true, state: { from: '/subscribe' } });
+      return;
+    }
+    setApplying(true);
+    try {
+      const result = await validatePromo(promoInput);
+      setApplied({
+        code: result.code,
+        discountPercent: result.discountPercent,
+        originalAmount: result.originalAmount,
+        finalAmount: result.finalAmount,
+      });
+      setPromoInput(result.code);
+      toast.success(`Скидка ${result.discountPercent}% применена`);
+    } catch (err) {
+      setApplied(null);
+      const message =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: string }).message)
+          : 'Неверный промокод';
+      toast.error(message);
+    } finally {
+      setApplying(false);
+    }
+  }
+
   async function handlePay() {
     if (!userToken) {
       navigate('/login', { replace: true, state: { from: '/subscribe' } });
@@ -71,7 +115,7 @@ export function SubscribePage() {
     }
     setPaying(true);
     try {
-      const result = await subscribe();
+      const result = await subscribe(applied?.code);
       openPaymentUrl(result.paymentUrl);
     } catch (err) {
       const message =
@@ -156,26 +200,39 @@ export function SubscribePage() {
       mainClassName="space-y-6"
     >
       <section className="space-y-3">
-        <p className="text-3xl font-semibold tabular-nums">
-          {priceLoading && (
-            <span className="text-base font-normal text-muted-foreground">
-              Загрузка цены…
+        {applied ? (
+          <p className="text-3xl font-semibold tabular-nums">
+            <span className="mr-2 text-base font-normal text-muted-foreground line-through">
+              {(applied.originalAmount / 100).toLocaleString('ru-RU')} ₽
             </span>
-          )}
-          {priceError && (
-            <span className="text-base font-normal text-muted-foreground">
-              Цена недоступна
+            {(applied.finalAmount / 100).toLocaleString('ru-RU')} ₽
+            <span className="ml-2 text-base font-normal text-muted-foreground">
+              / {durationDays != null ? `${durationDays} дн.` : 'срок'} (−
+              {applied.discountPercent}%)
             </span>
-          )}
-          {priceRub != null && (
-            <>
-              {priceRub.toLocaleString('ru-RU')} ₽
-              <span className="ml-2 text-base font-normal text-muted-foreground">
-                / {durationDays != null ? `${durationDays} дн.` : 'срок'}
+          </p>
+        ) : (
+          <p className="text-3xl font-semibold tabular-nums">
+            {priceLoading && (
+              <span className="text-base font-normal text-muted-foreground">
+                Загрузка цены…
               </span>
-            </>
-          )}
-        </p>
+            )}
+            {priceError && (
+              <span className="text-base font-normal text-muted-foreground">
+                Цена недоступна
+              </span>
+            )}
+            {priceRub != null && (
+              <>
+                {priceRub.toLocaleString('ru-RU')} ₽
+                <span className="ml-2 text-base font-normal text-muted-foreground">
+                  / {durationDays != null ? `${durationDays} дн.` : 'срок'}
+                </span>
+              </>
+            )}
+          </p>
+        )}
         <p className="text-sm text-muted-foreground">
           Разовая оплата — доступ к AI на{' '}
           {durationDays != null ? `${durationDays} дней` : 'срок лицензии'}.
@@ -198,6 +255,30 @@ export function SubscribePage() {
           <li>Ручной ввод и штрихкод</li>
           <li>Статистика, настройки, онбординг</li>
         </ul>
+      </section>
+
+      <section className="space-y-2">
+        <label htmlFor="promo" className="text-sm font-medium">
+          Промокод
+        </label>
+        <div className="flex gap-2">
+          <input
+            id="promo"
+            value={promoInput}
+            onChange={(e) => clearAppliedIfEdited(e.target.value)}
+            placeholder="Введите код"
+            className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            autoComplete="off"
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={applying || !promoInput.trim()}
+            onClick={() => void handleApplyPromo()}
+          >
+            {applying ? '…' : 'Применить'}
+          </Button>
+        </div>
       </section>
 
       <Button
