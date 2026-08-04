@@ -6,6 +6,7 @@ import type { LegalSection } from '@/lib/legal/types';
 type Props = {
   title: string;
   sections: LegalSection[];
+  children?: never;
 };
 
 function linkify(text: string): React.ReactNode {
@@ -55,11 +56,11 @@ export function LegalDocumentLayout({ title, sections }: Props) {
       </header>
       <h1 className="legal-doc__title">{title}</h1>
       <p className="legal-doc__meta">Обновлено: {revised}</p>
-      {sections.map((section) => (
-        <section key={section.title} className="legal-doc__section">
+      {sections.map((section, sectionIdx) => (
+        <section key={sectionIdx} className="legal-doc__section">
           <h2>{section.title}</h2>
-          {section.paragraphs.map((p) => (
-            <p key={p.slice(0, 48)}>{linkify(p)}</p>
+          {section.paragraphs.map((p, pIdx) => (
+            <p key={pIdx}>{linkify(p)}</p>
           ))}
         </section>
       ))}

@@ -1,38 +1,59 @@
-# Task 6 Report: Scaffold `apps/ai-web`
+# Task 6 Report: Remove in-app legal routes and modules
 
-## Status
+## Branch lock
 
-Completed.
+- Checked out `feat/legal-site-pages`; `git branch --show-current` → `feat/legal-site-pages`.
+- `git rev-parse --short HEAD` (before edits) → `f3a1b71` — matches expected.
+
+## Changes
+
+### router.tsx
+
+- Removed `import { TermsPage, PrivacyPage } from '@/pages/legal';`
+- Removed routes `/legal/terms` and `/legal/privacy`
+
+### Deleted directories
+
+- `apps/ai-food/src/pages/legal/` — 4 files (index, TermsPage, PrivacyPage, LegalDocumentPage)
+- `apps/ai-food/src/shared/legal/` — 5 files (legalConfig, privacyContent, termsContent, termsContent.test, types)
+
+## Grep verification
+
+Searched `apps/ai-food/src` for: `pages/legal`, `shared/legal`, `/legal/terms`, `/legal/privacy`, `buildTermsSections`, `LegalDocumentPage`
+
+Result: **no matches**
+
+## Tests & type-check
+
+```
+pnpm --filter ai-food test -- src/shared/lib/legalSiteUrl.test.ts  → PASS (3 tests)
+pnpm --filter ai-food type-check                                    → PASS
+pnpm --filter ai-web type-check                                     → PASS
+```
 
 ## Commit
 
-- `3fe72f3 feat(ai-web): scaffold Next.js app with Ant Design for admin/landing`
+```
+92ff64e refactor(ai-food): remove in-app legal pages in favor of site
+```
 
-## Implemented
-
-- Added the `ai-web` Next.js 15 App Router package with React 18.
-- Added Ant Design 5 with `AntdRegistry`, TanStack Query, and `jose`.
-- Added the minimal `/` landing page with “AI Food” and “Скоро”.
-- Configured development and production start on port 3001.
-- Added root `dev:web` and `build:web` scripts.
-- Added Turbo build output and server-only environment pass-through.
-- Added `.env.example` and local ignored `.env` files.
-- Generated one shared `ADMIN_API_KEY` for `apps/ai-web/.env` and `apps/ai-app/.env`.
-
-## Verification
-
-- `pnpm install` — PASS.
-- `pnpm --filter ai-web type-check` — PASS.
-- `pnpm --filter ai-web build` — PASS; `/` prerendered as static content.
-- IDE diagnostics — no errors.
-- Both local `.env` files are ignored by Git.
-- Shared `ADMIN_API_KEY` is present in both local env files and matches.
-
-## Local Login
-
-- `ADMIN_PASSWORD=3B/PMHl8ilQESnujR0gsfiivDxebY4ec`
+10 files changed, 336 deletions(-)
 
 ## Concerns
 
-- Existing unrelated `apps/ai-food` legal/news and `.superpowers` working-tree changes remain untouched and were not committed.
-- `pnpm install` resolved compatible versions within the brief's ranges (including Next.js `15.5.22`).
+None. Settings (Task 5) already opens external legal URLs via `getLegalUrl`; in-app legal UI fully removed.
+
+## Final-review fixes (post 92ff64e)
+
+- `refundsContent.ts`: replaced hardcoded `AI Food` with `${productName}` in subscription/license paragraph.
+- `LegalDocumentLayout.tsx`: added `children?: never` to Props; switched section/paragraph keys to index-based.
+
+```
+pnpm --filter ai-web type-check  → PASS
+```
+
+## Commit
+
+```
+fix(ai-web): use productName in refunds copy
+```
