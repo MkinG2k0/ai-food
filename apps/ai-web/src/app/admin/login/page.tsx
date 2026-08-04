@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Form, Input, message, Typography } from 'antd';
+import { Button, Card, Form, Input, Typography, message } from 'antd';
 
 type LoginFormValues = {
   password: string;
@@ -47,7 +47,12 @@ export default function AdminLoginPage() {
     <main>
       {messageContextHolder}
       <Card style={{ maxWidth: 400, width: '100%' }}>
-        <Typography.Title level={2}>Вход в панель управления</Typography.Title>
+        <Typography.Title level={3} style={{ marginTop: 0 }}>
+          AI Food Admin
+        </Typography.Title>
+        <Typography.Paragraph type="secondary">
+          Вход в панель управления
+        </Typography.Paragraph>
         <Form<LoginFormValues>
           layout="vertical"
           onFinish={handleSubmit}
