@@ -9,7 +9,7 @@ import {
 import { useAuthStore } from '@/features/auth';
 import { Button, SubpageShell } from '@/shared/ui';
 
-const PRICE_RUB = 1990;
+const PRICE_RUB = 100;
 
 function openPaymentUrl(url: string): void {
   window.location.assign(url);

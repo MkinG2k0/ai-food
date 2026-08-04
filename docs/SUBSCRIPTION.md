@@ -26,7 +26,7 @@ AI analyze / AI refine — нужен `hasActiveSubscription` на gateway.
 
 | Env (ai-app) | Default |
 |--------------|---------|
-| `SUBSCRIPTION_PRICE_KOPECKS` | `199000` (= 1990.00 RUB) |
+| `SUBSCRIPTION_PRICE_KOPECKS` | `10000` (= 100.00 RUB) |
 | `SUBSCRIPTION_DURATION_DAYS` | `365` |
 
 ## API (ai-app)
