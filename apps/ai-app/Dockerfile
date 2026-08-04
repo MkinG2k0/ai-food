@@ -30,7 +30,7 @@ ENV PORT=3000
 ENV HOME=/app
 
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 --home /app --ingroupdir /app gateway
+  && adduser --system --uid 1001 --ingroup nodejs --home /app --shell /usr/sbin/nologin gateway
 
 COPY --from=builder --chown=gateway:nodejs /app /app
 
