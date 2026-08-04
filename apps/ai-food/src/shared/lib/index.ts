@@ -19,3 +19,4 @@ export {
 export { capacitorStorage } from './capacitorStorage';
 export { takePhotoAsFile, mediaResultToFile } from './takePhoto';
 export { getDeviceId } from './deviceId';
+export { getLegalUrl, type LegalPath } from './legalSiteUrl';

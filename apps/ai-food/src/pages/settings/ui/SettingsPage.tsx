@@ -19,7 +19,7 @@ import {
   useSettingsStore,
 } from '@/features/settings';
 import { useWeightStore } from '@/features/stats';
-import { cn } from '@/shared/lib';
+import { cn, getLegalUrl } from '@/shared/lib';
 import { BottomSheet, Button, SubpageShell, Textarea } from '@/shared/ui';
 
 const GENDER_LABELS: Record<UserProfile['gender'], string> = {
@@ -88,6 +88,10 @@ export function SettingsPage() {
   > | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+
+  const termsUrl = getLegalUrl('/terms');
+  const privacyUrl = getLegalUrl('/privacy');
+  const refundsUrl = getLegalUrl('/refunds');
 
   const customInstructions = useSettingsStore((s) => s.customInstructions);
   const setCustomInstructions = useSettingsStore((s) => s.setCustomInstructions);
@@ -653,22 +657,45 @@ export function SettingsPage() {
             Новости
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            onClick={() => navigate('/legal/terms')}
-          >
-            Условия
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            onClick={() => navigate('/legal/privacy')}
-          >
-            Приватность
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-          </Button>
+          {termsUrl ? (
+            <Button variant="outline" className="w-full justify-between" asChild>
+              <a href={termsUrl} target="_blank" rel="noopener noreferrer">
+                Условия
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </a>
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full justify-between" disabled>
+              Условия
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </Button>
+          )}
+          {privacyUrl ? (
+            <Button variant="outline" className="w-full justify-between" asChild>
+              <a href={privacyUrl} target="_blank" rel="noopener noreferrer">
+                Приватность
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </a>
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full justify-between" disabled>
+              Приватность
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </Button>
+          )}
+          {refundsUrl ? (
+            <Button variant="outline" className="w-full justify-between" asChild>
+              <a href={refundsUrl} target="_blank" rel="noopener noreferrer">
+                Возврат
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </a>
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full justify-between" disabled>
+              Возврат
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </Button>
+          )}
           <Button variant="outline" className="w-full justify-between" asChild>
             <a
               href="https://t.me/double_cumboy"
