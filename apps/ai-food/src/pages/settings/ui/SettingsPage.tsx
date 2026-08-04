@@ -651,6 +651,22 @@ export function SettingsPage() {
             Новости
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-between"
+            onClick={() => navigate('/legal/terms')}
+          >
+            Условия
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-between"
+            onClick={() => navigate('/legal/privacy')}
+          >
+            Приватность
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </Button>
           <Button variant="outline" className="w-full justify-between" asChild>
             <a
               href="https://t.me/double_cumboy"
