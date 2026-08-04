@@ -20,7 +20,7 @@ export function buildTermsSections(
   opts: BuildTermsSectionsOptions,
 ): LegalSection[] {
   const { amountKopecks, durationDays } = opts;
-  const { productName, email, telegramSupport } = legalConfig;
+  const { productName, email, telegramLabel } = legalConfig;
 
   return [
     {
@@ -70,14 +70,14 @@ export function buildTermsSections(
     {
       title: 'Претензии',
       paragraphs: [
-        `Претензии по качеству услуги и работе приложения направляйте на email ${email} или в Telegram: ${telegramSupport}.`,
+        `Претензии по качеству услуги и работе приложения направляйте на email ${email} или в Telegram ${telegramLabel}.`,
       ],
     },
     {
       title: 'Реквизиты',
       paragraphs: [
         formatSellerBlock(),
-        'Тексты настоящего документа являются шаблонами. Перед публикацией в продакшене необходимо заполнить плейсхолдеры реквизитов и при необходимости согласовать документ с юристом.',
+        'При необходимости согласуйте документ с юристом перед публикацией в продакшене.',
       ],
     },
   ];

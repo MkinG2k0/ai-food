@@ -22,14 +22,14 @@ export function HomePage() {
   }
 
   return (
-    <div className="relative flex h-dvh flex-col bg-zinc-50">
+    <div className="relative flex h-svh min-h-0 flex-col overflow-hidden bg-zinc-50">
       <DailyHeader
         selectedDate={selectedDate}
         weekOffset={weekOffset}
         onDaySelect={setSelectedDate}
         onWeekChange={handleWeekChange}
       />
-      <main className="flex-1 overflow-y-auto px-4 py-4 pb-24">
+      <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-24">
         <MealList selectedDate={selectedDate} />
       </main>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-end px-6 pb-safe-fab">

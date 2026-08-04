@@ -324,6 +324,14 @@ export function SettingsPage() {
                     ) : null}
                   </div>
                 </div>
+                {userToken && !billing?.hasActiveSubscription ? (
+                  <Button
+                    className="w-full"
+                    onClick={() => navigate('/subscribe')}
+                  >
+                    Оформить лицензию
+                  </Button>
+                ) : null}
                 <Button variant="outline" className="w-full" onClick={handleSignOut}>
                   Выйти
                 </Button>

@@ -1,12 +1,28 @@
 import { useNavigate } from 'react-router-dom';
 import { NEWS_CHANGELOG, formatNewsDate } from '@/features/news';
-import { SubpageShell } from '@/shared/ui';
+import { Button, SubpageShell } from '@/shared/ui';
+
+const TELEGRAM_CHANNEL_URL = 'https://t.me/mk_develop_05';
 
 export function NewsPage() {
   const navigate = useNavigate();
 
   return (
-    <SubpageShell title="Новости" onBack={() => navigate('/settings')}>
+    <SubpageShell
+      title="Новости"
+      onBack={() => navigate('/settings')}
+      actions={
+        <Button variant="ghost" size="sm" asChild>
+          <a
+            href={TELEGRAM_CHANNEL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Telegram
+          </a>
+        </Button>
+      }
+    >
       <div className="space-y-8">
         {NEWS_CHANGELOG.map((release) => (
           <section key={release.date} className="space-y-2">

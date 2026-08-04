@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { SubpageShell } from '@/shared/ui';
 import type { LegalSection } from '@/shared/legal/types';
 import { legalConfig } from '@/shared/legal/legalConfig';
@@ -8,6 +9,50 @@ type Props = {
   sections: LegalSection[];
   loadingHint?: string | null;
 };
+
+const linkClassName =
+  'text-foreground underline underline-offset-2 break-all';
+
+/** Turn email and Telegram handle/URL in legal copy into clickable links. */
+function linkifyLegalText(text: string): ReactNode {
+  const { email, telegramSupport, telegramLabel } = legalConfig;
+  const tokens = [email, telegramLabel, telegramSupport].filter(Boolean);
+  const escaped = tokens.map((t) =>
+    t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+  );
+  if (escaped.length === 0) return text;
+
+  const re = new RegExp(`(${escaped.join('|')})`, 'g');
+  const parts = text.split(re);
+
+  return parts.map((part, i) => {
+    if (part === email) {
+      return (
+        <a
+          key={`email-${i}`}
+          href={`mailto:${email}`}
+          className={linkClassName}
+        >
+          {email}
+        </a>
+      );
+    }
+    if (part === telegramLabel || part === telegramSupport) {
+      return (
+        <a
+          key={`tg-${i}`}
+          href={telegramSupport}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={linkClassName}
+        >
+          {telegramLabel}
+        </a>
+      );
+    }
+    return part;
+  });
+}
 
 export function LegalDocumentPage({
   title,
@@ -33,7 +78,7 @@ export function LegalDocumentPage({
           </h2>
           {section.paragraphs.map((p) => (
             <p key={p.slice(0, 48)} className="text-sm text-muted-foreground">
-              {p}
+              {linkifyLegalText(p)}
             </p>
           ))}
         </section>

@@ -1,105 +1,82 @@
-# Task 1 Report: GET /billing/price (ai-app)
+# Task 1 Report: Prisma `AppSettings` model + migration
 
-## Status
+**Status:** DONE  
+**Branch:** `feat/admin-web`  
+**Commit:** `5718f17` — `feat(ai-app): add AppSettings singleton for subscription pricing`
 
-**DONE**
+## What was done
 
-## Summary
+### Step 1 — Schema model
 
-Added public `GET /billing/price` endpoint to `billingRouter` that returns subscription tariff from existing env helpers — no auth, no DB.
+Appended to `apps/ai-app/prisma/schema.prisma` (verbatim from brief):
 
-Response shape:
-
-```json
-{
-  "amountKopecks": number,
-  "currency": "RUB",
-  "durationDays": number
+```prisma
+model AppSettings {
+  id                       Int      @id @default(1)
+  subscriptionPriceKopecks Int?
+  subscriptionDurationDays Int?
+  updatedAt                DateTime @updatedAt
 }
 ```
 
-## Files Changed
+### Step 2 — Migration SQL
 
-| File | Change |
-|------|--------|
-| `apps/ai-app/src/routes/billing.ts` | Added `GET /price` route; imported `getSubscriptionDurationDays` |
-| `apps/ai-app/src/routes/billing.test.ts` | Added `mockDuration`, two new tests, updated `beforeEach` defaults |
+Created `apps/ai-app/prisma/migrations/20260804220000_app_settings/migration.sql` (verbatim from brief):
 
-## TDD Evidence
+```sql
+-- CreateTable
+CREATE TABLE "AppSettings" (
+    "id" INTEGER NOT NULL DEFAULT 1,
+    "subscriptionPriceKopecks" INTEGER,
+    "subscriptionDurationDays" INTEGER,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-### RED (Step 2)
-
-Command:
-
-```bash
-pnpm --filter openrouter-gateway test -- src/routes/billing.test.ts
-```
-
-Result: **FAIL** — 2 failed, 7 passed
-
-```
-× GET /billing/price returns amount and duration without auth
-  → expected 404 to be 200
-× GET /billing/price reflects env helpers
-  → expected 404 to be 200
-```
-
-Existing subscribe/notification/status tests continued to pass (7/7).
-
-### GREEN (Step 4)
-
-Same command after implementing route in `billing.ts`.
-
-Result: **PASS** — 9/9 tests
-
-```
-✓ src/routes/billing.test.ts (9 tests) 47ms
- Test Files  1 passed (1)
-      Tests  9 passed (9)
-```
-
-## Implementation Details
-
-Route placed at top of `billingRouter` (before auth-required `/subscribe`), per plan:
-
-```ts
-billingRouter.get(
-  '/price',
-  asyncHandler(async (_req, res) => {
-    res.json({
-      amountKopecks: getSubscriptionPriceKopecks(),
-      currency: 'RUB',
-      durationDays: getSubscriptionDurationDays(),
-    });
-  }),
+    CONSTRAINT "AppSettings_pkey" PRIMARY KEY ("id")
 );
 ```
 
-Mounted at `/billing/price` via existing `createApp()` wiring.
+### Step 3 — Prisma generate
 
-## Self-Review
+```text
+pnpm exec prisma generate   # from apps/ai-app
+✔ Generated Prisma Client (7.9.1) to .\src\generated\prisma in 65ms
+```
+
+Verified: `AppSettings` present in `apps/ai-app/src/generated/prisma/models/AppSettings.ts` (gitignored, not committed — matches repo convention).
+
+### Step 4 — Commit
+
+Staged and committed **only**:
+
+- `apps/ai-app/prisma/schema.prisma`
+- `apps/ai-app/prisma/migrations/20260804220000_app_settings/migration.sql`
+
+Unrelated legal-page changes under `apps/ai-food/src/...` were **not** staged or committed.
+
+## Self-review
 
 | Check | Result |
 |-------|--------|
-| Matches plan verbatim | ✓ Route, imports, test mocks/tests match brief |
-| No auth required | ✓ No `requireUser`, no headers in tests |
-| No DB access | ✓ Route only calls subscription helpers |
-| Existing tests unaffected | ✓ 7 original tests still pass |
-| Linter | ✓ No errors on changed files |
-| Scope | ✓ Only 2 files committed |
+| Model fields match brief exactly | PASS |
+| Migration SQL matches brief exactly | PASS |
+| Migration timestamp/name `20260804220000_app_settings` | PASS |
+| `prisma generate` exit 0 | PASS |
+| `AppSettings` on generated client | PASS |
+| Commit message matches brief | PASS |
+| No unrelated files in commit | PASS |
+| Follows existing schema conventions (Int @id, @updatedAt) | PASS |
 
-### Note on `beforeEach` default
+## Notes / concerns
 
-`mockPrice` default changed from `199000` to `10_000` per brief. Existing subscribe tests do not assert on price amount from mock; notification test hardcodes `amount: 199000` in fixture data. No regressions observed.
+1. **`updatedAt` without DB default:** Migration defines `"updatedAt" TIMESTAMP(3) NOT NULL` with no `DEFAULT`. First row insert via raw SQL must supply `updatedAt`. Prisma Client with `@updatedAt` sets it on create/update — acceptable for singleton access via Prisma in later tasks.
+2. **Migration not applied to DB:** Task scope was schema file + migration SQL + generate only. `prisma migrate deploy` / `migrate dev` was not run (no DB in task scope).
+3. **Singleton enforcement:** Schema uses `id @default(1)` but DB does not enforce a CHECK that `id = 1`. Application layer should upsert/read row `id: 1` only (expected in later admin API tasks).
 
-## Commit
+## Files changed (committed)
 
-```
-2580e63 feat(ai-app): expose GET /billing/price for subscription tariff
-```
+- `apps/ai-app/prisma/schema.prisma` (+7 lines)
+- `apps/ai-app/prisma/migrations/20260804220000_app_settings/migration.sql` (new)
 
-Only `billing.ts` and `billing.test.ts` staged — unrelated dirty files left unstaged.
+## Test summary
 
-## Concerns
-
-None.
+`pnpm exec prisma generate` succeeded; generated client includes `AppSettingsModel` and related types. No runtime/DB migration test performed (out of scope).

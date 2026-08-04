@@ -1,99 +1,56 @@
-### Task 7: Frontend — bot login UX
+﻿### Task 7: Admin session auth (login / logout / middleware)
 
 **Files:**
-- Create: `apps/ai-food/src/features/auth/api/signInWithTelegramBot.ts`
-- Create: `apps/ai-food/src/features/auth/api/signInWithTelegramBot.test.ts`
-- Create: `apps/ai-food/src/features/auth/ui/TelegramBotLoginButton.tsx`
-- Modify: `apps/ai-food/src/features/auth/index.ts`
-- Modify: `apps/ai-food/src/pages/login/ui/LoginPage.tsx`
-- Delete or stop exporting: `TelegramLoginButton.tsx`, widget-based `signInWithTelegram.ts` (replace implementation in place **or** delete and update imports — prefer replace `signInWithTelegram.ts` API with bot flow to minimize churn, keep `mapTelegramUserToSession`)
+- Create: `apps/ai-web/src/lib/adminSession.ts`
+- Create: `apps/ai-web/src/app/admin/login/page.tsx`
+- Create: `apps/ai-web/src/app/api/admin/login/route.ts`
+- Create: `apps/ai-web/src/app/api/admin/logout/route.ts`
+- Create: `apps/ai-web/src/middleware.ts`
 
 **Interfaces:**
-- Consumes: `POST /auth/telegram/start`, `GET /auth/telegram/status`, `useAuthStore.signIn`, `getDeviceId`, `mapTelegramUserToSession`
-- Produces: `startTelegramBotLogin(): Promise<TelegramSession>` (opens link + polls) OR split `createTelegramLoginChallenge` + `pollTelegramLoginStatus`
+- Cookie name: `admin_session`
+- Token: jose HS256 JWT, claim `{ role: 'admin' }`, exp 7d, secret `ADMIN_SESSION_SECRET`
+- `export async function createAdminSessionToken(): Promise<string>`
+- `export async function verifyAdminSessionToken(token: string): Promise<boolean>`
+- `export function timingSafeEqualString(a: string, b: string): boolean`
 
-- [ ] **Step 1: Rewrite client API (TDD)**
+- [ ] **Step 1: Implement `adminSession.ts`**
 
-Keep `mapTelegramUserToSession` tests. Replace `signInWithTelegram` body:
+Use `jose` `SignJWT` / `jwtVerify` with `ADMIN_SESSION_SECRET` (min length check в‰Ґ 32). Timing-safe password compare via `crypto.timingSafeEqual` on equal-length buffers (if lengths differ в†’ false).
 
-```ts
-export async function signInWithTelegramBot(
-  opts?: { signal?: AbortSignal; openLink?: (url: string) => void },
-): Promise<TelegramSession> {
-  const gatewayUrl = import.meta.env.VITE_AI_GATEWAY_URL as string | undefined;
-  if (!gatewayUrl?.trim()) throw new Error('VITE_AI_GATEWAY_URL не задан');
-  const base = gatewayUrl.replace(/\/$/, '');
-  const deviceId = await getDeviceId();
+- [ ] **Step 2: Login API**
 
-  const startRes = await fetch(`${base}/auth/telegram/start`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ deviceId }),
-    signal: opts?.signal,
-  });
-  const start = (await startRes.json()) as {
-    challengeId?: string;
-    botDeepLink?: string;
-    message?: string;
-  };
-  if (!startRes.ok || !start.challengeId || !start.botDeepLink) {
-    throw new Error(start.message ?? `Не удалось начать вход (${startRes.status})`);
-  }
+`POST /api/admin/login` JSON `{ password: string }`:
+- If `ADMIN_PASSWORD` unset в†’ 500
+- If mismatch в†’ 401 `{ error: 'РќРµРІРµСЂРЅС‹Р№ РїР°СЂРѕР»СЊ' }`
+- Else set httpOnly cookie `admin_session`, `path=/`, `sameSite=lax`, `secure` in production, maxAge 7d; return `{ ok: true }`
 
-  (opts?.openLink ?? ((url: string) => window.open(url, '_blank')))(
-    start.botDeepLink,
-  );
+- [ ] **Step 3: Logout API**
 
-  const deadline = Date.now() + 5 * 60 * 1000;
-  while (Date.now() < deadline) {
-    if (opts?.signal?.aborted) throw new Error('Вход отменён');
-    await new Promise((r) => setTimeout(r, 1500));
-    const st = await fetch(
-      `${base}/auth/telegram/status?challengeId=${encodeURIComponent(start.challengeId)}`,
-      { signal: opts?.signal },
-    );
-    const data = (await st.json()) as {
-      status: string;
-      token?: string;
-      user?: AuthTelegramResponse['user'];
-      message?: string;
-    };
-    if (data.status === 'ok' && data.token && data.user) {
-      const session = mapTelegramUserToSession(data.user);
-      useAuthStore.getState().signIn(session, data.token);
-      return session;
-    }
-    if (data.status === 'expired') {
-      throw new Error('Сессия входа истекла. Попробуйте снова.');
-    }
-  }
-  throw new Error('Время ожидания входа истекло.');
-}
-```
+`POST /api/admin/logout` вЂ” clear cookie; `{ ok: true }`
 
-Unit-test with mocked `fetch` + fake timers: pending → ok path stores token.
+- [ ] **Step 4: Login page**
 
-- [ ] **Step 2: UI button**
+Client component: Ant Design `Card` + `Form` + `Input.Password` + Submit. On success `router.push('/admin')`. On error show `message.error`.
 
-Replace `TelegramLoginButton` with a normal Button: «Войти через Telegram» → calls `signInWithTelegramBot`, loading state «Ожидаем подтверждение в Telegram…», cancel via AbortController on unmount.
+- [ ] **Step 5: Next middleware**
 
-Remove telegram-widget.js script usage entirely.
+Matcher: `/admin/:path*`.
 
-- [ ] **Step 3: Wire `LoginPage` + exports**
+Logic:
+- Allow `/admin/login` without cookie
+- If cookie missing/invalid and path в‰  login в†’ redirect `/admin/login`
+- If valid cookie and path is login в†’ redirect `/admin`
 
-Update `index.ts` exports; remove widget types if unused.
+- [ ] **Step 6: Manual smoke**
 
-- [ ] **Step 4: Run ai-food auth tests**
+Run: `pnpm --filter ai-web dev` в†’ open `http://localhost:3001/admin` в†’ redirect login в†’ password works.
 
-Run: `cd apps/ai-food && pnpm exec vitest run src/features/auth`
-Expected: PASS
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add apps/ai-food/src/features/auth apps/ai-food/src/pages/login
-git commit -m "feat(ai-food): Telegram bot deep-link login instead of Login Widget"
+git add apps/ai-web/src
+git commit -m "feat(ai-web): add admin password login and session middleware"
 ```
 
 ---
-

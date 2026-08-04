@@ -1,10 +1,8 @@
-# Task 3 Review: In-memory Telegram login challenges
+# Task 3 Review: Billing callers await async price helpers
 
-**Reviewer:** code-reviewer subagent  
-**Date:** 2026-08-04  
-**Scope:** `cdde860..8db7ba6` (2 files)  
-**Brief:** `.superpowers/sdd/task-3-brief.md`  
-**Report:** `.superpowers/sdd/task-3-report.md`
+**Reviewer:** task-scoped gate  
+**Base:** `4170170f04841e2c7548d95241dff0eb56506c80`  
+**Head:** `d950e2c391d6898d556800de51649f3bd7de0751` — `fix(billing): await async subscription price helpers`
 
 ---
 
@@ -16,79 +14,60 @@
 | **Quality** | **Approved** |
 | **Critical** | 0 |
 | **Important** | 0 |
-| **Minor** | 0 |
+| **Minor** | 1 |
 
 ---
 
-## Scope reviewed
+## 1. Spec compliance: ✅
 
-- `apps/ai-app/src/lib/telegramLoginChallenge.ts` — in-memory challenge store
-- `apps/ai-app/src/lib/telegramLoginChallenge.test.ts` — lifecycle + expiry tests
-- Commit `8db7ba6` — `feat(ai-app): add Telegram login challenge store`
+| Requirement | Verdict | Evidence |
+|-------------|---------|----------|
+| `resolveSubscribeAmount` async; accepts `prisma`; awaits price helper | ✅ | `billing.ts` L55–63 |
+| `/price` awaits `getSubscriptionPriceKopecks` / `getSubscriptionDurationDays` with `getPrisma()` | ✅ | L100–108 |
+| `/promo/validate` awaits price with prisma from `requireUser` | ✅ | L115–116 |
+| `/subscribe` awaits `resolveSubscribeAmount(prisma, …)` | ✅ | L148–149 |
+| `PrismaClient` type import | ✅ | L2 |
+| HTTP response shapes / status codes unchanged | ✅ | Same JSON fields; promo/payment logic untouched |
+| Test mocks return Promises (`mockResolvedValue`) | ✅ | `billing.test.ts` beforeEach + price/promo/subscribe tests |
+| Run `billing.test.ts` + `subscription.test.ts` — PASS | ✅ | Reviewer: 21/21 pass |
+| Commit scope: `billing.ts` + `billing.test.ts` only | ✅ | Diff: 2 files, +24/−20 |
 
-Constraints applied: in-memory APIs per brief; one-shot consume; `ttlMs: -1` expiry acceptable.
+**Gaps:** None.  
+**Extras:** None.
 
 ---
 
-## Spec compliance
+## 2. Task quality: **Approved**
 
-| Requirement | Status | Evidence |
-|-------------|--------|----------|
-| `LoginChallengeStatus = 'pending' \| 'confirmed' \| 'consumed'` | ✅ | `telegramLoginChallenge.ts` L5 |
-| `createLoginChallenge(opts?)` → `{ id, nonce, expiresAt: Date }` | ✅ | L35–52; default TTL 5 min; optional `deviceId` |
-| `getLoginChallengeById(id)` | ✅ | L54–56; lazy purge on access |
-| `getLoginChallengeByNonce(nonce)` | ✅ | L58–62; dual-index lookup |
-| `confirmLoginChallenge(nonce, { userId, token })` → `boolean` | ✅ | L64–74; pending-only |
-| `consumeLoginChallenge(id)` → `{ token, userId } \| null` | ✅ | L76–86; one-shot delete |
-| `clearAllLoginChallengesForTests()` | ✅ | L88–91 |
-| Challenge shape `{ id, nonce, status, deviceId?, userId?, token?, expiresAt }` | ✅ | `LoginChallenge` type L7–15 |
-| Tests: create → confirm → consume → second consume null | ✅ | test L15–26 |
-| Tests: reject unknown nonce | ✅ | test L28–32 |
-| Tests: expiry rejects confirm/consume | ✅ | test L34–40; `ttlMs: -1` per brief |
-| Commit message per brief | ✅ | `feat(ai-app): add Telegram login challenge store` |
-| Implementation matches brief Step 3 | ✅ | Byte-for-byte match with brief reference implementation |
+Minimal, correct bridge from Task 2 async helpers to billing routes. Fixes the known sync-call breakage without altering HTTP contracts.
+
+### Critical
+_None._
+
+### Important
+_None._
+
+### Minor
+
+1. **No assertion that prisma is forwarded to mocks** — Tests confirm numeric responses but do not assert `mockPrice` / `mockDuration` received the prisma instance from `getPrisma()` / `requireUser`. Behavior is correct at runtime; optional hardening only.
 
 ---
 
 ## Verification
 
 ```
-pnpm exec vitest run src/lib/telegramLoginChallenge.test.ts
-✓ 3 passed (3)
+pnpm exec vitest run src/routes/billing.test.ts src/lib/subscription.test.ts
+✓ 21 passed (21)
+
+pnpm type-check
+✓ pass
 ```
-
-Reviewer re-ran suite locally — all tests pass.
-
----
-
-## Quality assessment
-
-**Lifecycle:** Status transitions `pending → confirmed → consumed` enforced. Double consume returns `null` (entry removed on first consume). Unknown nonce confirm returns `false`.
-
-**Expiry:** `isExpired` uses `now >= expiresAt`; expired entries purged lazily on get/confirm/consume. `ttlMs: -1` creates immediately expired challenge — confirm and consume both correctly reject without spin-wait flakiness.
-
-**Concurrency:** Synchronous, single-threaded Node API — no await gaps between check and mutate; one-shot consume is safe within one process.
-
-**Conventions:** Matches sibling `apps/ai-app/src/lib/*.test.ts` patterns (vitest, `.js` import suffix, `afterEach` cleanup).
-
-**Scope discipline:** Diff contains exactly the two brief files; no drive-by changes.
-
----
-
-## Issues (confidence ≥ 80)
-
-None.
-
----
-
-## Informational (below review threshold)
-
-- In-memory store — challenges lost on restart; acceptable for MVP (noted in task report).
-- No background sweeper for expired pending challenges; lazy purge on access only — acceptable per brief/design.
-- Brief interface doc aliases type as `Challenge`; exported type is `LoginChallenge` — consistent with brief Step 3 code; no downstream impact.
 
 ---
 
 ## Summary
 
-Task 3 fully satisfies the brief: all exported APIs, challenge shape, lifecycle semantics, and tests implemented as specified. One-shot consume and `ttlMs: -1` expiry behave correctly. **Approved** with no requested changes.
+Task 3 completes the async pricing migration in billing: all three affected routes await helpers and pass prisma where available (`getPrisma()` on public `/price`; authenticated routes reuse `requireUser` prisma). Tests updated to `mockResolvedValue`; existing assertions on amounts, promos, and payment storage still hold. Scope and commit hygiene match the brief.
+
+**Spec compliance:** ✅  
+**Task quality:** Approved

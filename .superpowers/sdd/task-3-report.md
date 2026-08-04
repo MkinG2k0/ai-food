@@ -1,3 +1,37 @@
+# Task 3 Report: Billing callers await async price helpers
+
+**Status:** DONE_WITH_CONCERNS  
+**Branch:** `feat/admin-web`  
+**Commit:** `d950e2c` — `fix(billing): await async subscription price helpers`
+
+## What was done
+
+- Made `resolveSubscribeAmount` async and passed its Prisma client to the price helper.
+- Updated `/price`, `/promo/validate`, and `/subscribe` to await async pricing helpers.
+- Passed the available Prisma client into price and duration lookups.
+- Changed billing price/duration mocks to `mockResolvedValue`.
+- Preserved existing response shapes, status codes, and promo/payment behavior.
+
+## Verification
+
+- Red: `pnpm exec vitest run src/routes/billing.test.ts` — 5 expected failures with Promise-valued mocks before the route fix.
+- Green: `pnpm exec vitest run src/routes/billing.test.ts src/lib/subscription.test.ts` — 2 files, 21/21 tests passed.
+- `pnpm type-check` — passed.
+- IDE diagnostics for both modified files — no errors.
+- `git diff --check` for both modified files — passed.
+
+## Scope
+
+The commit contains only:
+
+- `apps/ai-app/src/routes/billing.ts`
+- `apps/ai-app/src/routes/billing.test.ts`
+
+Unrelated `apps/ai-food` legal changes and existing SDD workspace changes were not staged or committed.
+
+## Concerns
+
+Implementation has no known concern. The report path was concurrently appended with an unrelated SubscribePage report after this report was created; that content was preserved to avoid overwriting another worker's changes.
 # Task 3 Report: SubscribePage uses API price
 
 ## Status

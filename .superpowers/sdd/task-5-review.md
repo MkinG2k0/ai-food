@@ -1,56 +1,63 @@
-# Task 5 Review: Telegram auth routes (re-review)
+# Task 5 Review: Admin pricing, stats, users, and subscriptions (re-review)
 
-**Scope:** `5a0bd1cdd0f6d68c3f98b9abc30886236dc235cc..f6fcdb4dabf107c349ee736d53495553238255cb`  
-**Brief:** `.superpowers/sdd/task-5-brief.md`  
-**Report:** `.superpowers/sdd/task-5-report.md`  
-**Commits:** `fd7f73b` (routes) + `f6fcdb4` (consume-after-user-load fix)
+**Reviewer:** task-scoped gate  
+**Base:** `62ec2bddf822e4bf770b8c1a9e4ced91447c4cf7`  
+**Head:** `4b32edb297ae0de57c648800e0c3b955d3296914` — `fix(admin): reject non-positive activate days`  
+**Range:** `92a0873` (feat) + `4b32edb` (fix)
+
+---
 
 ## Verdict
 
-- **Spec:** ✅
-- **Quality:** **Approved**
-- **Critical:** 0
-- **Important:** 0
-- **Minor:** 0
+| Gate | Result |
+|------|--------|
+| **Spec** | ✅ |
+| **Quality** | ✅ |
+| **Critical** | 0 |
+| **Important** | 0 (1 resolved) |
+| **Minor** | 2 |
 
-## Prior finding — resolved
+## 1. Spec compliance: ✅
 
-**Issue:** `consumeLoginChallenge` ran before DB user load, permanently deleting the one-shot JWT on transient DB failure and breaking retries.
+| Requirement | Verdict | Evidence |
+|-------------|---------|----------|
+| Router mounted at `/admin`; all routes use `X-Admin-Key` | ✅ | `app.ts`; `admin.ts` L65–67 |
+| Missing `ADMIN_API_KEY` rejects access | ✅ | Shared fail-closed middleware; `adminAuth.test.ts` |
+| `GET /pricing`: DB → env → defaults, single `source` | ✅ | `admin.ts` L69–75; delegates to `getPricingSnapshot` |
+| `PUT /pricing`: validates, upserts singleton, returns effective snapshot | ✅ | L77–135 |
+| `GET /stats` exact eight-field shape | ✅ | L137–191 |
+| `GET /users?q=` search and limit 20 | ✅ | L193–217 |
+| Subscription actions limited to activate/extend/revoke | ✅ | L219–300 |
+| Updated user snapshot shape | ✅ | L42–59, L298 |
+| CORS supports `PUT` and `X-Admin-Key` | ✅ | `app.ts` |
+| Env documentation and Turbo passthrough | ✅ | `.env.example`; `turbo.json` |
+| No promo UI or T-Bank refund work | ✅ | Diff scope limited to admin API + SDD report |
 
-**Fix verified** in `apps/ai-app/src/routes/auth.ts`:
+The review diff spans two commits on a linear history from the requested base. Fix commit `4b32edb` touches only `admin.ts`, `admin.test.ts`, and the SDD report.
 
-1. Confirmed challenge → load user via `requireDb()` + `findUnique` inside `try/catch`.
-2. DB errors, `requireDb()` failures, and missing user → HTTP 200 `{ status: 'pending' }` without consuming.
-3. `consumeLoginChallenge` runs only after user loads successfully; concurrent loser gets `{ status: 'expired' }`.
+## 2. Task quality: ✅
 
-**Regression test present:** `keeps a confirmed challenge pending when the user query fails` in `auth.telegram.test.ts` asserts HTTP 200 `pending`, `findUnique` called, and `consumeLoginChallenge` **not** called.
+### Critical
 
-## Spec compliance
+_None._
 
-- ✅ `POST /auth/telegram/start` → `{ challengeId, botDeepLink, expiresAt }`; nonce not exposed.
-- ✅ Misconfigured Telegram bot → 503 `TELEGRAM_MISCONFIGURED`.
-- ✅ `GET /auth/telegram/status` pending → `{ status: 'pending' }`.
-- ✅ Confirmed challenge → `{ status: 'ok', token, user }` once, then `{ status: 'expired' }`.
-- ✅ Unknown/missing `challengeId` → `{ status: 'expired' }`.
-- ✅ Status polling always HTTP 200 with `pending | expired | ok` (including DB failure path).
-- ✅ Challenge consumed only on successful user load + atomic consume.
-- ✅ `GET /auth/me` → Telegram profile + subscription fields.
-- ✅ Flash-Call routes and `auth.flashcall.test.ts` removed.
+### Important (resolved)
 
-## Verification (re-run)
+1. **~~`activate` accepts a positive duration that becomes zero after normalization.~~** **Fixed in `4b32edb`.**  
+   When `days` is explicitly provided for `activate`, the handler now requires a positive integer (`Number.isInteger` and `>= 1`); `Math.floor` was removed. Fractional (`0.5`) and zero values return `400 VALIDATION_ERROR` with `days must be a positive integer.` Omitted `days` still falls back to `getSubscriptionDurationDays(prisma)`. Regression coverage: `it.each([0.5, 0])` in `admin.test.ts` L245–257.
 
-```text
-pnpm --dir apps/ai-app exec vitest run src/routes/auth.telegram.test.ts
-Test Files  1 passed (1)
-Tests       7 passed (7)
+### Minor
 
-pnpm --dir apps/ai-app test
-Test Files  16 passed (16)
-Tests       77 passed (77)
-```
+1. **Stats tests assert output shape but not query semantics.** Mock returns positional values without asserting active-subscription predicate, confirmed-payment filter, or 7/30-day date windows. Implementation is correct; dashboard-definition regressions could still pass.
+2. **`task-5-report.md` remains contaminated** with an unrelated older “Task 5: Legal pages” section (L46+). Does not affect code; handoff artifact is misleading.
 
-Diff scope matches task files: `auth.ts`, `auth.telegram.test.ts`, deleted `auth.flashcall.test.ts`.
+## Fix verification
 
-## Decision
+- Read brief, report (fix section), prior review, and full diff `62ec2bd..4b32edb`.
+- Confirmed `admin.ts` L236–254: integer validation before use; no floor on activate path.
+- Confirmed fix commit parent chain: `4b32edb` → `92a0873` → `62ec2bd`.
+- Re-ran `pnpm exec vitest run src/routes/admin.test.ts` — **11/11 passed** (includes new invalid-days cases).
 
-**Approved.** Prior Important finding is fixed; regression test covers the DB-failure path. No high-confidence issues remain.
+## Summary
+
+The admin API meets the spec: fail-closed auth, pricing precedence/source, stats shape, user search, subscription actions, CORS, and env wiring. The prior Important finding (zero-day activation via fractional `days`) is adequately fixed with aligned validation and regression tests. Quality gate passes; only minor test-coverage and documentation hygiene items remain.

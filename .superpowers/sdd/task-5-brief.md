@@ -1,144 +1,185 @@
-﻿### Task 5: Legal pages + routes + Settings links
+﻿### Task 5: Admin pricing + stats + users/subscription routes
 
 **Files:**
-- Create: `apps/ai-food/src/pages/legal/ui/LegalDocumentPage.tsx`
-- Create: `apps/ai-food/src/pages/legal/ui/TermsPage.tsx`
-- Create: `apps/ai-food/src/pages/legal/ui/PrivacyPage.tsx`
-- Create: `apps/ai-food/src/pages/legal/index.ts`
-- Modify: `apps/ai-food/src/app/router.tsx`
-- Modify: `apps/ai-food/src/pages/settings/ui/SettingsPage.tsx`
+- Create: `apps/ai-app/src/routes/admin.ts`
+- Create: `apps/ai-app/src/routes/admin.test.ts`
+- Modify: `apps/ai-app/src/app.ts`
+- Modify: `apps/ai-app/.env.example`
+- Modify: `turbo.json` (add `ADMIN_API_KEY` to `dev`/`test` `passThroughEnv`)
 
 **Interfaces:**
-- Consumes: `buildTermsSections`, `buildPrivacySections`, `legalConfig`, `useSubscriptionPrice`, `SubpageShell`
-- Produces: routes `/legal/terms`, `/legal/privacy` (no ProfileGuard); Settings buttons
+- Produces router mounted at `/admin` with:
+  - `GET /stats`
+  - `GET /pricing` в†’ `{ priceKopecks, durationDays, source }` where `source` is `'db'` if **either** field from DB else `'env'` (if mixed, prefer documenting both via snapshot: use `priceSource`/`durationSource` OR single `source: priceSource === 'db' || durationSource === 'db' ? 'db' : 'env'` per spec вЂ” implement **single** `source` as in spec: `'db'` if price **or** duration comes from DB, else `'env'`)
+  - `PUT /pricing` body `{ priceKopecks?: number, durationDays?: number }`
+  - `GET /users?q=`
+  - `POST /users/:id/subscription` body `{ action: 'activate'|'extend'|'revoke', days?: number }`
 
-- [ ] **Step 1: Implement LegalDocumentPage**
+- [ ] **Step 1: Write route tests (supertest + mocked prisma)**
 
-```tsx
-import { SubpageShell } from '@/shared/ui';
-import type { LegalSection } from '@/shared/legal/types';
-import { legalConfig } from '@/shared/legal/legalConfig';
+Follow patterns from `billing.test.ts`: mock `../lib/prisma.js` `getPrisma` / `isDatabaseConfigured`, set `process.env.ADMIN_API_KEY = 'test-admin'`, use `createApp()` from `../app.js`.
 
-type Props = {
-  title: string;
-  onBack: () => void;
-  sections: LegalSection[];
-  loadingHint?: string | null;
-};
+Cover at minimum:
+1. `GET /admin/pricing` without key в†’ 401
+2. `GET /admin/pricing` with key в†’ 200 + fields
+3. `PUT /admin/pricing` upserts and returns db source
+4. `GET /admin/stats` shape
+5. `GET /admin/users?q=alice` search
+6. `POST .../subscription` activate / extend / revoke
+7. unknown user в†’ 404
 
-export function LegalDocumentPage({
-  title,
-  onBack,
-  sections,
-  loadingHint,
-}: Props) {
-  return (
-    <SubpageShell title={title} onBack={onBack} mainClassName="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Р РµРґР°РєС†РёСЏ РѕС‚{' '}
-        {new Date(legalConfig.revisionDate + 'T00:00:00').toLocaleDateString(
-          'ru-RU',
-        )}
-      </p>
-      {loadingHint ? (
-        <p className="text-sm text-muted-foreground">{loadingHint}</p>
-      ) : null}
-      {sections.map((section) => (
-        <section key={section.title} className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">
-            {section.title}
-          </h2>
-          {section.paragraphs.map((p) => (
-            <p key={p.slice(0, 48)} className="text-sm text-muted-foreground">
-              {p}
-            </p>
-          ))}
-        </section>
-      ))}
-    </SubpageShell>
-  );
-}
-```
+- [ ] **Step 2: Run вЂ” expect FAIL** (routes not mounted)
 
-- [ ] **Step 2: TermsPage + PrivacyPage**
+- [ ] **Step 3: Implement `admin.ts`**
 
-`TermsPage.tsx`:
+Sketch (full implementation must match tests):
 
-```tsx
-import { useNavigate } from 'react-router-dom';
-import { useSubscriptionPrice } from '@/features/billing';
-import { buildTermsSections } from '@/shared/legal/termsContent';
-import { LegalDocumentPage } from './LegalDocumentPage';
+```ts
+import { Router } from 'express';
+import { ApiError } from '../../lib/errors.js';
+import { asyncHandler } from '../middleware/error.js';
+import { requireAdminKey } from '../middleware/adminAuth.js';
+import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
+import {
+  getPricingSnapshot,
+  getSubscriptionDurationDays,
+  subscriptionPublicFields,
+} from '../lib/subscription.js';
 
-export function TermsPage() {
-  const navigate = useNavigate();
-  const { data, isLoading, isError } = useSubscriptionPrice();
-  const sections = buildTermsSections({
-    amountKopecks: isError ? null : (data?.amountKopecks ?? null),
-    durationDays: isError ? null : (data?.durationDays ?? null),
+function requireDb() { /* same as billing.ts */ }
+
+export const adminRouter = Router();
+adminRouter.use(requireAdminKey);
+
+adminRouter.get('/pricing', asyncHandler(async (_req, res) => {
+  const prisma = getPrisma();
+  const snap = await getPricingSnapshot(prisma);
+  const source =
+    snap.priceSource === 'db' || snap.durationSource === 'db' ? 'db' : 'env';
+  res.json({
+    priceKopecks: snap.priceKopecks,
+    durationDays: snap.durationDays,
+    source,
   });
-  return (
-    <LegalDocumentPage
-      title="РЈСЃР»РѕРІРёСЏ"
-      onBack={() => navigate('/settings')}
-      sections={sections}
-      loadingHint={
-        isLoading ? 'Р—Р°РіСЂСѓР¶Р°РµРј Р°РєС‚СѓР°Р»СЊРЅС‹Р№ С‚Р°СЂРёС„вЂ¦' : null
-      }
-    />
-  );
+}));
+
+adminRouter.put('/pricing', asyncHandler(async (req, res) => {
+  const prisma = requireDb();
+  const priceKopecks = req.body?.priceKopecks;
+  const durationDays = req.body?.durationDays;
+  if (priceKopecks !== undefined) {
+    if (typeof priceKopecks !== 'number' || !Number.isFinite(priceKopecks) || priceKopecks < 1) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'priceKopecks must be a positive number.');
+    }
+  }
+  if (durationDays !== undefined) {
+    if (typeof durationDays !== 'number' || !Number.isInteger(durationDays) || durationDays < 1) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'durationDays must be a positive integer.');
+    }
+  }
+  if (priceKopecks === undefined && durationDays === undefined) {
+    throw new ApiError(400, 'VALIDATION_ERROR', 'Provide priceKopecks and/or durationDays.');
+  }
+  await prisma.appSettings.upsert({
+    where: { id: 1 },
+    create: {
+      id: 1,
+      subscriptionPriceKopecks:
+        priceKopecks !== undefined ? Math.floor(priceKopecks) : null,
+      subscriptionDurationDays:
+        durationDays !== undefined ? durationDays : null,
+    },
+    update: {
+      ...(priceKopecks !== undefined
+        ? { subscriptionPriceKopecks: Math.floor(priceKopecks) }
+        : {}),
+      ...(durationDays !== undefined
+        ? { subscriptionDurationDays: durationDays }
+        : {}),
+    },
+  });
+  const snap = await getPricingSnapshot(prisma);
+  const source =
+    snap.priceSource === 'db' || snap.durationSource === 'db' ? 'db' : 'env';
+  res.json({
+    priceKopecks: snap.priceKopecks,
+    durationDays: snap.durationDays,
+    source,
+  });
+}));
+
+// GET /stats вЂ” prisma.user.count, active count with expiresAt gt now,
+// payment aggregate confirmed, usageEvent counts by kind + createdAt gte
+
+// GET /users?q= вЂ” OR filters on id equals, telegramId equals/contains,
+// username contains (case-insensitive where supported), take 20
+
+// POST /users/:id/subscription вЂ” activate/extend/revoke as spec
+```
+
+**Subscription action logic:**
+
+```ts
+const now = new Date();
+if (action === 'activate') {
+  const days =
+    typeof body.days === 'number' && body.days > 0
+      ? Math.floor(body.days)
+      : await getSubscriptionDurationDays(prisma);
+  const expiresAt = new Date(now);
+  expiresAt.setUTCDate(expiresAt.getUTCDate() + days);
+  // update active + expiresAt
+}
+if (action === 'extend') {
+  if (typeof body.days !== 'number' || !Number.isInteger(body.days) || body.days < 1) {
+    throw new ApiError(400, 'VALIDATION_ERROR', 'days required for extend.');
+  }
+  const base =
+    user.subscriptionExpiresAt && user.subscriptionExpiresAt > now
+      ? user.subscriptionExpiresAt
+      : now;
+  const expiresAt = new Date(base);
+  expiresAt.setUTCDate(expiresAt.getUTCDate() + body.days);
+  // update active + expiresAt
+}
+if (action === 'revoke') {
+  // status none, expiresAt null
 }
 ```
 
-While loading, still call `buildTermsSections` with nulls so fallback text shows, plus loadingHint вЂ” acceptable per spec.
+Response user snapshot: `{ id, telegramId, username, firstName, lastName, ...subscriptionPublicFields(user) }`.
 
-`PrivacyPage.tsx`: same shell with `buildPrivacySections()`, title В«РџСЂРёРІР°С‚РЅРѕСЃС‚СЊВ».
+- [ ] **Step 4: Mount in `app.ts`**
 
-`index.ts`: export `TermsPage`, `PrivacyPage`.
-
-- [ ] **Step 3: Router**
-
-Import Terms/Privacy. Add **without** ProfileGuard (same level as `/login`):
-
-```tsx
-{ path: '/legal/terms', element: <TermsPage /> },
-{ path: '/legal/privacy', element: <PrivacyPage /> },
+```ts
+import { adminRouter } from './routes/admin.js';
+// cors methods: add PUT
+// cors allowedHeaders: add 'X-Admin-Key'
+app.use('/admin', adminRouter);
 ```
 
-- [ ] **Step 4: Settings links**
+- [ ] **Step 5: Document env**
 
-In В«Рћ РїСЂРёР»РѕР¶РµРЅРёРёВ», after В«РќРѕРІРѕСЃС‚РёВ» (before or after Telegram), add:
+Append to `apps/ai-app/.env.example`:
 
-```tsx
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            onClick={() => navigate('/legal/terms')}
-          >
-            РЈСЃР»РѕРІРёСЏ
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            onClick={() => navigate('/legal/privacy')}
-          >
-            РџСЂРёРІР°С‚РЅРѕСЃС‚СЊ
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-          </Button>
+```
+# Admin API (ai-web server в†’ gateway). Required for /admin/* (fail-closed if unset).
+# ADMIN_API_KEY=
 ```
 
-- [ ] **Step 5: Verify**
+Add `ADMIN_API_KEY` to `turbo.json` `dev` and `test` `passThroughEnv`.
 
-Run: `pnpm --filter ai-food test -- src/shared/legal/termsContent.test.ts src/features/billing/api/billingApi.test.ts`  
-Run: `pnpm --filter ai-food exec tsc --noEmit`  
-Expected: PASS / no errors.
+- [ ] **Step 6: Run tests**
 
-Smoke: open Settings в†’ РЈСЃР»РѕРІРёСЏ / РџСЂРёРІР°С‚РЅРѕСЃС‚СЊ в†’ Back returns to settings.
+Run: `cd apps/ai-app && pnpm exec vitest run src/routes/admin.test.ts src/middleware/adminAuth.test.ts`
 
-- [ ] **Step 6: Commit**
+Expected: PASS
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add apps/ai-food/src/pages/legal apps/ai-food/src/app/router.tsx apps/ai-food/src/pages/settings/ui/SettingsPage.tsx
-git commit -m "feat(ai-food): add terms and privacy pages in settings"
+git add apps/ai-app/src/routes/admin.ts apps/ai-app/src/routes/admin.test.ts apps/ai-app/src/app.ts apps/ai-app/.env.example turbo.json
+git commit -m "feat(ai-app): add /admin stats pricing and subscription management API"
 ```
+
+---

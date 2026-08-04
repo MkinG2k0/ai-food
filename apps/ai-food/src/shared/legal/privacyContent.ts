@@ -2,14 +2,14 @@ import { formatSellerBlock, legalConfig } from './legalConfig';
 import type { LegalSection } from './types';
 
 export function buildPrivacySections(): LegalSection[] {
-  const { email, phone } = legalConfig;
+  const { email, telegramLabel } = legalConfig;
 
   return [
     {
       title: 'Оператор',
       paragraphs: [
         formatSellerBlock(),
-        `Оператор персональных данных — индивидуальный предприниматель, указанный выше. Обращения по вопросам обработки персональных данных направляйте на email ${email} или по телефону ${phone}.`,
+        `Оператор персональных данных — индивидуальный предприниматель, указанный выше. Обращения по вопросам обработки персональных данных направляйте на email ${email} или в Telegram ${telegramLabel}.`,
       ],
     },
     {
@@ -66,7 +66,7 @@ export function buildPrivacySections(): LegalSection[] {
       title: 'Права субъекта',
       paragraphs: [
         'Субъект персональных данных вправе запросить доступ к своим данным, их уточнение, удаление, а также отозвать согласие на обработку.',
-        `Для реализации прав направьте обращение оператору по контактам, указанным в разделе «Оператор» (email ${email}, телефон ${phone}).`,
+        `Для реализации прав направьте обращение оператору по контактам, указанным в разделе «Оператор» (email ${email}, Telegram ${telegramLabel}).`,
       ],
     },
     {

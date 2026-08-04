@@ -1,73 +1,54 @@
-# Task 1 Review: JWT — `phone` → `telegramId`
+# Task 1 Review: Prisma `AppSettings` model + migration
 
-**Reviewer:** code-reviewer subagent  
-**Base:** `f13c76b471e8b827929485816f90dcbb067d8c1a`  
-**Head:** `f8b7a608ac79ee8b5a682286b9f325cb9dc675a1`  
-**Scope:** 4 files, 12 insertions / 12 deletions
-
----
-
-## Spec Compliance: ✅
-
-| Requirement | Status |
-|-------------|--------|
-| Modify `apps/ai-app/src/lib/jwt.ts` — `UserTokenPayload`, sign/verify `telegramId` | ✅ Done |
-| Modify `apps/ai-app/src/lib/jwt.test.ts` — round-trip + other `phone` → `telegramId` | ✅ Done |
-| Modify `quota.test.ts` — 2 mock payloads | ✅ Done |
-| Modify `billing.test.ts` — 1 mock payload | ✅ Done |
-| TDD: failing test before implementation | ✅ Reported (Step 2 FAIL) |
-| Targeted test run (jwt + quota + billing) | ✅ Reported PASS (15 tests) |
-| Commit message per brief | ✅ `refactor(ai-app): JWT claims use telegramId instead of phone` |
-
-**Missing:** None.
-
-**Extra:** None — diff touches exactly the four files listed in the brief; no auth routes, Prisma, or flashcall changes.
-
-**Misunderstood:** None — implementation matches the brief snippet verbatim; claim name is `telegramId` (string), `sub` remains JWT subject.
+**Reviewer:** task-scoped gate  
+**Base:** `aa1283429e9f1b178812c73a75b4b447d8eb48cd`  
+**Head:** `5718f17d9403b40796b704e1f3da0dcd863b4b0f`  
+**Commit:** `5718f17` — `feat(ai-app): add AppSettings singleton for subscription pricing`
 
 ---
 
-## Task Quality: **Approved**
+## 1. Spec compliance: ✅
 
-No Critical or Important issues at confidence ≥ 80.
+| Requirement | Verdict | Evidence |
+|-------------|---------|----------|
+| Append `AppSettings` model to `schema.prisma` (verbatim) | ✅ | Diff adds exact model: `id Int @id @default(1)`, nullable price/duration, `updatedAt @updatedAt` |
+| Create migration `20260804220000_app_settings/migration.sql` (verbatim) | ✅ | Diff SQL matches brief character-for-character |
+| Run `pnpm exec prisma generate` | ✅* | Not in diff (generated client is gitignored at `apps/ai-app/.gitignore` → `/src/generated/prisma`); consistent with repo convention. Untracked generated files in working tree corroborate generate was run locally. |
+| Commit only schema + migration with specified message | ✅ | Diff: exactly 2 files, +16 lines, single commit with brief message. No `apps/ai-food` or other extras. |
+| Global: schema foundation only; DB → env → defaults 10000/365 later | ✅ | Nullable `Int?` fields; no seed, no env wiring, no application defaults — correct for this task scope. |
 
----
+**Gaps:** None in committed scope.  
+**Extras:** None.
 
-## Strengths
-
-1. **Minimal, focused diff** — mechanical rename of claim/type across JWT module and three test files; no scope creep.
-2. **Spec fidelity** — `jwt.ts` matches the brief line-for-line (type, `SignJWT({ telegramId })`, verify guard, error mapping unchanged).
-3. **TDD evidence** — report documents expected FAIL on Step 2 and PASS on Step 5 for the three specified suites.
-4. **Mock consistency** — all `verifyUserToken` mocks in `quota.test.ts` (×2) and `billing.test.ts` (×1) updated; no stray `phone` in modified files.
-5. **Behavior preserved** — HS256, `sub`/`iat`, no `exp`, `AUTH_MISCONFIGURED` / `INVALID_USER_TOKEN` paths unchanged.
-
----
-
-## Issues
-
-### Critical (confidence ≥ 80)
-
-*None.*
-
-### Important (confidence ≥ 80)
-
-*None.*
-
-### Minor / Expected Follow-ups (out of task scope, not blocking)
-
-| Item | Notes |
-|------|-------|
-| `auth.ts` still calls `signUserToken({ sub, phone })` | Type/runtime mismatch until Task 2+; explicitly excluded from this task. |
-| `auth.flashcall.test.ts` still expects `phone` | Brief says not to run/fix flashcall suite yet. |
-| Old JWTs with `phone` claim invalid after deploy | Intentional migration; no backward-compat required in brief. |
-| No explicit test for token missing `telegramId` | Same validation pattern as pre-change `phone`; optional hardening, not required. |
+\*Generate success is inferred from convention + working-tree artifacts, not from the commit diff itself.
 
 ---
 
-## Verdict Summary
+## 2. Task quality: **Approved**
 
-| Dimension | Result |
-|-----------|--------|
-| **Spec compliance** | ✅ |
-| **Task quality** | **Approved** |
-| **Gate** | **PASS** — safe to proceed to dependent tasks (auth route migration). |
+Focused, minimal change set. Schema and migration align with the brief and with existing Prisma patterns in `apps/ai-app`.
+
+### Critical
+_None._
+
+### Important
+_None._
+
+### Minor
+
+1. **`updatedAt` has no SQL `DEFAULT`** — Migration defines `"updatedAt" TIMESTAMP(3) NOT NULL` without default. Same pattern as existing tables (`User`, `Device` in `20260804000000_init`). Prisma Client `@updatedAt` sets the value on create/update; raw SQL inserts must supply it. Acceptable; note for later admin/seed tasks.
+
+2. **Singleton not enforced at DB level** — `id @default(1)` documents intent but PostgreSQL allows other primary keys. Application layer must read/upsert `id: 1` only (expected in follow-up tasks).
+
+3. **No `createdAt`** — Workspace Prisma convention prefers both timestamps; brief omits `createdAt`. Implementation correctly follows the brief; not a defect for this task.
+
+4. **Migration not applied** — Out of task scope (schema file + SQL + generate + commit only). Deploy/`migrate dev` remains for a later step.
+
+---
+
+## Summary
+
+Implementation matches the task brief exactly in committed artifacts: singleton `AppSettings` model, matching migration, and an isolated commit. Nullable pricing fields correctly defer defaults (10000 kopecks / 365 days) to env/application layers. No scope creep.
+
+**Spec compliance:** ✅  
+**Task quality:** Approved

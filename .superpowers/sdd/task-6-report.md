@@ -1,33 +1,38 @@
-# Task 6 Report
+# Task 6 Report: Scaffold `apps/ai-web`
 
 ## Status
 
-Implemented Telegram webhook login, startup webhook registration, and removed the obsolete Flash-Call/phone modules.
+Completed.
 
-## Changes
+## Commit
 
-- Added `POST /telegram/webhook` with `X-Telegram-Bot-Api-Secret-Token` validation.
-- Added `/start <nonce>` confirmation button using `ok:<challenge.id>`.
-- Added callback confirmation flow: Telegram user upsert, optional device association, JWT signing, challenge confirmation, and callback acknowledgement.
-- Bot handler failures after successful secret validation are logged and acknowledged with HTTP 200 to avoid Telegram retry storms.
-- Added `setupTelegramWebhook()` and invoked it after the server starts listening. Setup requires a bot token, `TELEGRAM_WEBHOOK_SECRET`, and `PUBLIC_GATEWAY_URL`.
-- Removed `flashcall.ts`, `flashcallChallenge.ts`, `phone.ts`, and the Flash-Call/phone tests.
+- `3fe72f3 feat(ai-web): scaffold Next.js app with Ant Design for admin/landing`
 
-## TDD Evidence
+## Implemented
 
-- RED: `pnpm exec vitest run src/routes/telegramWebhook.test.ts` failed because `telegramWebhook.ts` did not exist.
-- GREEN: the focused suite passed with 6 tests.
+- Added the `ai-web` Next.js 15 App Router package with React 18.
+- Added Ant Design 5 with `AntdRegistry`, TanStack Query, and `jose`.
+- Added the minimal `/` landing page with “AI Food” and “Скоро”.
+- Configured development and production start on port 3001.
+- Added root `dev:web` and `build:web` scripts.
+- Added Turbo build output and server-only environment pass-through.
+- Added `.env.example` and local ignored `.env` files.
+- Generated one shared `ADMIN_API_KEY` for `apps/ai-web/.env` and `apps/ai-app/.env`.
 
 ## Verification
 
-- `pnpm test`: 15 files, 78 tests passed.
-- `pnpm type-check`: passed.
-- No remaining Flash-Call or phone references under `apps/ai-app/src`.
+- `pnpm install` — PASS.
+- `pnpm --filter ai-web type-check` — PASS.
+- `pnpm --filter ai-web build` — PASS; `/` prerendered as static content.
+- IDE diagnostics — no errors.
+- Both local `.env` files are ignored by Git.
+- Shared `ADMIN_API_KEY` is present in both local env files and matches.
 
-## Billing Type-Check Fix
+## Local Login
 
-`billing.ts` had an impossible `payment.status !== 'confirmed'` comparison after an earlier return had already narrowed the status to non-confirmed values. Removed only that redundant comparison; billing behavior and features were not expanded.
+- `ADMIN_PASSWORD=3B/PMHl8ilQESnujR0gsfiivDxebY4ec`
 
 ## Concerns
 
-None.
+- Existing unrelated `apps/ai-food` legal/news and `.superpowers` working-tree changes remain untouched and were not committed.
+- `pnpm install` resolved compatible versions within the brief's ranges (including Next.js `15.5.22`).

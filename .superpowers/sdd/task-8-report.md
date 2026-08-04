@@ -1,17 +1,22 @@
-# Task 8 Report: Env examples + docs
+# Task 8 Report
 
-**Status:** ✅ Done  
-**Commit:** `docs: Telegram bot auth env and gateway contract`
+## Status
+
+Implemented the `ai-web` admin dashboard with a server-only BFF for gateway admin requests.
 
 ## Changes
 
-| File | Update |
-|------|--------|
-| `apps/ai-app/.env.example` | Removed `FLASHCALL_API_KEY`; added `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `PUBLIC_GATEWAY_URL` |
-| `apps/ai-food/.env.example` | Bot deep-link flow documented; Login Widget/domain removed; `VITE_TELEGRAM_BOT_USERNAME` optional for button label |
-| `docs/DOKPLOY.md` | Gateway env: Telegram vars + `PUBLIC_GATEWAY_URL`; Flash-Call removed; webhook setup step in «Связка» |
-| `apps/ai-food/docs/AI-GATEWAY.md` | Endpoints `/auth/telegram/start`, `/auth/telegram/status`, `/telegram/webhook`; env table split; `PUBLIC_GATEWAY_URL` vs `PUBLIC_APP_URL` |
+- Added authenticated BFF routes for stats, pricing, user search, and subscription actions.
+- Added the Ant Design admin shell, navigation, logout, and shared Query/Ant Design providers.
+- Replaced the admin placeholder with the statistics dashboard.
+- Added pricing management with ruble/kopeck conversion and source indication.
+- Added user search and activate, extend, and revoke subscription actions.
 
-## Not committed
+## Verification
 
-Real `.env` files unchanged. No secrets in diff.
+- `pnpm --filter ai-web type-check` — PASS
+- `pnpm --filter ai-web build` — PASS
+
+## Concerns
+
+- End-to-end gateway requests require a running `ai-app` with a configured database and matching `ADMIN_API_KEY`.

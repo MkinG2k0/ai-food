@@ -1,70 +1,70 @@
-### Task 3: SubscribePage uses API price
+﻿### Task 3: Billing callers await async price helpers
 
 **Files:**
-- Modify: `apps/ai-food/src/pages/subscribe/ui/SubscribePage.tsx`
+- Modify: `apps/ai-app/src/routes/billing.ts`
+- Modify: `apps/ai-app/src/routes/billing.test.ts`
 
 **Interfaces:**
-- Consumes: `useSubscriptionPrice()` from `@/features/billing`
-- Produces: UI shows `amountKopecks / 100` ₽ and `durationDays`; loading and error states without hardcoded `PRICE_RUB`
+- Consumes: async `getSubscriptionPriceKopecks` / `getSubscriptionDurationDays` / `getPrisma`
+- Produces: same HTTP contracts; internals use `await`
 
-- [ ] **Step 1: Replace hardcoded price**
+- [ ] **Step 1: Make `resolveSubscribeAmount` async**
 
-Remove `const PRICE_RUB = 100`.
-
-Import `useSubscriptionPrice` from `@/features/billing`.
-
-In the main subscribe view (not success/fail):
-
-```tsx
-  const { data: price, isLoading: priceLoading, isError: priceError } =
-    useSubscriptionPrice();
-  const priceRub =
-    price != null ? Math.round(price.amountKopecks / 100) : null;
-  const durationDays = price?.durationDays;
+```ts
+async function resolveSubscribeAmount(
+  prisma: PrismaClient | null,
+  promoCodeRaw: unknown,
+): Promise<{
+  amount: number;
+  originalAmount: number;
+  promoCode: string | null;
+}> {
+  const originalAmount = await getSubscriptionPriceKopecks(prisma);
+  // ... same promo logic as today, using originalAmount
+}
 ```
 
-Replace the price block:
+Import `PrismaClient` type if needed. Pass `getPrisma()` / `requireDb()` into callers.
 
-```tsx
-        <p className="text-3xl font-semibold tabular-nums">
-          {priceLoading && (
-            <span className="text-base font-normal text-muted-foreground">
-              Загрузка цены…
-            </span>
-          )}
-          {priceError && (
-            <span className="text-base font-normal text-muted-foreground">
-              Цена недоступна
-            </span>
-          )}
-          {priceRub != null && (
-            <>
-              {priceRub.toLocaleString('ru-RU')} ₽
-              <span className="ml-2 text-base font-normal text-muted-foreground">
-                / {durationDays != null ? `${durationDays} дн.` : 'срок'}
-              </span>
-            </>
-          )}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Разовая оплата — доступ к AI на{' '}
-          {durationDays != null ? `${durationDays} дней` : 'срок лицензии'}.
-          Без автосписаний.
-        </p>
+- [ ] **Step 2: Update `/price`, `/promo/validate`, `/subscribe`**
+
+```ts
+billingRouter.get(
+  '/price',
+  asyncHandler(async (_req, res) => {
+    const prisma = getPrisma();
+    res.json({
+      amountKopecks: await getSubscriptionPriceKopecks(prisma),
+      currency: 'RUB',
+      durationDays: await getSubscriptionDurationDays(prisma),
+    });
+  }),
+);
 ```
 
-Disable «Оплатить» while `priceLoading` if desired (optional: keep enabled — payment amount is still set server-side).
+In validate/subscribe: `const prisma = вЂ¦;` then `await resolveSubscribeAmount(prisma, вЂ¦)` / `await getSubscriptionPriceKopecks(prisma)`.
 
-Note: hooks must be called unconditionally at top of component (before early returns for success/fail). Call `useSubscriptionPrice()` near other hooks at the top of `SubscribePage`.
+- [ ] **Step 3: Fix billing.test.ts mocks**
 
-- [ ] **Step 2: Manual smoke (optional) / typecheck**
+Ensure mocks return Promises:
 
-Run: `pnpm --filter ai-food exec tsc --noEmit`  
-Expected: no errors related to SubscribePage.
+```ts
+getSubscriptionPriceKopecks: (...args: unknown[]) => mockPrice(...args),
+```
 
-- [ ] **Step 3: Commit**
+And in `beforeEach` / tests: `mockPrice.mockResolvedValue(10_000)` (not `mockReturnValue`). Same for `mockDuration.mockResolvedValue(365)`.
+
+- [ ] **Step 4: Run billing tests**
+
+Run: `cd apps/ai-app && pnpm exec vitest run src/routes/billing.test.ts src/lib/subscription.test.ts`
+
+Expected: PASS
+
+- [ ] **Step 5: Commit**
 
 ```bash
-git add apps/ai-food/src/pages/subscribe/ui/SubscribePage.tsx
-git commit -m "feat(ai-food): show subscription price from API on subscribe page"
+git add apps/ai-app/src/routes/billing.ts apps/ai-app/src/routes/billing.test.ts
+git commit -m "fix(billing): await async subscription price helpers"
 ```
+
+---

@@ -1,58 +1,78 @@
-# Task 2 Report: Client `fetchSubscriptionPrice` + hook
+# Task 2 Report: Async subscription price/duration helpers
 
-## Status
-**DONE** — TDD cycle completed, all tests pass, committed.
+**Status:** DONE_WITH_CONCERNS  
+**Branch:** `feat/admin-web`  
+**Commit:** `4170170` — `feat(ai-app): read subscription price/duration from AppSettings with env fallback`
 
-## What was implemented
+## What was done
 
-### API (`billingApi.ts`)
-- `SubscriptionPrice` type: `{ amountKopecks, currency, durationDays }`
-- `fetchSubscriptionPrice()` — GET `${gatewayBase()}/billing/price`, no auth headers, uses existing `parseError` on failure
+### Step 1 — Failing tests (TDD)
 
-### Hook (`model/useSubscriptionPrice.ts`)
-- `subscriptionPriceQueryKey = ['billing', 'price'] as const`
-- `useSubscriptionPrice()` — `useQuery` always enabled, `staleTime: 5 * 60_000`
+Updated `apps/ai-app/src/lib/subscription.test.ts`:
 
-### Exports (`index.ts`)
-- `fetchSubscriptionPrice`, `SubscriptionPrice`, `useSubscriptionPrice`, `subscriptionPriceQueryKey`
+- Replaced sync price/duration tests with async versions + `null` prisma
+- Added `getSubscriptionPriceKopecks prefers positive DB value`
+- Added `getPricingSnapshot reports db vs env sources`
+- Updated `activateYearLicense` mock with `appSettings.findUnique` → `null`
 
-### Test (`billingApi.test.ts`)
-- New test: `fetchSubscriptionPrice GETs /billing/price without user headers`
-- Matches existing style: `vi.resetModules`, `vi.stubEnv`, `vi.stubGlobal('fetch', fetchMock)`
+### Step 2 — Red run
 
-## TDD cycle
-
-| Step | Result |
-|------|--------|
-| 1. Failing test added | `fetchSubscriptionPrice is not a function` |
-| 2. Implementation | API + hook + exports |
-| 3. Re-run tests | 4/4 PASS |
-
-## Commit
+```text
+pnpm exec vitest run src/lib/subscription.test.ts
+2 failed | 5 passed (7)
 ```
-feat(ai-food): fetch subscription price from gateway
+
+Failures: DB override (sync ignored prisma), `getPricingSnapshot is not a function` — as expected.
+
+### Step 3 — Implementation
+
+Updated `apps/ai-app/src/lib/subscription.ts`:
+
+- Added `PricingSource`, `PricingSnapshot` types
+- Added `envPriceKopecks`, `envDurationDays`, `loadSettings` (DB id=1 with try/catch fallback)
+- Made `getSubscriptionPriceKopecks` / `getSubscriptionDurationDays` async with DB → env → defaults chain
+- Added `getPricingSnapshot` with per-field source tracking
+- `activateYearLicense` now `await getSubscriptionDurationDays(prisma)`
+- `hasActiveSubscription` / `subscriptionPublicFields` unchanged
+
+### Step 4 — Green run
+
+```text
+pnpm exec vitest run src/lib/subscription.test.ts
+✓ 7 passed (7)
 ```
-Files: `billingApi.ts`, `billingApi.test.ts`, `useSubscriptionPrice.ts`, `index.ts`
+
+### Step 5 — Commit
+
+Staged and committed **only**:
+
+- `apps/ai-app/src/lib/subscription.ts`
+- `apps/ai-app/src/lib/subscription.test.ts`
+
+Unrelated `apps/ai-food` legal changes were **not** staged.
 
 ## Self-review
 
-| Check | Verdict |
-|-------|---------|
-| Signatures match brief | ✓ |
-| No auth headers on price fetch | ✓ (unlike subscribe/status/sync) |
-| Query key matches brief | ✓ `['billing', 'price']` |
-| staleTime 5 min | ✓ |
-| Hook always enabled (no auth gate) | ✓ |
-| Exports complete | ✓ |
-| Test style consistent | ✓ |
-| No UI changes | ✓ |
+| Check | Result |
+|-------|--------|
+| Types/exports match brief | PASS |
+| DB → env → defaults precedence | PASS |
+| `loadSettings` try/catch on missing table | PASS |
+| `activateYearLicense` awaits duration with prisma | PASS |
+| All 7 subscription tests pass | PASS |
+| Commit message matches brief | PASS |
+| No unrelated files in commit | PASS |
 
-## Concerns / follow-ups
-- Hook has no dedicated unit test (brief only required API test); hook is thin wrapper over `useQuery` + `fetchSubscriptionPrice`.
-- UI task can import from `@/features/billing` and use `useSubscriptionPrice()` directly.
+## Notes / concerns
 
-## Test command
-```bash
-pnpm --filter ai-food test -- src/features/billing/api/billingApi.test.ts
-```
-Result: **4 passed**
+1. **`billing.ts` callers not updated (expected):** `getSubscriptionPriceKopecks()` / `getSubscriptionDurationDays()` in `apps/ai-app/src/routes/billing.ts` still call sync-style (no `await`, no prisma). `tsc --noEmit` reports 4 errors in billing.ts. Plan Task 3 should migrate billing routes to `await` + prisma.
+2. **Intentional scope:** Task brief limits changes to `subscription.ts` + `subscription.test.ts` only.
+
+## Files changed (committed)
+
+- `apps/ai-app/src/lib/subscription.ts`
+- `apps/ai-app/src/lib/subscription.test.ts`
+
+## Test summary
+
+`vitest run src/lib/subscription.test.ts` — **7/7 PASS** (TDD red → green confirmed).

@@ -1,91 +1,52 @@
-### Task 1: `GET /billing/price` (ai-app)
+﻿### Task 1: Prisma `AppSettings` model + migration
 
 **Files:**
-- Modify: `apps/ai-app/src/routes/billing.ts`
-- Modify: `apps/ai-app/src/routes/billing.test.ts`
+- Modify: `apps/ai-app/prisma/schema.prisma`
+- Create: `apps/ai-app/prisma/migrations/20260804220000_app_settings/migration.sql`
 
 **Interfaces:**
-- Consumes: `getSubscriptionPriceKopecks()`, `getSubscriptionDurationDays()` from `../lib/subscription.js`
-- Produces: `GET /billing/price` → `{ amountKopecks: number, currency: 'RUB', durationDays: number }`
+- Produces: Prisma model `AppSettings` with fields below
 
-- [ ] **Step 1: Extend subscription mock + write failing tests**
+- [ ] **Step 1: Add model to schema**
 
-In `billing.test.ts`, add mock for duration next to `mockPrice`:
+Append to `apps/ai-app/prisma/schema.prisma`:
 
-```ts
-const mockDuration = vi.fn();
+```prisma
+model AppSettings {
+  id                       Int      @id @default(1)
+  subscriptionPriceKopecks Int?
+  subscriptionDurationDays Int?
+  updatedAt                DateTime @updatedAt
+}
 ```
 
-In the `vi.mock('../lib/subscription.js'...)` return object, add:
+- [ ] **Step 2: Add migration SQL**
 
-```ts
-getSubscriptionDurationDays: (...args: unknown[]) => mockDuration(...args),
-```
+Create `apps/ai-app/prisma/migrations/20260804220000_app_settings/migration.sql`:
 
-In `beforeEach` (or at start of new tests), set defaults:
+```sql
+-- CreateTable
+CREATE TABLE "AppSettings" (
+    "id" INTEGER NOT NULL DEFAULT 1,
+    "subscriptionPriceKopecks" INTEGER,
+    "subscriptionDurationDays" INTEGER,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-```ts
-mockPrice.mockReturnValue(10_000);
-mockDuration.mockReturnValue(365);
-```
-
-Append tests:
-
-```ts
-  it('GET /billing/price returns amount and duration without auth', async () => {
-    mockPrice.mockReturnValue(10_000);
-    mockDuration.mockReturnValue(365);
-    const res = await request(createApp()).get('/billing/price');
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      amountKopecks: 10_000,
-      currency: 'RUB',
-      durationDays: 365,
-    });
-  });
-
-  it('GET /billing/price reflects env helpers', async () => {
-    mockPrice.mockReturnValue(250_000);
-    mockDuration.mockReturnValue(30);
-    const res = await request(createApp()).get('/billing/price');
-    expect(res.status).toBe(200);
-    expect(res.body.amountKopecks).toBe(250_000);
-    expect(res.body.durationDays).toBe(30);
-  });
-```
-
-- [ ] **Step 2: Run tests — expect FAIL**
-
-Run: `pnpm --filter openrouter-gateway test -- src/routes/billing.test.ts`
-
-Expected: FAIL (404 NOT_FOUND or missing route for `/billing/price`).
-
-- [ ] **Step 3: Implement route**
-
-Near the top of route handlers in `billing.ts` (before auth-required routes is fine), import `getSubscriptionDurationDays` alongside existing price import, then add:
-
-```ts
-billingRouter.get(
-  '/price',
-  asyncHandler(async (_req, res) => {
-    res.json({
-      amountKopecks: getSubscriptionPriceKopecks(),
-      currency: 'RUB',
-      durationDays: getSubscriptionDurationDays(),
-    });
-  }),
+    CONSTRAINT "AppSettings_pkey" PRIMARY KEY ("id")
 );
 ```
 
-- [ ] **Step 4: Run tests — expect PASS**
+- [ ] **Step 3: Generate client**
 
-Run: `pnpm --filter openrouter-gateway test -- src/routes/billing.test.ts`
+Run: `cd apps/ai-app && pnpm exec prisma generate`
 
-Expected: PASS (including new price tests; existing subscribe tests still pass with `mockPrice`).
+Expected: success, `AppSettings` available on client types.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add apps/ai-app/src/routes/billing.ts apps/ai-app/src/routes/billing.test.ts
-git commit -m "feat(ai-app): expose GET /billing/price for subscription tariff"
+git add apps/ai-app/prisma/schema.prisma apps/ai-app/prisma/migrations/20260804220000_app_settings
+git commit -m "feat(ai-app): add AppSettings singleton for subscription pricing"
 ```
+
+---
