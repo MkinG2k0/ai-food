@@ -66,6 +66,7 @@ ai-app (openrouter-gateway)
 | `GET` | `/health` | нет | `{ "status": "ok" }` |
 | `POST` | `/auth/telegram/start` | нет* | `{ challengeId, botDeepLink, expiresAt }` — старт bot deep-link login |
 | `GET` | `/auth/telegram/status?challengeId=` | нет* | `{ status: "pending" \| "expired" }` или `{ status: "ok", token, user }` |
+| `POST` | `/auth/demo/login` | нет* | Демо-юзер + JWT; только если `AUTH_MOCK≠false`. Body: `{ deviceId? }` → `{ token, user }` |
 | `POST` | `/telegram/webhook` | `X-Telegram-Bot-Api-Secret-Token` | Telegram Bot API updates; подтверждение challenge |
 | `GET` | `/auth/me` | `X-User-Token` | Профиль + `subscriptionExpiresAt` / `hasActiveSubscription` |
 | `GET` | `/usage` | device (+ optional JWT) | Квота: unlimited **только** при active лицензии |
@@ -91,7 +92,7 @@ ai-app (openrouter-gateway)
 | `src/features/analyze-food/api/refineMealApi.ts` | Уточнение результата |
 | `src/features/analyze-food/api/fetchMealCustomContentApi.ts` | Доп. markdown-контент по блюду |
 | `src/features/onboarding/api/micronutrientTargetsApi.ts` | Цели по микронутриентам |
-| `src/features/auth/*` | Bot deep-link login (`/auth/telegram/start` + poll), `/usage` |
+| `src/features/auth/*` | Bot login + `signInWithDemo` (`/auth/demo/login`), `/usage` |
 | `src/features/billing/*` | Subscribe / status / sync |
 
 Ошибки gateway (`RATE_LIMITED`, `UPSTREAM_TIMEOUT`, `QUOTA_EXCEEDED`, …) мапятся в клиентские `ApiError`. При `402` UI ведёт гостя на `/login`, авторизованного — на `/subscribe`.
