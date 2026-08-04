@@ -15,9 +15,11 @@
 
 - Repository: `ai-food` (этот monorepo)
 - Branch: `master` (или твой deploy-branch)
+- **Build Path: `/`** (корень monorepo — не `/apps/ai-app`, иначе не будет `packageManager` / workspace)
 - Build type: **Dockerfile**
 - Dockerfile path: `apps/ai-app/Dockerfile`
 - Docker context: `.`
+- Docker Build Stage: *(пусто)*
 - Port: `3000`
 
 **Watch paths (опционально):** `apps/ai-app/**`, `pnpm-lock.yaml`, `package.json`, `turbo.json`

@@ -1,20 +1,20 @@
 # syntax=docker/dockerfile:1
+# Dokploy: Build Path = `/`  |  Docker File = `apps/ai-food/Dockerfile`  |  Context = `.`
 
 FROM node:22-bookworm-slim AS base
 RUN corepack enable && corepack prepare pnpm@9.6.0 --activate
 WORKDIR /app
 
-FROM base AS prepare
-RUN npm install -g turbo@^2
-COPY . .
-RUN turbo prune ai-food --docker
-
 FROM base AS builder
-COPY --from=prepare /app/out/json/ .
-RUN pnpm install --frozen-lockfile
-COPY --from=prepare /app/out/full/ .
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .npmrc ./
+RUN node -e "const p=require('./package.json'); if (p.name !== 'ai-food-base' || !p.packageManager) { console.error('\\nERROR: Docker context must be the monorepo root.\\nIn Dokploy set Build Path=/ and Docker Context Path=.\\n'); process.exit(1); }"
 
-# Baked into the SPA at build time — set in Dokploy Env / Docker build args
+COPY apps/ai-app/package.json ./apps/ai-app/
+COPY apps/ai-food/package.json ./apps/ai-food/
+RUN pnpm install --frozen-lockfile --filter=ai-food...
+
+COPY apps/ai-food ./apps/ai-food
+
 ARG VITE_AI_GATEWAY_URL
 ARG VITE_AI_GATEWAY_API_KEY
 ARG VITE_API_URL
@@ -28,7 +28,7 @@ ENV VITE_AI_GATEWAY_URL=$VITE_AI_GATEWAY_URL \
     VITE_APP_URL=$VITE_APP_URL \
     VITE_AUTH_MOCK=$VITE_AUTH_MOCK
 
-RUN pnpm exec turbo run build --filter=ai-food
+RUN pnpm --filter ai-food run build
 
 FROM nginx:1.27-alpine AS runner
 COPY --from=builder /app/apps/ai-food/nginx.conf /etc/nginx/conf.d/default.conf

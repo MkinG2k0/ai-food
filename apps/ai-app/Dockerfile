@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+# Dokploy: Build Path = `/`  |  Docker File = `apps/ai-app/Dockerfile`  |  Context = `.`
 
 FROM node:22-bookworm-slim AS base
 RUN apt-get update \
@@ -7,18 +8,19 @@ RUN apt-get update \
 RUN corepack enable && corepack prepare pnpm@9.6.0 --activate
 WORKDIR /app
 
-FROM base AS prepare
-RUN npm install -g turbo@^2
-COPY . .
-RUN turbo prune openrouter-gateway --docker
-
 FROM base AS builder
-COPY --from=prepare /app/out/json/ .
-RUN pnpm install --frozen-lockfile
-COPY --from=prepare /app/out/full/ .
+# Fail fast if context is apps/ai-app instead of monorepo root
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .npmrc ./
+RUN node -e "const p=require('./package.json'); if (p.name !== 'ai-food-base' || !p.packageManager) { console.error('\\nERROR: Docker context must be the monorepo root.\\nIn Dokploy set Build Path=/ and Docker Context Path=.\\n'); process.exit(1); }"
+
+COPY apps/ai-app/package.json ./apps/ai-app/
+COPY apps/ai-food/package.json ./apps/ai-food/
+RUN pnpm install --frozen-lockfile --filter=openrouter-gateway...
+
+COPY apps/ai-app ./apps/ai-app
 # prisma generate reads DATABASE_URL via prisma.config.ts — dummy is enough at build
 ENV DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build"
-RUN pnpm exec turbo run build --filter=openrouter-gateway
+RUN pnpm --filter openrouter-gateway run build
 
 FROM base AS runner
 ENV NODE_ENV=production
@@ -28,7 +30,6 @@ ENV PORT=3000
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 gateway
 
-# Full pruned tree keeps pnpm symlink layout intact
 COPY --from=builder --chown=gateway:nodejs /app /app
 
 USER gateway
