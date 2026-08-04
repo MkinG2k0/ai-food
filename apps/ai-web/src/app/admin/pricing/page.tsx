@@ -14,6 +14,7 @@ import {
   Typography,
 } from 'antd';
 
+import { PageHeader } from '@/components/PageHeader';
 import { adminApi } from '@/lib/adminApi';
 
 type Pricing = {
@@ -62,7 +63,10 @@ export default function PricingPage() {
 
   return (
     <>
-      <Typography.Title level={2}>Цены</Typography.Title>
+      <PageHeader
+        subtitle="Цена и срок подписки для оплаты"
+        title="Цены"
+      />
       {pricingQuery.error ? (
         <Alert
           description={pricingQuery.error.message}
@@ -71,11 +75,11 @@ export default function PricingPage() {
           type="error"
         />
       ) : null}
-      <Card loading={pricingQuery.isLoading} style={{ maxWidth: 560 }}>
+      <Card loading={pricingQuery.isLoading} style={{ maxWidth: 640 }}>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div>
             <Typography.Text type="secondary">Источник настроек: </Typography.Text>
-            <Tag color={pricingQuery.data?.source === 'db' ? 'green' : 'blue'}>
+            <Tag color={pricingQuery.data?.source === 'db' ? 'success' : 'processing'}>
               {pricingQuery.data?.source === 'db'
                 ? 'База данных'
                 : 'Переменные окружения'}
