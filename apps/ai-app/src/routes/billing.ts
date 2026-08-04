@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { PrismaClient } from '../generated/prisma/client.js';
 import { ApiError } from '../../lib/errors.js';
 import { asyncHandler } from '../middleware/error.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
@@ -51,12 +52,15 @@ async function requireUser(req: { header: (name: string) => string | undefined }
   return { prisma, user, payload };
 }
 
-function resolveSubscribeAmount(promoCodeRaw: unknown): {
+async function resolveSubscribeAmount(
+  prisma: PrismaClient | null,
+  promoCodeRaw: unknown,
+): Promise<{
   amount: number;
   originalAmount: number;
   promoCode: string | null;
-} {
-  const originalAmount = getSubscriptionPriceKopecks();
+}> {
+  const originalAmount = await getSubscriptionPriceKopecks(prisma);
   if (promoCodeRaw == null) {
     return { amount: originalAmount, originalAmount, promoCode: null };
   }
@@ -96,10 +100,11 @@ export const billingRouter = Router();
 billingRouter.get(
   '/price',
   asyncHandler(async (_req, res) => {
+    const prisma = getPrisma();
     res.json({
-      amountKopecks: getSubscriptionPriceKopecks(),
+      amountKopecks: await getSubscriptionPriceKopecks(prisma),
       currency: 'RUB',
-      durationDays: getSubscriptionDurationDays(),
+      durationDays: await getSubscriptionDurationDays(prisma),
     });
   }),
 );
@@ -107,8 +112,8 @@ billingRouter.get(
 billingRouter.post(
   '/promo/validate',
   asyncHandler(async (req, res) => {
-    await requireUser(req);
-    const originalAmount = getSubscriptionPriceKopecks();
+    const { prisma } = await requireUser(req);
+    const originalAmount = await getSubscriptionPriceKopecks(prisma);
     const raw = req.body?.promoCode;
     if (typeof raw !== 'string') {
       throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
@@ -140,9 +145,8 @@ billingRouter.post(
       );
     }
 
-    const { amount, originalAmount, promoCode } = resolveSubscribeAmount(
-      req.body?.promoCode,
-    );
+    const { amount, originalAmount, promoCode } =
+      await resolveSubscribeAmount(prisma, req.body?.promoCode);
     // Create then set tbankOrderId = Payment.id (D-05 OrderId)
     const payment = await prisma.payment.create({
       data: {

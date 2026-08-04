@@ -151,8 +151,8 @@ describe('billing routes', () => {
     mockIsDb.mockReturnValue(true);
     mockGetPrisma.mockReturnValue(mockPrisma());
     mockVerifyUserToken.mockResolvedValue({ sub: 'user-1', telegramId: '42' });
-    mockPrice.mockReturnValue(10_000);
-    mockDuration.mockReturnValue(365);
+    mockPrice.mockResolvedValue(10_000);
+    mockDuration.mockResolvedValue(365);
     mockIsTbankMock.mockReturnValue(false);
     mockIsTbankConfigured.mockReturnValue(true);
     mockPublicFields.mockReturnValue({
@@ -274,8 +274,8 @@ describe('billing routes', () => {
   });
 
   it('GET /billing/price returns amount and duration without auth', async () => {
-    mockPrice.mockReturnValue(10_000);
-    mockDuration.mockReturnValue(365);
+    mockPrice.mockResolvedValue(10_000);
+    mockDuration.mockResolvedValue(365);
     const res = await request(createApp()).get('/billing/price');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
@@ -286,8 +286,8 @@ describe('billing routes', () => {
   });
 
   it('GET /billing/price reflects env helpers', async () => {
-    mockPrice.mockReturnValue(250_000);
-    mockDuration.mockReturnValue(30);
+    mockPrice.mockResolvedValue(250_000);
+    mockDuration.mockResolvedValue(30);
     const res = await request(createApp()).get('/billing/price');
     expect(res.status).toBe(200);
     expect(res.body.amountKopecks).toBe(250_000);
@@ -295,7 +295,7 @@ describe('billing routes', () => {
   });
 
   it('POST /billing/promo/validate returns discounted amounts for new80', async () => {
-    mockPrice.mockReturnValue(10_000);
+    mockPrice.mockResolvedValue(10_000);
     const res = await request(createApp())
       .post('/billing/promo/validate')
       .set('X-User-Token', 'jwt')
@@ -321,7 +321,7 @@ describe('billing routes', () => {
 
   it('POST /billing/subscribe with new50 stores discounted amount', async () => {
     mockIsTbankMock.mockReturnValue(true);
-    mockPrice.mockReturnValue(10_000);
+    mockPrice.mockResolvedValue(10_000);
     const res = await request(createApp())
       .post('/billing/subscribe')
       .set('X-User-Token', 'jwt')
@@ -335,7 +335,7 @@ describe('billing routes', () => {
 
   it('POST /billing/subscribe with bad promo does not create payment', async () => {
     mockIsTbankMock.mockReturnValue(true);
-    mockPrice.mockReturnValue(10_000);
+    mockPrice.mockResolvedValue(10_000);
     const before = paymentStore.size;
     const res = await request(createApp())
       .post('/billing/subscribe')
@@ -348,7 +348,7 @@ describe('billing routes', () => {
 
   it('POST /billing/subscribe with empty promoCode rejects INVALID_PROMO', async () => {
     mockIsTbankMock.mockReturnValue(true);
-    mockPrice.mockReturnValue(10_000);
+    mockPrice.mockResolvedValue(10_000);
     const before = paymentStore.size;
     const res = await request(createApp())
       .post('/billing/subscribe')
