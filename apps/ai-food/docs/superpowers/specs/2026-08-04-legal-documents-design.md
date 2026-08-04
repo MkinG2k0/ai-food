@@ -1,7 +1,7 @@
 # Legal documents (Условия / Приватность) + subscription price API
 
 **Date:** 2026-08-04  
-**Status:** Approved (conversation) — awaiting file review  
+**Status:** Approved  
 **Repos:** `ai-food` (UI + texts), `ai-app` (price endpoint)  
 **Approach:** In-app legal pages + public `GET /billing/price`
 
