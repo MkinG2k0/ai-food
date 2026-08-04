@@ -13,6 +13,7 @@ const mockActivate = vi.fn();
 const mockHasActive = vi.fn();
 const mockPublicFields = vi.fn();
 const mockPrice = vi.fn();
+const mockDuration = vi.fn();
 
 vi.mock('../lib/jwt.js', () => ({
   verifyUserToken: (...args: unknown[]) => mockVerifyUserToken(...args),
@@ -46,6 +47,7 @@ vi.mock('../lib/subscription.js', async () => {
     hasActiveSubscription: (...args: unknown[]) => mockHasActive(...args),
     subscriptionPublicFields: (...args: unknown[]) => mockPublicFields(...args),
     getSubscriptionPriceKopecks: (...args: unknown[]) => mockPrice(...args),
+    getSubscriptionDurationDays: (...args: unknown[]) => mockDuration(...args),
   };
 });
 
@@ -149,7 +151,8 @@ describe('billing routes', () => {
     mockIsDb.mockReturnValue(true);
     mockGetPrisma.mockReturnValue(mockPrisma());
     mockVerifyUserToken.mockResolvedValue({ sub: 'user-1', telegramId: '42' });
-    mockPrice.mockReturnValue(199000);
+    mockPrice.mockReturnValue(10_000);
+    mockDuration.mockReturnValue(365);
     mockIsTbankMock.mockReturnValue(false);
     mockIsTbankConfigured.mockReturnValue(true);
     mockPublicFields.mockReturnValue({
@@ -265,6 +268,27 @@ describe('billing routes', () => {
         Token: createHash('sha256').update('bad').digest('hex'),
       });
     expect(res.status).toBe(403);
+  });
+
+  it('GET /billing/price returns amount and duration without auth', async () => {
+    mockPrice.mockReturnValue(10_000);
+    mockDuration.mockReturnValue(365);
+    const res = await request(createApp()).get('/billing/price');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      amountKopecks: 10_000,
+      currency: 'RUB',
+      durationDays: 365,
+    });
+  });
+
+  it('GET /billing/price reflects env helpers', async () => {
+    mockPrice.mockReturnValue(250_000);
+    mockDuration.mockReturnValue(30);
+    const res = await request(createApp()).get('/billing/price');
+    expect(res.status).toBe(200);
+    expect(res.body.amountKopecks).toBe(250_000);
+    expect(res.body.durationDays).toBe(30);
   });
 
   it('GET /billing/status returns subscription snapshot', async () => {

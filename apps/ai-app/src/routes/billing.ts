@@ -5,6 +5,7 @@ import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import { verifyUserToken } from '../lib/jwt.js';
 import {
   activateYearLicense,
+  getSubscriptionDurationDays,
   getSubscriptionPriceKopecks,
   subscriptionPublicFields,
 } from '../lib/subscription.js';
@@ -67,6 +68,17 @@ function gatewayPublicBase(req: {
 }
 
 export const billingRouter = Router();
+
+billingRouter.get(
+  '/price',
+  asyncHandler(async (_req, res) => {
+    res.json({
+      amountKopecks: getSubscriptionPriceKopecks(),
+      currency: 'RUB',
+      durationDays: getSubscriptionDurationDays(),
+    });
+  }),
+);
 
 billingRouter.post(
   '/subscribe',
