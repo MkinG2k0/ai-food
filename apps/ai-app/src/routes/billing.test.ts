@@ -148,7 +148,7 @@ describe('billing routes', () => {
     paymentSeq = 0;
     mockIsDb.mockReturnValue(true);
     mockGetPrisma.mockReturnValue(mockPrisma());
-    mockVerifyUserToken.mockResolvedValue({ sub: 'user-1', phone: '+79991234567' });
+    mockVerifyUserToken.mockResolvedValue({ sub: 'user-1', telegramId: '42' });
     mockPrice.mockReturnValue(199000);
     mockIsTbankMock.mockReturnValue(false);
     mockIsTbankConfigured.mockReturnValue(true);

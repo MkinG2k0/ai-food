@@ -17,14 +17,14 @@ describe('user JWT', () => {
     else process.env.AUTH_SECRET = prev;
   });
 
-  it('round-trips sub and phone', async () => {
-    const token = await signUserToken({ sub: 'user_1', phone: '+79991234567' });
+  it('round-trips sub and telegramId', async () => {
+    const token = await signUserToken({ sub: 'user_1', telegramId: '42' });
     const payload = await verifyUserToken(token);
-    expect(payload).toEqual({ sub: 'user_1', phone: '+79991234567' });
+    expect(payload).toEqual({ sub: 'user_1', telegramId: '42' });
   });
 
   it('does not set exp claim', async () => {
-    const token = await signUserToken({ sub: 'user_1', phone: '+79991234567' });
+    const token = await signUserToken({ sub: 'user_1', telegramId: '42' });
     const decoded = decodeJwt(token);
     expect(decoded.exp).toBeUndefined();
   });

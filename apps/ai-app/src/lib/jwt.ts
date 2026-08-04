@@ -3,7 +3,7 @@ import { ApiError } from '../../lib/errors.js';
 
 export type UserTokenPayload = {
   sub: string;
-  phone: string;
+  telegramId: string;
 };
 
 function getSecretKey(): Uint8Array {
@@ -19,7 +19,7 @@ function getSecretKey(): Uint8Array {
 }
 
 export async function signUserToken(payload: UserTokenPayload): Promise<string> {
-  return new SignJWT({ phone: payload.phone })
+  return new SignJWT({ telegramId: payload.telegramId })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(payload.sub)
     .setIssuedAt()
@@ -30,11 +30,11 @@ export async function verifyUserToken(token: string): Promise<UserTokenPayload> 
   try {
     const { payload } = await jwtVerify(token, getSecretKey());
     const sub = payload.sub;
-    const phone = payload.phone;
-    if (!sub || typeof phone !== 'string') {
+    const telegramId = payload.telegramId;
+    if (!sub || typeof telegramId !== 'string') {
       throw new Error('invalid claims');
     }
-    return { sub, phone };
+    return { sub, telegramId };
   } catch (err) {
     if (err instanceof ApiError) throw err;
     throw new ApiError(401, 'INVALID_USER_TOKEN', 'Invalid or expired user token.');

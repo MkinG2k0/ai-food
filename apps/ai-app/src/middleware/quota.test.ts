@@ -83,7 +83,7 @@ describe('enforceChatQuota', () => {
   });
 
   it('skips guest quota when auth user has active subscription', async () => {
-    mockVerifyUserToken.mockResolvedValue({ sub: 'u1', phone: '+79991234567' });
+    mockVerifyUserToken.mockResolvedValue({ sub: 'u1', telegramId: '42' });
     mockFindUnique.mockResolvedValue({
       id: 'u1',
       subscriptionStatus: 'active',
@@ -107,7 +107,7 @@ describe('enforceChatQuota', () => {
   });
 
   it('applies guest device quota when auth user has no subscription', async () => {
-    mockVerifyUserToken.mockResolvedValue({ sub: 'u1', phone: '+79991234567' });
+    mockVerifyUserToken.mockResolvedValue({ sub: 'u1', telegramId: '42' });
     mockFindUnique.mockResolvedValue({
       id: 'u1',
       subscriptionStatus: 'none',
