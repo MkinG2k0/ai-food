@@ -1,0 +1,5 @@
+import { proxyGatewayAdmin } from '@/lib/gatewayAdmin';
+
+export async function GET() {
+  return proxyGatewayAdmin('stats');
+}
