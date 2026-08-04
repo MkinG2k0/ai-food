@@ -52,7 +52,9 @@ export function TelegramLoginButton({ onSuccess, onError }: TelegramLoginButtonP
     script.setAttribute('data-size', 'large');
     script.setAttribute('data-radius', '8');
     script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    script.setAttribute('data-request-access', 'write');
+    // Do not request `write`: after user revokes site access in Telegram,
+    // write permission is also revoked and re-login often hangs waiting for
+    // a confirmation that never arrives. Profile login alone is enough for JWT.
     el.appendChild(script);
 
     return () => {
