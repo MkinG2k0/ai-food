@@ -1,0 +1,16 @@
+# Nixpacks (Dokploy) — Build Path `/`, then set Publish Directory to
+# `./apps/ai-food/dist` and enable Static SPA (or use Dockerfile).
+#
+# Env (build-time, baked into Vite):
+#   VITE_AI_GATEWAY_URL, VITE_AI_GATEWAY_API_KEY, VITE_APP_URL, …
+#
+# Prefer Dockerfile: apps/ai-food/Dockerfile (context `.`, port 80).
+
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["pnpm exec turbo run build --filter=ai-food"]

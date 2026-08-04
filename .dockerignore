@@ -1,0 +1,29 @@
+# Monorepo Docker context = repo root
+.git
+.github
+.cursor
+.turbo
+.turboignore
+**/.turbo
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+
+# Mobile / IDE / planning noise
+apps/ai-food/android
+apps/ai-food/.idea
+apps/ai-food/.planning
+apps/ai-food/.claude
+apps/ai-food/.superpowers
+apps/ai-app/.agents
+apps/ai-app/.claude
+apps/ai-app/.planning
+apps/ai-app/.superpowers
+apps/ai-app/.windsurf
+**/.DS_Store
+**/*.log
+**/README.md
+docs

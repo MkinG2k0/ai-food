@@ -80,6 +80,14 @@
     },
     "type-check": {
       "dependsOn": ["^build"]
+    },
+    "start": {
+      "cache": false,
+      "persistent": true
+    },
+    "start:prod": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

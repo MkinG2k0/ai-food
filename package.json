@@ -6,6 +6,11 @@
     "dev:food": "turbo run dev --filter=ai-food",
     "dev:app": "turbo run dev --filter=openrouter-gateway",
     "build": "turbo run build",
+    "build:food": "turbo run build --filter=ai-food",
+    "build:app": "turbo run build --filter=openrouter-gateway",
+    "start": "turbo run start",
+    "start:app": "turbo run start --filter=openrouter-gateway",
+    "start:prod:app": "pnpm --filter openrouter-gateway run start:prod",
     "test": "turbo run test",
     "type-check": "turbo run type-check",
     "lint": "turbo run type-check"

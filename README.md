@@ -31,6 +31,15 @@ pnpm test
 pnpm type-check
 ```
 
+## Dokploy
+
+Два Application из одного репо — см. [docs/DOKPLOY.md](./docs/DOKPLOY.md).
+
+| App | Dockerfile | Port |
+|-----|------------|------|
+| Gateway | `apps/ai-app/Dockerfile` (context `.`) | 3000 |
+| Frontend | `apps/ai-food/Dockerfile` (context `.`) | 80 |
+
 ## Git
 
 Один репозиторий — **ai-food** (`origin` → `https://github.com/MkinG2k0/ai-food.git`). Корень monorepo = корень этого git. История `ai-app` как отдельный remote не сохранена: код лежит в `apps/ai-app/`.
