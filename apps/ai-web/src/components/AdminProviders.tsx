@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { App, ConfigProvider } from 'antd';
+import { App, ConfigProvider, theme } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -21,7 +21,7 @@ export function AdminProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider locale={ruRU}>
+      <ConfigProvider locale={ruRU} theme={{ algorithm: theme.darkAlgorithm }}>
         <App>{children}</App>
       </ConfigProvider>
     </QueryClientProvider>

@@ -9,7 +9,8 @@ body {
 
 body {
   margin: 0;
-  background: #f5f5f5;
+  background: #141414;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 main {
@@ -17,6 +18,7 @@ main {
   min-height: 100vh;
   place-items: center;
   padding: 24px;
+  background: #141414;
 }
 
 .landing {
@@ -30,7 +32,7 @@ main {
 
 .landing p {
   margin: 8px 0 0;
-  color: #8c8c8c;
+  color: rgba(255, 255, 255, 0.45);
   font-size: 18px;
 }
 
@@ -40,11 +42,24 @@ main {
 
 .admin-logo {
   height: 64px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   color: #fff;
-  font-size: 20px;
+  line-height: 1.2;
+}
+
+.admin-logo-title {
+  font-size: 18px;
   font-weight: 700;
+}
+
+.admin-logo-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .admin-header {
@@ -52,12 +67,25 @@ main {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  background: #fff;
-  box-shadow: 0 1px 0 rgba(5, 5, 5, 0.08);
+  background: #141414 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 .admin-content {
   padding: 24px;
+  background: #141414;
+  min-height: calc(100vh - 64px);
+}
+
+.admin-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-section-title {
+  margin: 0 0 12px !important;
 }
 
 @media (max-width: 575px) {
