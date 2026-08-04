@@ -57,7 +57,7 @@ function resolveSubscribeAmount(promoCodeRaw: unknown): {
   promoCode: string | null;
 } {
   const originalAmount = getSubscriptionPriceKopecks();
-  if (promoCodeRaw == null || promoCodeRaw === '') {
+  if (promoCodeRaw == null) {
     return { amount: originalAmount, originalAmount, promoCode: null };
   }
   if (typeof promoCodeRaw !== 'string') {

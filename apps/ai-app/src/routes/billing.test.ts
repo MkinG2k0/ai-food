@@ -346,6 +346,19 @@ describe('billing routes', () => {
     expect(paymentStore.size).toBe(before);
   });
 
+  it('POST /billing/subscribe with empty promoCode rejects INVALID_PROMO', async () => {
+    mockIsTbankMock.mockReturnValue(true);
+    mockPrice.mockReturnValue(10_000);
+    const before = paymentStore.size;
+    const res = await request(createApp())
+      .post('/billing/subscribe')
+      .set('X-User-Token', 'jwt')
+      .send({ promoCode: '' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_PROMO');
+    expect(paymentStore.size).toBe(before);
+  });
+
   it('GET /billing/status returns subscription snapshot', async () => {
     mockPublicFields.mockReturnValue({
       subscriptionStatus: 'active',

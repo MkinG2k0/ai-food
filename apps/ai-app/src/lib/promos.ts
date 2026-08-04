@@ -10,10 +10,10 @@ export type ResolvedPromo = {
   finalAmount: number;
 };
 
-const PROMOS: Record<string, PromoDefinition> = {
-  new80: { code: 'new80', discountPercent: 80 },
-  new50: { code: 'new50', discountPercent: 50 },
-};
+const PROMOS = new Map<string, PromoDefinition>([
+  ['new80', { code: 'new80', discountPercent: 80 }],
+  ['new50', { code: 'new50', discountPercent: 50 }],
+]);
 
 export function normalizePromoCode(raw: string): string {
   return raw.trim().toLowerCase();
@@ -22,7 +22,7 @@ export function normalizePromoCode(raw: string): string {
 export function lookupPromo(raw: string): PromoDefinition | null {
   const key = normalizePromoCode(raw);
   if (!key) return null;
-  return PROMOS[key] ?? null;
+  return PROMOS.get(key) ?? null;
 }
 
 /** finalAmount in kopecks; never below 1. */

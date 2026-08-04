@@ -22,6 +22,11 @@ describe('promos', () => {
     expect(lookupPromo('   ')).toBeNull();
   });
 
+  it('lookupPromo returns null for prototype pollution keys', () => {
+    expect(lookupPromo('__proto__')).toBeNull();
+    expect(lookupPromo('constructor')).toBeNull();
+  });
+
   it('applyPromoDiscount floors and clamps to min 1', () => {
     expect(applyPromoDiscount(10_000, 80)).toBe(2_000);
     expect(applyPromoDiscount(10_000, 50)).toBe(5_000);
@@ -40,5 +45,6 @@ describe('promos', () => {
 
   it('resolvePromo returns null for invalid', () => {
     expect(resolvePromo('x', 10_000)).toBeNull();
+    expect(resolvePromo('__proto__', 10_000)).toBeNull();
   });
 });
