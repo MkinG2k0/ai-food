@@ -12,7 +12,6 @@ import { ManualEntryPage } from '@/pages/manual-entry';
 import { BarcodePage } from '@/pages/barcode';
 import { LoginPage } from '@/pages/login';
 import { SubscribePage } from '@/pages/subscribe';
-import { TermsPage, PrivacyPage } from '@/pages/legal';
 import { ModelTestPage } from '@/pages/model-test';
 import { AppShell } from './AppShell';
 import { ProfileGuard } from './ProfileGuard';
@@ -29,8 +28,6 @@ const router = createBrowserRouter([
       { path: '/subscribe', element: <SubscribePage /> },
       { path: '/subscribe/success', element: <SubscribePage /> },
       { path: '/subscribe/fail', element: <SubscribePage /> },
-      { path: '/legal/terms', element: <TermsPage /> },
-      { path: '/legal/privacy', element: <PrivacyPage /> },
       { path: '/', element: <ProfileGuard><HomePage /></ProfileGuard> },
       { path: '/diary', element: <ProfileGuard><DiaryPage /></ProfileGuard> },
       { path: '/stats', element: <ProfileGuard><StatsPage /></ProfileGuard> },
