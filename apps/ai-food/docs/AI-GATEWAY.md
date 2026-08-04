@@ -45,10 +45,15 @@ ai-app (openrouter-gateway)
 | — | `OPENROUTER_API_KEY` | Ключ провайдера (только на сервере) |
 | — | `PORT` | HTTP-порт (по умолчанию **3000**) |
 | — | `OPENROUTER_HTTP_REFERER` / `OPENROUTER_APP_TITLE` | Опциональные заголовки атрибуции OpenRouter |
-| — | `DATABASE_URL`, `AUTH_SECRET`, `TELEGRAM_BOT_TOKEN` | Auth + квота |
+| — | `DATABASE_URL`, `AUTH_SECRET` | Auth + квота |
+| — | `TELEGRAM_BOT_TOKEN` (или `AUTH_TELEGRAM_BOT_TOKEN`), `TELEGRAM_BOT_USERNAME` | Bot deep-link login |
+| — | `TELEGRAM_WEBHOOK_SECRET`, `PUBLIC_GATEWAY_URL` | Webhook `POST /telegram/webhook` + `setWebhook` при старте |
 | — | `FREE_GENERATION_LIMIT` | Guest AI budget (default 50) |
 | — | `AUTH_LOGIN_GENERATION_BONUS` | Extra AI after Telegram login (default 100; summed with free → 150) |
+| `VITE_TELEGRAM_BOT_USERNAME` (опц.) | — | Подпись кнопки «Войти через Telegram» на фронте |
 | — | `SUBSCRIPTION_*`, `TBANK_*`, `PUBLIC_APP_URL` | Годовая лицензия (см. [SUBSCRIPTION.md](./SUBSCRIPTION.md)) |
+
+`PUBLIC_GATEWAY_URL` — публичный origin **gateway** (webhook). `PUBLIC_APP_URL` — origin **фронта** (T-Bank redirects).
 
 Локально из корня monorepo: `pnpm dev` (оба), или `pnpm dev:food` (:5173) + `pnpm dev:app` (:3000). Turbo **не** подгружает `.env` — это делают Vite и `tsx --env-file=.env`.
 
@@ -59,7 +64,9 @@ ai-app (openrouter-gateway)
 | Метод | Путь | Auth | Заметки |
 |-------|------|------|---------|
 | `GET` | `/health` | нет | `{ "status": "ok" }` |
-| `POST` | `/auth/telegram` | нет* | Telegram Login → JWT; ответ включает `hasActiveSubscription` |
+| `POST` | `/auth/telegram/start` | нет* | `{ challengeId, botDeepLink, expiresAt }` — старт bot deep-link login |
+| `GET` | `/auth/telegram/status?challengeId=` | нет* | `{ status: "pending" \| "expired" }` или `{ status: "ok", token, user }` |
+| `POST` | `/telegram/webhook` | `X-Telegram-Bot-Api-Secret-Token` | Telegram Bot API updates; подтверждение challenge |
 | `GET` | `/auth/me` | `X-User-Token` | Профиль + `subscriptionExpiresAt` / `hasActiveSubscription` |
 | `GET` | `/usage` | device (+ optional JWT) | Квота: unlimited **только** при active лицензии |
 | `POST` | `/billing/subscribe` | `X-User-Token` | T-Bank Init / mock |
@@ -83,7 +90,7 @@ ai-app (openrouter-gateway)
 | `src/features/analyze-food/api/refineMealApi.ts` | Уточнение результата |
 | `src/features/analyze-food/api/fetchMealCustomContentApi.ts` | Доп. markdown-контент по блюду |
 | `src/features/onboarding/api/micronutrientTargetsApi.ts` | Цели по микронутриентам |
-| `src/features/auth/*` | Telegram login, `/usage` |
+| `src/features/auth/*` | Bot deep-link login (`/auth/telegram/start` + poll), `/usage` |
 | `src/features/billing/*` | Subscribe / status / sync |
 
 Ошибки gateway (`RATE_LIMITED`, `UPSTREAM_TIMEOUT`, `QUOTA_EXCEEDED`, …) мапятся в клиентские `ApiError`. При `402` UI ведёт гостя на `/login`, авторизованного — на `/subscribe`.

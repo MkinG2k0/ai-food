@@ -33,8 +33,10 @@ OPENROUTER_API_KEY=
 API_KEY=
 DATABASE_URL=
 AUTH_SECRET=
-FLASHCALL_API_KEY=
 TELEGRAM_BOT_TOKEN=
+TELEGRAM_BOT_USERNAME=
+TELEGRAM_WEBHOOK_SECRET=
+PUBLIC_GATEWAY_URL=https://<gateway-domain>
 FREE_GENERATION_LIMIT=50
 AUTH_LOGIN_GENERATION_BONUS=100
 PUBLIC_APP_URL=https://<frontend-domain>
@@ -45,6 +47,9 @@ TBANK_PASSWORD=
 TBANK_API_URL=https://securepay.tinkoff.ru
 # TBANK_MOCK=true
 ```
+
+`PUBLIC_GATEWAY_URL` — публичный origin gateway (для `setWebhook` → `/telegram/webhook`).  
+`PUBLIC_APP_URL` — публичный URL **фронта** (Success/Fail/Notification T-Bank).
 
 `start:prod` = `prisma migrate deploy` + сервер. Postgres должен быть доступен к моменту старта (Dokploy Postgres / внешний URL).
 
@@ -84,6 +89,7 @@ VITE_AUTH_MOCK=false
 2. В env фронта укажи `VITE_AI_GATEWAY_URL` на этот URL (без `/v1`).
 3. `VITE_AI_GATEWAY_API_KEY` = `API_KEY` gateway.
 4. На gateway `PUBLIC_APP_URL` = публичный URL фронта (редиректы T-Bank).
+5. На gateway `PUBLIC_GATEWAY_URL` = публичный URL gateway (Telegram webhook). Задай `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET` — при старте gateway вызовет `setWebhook`.
 
 ## Nixpacks (альтернатива)
 
