@@ -6,6 +6,7 @@ import { hasActiveSubscription } from '../lib/subscription.js';
 import {
   assertGuestQuotaOrThrow,
   ensureDevice,
+  isBillableUsageKind,
   parseUsageKind,
   recordBillableUsage,
   shouldEnforceQuota,
@@ -115,7 +116,7 @@ export async function finalizeQuotaUsage(req: {
 }): Promise<void> {
   const q = req.quota;
   if (!q?.shouldRecord || !q.deviceRowId) return;
-  if (q.usageKind !== 'analyze' && q.usageKind !== 'refine') return;
+  if (!isBillableUsageKind(q.usageKind)) return;
   const prisma = getPrisma();
   if (!prisma) return;
   await recordBillableUsage(prisma, {

@@ -1,13 +1,38 @@
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { ApiError } from '../../lib/errors.js';
 
-export const BILLABLE_KINDS = new Set(['analyze', 'refine']);
+export type BillableUsageKind =
+  | 'analyze'
+  | 'analyze_photo'
+  | 'analyze_text'
+  | 'analyze_photo_text'
+  | 'refine';
 
-export type UsageKind = 'analyze' | 'refine' | 'other';
+export type UsageKind = BillableUsageKind | 'other';
+
+const BILLABLE_SET = new Set<string>([
+  'analyze',
+  'analyze_photo',
+  'analyze_text',
+  'analyze_photo_text',
+  'refine',
+]);
+
+export function isBillableUsageKind(kind: string): kind is BillableUsageKind {
+  return BILLABLE_SET.has(kind);
+}
 
 export function parseUsageKind(raw: string | undefined): UsageKind {
-  if (raw === 'analyze' || raw === 'refine') return raw;
+  const v = raw?.trim();
+  if (!v) return 'analyze';
+  if (isBillableUsageKind(v)) return v;
   return 'other';
+}
+
+export function billableUsageWhere() {
+  return {
+    OR: [{ kind: 'refine' as const }, { kind: { startsWith: 'analyze' } }],
+  };
 }
 
 export function getFreeLimit(): number {
@@ -52,7 +77,7 @@ export async function countGuestBillableUsage(
   return prisma.usageEvent.count({
     where: {
       deviceId: deviceRowId,
-      kind: { in: ['analyze', 'refine'] },
+      ...billableUsageWhere(),
     },
   });
 }
@@ -130,7 +155,7 @@ export async function recordBillableUsage(
   prisma: PrismaClient,
   opts: {
     deviceRowId: string;
-    kind: 'analyze' | 'refine';
+    kind: BillableUsageKind;
     userId?: string | null;
   },
 ): Promise<void> {

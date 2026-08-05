@@ -4,6 +4,7 @@ import {
   getEffectiveLimit,
   getFreeLimit,
   getUsageSnapshot,
+  isBillableUsageKind,
   parseUsageKind,
   shouldEnforceQuota,
 } from './quota.js';
@@ -25,11 +26,21 @@ describe('quota helpers', () => {
     else process.env.QUOTA_ENFORCE = prevEnforce;
   });
 
-  it('parseUsageKind defaults to other', () => {
-    expect(parseUsageKind(undefined)).toBe('other');
-    expect(parseUsageKind('analyze')).toBe('analyze');
+  it('parseUsageKind: empty → analyze; typed; unknown → other', () => {
+    expect(parseUsageKind(undefined)).toBe('analyze');
+    expect(parseUsageKind('')).toBe('analyze');
+    expect(parseUsageKind('analyze_photo')).toBe('analyze_photo');
+    expect(parseUsageKind('analyze_text')).toBe('analyze_text');
+    expect(parseUsageKind('analyze_photo_text')).toBe('analyze_photo_text');
     expect(parseUsageKind('refine')).toBe('refine');
+    expect(parseUsageKind('analyze')).toBe('analyze');
+    expect(parseUsageKind('manual')).toBe('other');
     expect(parseUsageKind('nope')).toBe('other');
+  });
+
+  it('isBillableUsageKind treats analyze* and refine', () => {
+    expect(isBillableUsageKind('analyze_photo')).toBe(true);
+    expect(isBillableUsageKind('manual')).toBe(false);
   });
 
   it('getFreeLimit defaults to 50', () => {
