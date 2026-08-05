@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
-import { DM_Sans, Fraunces } from 'next/font/google';
+import { Lora, Manrope } from 'next/font/google';
 
 import './globals.css';
 
-const fraunces = Fraunces({
-  subsets: ['latin', 'latin-ext'],
+const lora = Lora({
+  subsets: ['cyrillic', 'latin', 'latin-ext'],
   variable: '--font-lp-display',
   display: 'swap',
 });
 
-const dmSans = DM_Sans({
-  subsets: ['latin', 'latin-ext'],
+const manrope = Manrope({
+  subsets: ['cyrillic', 'latin', 'latin-ext'],
   variable: '--font-lp-sans',
   display: 'swap',
 });
@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={`${fraunces.variable} ${dmSans.variable}`}>
+    <html lang="ru" className={`${lora.variable} ${manrope.variable}`}>
       <body>
         <AntdRegistry>{children}</AntdRegistry>
       </body>

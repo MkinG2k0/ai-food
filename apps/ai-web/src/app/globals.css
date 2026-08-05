@@ -682,6 +682,17 @@ body {
   font-weight: 600;
 }
 
+.lp-faq__item summary::after {
+  content: '▸';
+  margin-left: auto;
+  color: var(--lp-sage);
+  transition: transform 0.2s ease;
+}
+
+.lp-faq__item[open] summary::after {
+  transform: rotate(90deg);
+}
+
 .lp-faq__item summary::-webkit-details-marker {
   display: none;
 }
