@@ -4,8 +4,16 @@ import { LegalDocumentLayout } from '@/components/LegalDocumentLayout';
 import { buildRefundsSections } from '@/lib/legal/refundsContent';
 
 export const metadata: Metadata = {
-  title: 'Политика возврата — AI Food',
-  description: 'Политика возврата AI Food',
+  title: 'Политика возврата',
+  description:
+    'Условия возврата оплаты за годовую лицензию AI Food и порядок обращения.',
+  alternates: {
+    canonical: '/refunds',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RefundsPage() {

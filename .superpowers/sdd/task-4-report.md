@@ -1,40 +1,33 @@
-# Task 4 Report: HowItWorks, Features, Compare
+# Task 4 Report: Sidebar nav entry «Платежи»
 
-**Status:** DONE  
-**Branch:** feat/ai-food-landing  
-**Commit:** `f59b0d1` — feat(ai-web): add how-it-works, features, and compare sections
+## Status
+**COMPLETE**
+
+## Commits
+- `32ec891` — `feat(ai-web): add Платежи nav item to admin shell`
 
 ## Changes
 
-### Created
-- `apps/ai-web/src/components/landing/LandingHowItWorks.tsx` — 3-step ordered list with numbered labels
-- `apps/ai-web/src/components/landing/LandingFeatures.tsx` — feature grid + decorative mock card
-- `apps/ai-web/src/components/landing/LandingCompare.tsx` — two-column comparison (manual vs product)
+### `apps/ai-web/src/components/AdminShell.tsx`
+- Added `WalletOutlined` import from `@ant-design/icons`
+- Inserted menu item `{ key: '/admin/payments', label: 'Платежи' }` between «Цены» and «Подписки»
+- Added `'/admin/payments': 'Платежи'` to `pageTitles`
 
-### Modified
-- `apps/ai-web/src/app/globals.css` — appended `.lp-steps*`, `.lp-features*`, `.lp-mock*`, `.lp-compare*` + responsive breakpoints
+## Type-check Results
+```
+pnpm --filter ai-web type-check
+✓ PASS (tsc --noEmit, exit 0)
+```
 
-## Verification
+## Self-Review
 
-| Check | Result |
-|-------|--------|
-| `pnpm --filter ai-web type-check` | PASS (exit 0) |
-| Brief TSX verbatim | OK |
-| Brief CSS appended | OK |
-| No barrel / page.tsx wiring | OK (Task 6) |
-| No Ant Design | OK |
+### Correctness
+- Menu order and keys match brief
+- `CreditCardOutlined` retained for «Подписки»
+- Existing `selectedKey` logic handles `/admin/payments` via `pathname.startsWith`
 
-## Self-review
+### Scope
+- AdminShell menu/titles only — no payments page route (Task 5)
 
-- **LandingHowItWorks:** Title split on `\n`; step numbers zero-padded; `id="how"` from content.
-- **LandingFeatures:** 6 items from content; mock card hardcoded (decorative, `aria-hidden`); muted section background.
-- **LandingCompare:** No `id` in content — section has no anchor (consistent with brief); accent column uses `--lp-ink`.
-- **CSS:** Responsive at 800px (steps), 900px (features), 700px (compare).
-- **No concerns** blocking downstream tasks.
-
-## Files touched
-
-- `apps/ai-web/src/components/landing/LandingHowItWorks.tsx`
-- `apps/ai-web/src/components/landing/LandingFeatures.tsx`
-- `apps/ai-web/src/components/landing/LandingCompare.tsx`
-- `apps/ai-web/src/app/globals.css`
+### Concerns
+None blocking. Clicking «Платежи» will 404 until Task 5 adds the page.

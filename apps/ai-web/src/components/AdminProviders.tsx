@@ -22,7 +22,7 @@ export function AdminProviders({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ConfigProvider locale={ruRU} theme={{ algorithm: theme.darkAlgorithm }}>
-        <App>{children}</App>
+        <App className="admin-app">{children}</App>
       </ConfigProvider>
     </QueryClientProvider>
   );

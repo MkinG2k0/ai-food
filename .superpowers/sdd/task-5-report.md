@@ -1,45 +1,56 @@
-# Task 5 Report: Pricing, FAQ, Final CTA, Footer
+# Task 5 Report: Payments page UI
 
-**Status:** DONE  
-**Branch:** feat/ai-food-landing  
-**Commit:** `21962aa` — feat(ai-web): add pricing, FAQ, final CTA, and footer
+## Status
+**COMPLETE**
+
+## Commits
+- `c4e0dc4` — `feat(ai-web): add admin payments list and delete page`
 
 ## Changes
 
-### Created
-- `apps/ai-web/src/components/landing/LandingPricing.tsx` — free/paid cards, CtaButtons, muted section
-- `apps/ai-web/src/components/landing/LandingFaq.tsx` — native `<details>` accordion with numbered summaries
-- `apps/ai-web/src/components/landing/LandingFinalCta.tsx` — gradient CTA block with light-variant buttons
-- `apps/ai-web/src/components/landing/LandingFooter.tsx` — legal links, seller block, copyright
+### `apps/ai-web/src/app/admin/payments/page.tsx`
+- Client page at `/admin/payments` with payments table (createdAt, amount, status, user, paidAt)
+- `useQuery` → `GET payments`; `useMutation` → `DELETE payments/:id`
+- Status-aware Popconfirm (confirmed → revoke subscription warning)
+- Invalidates `admin/payments`, `admin/stats`, `admin/users` on delete success
+- RUB formatting from kopecks; ru-RU date/user formatting
 
-### Modified
-- `apps/ai-web/src/app/globals.css` — appended `.lp-pricing*`, `.lp-faq*`, `.lp-final*`, `.lp-footer*` + responsive breakpoint
+## Type-check Results
+```
+pnpm --filter ai-web type-check
+✓ PASS (tsc --noEmit, exit 0)
+```
 
-## Verification
+## Manual Smoke
+**Skipped** — gateway + ai-web servers not running in this session.
 
-| Check | Result |
-|-------|--------|
-| `pnpm --filter ai-web type-check` | PASS (exit 0) |
-| Brief TSX verbatim | OK |
-| Brief CSS appended | OK |
-| No ₽ prices in content | OK (price deferred to app) |
-| FAQ uses native `<details>` | OK |
-| Reuses CtaButtons + legalConfig | OK |
-| No barrel / page.tsx wiring | OK (Task 6) |
-| No Ant Design | OK |
+## Self-Review
 
-## Self-review
+### Correctness
+- Types and status enum aligned with gateway/Prisma (`pending|confirmed|rejected|refunded`)
+- Delete flow matches Task 2 contract (`revokedSubscription` toast branch)
+- Error Alert + table empty locale on fetch failure
 
-- **LandingPricing:** Two-column grid; accent card uses `--lp-ink`; `id="pricing"` from content.
-- **LandingFaq:** 8 items; zero-padded index; `summary` marker hidden via CSS.
-- **LandingFinalCta:** Centered layout; `CtaButtons variant="light"`.
-- **LandingFooter:** Next.js `Link` for legal routes; external Telegram support link; `formatSellerBlock()` for seller info.
-- **No concerns** blocking downstream Task 6 wiring.
+### Scope
+- Single file per brief; no gateway/BFF/nav changes
 
-## Files touched
+### Concerns
+None blocking. Manual smoke recommended when servers are up.
 
-- `apps/ai-web/src/components/landing/LandingPricing.tsx`
-- `apps/ai-web/src/components/landing/LandingFaq.tsx`
-- `apps/ai-web/src/components/landing/LandingFinalCta.tsx`
-- `apps/ai-web/src/components/landing/LandingFooter.tsx`
-- `apps/ai-web/src/app/globals.css`
+## Review Fix (Important)
+
+**Finding:** `statusLabel` showed English enum values in the payments table.
+
+**Fix:** Localized `statusLabel` map in `apps/ai-web/src/app/admin/payments/page.tsx`:
+- `pending` → Ожидает
+- `confirmed` → Подтверждён
+- `rejected` → Отклонён
+- `refunded` → Возвращён
+
+**Commit:** `50012fb` — `fix(ai-web): localize payment status labels`
+
+**Type-check:**
+```
+pnpm --filter ai-web type-check
+✓ PASS (tsc --noEmit, exit 0)
+```

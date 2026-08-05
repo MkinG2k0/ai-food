@@ -4,6 +4,7 @@
 
 html,
 body {
+  height: 100%;
   min-height: 100%;
 }
 
@@ -110,13 +111,34 @@ body {
 .admin-auth {
   display: grid;
   min-height: 100vh;
+  min-height: 100dvh;
   place-items: center;
   padding: 24px;
   background: #141414;
 }
 
-.admin-layout {
-  min-height: 100vh;
+.admin-app {
+  min-height: 100%;
+  min-height: 100dvh;
+  background: #141414;
+}
+
+/* Higher specificity than Ant Design's `.ant-layout { min-height: 0 }` */
+.admin-layout.ant-layout {
+  min-height: 100%;
+  min-height: 100dvh;
+  background: #141414;
+}
+
+.admin-layout > .ant-layout {
+  min-height: 100%;
+  min-height: 100dvh;
+  background: #141414;
+}
+
+.admin-layout .ant-layout-sider {
+  min-height: 100%;
+  min-height: 100dvh;
 }
 
 .admin-logo {
@@ -152,9 +174,10 @@ body {
 }
 
 .admin-content {
+  flex: 1;
   padding: 24px;
   background: #141414;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100dvh - 64px);
 }
 
 .admin-page {

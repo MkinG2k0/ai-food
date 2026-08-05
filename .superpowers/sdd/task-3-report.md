@@ -1,40 +1,35 @@
-# Task 3 Report: CTA, Nav, Hero
+# Task 3 Report: BFF proxy routes for payments
 
-**Status:** DONE  
-**Branch:** feat/ai-food-landing  
-**Commit:** `e07edcd` — feat(ai-web): add landing nav, hero, and CTA buttons
+## Status
+**COMPLETE**
+
+## Commits
+- `109305d` — `feat(ai-web): proxy admin payments list and delete`
 
 ## Changes
 
-### Created
-- `apps/ai-web/src/components/landing/CtaButtons.tsx` — primary/secondary CTAs with `dark`/`light` variants
-- `apps/ai-web/src/components/landing/LandingNav.tsx` — sticky nav, anchor links, lime CTA
-- `apps/ai-web/src/components/landing/LandingHero.tsx` — hero section with glow, headline split, light CTA row
+### `apps/ai-web/src/app/api/admin/gateway/payments/route.ts`
+- `GET` → `proxyGatewayAdmin('payments')` — list payments via gateway
 
-### Modified
-- `apps/ai-web/src/app/globals.css` — appended `.lp-nav*`, `.lp-hero*`, hero entrance animation + reduced-motion guard
+### `apps/ai-web/src/app/api/admin/gateway/payments/[id]/route.ts`
+- `DELETE` → `proxyGatewayAdmin('payments/:id', { method: 'DELETE' })` — delete payment via gateway
 
-## Verification
+## Type-check Results
+```
+pnpm --filter ai-web type-check
+✓ PASS (tsc --noEmit, exit 0)
+```
 
-| Check | Result |
-|-------|--------|
-| `pnpm --filter ai-web type-check` | PASS (exit 0) |
-| Brief TSX verbatim | OK |
-| Brief CSS appended | OK |
-| No barrel / page.tsx wiring | OK (Task 6) |
-| No Ant Design | OK |
+## Self-Review
 
-## Self-review
+### Correctness
+- Mirrors existing patterns (`pricing`, `users/[id]/subscription`)
+- Uses `encodeURIComponent(id)` for path segment safety
+- Async `params` pattern matches Next.js App Router conventions in repo
 
-- **CtaButtons:** Uses `landingConfig` URLs and `landingContent.hero` labels; variant classes match Task 2 button tokens.
-- **LandingNav:** Nav items from config; mobile hides links at 720px; external links have `rel="noopener noreferrer"`.
-- **LandingHero:** Headline split on `\n`; `id="top"` for nav anchor; `CtaButtons variant="light"` on dark gradient.
-- **CSS:** Hero animation delays skip glow (child 1); `--lp-*` vars require `.lp-page` wrapper — expected until Task 6.
-- **No concerns** blocking downstream tasks.
+### Scope
+- BFF proxies only — no nav or payments page UI (as required)
+- Minimal diff: two route files, 17 lines total
 
-## Files touched
-
-- `apps/ai-web/src/components/landing/CtaButtons.tsx`
-- `apps/ai-web/src/components/landing/LandingNav.tsx`
-- `apps/ai-web/src/components/landing/LandingHero.tsx`
-- `apps/ai-web/src/app/globals.css`
+### Concerns
+None blocking. Implementation matches brief verbatim.

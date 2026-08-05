@@ -4,8 +4,16 @@ import { LegalDocumentLayout } from '@/components/LegalDocumentLayout';
 import { buildTermsSections } from '@/lib/legal/termsContent';
 
 export const metadata: Metadata = {
-  title: 'Условия использования — AI Food',
-  description: 'Условия использования приложения AI Food',
+  title: 'Условия использования',
+  description:
+    'Условия использования сервиса AI Food: правила доступа, лицензии и ограничения.',
+  alternates: {
+    canonical: '/terms',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function TermsPage() {

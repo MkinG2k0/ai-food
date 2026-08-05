@@ -1,311 +1,277 @@
-### Task 5: Pricing, FAQ, Final CTA, Footer
+﻿### Task 5: Payments page UI
 
 **Files:**
-- Create: `apps/ai-web/src/components/landing/LandingPricing.tsx`
-- Create: `apps/ai-web/src/components/landing/LandingFaq.tsx`
-- Create: `apps/ai-web/src/components/landing/LandingFinalCta.tsx`
-- Create: `apps/ai-web/src/components/landing/LandingFooter.tsx`
-- Modify: `apps/ai-web/src/app/globals.css`
+- Create: `apps/ai-web/src/app/admin/payments/page.tsx`
 
 **Interfaces:**
-- Consumes: `landingContent`, `landingConfig`, `legalConfig`, `formatSellerBlock`
-- Produces: remaining section components
+- Consumes: `adminApi<T>(path, init?)`, gateway shapes from Tasks 1вЂ“2
+- Produces: `/admin/payments` client page with table + delete Popconfirm
 
-- [ ] **Step 1: LandingPricing**
+- [ ] **Step 1: Create the page**
 
-```tsx
-import { landingContent } from '@/lib/landing/content';
-
-import { CtaButtons } from './CtaButtons';
-
-export function LandingPricing() {
-  const c = landingContent.pricing;
-
-  return (
-    <section className="lp-section lp-section--muted" id={c.id}>
-      <div className="lp-section__inner">
-        <p className="lp-eyebrow">{c.eyebrow}</p>
-        <h2 className="lp-display">{c.title}</h2>
-        <div className="lp-pricing">
-          <article className="lp-pricing__card">
-            <h3>{c.freeTitle}</h3>
-            <p>{c.freeBody}</p>
-          </article>
-          <article className="lp-pricing__card lp-pricing__card--accent">
-            <h3>{c.paidTitle}</h3>
-            <p>{c.paidBody}</p>
-          </article>
-        </div>
-        <p className="lp-pricing__note">{c.ctaNote}</p>
-        <CtaButtons />
-      </div>
-    </section>
-  );
-}
-```
-
-- [ ] **Step 2: LandingFaq**
+Create `apps/ai-web/src/app/admin/payments/page.tsx`:
 
 ```tsx
-import { landingContent } from '@/lib/landing/content';
+'use client';
 
-export function LandingFaq() {
-  const c = landingContent.faq;
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ColumnsType } from 'antd/es/table';
+import {
+  Alert,
+  App,
+  Button,
+  Popconfirm,
+  Table,
+  Tag,
+  Typography,
+} from 'antd';
+
+import { PageHeader } from '@/components/PageHeader';
+import { adminApi } from '@/lib/adminApi';
+
+type PaymentStatus = 'pending' | 'confirmed' | 'rejected' | 'refunded';
+
+type PaymentUser = {
+  id: string;
+  telegramId: string;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+type Payment = {
+  id: string;
+  amount: number;
+  status: PaymentStatus;
+  paidAt: string | null;
+  createdAt: string;
+  tbankPaymentId: string | null;
+  tbankOrderId: string;
+  user: PaymentUser;
+};
+
+type PaymentsResponse = {
+  payments: Payment[];
+};
+
+type DeleteResponse = {
+  ok: true;
+  revokedSubscription: boolean;
+};
+
+const statusColor: Record<PaymentStatus, string> = {
+  pending: 'processing',
+  confirmed: 'success',
+  rejected: 'error',
+  refunded: 'warning',
+};
+
+const statusLabel: Record<PaymentStatus, string> = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+  refunded: 'refunded',
+};
+
+const formatRubles = (kopecks: number) =>
+  new Intl.NumberFormat('ru-RU', {
+    currency: 'RUB',
+    maximumFractionDigits: 2,
+    style: 'currency',
+  }).format(kopecks / 100);
+
+const formatDate = (value: string | null) =>
+  value
+    ? new Intl.DateTimeFormat('ru-RU', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(new Date(value))
+    : 'вЂ”';
+
+const formatUser = (user: PaymentUser) => {
+  if (user.username) return `@${user.username}`;
+  const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
+  return name || user.telegramId;
+};
+
+export default function PaymentsPage() {
+  const { message } = App.useApp();
+  const queryClient = useQueryClient();
+  const paymentsQuery = useQuery({
+    queryKey: ['admin', 'payments'],
+    queryFn: () => adminApi<PaymentsResponse>('payments'),
+  });
+
+  const deletePayment = useMutation({
+    mutationFn: (paymentId: string) =>
+      adminApi<DeleteResponse>(`payments/${encodeURIComponent(paymentId)}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'payments'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      message.success(
+        result.revokedSubscription
+          ? 'РџР»Р°С‚С‘Р¶ СѓРґР°Р»С‘РЅ, РїРѕРґРїРёСЃРєР° РѕС‚РѕР·РІР°РЅР°'
+          : 'РџР»Р°С‚С‘Р¶ СѓРґР°Р»С‘РЅ',
+      );
+    },
+    onError: (error: Error) => message.error(error.message),
+  });
+
+  const columns: ColumnsType<Payment> = [
+    {
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: formatDate,
+      title: 'РЎРѕР·РґР°РЅ',
+      width: 180,
+    },
+    {
+      dataIndex: 'amount',
+      key: 'amount',
+      render: (amount: number) => formatRubles(amount),
+      title: 'РЎСѓРјРјР°',
+      width: 140,
+    },
+    {
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: PaymentStatus) => (
+        <Tag color={statusColor[status]}>{statusLabel[status]}</Tag>
+      ),
+      title: 'РЎС‚Р°С‚СѓСЃ',
+      width: 130,
+    },
+    {
+      key: 'user',
+      render: (_, payment) => (
+        <Typography.Text>
+          {formatUser(payment.user)}
+          <Typography.Text type="secondary">
+            {' '}
+            В· {payment.user.telegramId}
+          </Typography.Text>
+        </Typography.Text>
+      ),
+      title: 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ',
+    },
+    {
+      dataIndex: 'paidAt',
+      key: 'paidAt',
+      render: formatDate,
+      title: 'РћРїР»Р°С‡РµРЅ',
+      width: 180,
+    },
+    {
+      fixed: 'right',
+      key: 'actions',
+      render: (_, payment) => (
+        <Popconfirm
+          cancelText="РћС‚РјРµРЅР°"
+          okButtonProps={{ danger: true }}
+          okText="РЈРґР°Р»РёС‚СЊ"
+          onConfirm={() => deletePayment.mutate(payment.id)}
+          title={
+            payment.status === 'confirmed'
+              ? 'РЈРґР°Р»РёС‚СЊ РїР»Р°С‚С‘Р¶ Рё РѕС‚РѕР·РІР°С‚СЊ РїРѕРґРїРёСЃРєСѓ?'
+              : 'РЈРґР°Р»РёС‚СЊ РїР»Р°С‚С‘Р¶?'
+          }
+        >
+          <Button danger loading={deletePayment.isPending} size="small">
+            РЈРґР°Р»РёС‚СЊ
+          </Button>
+        </Popconfirm>
+      ),
+      title: 'Р”РµР№СЃС‚РІРёСЏ',
+      width: 120,
+    },
+  ];
 
   return (
-    <section className="lp-section" id={c.id}>
-      <div className="lp-section__inner">
-        <p className="lp-eyebrow">{c.eyebrow}</p>
-        <h2 className="lp-display">{c.title}</h2>
-        <div className="lp-faq">
-          {c.items.map((item, i) => (
-            <details key={item.q} className="lp-faq__item">
-              <summary>
-                <span className="lp-faq__idx">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                {item.q}
-              </summary>
-              <p>{item.a}</p>
-            </details>
-          ))}
-        </div>
-      </div>
-    </section>
+    <>
+      <PageHeader
+        subtitle="РЎРїРёСЃРѕРє РїР»Р°С‚РµР¶РµР№ Рё СѓРґР°Р»РµРЅРёРµ РґРµРјРѕ-Р·Р°РїРёСЃРµР№"
+        title="РџР»Р°С‚РµР¶Рё"
+      />
+      {paymentsQuery.error ? (
+        <Alert
+          description={paymentsQuery.error.message}
+          message="РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РїР»Р°С‚РµР¶Рё"
+          showIcon
+          type="error"
+          style={{ marginBottom: 16 }}
+        />
+      ) : null}
+      <Table<Payment>
+        columns={columns}
+        dataSource={paymentsQuery.data?.payments ?? []}
+        loading={paymentsQuery.isLoading}
+        locale={{
+          emptyText: paymentsQuery.error
+            ? paymentsQuery.error.message
+            : 'РџР»Р°С‚РµР¶РµР№ РЅРµС‚',
+        }}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `Р’СЃРµРіРѕ ${total}`,
+        }}
+        rowKey="id"
+        scroll={{ x: 960 }}
+        size="middle"
+      />
+    </>
   );
 }
 ```
 
-- [ ] **Step 3: LandingFinalCta**
+- [ ] **Step 2: Type-check**
 
-```tsx
-import { landingContent } from '@/lib/landing/content';
-
-import { CtaButtons } from './CtaButtons';
-
-export function LandingFinalCta() {
-  const c = landingContent.finalCta;
-
-  return (
-    <section className="lp-final">
-      <div className="lp-final__inner">
-        <h2 className="lp-display">{c.title}</h2>
-        <p>{c.body}</p>
-        <CtaButtons variant="light" />
-      </div>
-    </section>
-  );
-}
-```
-
-- [ ] **Step 4: LandingFooter**
-
-```tsx
-import Link from 'next/link';
-
-import { formatSellerBlock, legalConfig } from '@/lib/legal/legalConfig';
-import { landingConfig } from '@/lib/landing/config';
-
-export function LandingFooter() {
-  return (
-    <footer className="lp-footer">
-      <div className="lp-footer__inner">
-        <p className="lp-footer__brand">{landingConfig.productName}</p>
-        <nav className="lp-footer__nav" aria-label="Документы">
-          <Link href="/terms">Условия</Link>
-          <Link href="/privacy">Конфиденциальность</Link>
-          <Link href="/refunds">Возврат</Link>
-          <a
-            href={legalConfig.telegramSupport}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Поддержка {legalConfig.telegramLabel}
-          </a>
-        </nav>
-        <p className="lp-footer__seller">{formatSellerBlock()}</p>
-        <p className="lp-footer__copy">
-          © {new Date().getFullYear()} {landingConfig.productName}
-        </p>
-      </div>
-    </footer>
-  );
-}
-```
-
-- [ ] **Step 5: Append pricing / faq / final / footer CSS**
-
-```css
-.lp-pricing {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: 1fr 1fr;
-  margin: 32px 0 20px;
-}
-
-.lp-pricing__card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid rgba(21, 38, 28, 0.08);
-}
-
-.lp-pricing__card--accent {
-  background: var(--lp-ink);
-  color: #f4f8f5;
-  border-color: transparent;
-}
-
-.lp-pricing__card h3 {
-  margin: 0 0 10px;
-  font-size: 20px;
-}
-
-.lp-pricing__card p {
-  margin: 0;
-  font-size: 15px;
-  color: var(--lp-muted);
-}
-
-.lp-pricing__card--accent p {
-  color: rgba(244, 248, 245, 0.85);
-}
-
-.lp-pricing__note {
-  margin: 0 0 16px;
-  color: var(--lp-muted);
-  font-size: 14px;
-}
-
-@media (max-width: 700px) {
-  .lp-pricing {
-    grid-template-columns: 1fr;
-  }
-}
-
-.lp-faq {
-  margin-top: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.lp-faq__item {
-  background: #fff;
-  border: 1px solid rgba(21, 38, 28, 0.08);
-  border-radius: 10px;
-  padding: 4px 16px;
-}
-
-.lp-faq__item summary {
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  gap: 12px;
-  align-items: baseline;
-  padding: 14px 0;
-  font-weight: 600;
-}
-
-.lp-faq__item summary::-webkit-details-marker {
-  display: none;
-}
-
-.lp-faq__idx {
-  color: var(--lp-sage);
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-.lp-faq__item p {
-  margin: 0 0 16px;
-  padding-left: 36px;
-  color: var(--lp-muted);
-  font-size: 15px;
-}
-
-.lp-final {
-  background: linear-gradient(
-    160deg,
-    var(--lp-hero-1),
-    var(--lp-hero-2) 55%,
-    var(--lp-hero-3)
-  );
-  color: #f4f8f5;
-  padding: 80px 24px;
-  text-align: center;
-}
-
-.lp-final__inner {
-  max-width: 640px;
-  margin: 0 auto;
-}
-
-.lp-final h2 {
-  margin: 0 0 12px;
-  font-size: clamp(28px, 4vw, 40px);
-}
-
-.lp-final p {
-  margin: 0 0 24px;
-  color: rgba(244, 248, 245, 0.82);
-}
-
-.lp-final .lp-cta-row {
-  justify-content: center;
-}
-
-.lp-footer {
-  background: #15261c;
-  color: rgba(244, 248, 245, 0.75);
-  padding: 40px 24px 56px;
-  font-size: 14px;
-}
-
-.lp-footer__inner {
-  max-width: var(--lp-max);
-  margin: 0 auto;
-}
-
-.lp-footer__brand {
-  margin: 0 0 16px;
-  color: #f4f8f5;
-  font-family: var(--font-lp-display), Georgia, serif;
-  font-size: 22px;
-}
-
-.lp-footer__nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.lp-footer__nav a {
-  color: #c5e063;
-  text-decoration: none;
-}
-
-.lp-footer__nav a:hover {
-  text-decoration: underline;
-}
-
-.lp-footer__seller,
-.lp-footer__copy {
-  margin: 0 0 8px;
-  max-width: 52rem;
-}
-```
-
-- [ ] **Step 6: Type-check + commit**
-
-Run: `pnpm --filter ai-web type-check`  
-Expected: PASS
+Run:
 
 ```bash
-git add apps/ai-web/src/components/landing/LandingPricing.tsx apps/ai-web/src/components/landing/LandingFaq.tsx apps/ai-web/src/components/landing/LandingFinalCta.tsx apps/ai-web/src/components/landing/LandingFooter.tsx apps/ai-web/src/app/globals.css
-git commit -m "feat(ai-web): add pricing, FAQ, final CTA, and footer"
+pnpm --filter ai-web type-check
+```
+
+Expected: PASS.
+
+- [ ] **Step 3: Manual smoke (optional if gateway+web running)**
+
+1. Open `/admin/payments` вЂ” table shows payments.
+2. Delete a `pending` payment вЂ” row gone; user subscription unchanged.
+3. Delete a `confirmed` payment вЂ” row gone; user subscription revoked; Overview stats update after refresh/navigation.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add apps/ai-web/src/app/admin/payments/page.tsx
+git commit -m "$(cat <<'EOF'
+feat(ai-web): add admin payments list and delete page
+
+EOF
+)"
 ```
 
 ---
 
+## Spec coverage checklist
+
+| Spec requirement | Task |
+|------------------|------|
+| `GET /admin/payments` list take 50 + user fields | Task 1 |
+| `DELETE` confirmed в†’ delete + revoke | Task 2 |
+| `DELETE` non-confirmed в†’ delete only | Task 2 |
+| 404 / 401 | Task 2 tests |
+| BFF GET/DELETE proxies | Task 3 |
+| Sidebar В«РџР»Р°С‚РµР¶РёВ» | Task 4 |
+| Table + status-aware Popconfirm + invalidate stats | Task 5 |
+| Gateway tests listed in spec | Tasks 1вЂ“2 |
+
+## Self-review notes
+
+- No TBD/placeholder steps.
+- Status enum aligned with Prisma (`rejected`/`refunded`, not `failed`).
+- DELETE 404 performed before `$transaction` to avoid Prisma swallowing `ApiError`.
+- Package name for gateway filter is `openrouter-gateway` (matches workspace `apps/ai-app`).

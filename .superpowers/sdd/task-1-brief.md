@@ -1,187 +1,236 @@
-### Task 1: Landing config + content modules
+﻿### Task 1: Gateway `GET /admin/payments`
 
 **Files:**
-- Create: `apps/ai-web/src/lib/landing/config.ts`
-- Create: `apps/ai-web/src/lib/landing/content.ts`
+- Modify: `apps/ai-app/src/routes/admin.ts`
+- Modify: `apps/ai-app/src/routes/admin.test.ts`
 
 **Interfaces:**
-- Produces:
-  - `landingConfig` with `productName`, `webAppUrl`, `ruStoreUrl`, `guestFreeLimit`, `authTotalLimit`, `nav`
-  - `landingContent` with `hero`, `howItWorks`, `features`, `compare`, `pricing`, `faq`, `finalCta`
+- Consumes: `requireDb()`, existing `requireAdminKey` on router
+- Produces: `GET /admin/payments` в†’ `{ payments: PaymentListItem[] }` where each item has `id`, `amount`, `status`, `paidAt`, `createdAt`, `tbankPaymentId`, `tbankOrderId`, `user: { id, telegramId, username, firstName, lastName }`
 
-- [ ] **Step 1: Create config**
+- [ ] **Step 1: Extend mock prisma + add failing GET test**
 
-`apps/ai-web/src/lib/landing/config.ts`:
+In `apps/ai-app/src/routes/admin.test.ts`, inside `createMockPrisma`, extend `payment` and add `$transaction` + in-memory payments store.
 
-```ts
-export const landingConfig = {
-  productName: 'AI Food',
-  webAppUrl: 'https://ai-food-mobile.vercel.app',
-  ruStoreUrl: 'https://www.rustore.ru/catalog/app/com.aifood.app',
-  guestFreeLimit: 50,
-  authTotalLimit: 150,
-  nav: [
-    { href: '#how', label: 'Как работает' },
-    { href: '#features', label: 'Возможности' },
-    { href: '#pricing', label: 'Тариф' },
-    { href: '#faq', label: 'FAQ' },
-  ],
-} as const;
-
-export type LandingNavItem = (typeof landingConfig.nav)[number];
-```
-
-- [ ] **Step 2: Create content**
-
-`apps/ai-web/src/lib/landing/content.ts`:
+Add near the top of the `describe` (alongside `users` / `settings`):
 
 ```ts
-import { landingConfig } from './config';
+type MockPayment = {
+  id: string;
+  userId: string;
+  amount: number;
+  status: 'pending' | 'confirmed' | 'rejected' | 'refunded';
+  tbankPaymentId: string | null;
+  tbankOrderId: string;
+  paidAt: Date | null;
+  createdAt: Date;
+};
 
-const { guestFreeLimit, authTotalLimit, productName } = landingConfig;
-
-export const landingContent = {
-  hero: {
-    brand: productName,
-    headline: 'Сфотографировал.\nУже знаешь КБЖУ.',
-    support:
-      'Анализ тарелки за секунды — без весов и поиска в базах. Новый сервис учёта питания с ИИ.',
-    primaryCta: 'Открыть в браузере',
-    secondaryCta: 'Скачать в RuStore',
-  },
-  howItWorks: {
-    id: 'how',
-    eyebrow: 'Как это работает',
-    title: 'Без весов. Без баз данных.\nПодсчёт по одному фото.',
-    steps: [
-      {
-        title: 'Сфотографируйте еду',
-        body: 'Домашнее блюдо, ресторан или доставка — наведите камеру и сделайте снимок. Искать «куриная грудка 150 г» не нужно.',
-      },
-      {
-        title: 'AI посчитает КБЖУ',
-        body: 'Сервис определит продукты на тарелке, оценит порции и отдаст калории, белки, жиры и углеводы.',
-      },
-      {
-        title: 'Ведите дневник без боли',
-        body: 'Приём сохраняется в дневник. Дневные цели и прогресс обновляются автоматически — так проще не бросить учёт.',
-      },
-    ],
-  },
-  features: {
-    id: 'features',
-    eyebrow: 'Возможности',
-    title: 'Больше, чем фото калорий',
-    items: [
-      {
-        title: 'Анализ по фото',
-        body: 'Несколько ракурсов одного блюда, уточнение текстом и правка состава.',
-      },
-      {
-        title: 'Дневник питания',
-        body: 'Приёмы, КБЖУ, избранное и быстрое добавление повторяющихся блюд.',
-      },
-      {
-        title: 'Вес и прогресс',
-        body: 'Тренд веса и недельные графики — чтобы видеть движение к цели.',
-      },
-      {
-        title: 'Штрихкод и ручной ввод',
-        body: 'Упаковка через Open Food Facts или полностью ручная запись без AI.',
-      },
-      {
-        title: 'Аккаунт через Telegram',
-        body: 'Войдите, чтобы сохранить бонус генераций и оформить годовую лицензию.',
-      },
-      {
-        title: 'Web и Android',
-        body: 'Откройте в браузере как PWA или установите сборку из RuStore.',
-      },
-    ],
-  },
-  compare: {
-    eyebrow: 'Сравнение',
-    title: 'Почему бросают ручной учёт',
-    leftTitle: 'Весы и базы',
-    leftItems: [
-      'Взвешивать каждый грамм',
-      'Искать продукты в каталоге',
-      'Минуты на один приём',
-    ],
-    rightTitle: productName,
-    rightItems: [
-      'Одно фото тарелки',
-      'КБЖУ и состав сразу',
-      'Секунды — и запись в дневнике',
-    ],
-  },
-  pricing: {
-    id: 'pricing',
-    eyebrow: 'Тариф',
-    title: 'Начните бесплатно. Расширяйте, когда нужно.',
-    freeTitle: 'Старт',
-    freeBody: `Гостю доступно ${guestFreeLimit} AI-генераций. После входа через Telegram — до ${authTotalLimit} всего. Дневник и базовый учёт работают сразу.`,
-    paidTitle: 'Годовая лицензия',
-    paidBody:
-      'Безлимитные AI-анализы на год. Оплата и актуальная цена — внутри приложения (карта / СБП).',
-    ctaNote: 'Откройте приложение, чтобы увидеть цену и оформить лицензию.',
-  },
-  faq: {
-    id: 'faq',
-    eyebrow: 'Частые вопросы',
-    title: 'Коротко по делу',
-    items: [
-      {
-        q: 'Насколько точен анализ?',
-        a: 'Для большинства обычных блюд оценка близка к реальности. Супы, смузи и сложные смеси лучше уточнить текстом или поправить состав вручную.',
-      },
-      {
-        q: 'Как это работает?',
-        a: 'Вы фотографируете еду. ИИ распознаёт продукты, оценивает порции и считает калории и БЖУ. Результат можно сохранить в дневник.',
-      },
-      {
-        q: 'Что можно распознать?',
-        a: 'Домашнюю еду, ресторанные блюда, снеки и напитки. Для упаковок удобен сканер штрихкода; если AI не подходит — есть ручной ввод.',
-      },
-      {
-        q: 'Это бесплатно?',
-        a: `Да, есть бесплатный старт: ${guestFreeLimit} генераций гостю и до ${authTotalLimit} после входа через Telegram. Годовая лицензия даёт безлимит — детали и цена в приложении.`,
-      },
-      {
-        q: 'Где пользоваться: web или RuStore?',
-        a: 'Оба варианта. Веб-приложение открывается в браузере; Android-сборку можно взять в RuStore.',
-      },
-      {
-        q: 'Зачем Telegram?',
-        a: 'Для входа в аккаунт, бонуса генераций и оплаты лицензии. Дневник на устройстве остаётся вашим локальным журналом.',
-      },
-      {
-        q: 'Как обрабатываются данные?',
-        a: 'Фото уходят на анализ через наш gateway к AI-провайдеру. Мы не продаём персональные данные. Подробности — в Политике конфиденциальности.',
-      },
-      {
-        q: 'Чем это отличается от ручного MyFitnessPal-стиля?',
-        a: 'Скоростью: вместо поиска и граммовки — фото. Если хотите полный контроль, состав и граммы всё равно можно править.',
-      },
-    ],
-  },
-  finalCta: {
-    title: 'Попробуйте на своём обеде',
-    body: 'Откройте в браузере или установите из RuStore — одно фото, и цифры на экране.',
-  },
-} as const;
+let payments: MockPayment[];
 ```
 
-- [ ] **Step 3: Type-check**
+In `createMockPrisma`, replace the `payment` block and add `$transaction`:
 
-Run: `pnpm --filter ai-web type-check`  
-Expected: PASS (new modules only; no page wire yet is fine)
+```ts
+payment: {
+  aggregate: vi.fn(async () => ({
+    _count: 3,
+    _sum: { amount: 45_000 },
+  })),
+  findMany: vi.fn(
+    async ({
+      include,
+      orderBy,
+      take,
+    }: {
+      include?: { user?: { select: Record<string, boolean> } };
+      orderBy?: { createdAt: 'desc' | 'asc' };
+      take?: number;
+    } = {}) => {
+      const sorted = [...payments].sort((a, b) =>
+        orderBy?.createdAt === 'asc'
+          ? a.createdAt.getTime() - b.createdAt.getTime()
+          : b.createdAt.getTime() - a.createdAt.getTime(),
+      );
+      const sliced = typeof take === 'number' ? sorted.slice(0, take) : sorted;
+      return sliced.map((payment) => {
+        const user = users.find((u) => u.id === payment.userId);
+        if (!include?.user || !user) return payment;
+        return {
+          ...payment,
+          user: {
+            id: user.id,
+            telegramId: user.telegramId,
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+          },
+        };
+      });
+    },
+  ),
+  findUnique: vi.fn(
+    async ({ where }: { where: { id: string } }) =>
+      payments.find((p) => p.id === where.id) ?? null,
+  ),
+  delete: vi.fn(async ({ where }: { where: { id: string } }) => {
+    const index = payments.findIndex((p) => p.id === where.id);
+    if (index < 0) throw new Error('Payment not found');
+    const [removed] = payments.splice(index, 1);
+    return removed;
+  }),
+},
+$transaction: vi.fn(async (fn: (tx: typeof prisma) => Promise<unknown>) =>
+  fn(prisma),
+),
+```
 
-- [ ] **Step 4: Commit**
+In `beforeEach`, initialize:
+
+```ts
+payments = [
+  {
+    id: 'pay-confirmed',
+    userId: 'user-2',
+    amount: 90_000,
+    status: 'confirmed',
+    tbankPaymentId: 'tb-1',
+    tbankOrderId: 'pay-confirmed',
+    paidAt: new Date('2026-08-01T12:00:00.000Z'),
+    createdAt: new Date('2026-08-01T11:00:00.000Z'),
+  },
+  {
+    id: 'pay-pending',
+    userId: 'user-1',
+    amount: 90_000,
+    status: 'pending',
+    tbankPaymentId: null,
+    tbankOrderId: 'pay-pending',
+    paidAt: null,
+    createdAt: new Date('2026-08-02T11:00:00.000Z'),
+  },
+];
+```
+
+Add test at end of `describe` (before closing):
+
+```ts
+it('GET /admin/payments returns payments with user fields', async () => {
+  const response = await request(createApp())
+    .get('/admin/payments')
+    .set('X-Admin-Key', 'test-admin');
+
+  expect(response.status).toBe(200);
+  expect(response.body.payments).toHaveLength(2);
+  expect(response.body.payments[0].id).toBe('pay-pending');
+  expect(response.body.payments[0].user).toEqual({
+    id: 'user-1',
+    telegramId: '1001',
+    username: 'alice',
+    firstName: 'Alice',
+    lastName: 'Admin',
+  });
+  expect(response.body.payments[1].status).toBe('confirmed');
+});
+
+it('GET /admin/payments rejects requests without admin key', async () => {
+  const response = await request(createApp()).get('/admin/payments');
+  expect(response.status).toBe(401);
+});
+```
+
+- [ ] **Step 2: Run tests вЂ” expect FAIL**
+
+Run:
 
 ```bash
-git add apps/ai-web/src/lib/landing/config.ts apps/ai-web/src/lib/landing/content.ts
-git commit -m "feat(ai-web): add landing config and Russian copy modules"
+pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts
+```
+
+Expected: FAIL (404 or missing route for `/admin/payments`).
+
+- [ ] **Step 3: Implement `GET /admin/payments`**
+
+Append to `apps/ai-app/src/routes/admin.ts` (after `/stats` or before `/users` is fine; after `userResponse` helpers stay as-is):
+
+```ts
+function paymentResponse(payment: {
+  id: string;
+  amount: number;
+  status: 'pending' | 'confirmed' | 'rejected' | 'refunded';
+  paidAt: Date | null;
+  createdAt: Date;
+  tbankPaymentId: string | null;
+  tbankOrderId: string;
+  user: {
+    id: string;
+    telegramId: string;
+    username: string | null;
+    firstName: string | null;
+    lastName: string | null;
+  };
+}) {
+  return {
+    id: payment.id,
+    amount: payment.amount,
+    status: payment.status,
+    paidAt: payment.paidAt,
+    createdAt: payment.createdAt,
+    tbankPaymentId: payment.tbankPaymentId,
+    tbankOrderId: payment.tbankOrderId,
+    user: {
+      id: payment.user.id,
+      telegramId: payment.user.telegramId,
+      username: payment.user.username,
+      firstName: payment.user.firstName,
+      lastName: payment.user.lastName,
+    },
+  };
+}
+
+adminRouter.get(
+  '/payments',
+  asyncHandler(async (_req, res) => {
+    const prisma = requireDb();
+    const payments = await prisma.payment.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        user: {
+          select: {
+            id: true,
+            telegramId: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+    res.json({ payments: payments.map(paymentResponse) });
+  }),
+);
+```
+
+- [ ] **Step 4: Run tests вЂ” expect PASS for GET cases**
+
+Run:
+
+```bash
+pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts
+```
+
+Expected: existing tests + new GET tests PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/ai-app/src/routes/admin.ts apps/ai-app/src/routes/admin.test.ts
+git commit -m "$(cat <<'EOF'
+feat(ai-app): add admin GET /payments list
+
+EOF
+)"
 ```
 
 ---

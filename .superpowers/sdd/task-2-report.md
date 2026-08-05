@@ -1,39 +1,46 @@
-# Task 2 Report: Fonts, metadata, landing CSS foundation
+# Task 2 Report: Gateway DELETE /admin/payments/:id
 
-**Status:** DONE  
-**Branch:** feat/ai-food-landing  
-**Commit:** `153393d` — feat(ai-web): add Herb Lab fonts and landing CSS tokens
+## Status
+**COMPLETE**
+
+## Commits
+- `35630fa` — `feat(ai-app): delete admin payments and revoke on confirmed`
 
 ## Changes
 
-### `apps/ai-web/src/app/layout.tsx`
-- Added `Fraunces` (`--font-lp-display`) and `DM_Sans` (`--font-lp-sans`) via `next/font/google` with `latin` + `latin-ext` subsets and `display: swap`
-- Font CSS variables applied on `<html className={...}>`
-- Updated metadata title/description per brief (Russian copy)
+### `apps/ai-app/src/routes/admin.ts`
+Added `DELETE /payments/:id` route using the preferred pattern:
+1. `findUnique` outside `$transaction` → 404 if missing
+2. `$transaction` for atomic delete + optional subscription revoke when `status === 'confirmed'`
+3. Response: `{ ok: true, revokedSubscription: boolean }`
 
-### `apps/ai-web/src/app/globals.css`
-- Removed generic `main:not(.legal-doc)` grid centering stub
-- Preserved `.legal-doc*`, `.landing`, `.admin-*` rules unchanged
-- Appended Herb Lab `.lp-*` foundation: page tokens, typography, sections, buttons, CTA row, reduced-motion guard
+### `apps/ai-app/src/routes/admin.test.ts`
+Added 4 DELETE tests (TDD — written before implementation):
+- Confirmed payment: deletes payment, revokes user subscription
+- Pending payment: deletes payment, leaves user unchanged
+- Missing payment: 404 NOT_FOUND
+- No admin key: 401
 
-## Verification
+## Test Results
+```
+pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts
+✓ 17 passed (17)
+```
 
-| Check | Result |
-|-------|--------|
-| `pnpm --filter ai-web type-check` | PASS (exit 0) |
-| Brief layout.tsx verbatim | OK |
-| Brief CSS block appended | OK |
-| `.legal-doc*` / `.admin-*` / `.landing` preserved | OK |
-| `page.tsx` not wired | OK (out of scope) |
+## Self-Review
 
-## Self-review
+### Correctness
+- 404 handled outside transaction — ApiError propagates cleanly
+- Revoke only on `confirmed` status matches brief spec
+- Uses existing `requireDb()`, `asyncHandler`, mock `$transaction` from Task 1
 
-- **Fonts:** Variables on `<html>`; `.lp-page` and `.lp-display` reference `--font-lp-sans` / `--font-lp-display` — correct cascade for Task 3+ components.
-- **Metadata:** Matches brief strings exactly.
-- **Layout removal:** Stub home page loses centering until Task 6 migrates to `.lp-page` — intentional per brief.
-- **No concerns** blocking downstream tasks.
+### Scope
+- Gateway only — no BFF or UI changes (as required)
+- Minimal diff: one route handler + four tests
 
-## Files touched
+### Edge cases not covered (acceptable for this task)
+- `rejected` / `refunded` payments: no revoke (only `confirmed` triggers revoke)
+- Concurrent delete of same payment: not addressed (admin-only, low risk)
 
-- `apps/ai-web/src/app/layout.tsx`
-- `apps/ai-web/src/app/globals.css`
+### Concerns
+None blocking. Implementation matches brief verbatim.
