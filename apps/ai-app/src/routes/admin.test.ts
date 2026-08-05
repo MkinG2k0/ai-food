@@ -22,6 +22,17 @@ type MockUser = {
   subscriptionExpiresAt: Date | null;
 };
 
+type MockPayment = {
+  id: string;
+  userId: string;
+  amount: number;
+  status: 'pending' | 'confirmed' | 'rejected' | 'refunded';
+  tbankPaymentId: string | null;
+  tbankOrderId: string;
+  paidAt: Date | null;
+  createdAt: Date;
+};
+
 describe('admin routes', () => {
   let settings: {
     id: number;
@@ -30,6 +41,7 @@ describe('admin routes', () => {
     updatedAt: Date;
   } | null;
   let users: MockUser[];
+  let payments: MockPayment[];
   let prisma: ReturnType<typeof createMockPrisma>;
 
   function createMockPrisma() {
@@ -83,7 +95,52 @@ describe('admin routes', () => {
           _count: 3,
           _sum: { amount: 45_000 },
         })),
+        findMany: vi.fn(
+          async ({
+            include,
+            orderBy,
+            take,
+          }: {
+            include?: { user?: { select: Record<string, boolean> } };
+            orderBy?: { createdAt: 'desc' | 'asc' };
+            take?: number;
+          } = {}) => {
+            const sorted = [...payments].sort((a, b) =>
+              orderBy?.createdAt === 'asc'
+                ? a.createdAt.getTime() - b.createdAt.getTime()
+                : b.createdAt.getTime() - a.createdAt.getTime(),
+            );
+            const sliced = typeof take === 'number' ? sorted.slice(0, take) : sorted;
+            return sliced.map((payment) => {
+              const user = users.find((u) => u.id === payment.userId);
+              if (!include?.user || !user) return payment;
+              return {
+                ...payment,
+                user: {
+                  id: user.id,
+                  telegramId: user.telegramId,
+                  username: user.username,
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+                },
+              };
+            });
+          },
+        ),
+        findUnique: vi.fn(
+          async ({ where }: { where: { id: string } }) =>
+            payments.find((p) => p.id === where.id) ?? null,
+        ),
+        delete: vi.fn(async ({ where }: { where: { id: string } }) => {
+          const index = payments.findIndex((p) => p.id === where.id);
+          if (index < 0) throw new Error('Payment not found');
+          const [removed] = payments.splice(index, 1);
+          return removed;
+        }),
       },
+      $transaction: vi.fn(async (fn: (tx: typeof prisma) => Promise<unknown>) =>
+        fn(prisma),
+      ),
       usageEvent: {
         count: vi.fn(async ({ where }: { where: { kind: string; createdAt: unknown } }) => {
           const days = where.createdAt ? 1 : 0;
@@ -100,6 +157,28 @@ describe('admin routes', () => {
     process.env.SUBSCRIPTION_PRICE_KOPECKS = '10000';
     process.env.SUBSCRIPTION_DURATION_DAYS = '365';
     settings = null;
+    payments = [
+      {
+        id: 'pay-confirmed',
+        userId: 'user-2',
+        amount: 90_000,
+        status: 'confirmed',
+        tbankPaymentId: 'tb-1',
+        tbankOrderId: 'pay-confirmed',
+        paidAt: new Date('2026-08-01T12:00:00.000Z'),
+        createdAt: new Date('2026-08-01T11:00:00.000Z'),
+      },
+      {
+        id: 'pay-pending',
+        userId: 'user-1',
+        amount: 90_000,
+        status: 'pending',
+        tbankPaymentId: null,
+        tbankOrderId: 'pay-pending',
+        paidAt: null,
+        createdAt: new Date('2026-08-02T11:00:00.000Z'),
+      },
+    ];
     users = [
       {
         id: 'user-1',
@@ -292,5 +371,28 @@ describe('admin routes', () => {
     expect(response.status).toBe(404);
     expect(response.body.code).toBe('NOT_FOUND');
     expect(response.body.message).toBe('User not found.');
+  });
+
+  it('GET /admin/payments returns payments with user fields', async () => {
+    const response = await request(createApp())
+      .get('/admin/payments')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body.payments).toHaveLength(2);
+    expect(response.body.payments[0].id).toBe('pay-pending');
+    expect(response.body.payments[0].user).toEqual({
+      id: 'user-1',
+      telegramId: '1001',
+      username: 'alice',
+      firstName: 'Alice',
+      lastName: 'Admin',
+    });
+    expect(response.body.payments[1].status).toBe('confirmed');
+  });
+
+  it('GET /admin/payments rejects requests without admin key', async () => {
+    const response = await request(createApp()).get('/admin/payments');
+    expect(response.status).toBe(401);
   });
 });

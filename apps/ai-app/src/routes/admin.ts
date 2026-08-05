@@ -58,6 +58,40 @@ function userResponse(user: {
   };
 }
 
+function paymentResponse(payment: {
+  id: string;
+  amount: number;
+  status: 'pending' | 'confirmed' | 'rejected' | 'refunded';
+  paidAt: Date | null;
+  createdAt: Date;
+  tbankPaymentId: string | null;
+  tbankOrderId: string;
+  user: {
+    id: string;
+    telegramId: string;
+    username: string | null;
+    firstName: string | null;
+    lastName: string | null;
+  };
+}) {
+  return {
+    id: payment.id,
+    amount: payment.amount,
+    status: payment.status,
+    paidAt: payment.paidAt,
+    createdAt: payment.createdAt,
+    tbankPaymentId: payment.tbankPaymentId,
+    tbankOrderId: payment.tbankOrderId,
+    user: {
+      id: payment.user.id,
+      telegramId: payment.user.telegramId,
+      username: payment.user.username,
+      firstName: payment.user.firstName,
+      lastName: payment.user.lastName,
+    },
+  };
+}
+
 function daysAgo(now: Date, days: number): Date {
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 }
@@ -187,6 +221,29 @@ adminRouter.get(
       usageAnalyzeLast30Days,
       usageRefineLast30Days,
     });
+  }),
+);
+
+adminRouter.get(
+  '/payments',
+  asyncHandler(async (_req, res) => {
+    const prisma = requireDb();
+    const payments = await prisma.payment.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        user: {
+          select: {
+            id: true,
+            telegramId: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+    res.json({ payments: payments.map(paymentResponse) });
   }),
 );
 
