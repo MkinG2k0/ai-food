@@ -1,17 +1,19 @@
+import Link from 'next/link';
+
 import { landingConfig } from '@/lib/landing/config';
 
 export function LandingNav() {
   return (
     <header className="lp-nav">
       <div className="lp-nav__inner">
-        <a className="lp-nav__brand" href="#top">
+        <Link className="lp-nav__brand" href="/">
           {landingConfig.productName}
-        </a>
+        </Link>
         <nav className="lp-nav__links" aria-label="Разделы">
           {landingConfig.nav.map((item) => (
-            <a key={item.href} href={item.href}>
+            <Link key={item.href} href={item.href}>
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
         <a

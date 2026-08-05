@@ -5,10 +5,10 @@ export const landingConfig = {
   guestFreeLimit: 50,
   authTotalLimit: 150,
   nav: [
-    { href: '#how', label: 'Как работает' },
-    { href: '#features', label: 'Возможности' },
-    { href: '#pricing', label: 'Тариф' },
-    { href: '#faq', label: 'FAQ' },
+    { href: '/#how', label: 'Как работает' },
+    { href: '/#features', label: 'Возможности' },
+    { href: '/#pricing', label: 'Тариф' },
+    { href: '/#faq', label: 'FAQ' },
   ],
 } as const;
 

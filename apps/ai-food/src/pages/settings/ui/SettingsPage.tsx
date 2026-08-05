@@ -484,7 +484,7 @@ export function SettingsPage() {
                 className="w-full"
                 onClick={() => setRedoOpen(true)}
               >
-                Пройти анбординг заново
+                Пройти онбординг заново
               </Button>
             </>
           )}
@@ -781,7 +781,7 @@ export function SettingsPage() {
       <BottomSheet open={redoOpen} onClose={() => setRedoOpen(false)}>
         <div className="w-full space-y-4 px-2 py-2">
           <h2 className="text-lg font-semibold text-foreground">
-            Пройти анбординг заново?
+            Пройти онбординг заново?
           </h2>
           <p className="text-sm text-muted-foreground">
             Текущие цели будут сброшены и рассчитаны заново после заполнения
