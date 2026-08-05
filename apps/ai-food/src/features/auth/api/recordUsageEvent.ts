@@ -8,11 +8,14 @@ export async function recordUsageEvent(
 
   try {
     const headers = await getQuotaHeaders('other');
-    await fetch(`${gatewayUrl.replace(/\/$/, '')}/usage/event`, {
+    const response = await fetch(`${gatewayUrl.replace(/\/$/, '')}/usage/event`, {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ kind }),
     });
+    if (!response.ok) {
+      throw new Error(`Usage event failed: ${response.status}`);
+    }
   } catch (error) {
     console.warn('[usage] Failed to record event', { kind, error });
   }
