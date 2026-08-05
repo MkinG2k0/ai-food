@@ -1,12 +1,17 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { ApiError } from '../../lib/errors.js';
 import { asyncHandler } from '../middleware/error.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import { verifyUserToken } from '../lib/jwt.js';
-import { getEffectiveLimit, getUsageSnapshot } from '../lib/quota.js';
+import { ensureDevice, getEffectiveLimit, getUsageSnapshot } from '../lib/quota.js';
 import { hasActiveSubscription } from '../lib/subscription.js';
 
 export const usageRouter = Router();
+
+const EventBodySchema = z.object({
+  kind: z.enum(['manual', 'barcode']),
+});
 
 usageRouter.get(
   '/',
@@ -72,5 +77,58 @@ usageRouter.get(
       hasActiveSubscription: activeSub,
     });
     res.json(snapshot);
+  }),
+);
+
+usageRouter.post(
+  '/event',
+  asyncHandler(async (req, res) => {
+    const deviceId = req.header('x-device-id')?.trim();
+    if (!deviceId) {
+      throw new ApiError(400, 'DEVICE_ID_REQUIRED', 'X-Device-Id header is required.');
+    }
+
+    if (!isDatabaseConfigured()) {
+      throw new ApiError(
+        503,
+        'DATABASE_UNAVAILABLE',
+        'Database is not configured.',
+      );
+    }
+
+    const prisma = getPrisma();
+    if (!prisma) {
+      throw new ApiError(
+        503,
+        'DATABASE_UNAVAILABLE',
+        'Database client is not available.',
+      );
+    }
+
+    const parsed = EventBodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'kind must be manual or barcode.');
+    }
+
+    let userId: string | undefined;
+    const userToken = req.header('x-user-token')?.trim();
+    if (userToken) {
+      try {
+        const payload = await verifyUserToken(userToken);
+        userId = payload.sub;
+      } catch {
+        /* ignore invalid token for event logging */
+      }
+    }
+
+    const device = await ensureDevice(prisma, deviceId, userId);
+    await prisma.usageEvent.create({
+      data: {
+        kind: parsed.data.kind,
+        deviceId: device.id,
+        userId: userId ?? null,
+      },
+    });
+    res.json({ ok: true });
   }),
 );
