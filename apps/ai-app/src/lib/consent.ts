@@ -1,0 +1,1 @@
+export const DATA_CONSENT_VERSION = '2026-08-06';

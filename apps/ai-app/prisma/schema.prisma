@@ -28,6 +28,8 @@ model User {
   firstName              String?
   lastName               String?
   photoUrl               String?
+  dataConsentAt          DateTime?
+  dataConsentVersion     String?
   subscriptionStatus     SubscriptionStatus @default(none)
   subscriptionExpiresAt  DateTime?
   createdAt              DateTime           @default(now())
