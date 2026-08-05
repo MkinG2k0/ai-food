@@ -20,6 +20,7 @@ import {
   getTelegramBotUsername,
 } from '../lib/telegramBotApi.js';
 import { subscriptionPublicFields } from '../lib/subscription.js';
+import { DATA_CONSENT_VERSION } from '../lib/consent.js';
 
 const StartBodySchema = z.object({
   deviceId: z.string().min(1).optional(),
@@ -85,6 +86,8 @@ function publicUser(user: {
   photoUrl: string | null;
   subscriptionStatus: Parameters<typeof subscriptionPublicFields>[0]['subscriptionStatus'];
   subscriptionExpiresAt: Date | null;
+  dataConsentAt: Date | null;
+  dataConsentVersion: string | null;
 }) {
   return {
     id: user.id,
@@ -94,6 +97,8 @@ function publicUser(user: {
     lastName: user.lastName,
     photoUrl: user.photoUrl,
     ...subscriptionPublicFields(user),
+    dataConsentAt: user.dataConsentAt?.toISOString() ?? null,
+    dataConsentVersion: user.dataConsentVersion,
   };
 }
 
@@ -217,5 +222,41 @@ authRouter.get(
     }
 
     res.json(publicUser(user));
+  }),
+);
+
+authRouter.post(
+  '/consent',
+  asyncHandler(async (req, res) => {
+    const header = req.header('x-user-token')?.trim();
+    if (!header) {
+      throw new ApiError(401, 'INVALID_USER_TOKEN', 'X-User-Token required.');
+    }
+
+    const payload = await verifyUserToken(header);
+    const version = req.body?.version;
+    if (version !== DATA_CONSENT_VERSION) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid consent version.');
+    }
+
+    const prisma = requireDb();
+    const existing = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!existing) {
+      throw new ApiError(401, 'INVALID_USER_TOKEN', 'User not found.');
+    }
+
+    if (existing.dataConsentAt) {
+      res.json(publicUser(existing));
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        dataConsentAt: new Date(),
+        dataConsentVersion: DATA_CONSENT_VERSION,
+      },
+    });
+    res.json(publicUser(updated));
   }),
 );

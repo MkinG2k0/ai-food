@@ -56,6 +56,8 @@ const demoUser = {
   photoUrl: null,
   subscriptionStatus: 'none',
   subscriptionExpiresAt: null,
+  dataConsentAt: null,
+  dataConsentVersion: null,
 };
 
 describe('POST /auth/demo/login', () => {
@@ -97,6 +99,8 @@ describe('POST /auth/demo/login', () => {
       username: 'demo_user',
       firstName: 'Демо',
       lastName: 'пользователь',
+      dataConsentAt: null,
+      dataConsentVersion: null,
     });
     expect(mocks.upsert).toHaveBeenCalledWith({
       where: { telegramId: '100000001' },

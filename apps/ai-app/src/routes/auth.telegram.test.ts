@@ -60,6 +60,8 @@ const user = {
   photoUrl: null,
   subscriptionStatus: 'none',
   subscriptionExpiresAt: null,
+  dataConsentAt: null,
+  dataConsentVersion: null,
 };
 
 describe('Telegram bot auth routes', () => {
@@ -168,6 +170,8 @@ describe('Telegram bot auth routes', () => {
         ...user,
         subscriptionExpiresAt: null,
         hasActiveSubscription: false,
+        dataConsentAt: null,
+        dataConsentVersion: null,
       },
     });
 
@@ -224,6 +228,8 @@ describe('Telegram bot auth routes', () => {
       ...user,
       subscriptionExpiresAt: null,
       hasActiveSubscription: false,
+      dataConsentAt: null,
+      dataConsentVersion: null,
     });
   });
 });
