@@ -24,6 +24,9 @@ coverage/
 # Deploy
 .vercel/
 
+# Local brainstorm / agent scratch
+.superpowers/
+
 # App-specific
 apps/ai-app/src/generated/prisma
 apps/ai-food/android/.gradle/
