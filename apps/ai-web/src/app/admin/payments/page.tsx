@@ -53,10 +53,10 @@ const statusColor: Record<PaymentStatus, string> = {
 };
 
 const statusLabel: Record<PaymentStatus, string> = {
-  pending: 'pending',
-  confirmed: 'confirmed',
-  rejected: 'rejected',
-  refunded: 'refunded',
+  pending: 'Ожидает',
+  confirmed: 'Подтверждён',
+  rejected: 'Отклонён',
+  refunded: 'Возвращён',
 };
 
 const formatRubles = (kopecks: number) =>
