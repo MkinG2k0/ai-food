@@ -196,7 +196,7 @@ body {
   --lp-bg: #f4f8f5;
   --lp-ink: #15261c;
   --lp-sage: #5b8a72;
-  --lp-lime: #c5e063;
+  --lp-lime: #97b03e;
   --lp-muted: #4a6356;
   --lp-hero-1: #1a2f23;
   --lp-hero-2: #2d4a38;
@@ -281,7 +281,7 @@ body {
 
 .lp-btn--primary {
   background: var(--lp-ink);
-  color: var(--lp-bg);
+  color: var(--lp-bg) !important;
 }
 
 .lp-btn--lime {
