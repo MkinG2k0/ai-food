@@ -329,3 +329,144 @@ body {
     transform: none;
   }
 }
+
+.lp-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(10px);
+  background: rgba(244, 248, 245, 0.88);
+  border-bottom: 1px solid rgba(21, 38, 28, 0.08);
+}
+
+.lp-nav__inner {
+  max-width: var(--lp-max);
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.lp-nav__brand {
+  font-family: var(--font-lp-display), Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--lp-ink);
+}
+
+.lp-nav__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-left: auto;
+  font-size: 14px;
+}
+
+.lp-nav__links a {
+  text-decoration: none;
+  color: var(--lp-muted);
+}
+
+.lp-nav__links a:hover {
+  color: var(--lp-ink);
+}
+
+.lp-nav__cta {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .lp-nav__links {
+    display: none;
+  }
+}
+
+.lp-hero {
+  position: relative;
+  overflow: hidden;
+  color: #f4f8f5;
+  background: linear-gradient(
+    160deg,
+    var(--lp-hero-1) 0%,
+    var(--lp-hero-2) 45%,
+    var(--lp-hero-3) 100%
+  );
+  min-height: min(92vh, 760px);
+  display: flex;
+  align-items: flex-end;
+  padding: 72px 24px 80px;
+}
+
+.lp-hero__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 72% 35%,
+    rgba(197, 224, 99, 0.28) 0%,
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+.lp-hero__inner {
+  position: relative;
+  max-width: var(--lp-max);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.lp-hero__brand {
+  margin: 0 0 28px;
+  font-size: clamp(40px, 8vw, 72px);
+  font-family: var(--font-lp-display), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.lp-hero__title {
+  margin: 0 0 16px;
+  font-size: clamp(28px, 5vw, 44px);
+  max-width: 16ch;
+}
+
+.lp-hero__support {
+  margin: 0 0 28px;
+  max-width: 36rem;
+  font-size: 17px;
+  color: rgba(244, 248, 245, 0.82);
+}
+
+@keyframes lp-hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lp-hero__inner > * {
+  animation: lp-hero-in 0.7s ease both;
+}
+
+.lp-hero__inner > *:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.lp-hero__inner > *:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.lp-hero__inner > *:nth-child(4) {
+  animation-delay: 0.24s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-hero__inner > * {
+    animation: none;
+  }
+}
