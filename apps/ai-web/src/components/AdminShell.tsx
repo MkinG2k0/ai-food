@@ -7,6 +7,7 @@ import {
   CreditCardOutlined,
   LogoutOutlined,
   TagsOutlined,
+  UserOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, Typography } from 'antd';
@@ -16,6 +17,11 @@ const { Content, Header, Sider } = Layout;
 const menuItems = [
   { icon: <BarChartOutlined />, key: '/admin', label: 'Обзор' },
   { icon: <TagsOutlined />, key: '/admin/pricing', label: 'Цены' },
+  {
+    icon: <UserOutlined />,
+    key: '/admin/users',
+    label: 'Пользователи',
+  },
   { icon: <WalletOutlined />, key: '/admin/payments', label: 'Платежи' },
   {
     icon: <CreditCardOutlined />,
@@ -27,6 +33,7 @@ const menuItems = [
 const pageTitles: Record<string, string> = {
   '/admin': 'Обзор',
   '/admin/pricing': 'Цены',
+  '/admin/users': 'Пользователи',
   '/admin/payments': 'Платежи',
   '/admin/subscriptions': 'Подписки',
 };
