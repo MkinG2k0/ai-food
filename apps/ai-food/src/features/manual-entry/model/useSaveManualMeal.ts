@@ -1,4 +1,5 @@
 import { useDiaryStore } from '@/entities/meal';
+import { recordUsageEvent } from '@/features/auth';
 import { saveMealImage, timestampForSelectedDate } from '@/shared/lib';
 import {
   buildManualMeal,
@@ -39,6 +40,7 @@ export function useSaveManualMeal() {
     if (!meal) return null;
 
     addMeal(meal);
+    void recordUsageEvent('manual');
     return meal.id;
   };
 }

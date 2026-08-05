@@ -5,6 +5,8 @@ export {
   signOut,
 } from './model/mockTelegramAuth';
 export { getQuotaHeaders, type UsageKindHeader } from './model/quotaHeaders';
+export { resolveAnalyzeUsageKind } from './model/resolveAnalyzeUsageKind';
+export { recordUsageEvent } from './api/recordUsageEvent';
 export {
   fetchUsage,
   getCachedUsage,

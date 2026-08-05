@@ -298,7 +298,7 @@ describe('analyzeFoodApi (AI Gateway streaming XML)', () => {
     expect((init as RequestInit).headers).toMatchObject({
       Authorization: `Bearer ${GATEWAY_KEY}`,
       'X-Device-Id': 'test-device-id',
-      'X-Usage-Kind': 'analyze',
+      'X-Usage-Kind': 'analyze_photo',
     });
     expect(body).toMatchObject({
       model: 'openai/gpt-4.1-mini',

@@ -1,14 +1,19 @@
 import { getDeviceId } from '@/shared/lib';
 import { useAuthStore } from './useAuthStore';
 
-export type UsageKindHeader = 'analyze' | 'refine' | 'other';
+export type UsageKindHeader =
+  | 'analyze'
+  | 'analyze_photo'
+  | 'analyze_text'
+  | 'analyze_photo_text'
+  | 'refine'
+  | 'other';
 
 /** Headers for gateway quota + optional user JWT (API_KEY Bearer stays separate). */
 export async function getQuotaHeaders(
   usageKind: UsageKindHeader,
 ): Promise<Record<string, string>> {
   const deviceId = await getDeviceId();
-  console.log(deviceId)
   const headers: Record<string, string> = {
     'X-Device-Id': deviceId,
     'X-Usage-Kind': usageKind,
