@@ -1,3 +1,5 @@
+import type { PrismaClient } from '../generated/prisma/client.js';
+
 export type PromoDefinition = {
   code: string;
   discountPercent: number;
@@ -10,19 +12,19 @@ export type ResolvedPromo = {
   finalAmount: number;
 };
 
-const PROMOS = new Map<string, PromoDefinition>([
-  ['new80', { code: 'new80', discountPercent: 80 }],
-  ['new50', { code: 'new50', discountPercent: 50 }],
-]);
-
 export function normalizePromoCode(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
-export function lookupPromo(raw: string): PromoDefinition | null {
+export async function lookupPromo(
+  prisma: PrismaClient | null | undefined,
+  raw: string,
+): Promise<PromoDefinition | null> {
   const key = normalizePromoCode(raw);
-  if (!key) return null;
-  return PROMOS.get(key) ?? null;
+  if (!key || !prisma) return null;
+  const row = await prisma.promoCode.findUnique({ where: { code: key } });
+  if (!row) return null;
+  return { code: row.code, discountPercent: row.discountPercent };
 }
 
 /** finalAmount in kopecks; never below 1. */
@@ -36,11 +38,12 @@ export function applyPromoDiscount(
   return Math.max(1, discounted);
 }
 
-export function resolvePromo(
+export async function resolvePromo(
+  prisma: PrismaClient | null | undefined,
   raw: string,
   originalAmount: number,
-): ResolvedPromo | null {
-  const promo = lookupPromo(raw);
+): Promise<ResolvedPromo | null> {
+  const promo = await lookupPromo(prisma, raw);
   if (!promo) return null;
   return {
     code: promo.code,
