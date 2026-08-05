@@ -81,3 +81,11 @@ model AppSettings {
   subscriptionDurationDays Int?
   updatedAt                DateTime @updatedAt
 }
+
+model PromoCode {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  discountPercent Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
