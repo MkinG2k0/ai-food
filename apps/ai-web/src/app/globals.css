@@ -12,13 +12,6 @@ body {
   background: #f5f5f5;
 }
 
-main:not(.legal-doc) {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: 24px;
-}
-
 .legal-doc {
   max-width: 720px;
   margin: 0 auto;
@@ -210,5 +203,129 @@ main:not(.legal-doc) {
   .admin-content {
     padding-right: 16px;
     padding-left: 16px;
+  }
+}
+
+/* —— Marketing landing (Herb Lab) —— */
+.lp-page {
+  --lp-bg: #f4f8f5;
+  --lp-ink: #15261c;
+  --lp-sage: #5b8a72;
+  --lp-lime: #c5e063;
+  --lp-muted: #4a6356;
+  --lp-hero-1: #1a2f23;
+  --lp-hero-2: #2d4a38;
+  --lp-hero-3: #5b8a72;
+  --lp-max: 1120px;
+  color: var(--lp-ink);
+  background: var(--lp-bg);
+  font-family: var(--font-lp-sans), system-ui, sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.lp-page a {
+  color: inherit;
+}
+
+.lp-display {
+  font-family: var(--font-lp-display), Georgia, serif;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.lp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  color: var(--lp-sage);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lp-eyebrow::before {
+  content: '';
+  width: 28px;
+  height: 4px;
+  background: var(--lp-lime);
+  border-radius: 2px;
+}
+
+.lp-section {
+  padding: 72px 24px;
+}
+
+.lp-section__inner {
+  max-width: var(--lp-max);
+  margin: 0 auto;
+}
+
+.lp-section h2 {
+  margin: 0 0 16px;
+  font-size: clamp(28px, 4vw, 40px);
+}
+
+.lp-section__lead {
+  margin: 0 0 40px;
+  max-width: 40rem;
+  color: var(--lp-muted);
+  font-size: 17px;
+}
+
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.lp-btn:hover {
+  transform: translateY(-1px);
+}
+
+.lp-btn--primary {
+  background: var(--lp-ink);
+  color: var(--lp-bg);
+}
+
+.lp-btn--lime {
+  background: var(--lp-lime);
+  color: var(--lp-ink);
+}
+
+.lp-btn--ghost {
+  background: transparent;
+  border-color: currentColor;
+}
+
+.lp-btn--ghost-light {
+  background: transparent;
+  border-color: rgba(244, 248, 245, 0.55);
+  color: #f4f8f5;
+}
+
+.lp-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-btn {
+    transition: none;
+  }
+  .lp-btn:hover {
+    transform: none;
   }
 }
