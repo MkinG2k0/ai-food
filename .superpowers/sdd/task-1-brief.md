@@ -1,52 +1,188 @@
-﻿### Task 1: Prisma `AppSettings` model + migration
+### Task 1: Landing config + content modules
 
 **Files:**
-- Modify: `apps/ai-app/prisma/schema.prisma`
-- Create: `apps/ai-app/prisma/migrations/20260804220000_app_settings/migration.sql`
+- Create: `apps/ai-web/src/lib/landing/config.ts`
+- Create: `apps/ai-web/src/lib/landing/content.ts`
 
 **Interfaces:**
-- Produces: Prisma model `AppSettings` with fields below
+- Produces:
+  - `landingConfig` with `productName`, `webAppUrl`, `ruStoreUrl`, `guestFreeLimit`, `authTotalLimit`, `nav`
+  - `landingContent` with `hero`, `howItWorks`, `features`, `compare`, `pricing`, `faq`, `finalCta`
 
-- [ ] **Step 1: Add model to schema**
+- [ ] **Step 1: Create config**
 
-Append to `apps/ai-app/prisma/schema.prisma`:
+`apps/ai-web/src/lib/landing/config.ts`:
 
-```prisma
-model AppSettings {
-  id                       Int      @id @default(1)
-  subscriptionPriceKopecks Int?
-  subscriptionDurationDays Int?
-  updatedAt                DateTime @updatedAt
-}
+```ts
+export const landingConfig = {
+  productName: 'AI Food',
+  webAppUrl: 'https://ai-food-mobile.vercel.app',
+  ruStoreUrl: 'https://www.rustore.ru/catalog/app/com.aifood.app',
+  guestFreeLimit: 50,
+  authTotalLimit: 150,
+  nav: [
+    { href: '#how', label: 'Как работает' },
+    { href: '#features', label: 'Возможности' },
+    { href: '#pricing', label: 'Тариф' },
+    { href: '#faq', label: 'FAQ' },
+  ],
+} as const;
+
+export type LandingNavItem = (typeof landingConfig.nav)[number];
 ```
 
-- [ ] **Step 2: Add migration SQL**
+- [ ] **Step 2: Create content**
 
-Create `apps/ai-app/prisma/migrations/20260804220000_app_settings/migration.sql`:
+`apps/ai-web/src/lib/landing/content.ts`:
 
-```sql
--- CreateTable
-CREATE TABLE "AppSettings" (
-    "id" INTEGER NOT NULL DEFAULT 1,
-    "subscriptionPriceKopecks" INTEGER,
-    "subscriptionDurationDays" INTEGER,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+```ts
+import { landingConfig } from './config';
 
-    CONSTRAINT "AppSettings_pkey" PRIMARY KEY ("id")
-);
+const { guestFreeLimit, authTotalLimit, productName } = landingConfig;
+
+export const landingContent = {
+  hero: {
+    brand: productName,
+    headline: 'Сфотографировал.\nУже знаешь КБЖУ.',
+    support:
+      'Анализ тарелки за секунды — без весов и поиска в базах. Новый сервис учёта питания с ИИ.',
+    primaryCta: 'Открыть в браузере',
+    secondaryCta: 'Скачать в RuStore',
+  },
+  howItWorks: {
+    id: 'how',
+    eyebrow: 'Как это работает',
+    title: 'Без весов. Без баз данных.\nПодсчёт по одному фото.',
+    steps: [
+      {
+        title: 'Сфотографируйте еду',
+        body: 'Домашнее блюдо, ресторан или доставка — наведите камеру и сделайте снимок. Искать «куриная грудка 150 г» не нужно.',
+      },
+      {
+        title: 'AI посчитает КБЖУ',
+        body: 'Сервис определит продукты на тарелке, оценит порции и отдаст калории, белки, жиры и углеводы.',
+      },
+      {
+        title: 'Ведите дневник без боли',
+        body: 'Приём сохраняется в дневник. Дневные цели и прогресс обновляются автоматически — так проще не бросить учёт.',
+      },
+    ],
+  },
+  features: {
+    id: 'features',
+    eyebrow: 'Возможности',
+    title: 'Больше, чем фото калорий',
+    items: [
+      {
+        title: 'Анализ по фото',
+        body: 'Несколько ракурсов одного блюда, уточнение текстом и правка состава.',
+      },
+      {
+        title: 'Дневник питания',
+        body: 'Приёмы, КБЖУ, избранное и быстрое добавление повторяющихся блюд.',
+      },
+      {
+        title: 'Вес и прогресс',
+        body: 'Тренд веса и недельные графики — чтобы видеть движение к цели.',
+      },
+      {
+        title: 'Штрихкод и ручной ввод',
+        body: 'Упаковка через Open Food Facts или полностью ручная запись без AI.',
+      },
+      {
+        title: 'Аккаунт через Telegram',
+        body: 'Войдите, чтобы сохранить бонус генераций и оформить годовую лицензию.',
+      },
+      {
+        title: 'Web и Android',
+        body: 'Откройте в браузере как PWA или установите сборку из RuStore.',
+      },
+    ],
+  },
+  compare: {
+    eyebrow: 'Сравнение',
+    title: 'Почему бросают ручной учёт',
+    leftTitle: 'Весы и базы',
+    leftItems: [
+      'Взвешивать каждый грамм',
+      'Искать продукты в каталоге',
+      'Минуты на один приём',
+    ],
+    rightTitle: productName,
+    rightItems: [
+      'Одно фото тарелки',
+      'КБЖУ и состав сразу',
+      'Секунды — и запись в дневнике',
+    ],
+  },
+  pricing: {
+    id: 'pricing',
+    eyebrow: 'Тариф',
+    title: 'Начните бесплатно. Расширяйте, когда нужно.',
+    freeTitle: 'Старт',
+    freeBody: `Гостю доступно ${guestFreeLimit} AI-генераций. После входа через Telegram — до ${authTotalLimit} всего. Дневник и базовый учёт работают сразу.`,
+    paidTitle: 'Годовая лицензия',
+    paidBody:
+      'Безлимитные AI-анализы на год. Оплата и актуальная цена — внутри приложения (карта / СБП).',
+    ctaNote: 'Откройте приложение, чтобы увидеть цену и оформить лицензию.',
+  },
+  faq: {
+    id: 'faq',
+    eyebrow: 'Частые вопросы',
+    title: 'Коротко по делу',
+    items: [
+      {
+        q: 'Насколько точен анализ?',
+        a: 'Для большинства обычных блюд оценка близка к реальности. Супы, смузи и сложные смеси лучше уточнить текстом или поправить состав вручную.',
+      },
+      {
+        q: 'Как это работает?',
+        a: 'Вы фотографируете еду. ИИ распознаёт продукты, оценивает порции и считает калории и БЖУ. Результат можно сохранить в дневник.',
+      },
+      {
+        q: 'Что можно распознать?',
+        a: 'Домашнюю еду, ресторанные блюда, снеки и напитки. Для упаковок удобен сканер штрихкода; если AI не подходит — есть ручной ввод.',
+      },
+      {
+        q: 'Это бесплатно?',
+        a: `Да, есть бесплатный старт: ${guestFreeLimit} генераций гостю и до ${authTotalLimit} после входа через Telegram. Годовая лицензия даёт безлимит — детали и цена в приложении.`,
+      },
+      {
+        q: 'Где пользоваться: web или RuStore?',
+        a: 'Оба варианта. Веб-приложение открывается в браузере; Android-сборку можно взять в RuStore.',
+      },
+      {
+        q: 'Зачем Telegram?',
+        a: 'Для входа в аккаунт, бонуса генераций и оплаты лицензии. Дневник на устройстве остаётся вашим локальным журналом.',
+      },
+      {
+        q: 'Как обрабатываются данные?',
+        a: 'Фото уходят на анализ через наш gateway к AI-провайдеру. Мы не продаём персональные данные. Подробности — в Политике конфиденциальности.',
+      },
+      {
+        q: 'Чем это отличается от ручного MyFitnessPal-стиля?',
+        a: 'Скоростью: вместо поиска и граммовки — фото. Если хотите полный контроль, состав и граммы всё равно можно править.',
+      },
+    ],
+  },
+  finalCta: {
+    title: 'Попробуйте на своём обеде',
+    body: 'Откройте в браузере или установите из RuStore — одно фото, и цифры на экране.',
+  },
+} as const;
 ```
 
-- [ ] **Step 3: Generate client**
+- [ ] **Step 3: Type-check**
 
-Run: `cd apps/ai-app && pnpm exec prisma generate`
-
-Expected: success, `AppSettings` available on client types.
+Run: `pnpm --filter ai-web type-check`  
+Expected: PASS (new modules only; no page wire yet is fine)
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add apps/ai-app/prisma/schema.prisma apps/ai-app/prisma/migrations/20260804220000_app_settings
-git commit -m "feat(ai-app): add AppSettings singleton for subscription pricing"
+git add apps/ai-web/src/lib/landing/config.ts apps/ai-web/src/lib/landing/content.ts
+git commit -m "feat(ai-web): add landing config and Russian copy modules"
 ```
 
 ---
+

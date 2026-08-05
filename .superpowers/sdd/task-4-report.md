@@ -1,30 +1,40 @@
-# Task 4 Report: requireAdminKey middleware
+# Task 4 Report: HowItWorks, Features, Compare
 
 **Status:** DONE  
-**Branch:** `feat/admin-web`  
-**Commit:** `62ec2bd` — `feat(ai-app): add fail-closed requireAdminKey middleware`
+**Branch:** feat/ai-food-landing  
+**Commit:** `f59b0d1` — feat(ai-web): add how-it-works, features, and compare sections
 
-## What was done
+## Changes
 
-- Added `requireAdminKey` Express middleware in `apps/ai-app/src/middleware/adminAuth.ts`.
-- Fail-closed when `ADMIN_API_KEY` is unset or blank (after trim).
-- Validates `X-Admin-Key` header via `timingSafeEqual` on equal-length buffers.
-- Unit tests cover unset env, missing/wrong key, and successful match.
+### Created
+- `apps/ai-web/src/components/landing/LandingHowItWorks.tsx` — 3-step ordered list with numbered labels
+- `apps/ai-web/src/components/landing/LandingFeatures.tsx` — feature grid + decorative mock card
+- `apps/ai-web/src/components/landing/LandingCompare.tsx` — two-column comparison (manual vs product)
+
+### Modified
+- `apps/ai-web/src/app/globals.css` — appended `.lp-steps*`, `.lp-features*`, `.lp-mock*`, `.lp-compare*` + responsive breakpoints
 
 ## Verification
 
-- Red: `pnpm exec vitest run src/middleware/adminAuth.test.ts` — FAIL (module missing).
-- Green: same command — 1 file, 3/3 tests passed.
+| Check | Result |
+|-------|--------|
+| `pnpm --filter ai-web type-check` | PASS (exit 0) |
+| Brief TSX verbatim | OK |
+| Brief CSS appended | OK |
+| No barrel / page.tsx wiring | OK (Task 6) |
+| No Ant Design | OK |
 
-## Scope
+## Self-review
 
-The commit contains only:
+- **LandingHowItWorks:** Title split on `\n`; step numbers zero-padded; `id="how"` from content.
+- **LandingFeatures:** 6 items from content; mock card hardcoded (decorative, `aria-hidden`); muted section background.
+- **LandingCompare:** No `id` in content — section has no anchor (consistent with brief); accent column uses `--lp-ink`.
+- **CSS:** Responsive at 800px (steps), 900px (features), 700px (compare).
+- **No concerns** blocking downstream tasks.
 
-- `apps/ai-app/src/middleware/adminAuth.ts`
-- `apps/ai-app/src/middleware/adminAuth.test.ts`
+## Files touched
 
-Unrelated `apps/ai-food` legal changes and SDD workspace edits were not staged or committed.
-
-## Concerns
-
-- None blocking. Middleware is not yet wired to admin routes (Task 5).
+- `apps/ai-web/src/components/landing/LandingHowItWorks.tsx`
+- `apps/ai-web/src/components/landing/LandingFeatures.tsx`
+- `apps/ai-web/src/components/landing/LandingCompare.tsx`
+- `apps/ai-web/src/app/globals.css`

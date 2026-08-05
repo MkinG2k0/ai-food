@@ -1,59 +1,71 @@
-# Task 6 Report: Remove in-app legal routes and modules
+# Task 6 Report: Compose page, barrel, cleanup stub, verify
 
-## Branch lock
-
-- Checked out `feat/legal-site-pages`; `git branch --show-current` → `feat/legal-site-pages`.
-- `git rev-parse --short HEAD` (before edits) → `f3a1b71` — matches expected.
+**Status:** DONE  
+**Branch:** feat/ai-food-landing  
+**Commit:** `4b072e6` — feat(ai-web): ship Herb Lab marketing landing on /
 
 ## Changes
 
-### router.tsx
+### Created
+- `apps/ai-web/src/components/landing/index.ts` — barrel re-exporting all 10 landing components
 
-- Removed `import { TermsPage, PrivacyPage } from '@/pages/legal';`
-- Removed routes `/legal/terms` and `/legal/privacy`
+### Modified
+- `apps/ai-web/src/app/page.tsx` — full landing composition inside `.lp-page` wrapper; stub «Скоро» removed
+- `apps/ai-web/src/app/globals.css` — removed obsolete `.landing` stub rules
 
-### Deleted directories
+## Verification
 
-- `apps/ai-food/src/pages/legal/` — 4 files (index, TermsPage, PrivacyPage, LegalDocumentPage)
-- `apps/ai-food/src/shared/legal/` — 5 files (legalConfig, privacyContent, termsContent, termsContent.test, types)
+| Check | Result |
+|-------|--------|
+| `pnpm --filter ai-web type-check` | PASS (exit 0) |
+| `pnpm --filter ai-web build` | PASS (exit 0); `/` static (171 B) |
+| «Скоро» absent from `page.tsx` | OK (grep: no matches) |
+| CTA URLs not hardcoded in `page.tsx` | OK (no URLs; CTAs via `landingConfig` in components) |
+| Brief TSX verbatim | OK |
+| Stub `.landing` CSS removed | OK |
+| `/admin/login` route in build | OK (static) |
 
-## Grep verification
+## Grep summary
 
-Searched `apps/ai-food/src` for: `pages/legal`, `shared/legal`, `/legal/terms`, `/legal/privacy`, `buildTermsSections`, `LegalDocumentPage`
+- `page.tsx`: no «Скоро», no `webAppUrl`/`ruStoreUrl`/hardcoded URLs
+- CTA links remain in `CtaButtons.tsx` + `LandingNav.tsx` via `landingConfig`
 
-Result: **no matches**
+## Manual smoke
 
-## Tests & type-check
+Not run in this session (requires `pnpm --filter ai-web dev`). Build output confirms `/` prerendered; downstream manual checklist from brief still recommended.
 
-```
-pnpm --filter ai-food test -- src/shared/lib/legalSiteUrl.test.ts  → PASS (3 tests)
-pnpm --filter ai-food type-check                                    → PASS
-pnpm --filter ai-web type-check                                     → PASS
-```
+## Self-review
 
-## Commit
+- **page.tsx:** Nav → main (Hero, HowItWorks, Features, Compare, Pricing, FAQ, FinalCta) → Footer; matches spec section map.
+- **Barrel:** All components exported; `CtaButtons` available but not imported in page (used internally by sections).
+- **No concerns** blocking merge.
 
-```
-92ff64e refactor(ai-food): remove in-app legal pages in favor of site
-```
+## Files touched
 
-10 files changed, 336 deletions(-)
+- `apps/ai-web/src/components/landing/index.ts`
+- `apps/ai-web/src/app/page.tsx`
+- `apps/ai-web/src/app/globals.css`
 
-## Concerns
+---
 
-None. Settings (Task 5) already opens external legal URLs via `getLegalUrl`; in-app legal UI fully removed.
+## Final review fix: Cyrillic fonts (post Task 6)
 
-## Final-review fixes (post 92ff64e)
+**Status:** DONE  
+**Commit:** `e09c2e4` — fix(ai-web): use Lora and Manrope for Cyrillic landing fonts
 
-- `refundsContent.ts`: replaced hardcoded `AI Food` with `${productName}` in subscription/license paragraph.
-- `LegalDocumentLayout.tsx`: added `children?: never` to Props; switched section/paragraph keys to index-based.
+### Problem
+Fraunces and DM Sans lack Cyrillic glyphs; Russian landing fell back to Georgia/system-ui.
 
-```
-pnpm --filter ai-web type-check  → PASS
-```
+### Fix
+- `layout.tsx`: Fraunces → **Lora** (`--font-lp-display`), DM Sans → **Manrope** (`--font-lp-sans`); subsets `['cyrillic', 'latin', 'latin-ext']`, `display: 'swap'`
+- `globals.css` (minor): FAQ chevron `::after` "▸" rotates on `[open]`
 
-## Commit
+### Verification
 
-```
-fix(ai-web): use productName in refunds copy
-```
+| Check | Result |
+|-------|--------|
+| `pnpm --filter ai-web type-check` | PASS (exit 0) |
+| `pnpm --filter ai-web build` | PASS (exit 0) |
+
+### Concerns
+None.

@@ -1,74 +1,40 @@
-# Task 3 Report: Billing callers await async price helpers
+# Task 3 Report: CTA, Nav, Hero
 
-**Status:** DONE_WITH_CONCERNS  
-**Branch:** `feat/admin-web`  
-**Commit:** `d950e2c` — `fix(billing): await async subscription price helpers`
+**Status:** DONE  
+**Branch:** feat/ai-food-landing  
+**Commit:** `e07edcd` — feat(ai-web): add landing nav, hero, and CTA buttons
 
-## What was done
+## Changes
 
-- Made `resolveSubscribeAmount` async and passed its Prisma client to the price helper.
-- Updated `/price`, `/promo/validate`, and `/subscribe` to await async pricing helpers.
-- Passed the available Prisma client into price and duration lookups.
-- Changed billing price/duration mocks to `mockResolvedValue`.
-- Preserved existing response shapes, status codes, and promo/payment behavior.
+### Created
+- `apps/ai-web/src/components/landing/CtaButtons.tsx` — primary/secondary CTAs with `dark`/`light` variants
+- `apps/ai-web/src/components/landing/LandingNav.tsx` — sticky nav, anchor links, lime CTA
+- `apps/ai-web/src/components/landing/LandingHero.tsx` — hero section with glow, headline split, light CTA row
 
-## Verification
-
-- Red: `pnpm exec vitest run src/routes/billing.test.ts` — 5 expected failures with Promise-valued mocks before the route fix.
-- Green: `pnpm exec vitest run src/routes/billing.test.ts src/lib/subscription.test.ts` — 2 files, 21/21 tests passed.
-- `pnpm type-check` — passed.
-- IDE diagnostics for both modified files — no errors.
-- `git diff --check` for both modified files — passed.
-
-## Scope
-
-The commit contains only:
-
-- `apps/ai-app/src/routes/billing.ts`
-- `apps/ai-app/src/routes/billing.test.ts`
-
-Unrelated `apps/ai-food` legal changes and existing SDD workspace changes were not staged or committed.
-
-## Concerns
-
-Implementation has no known concern. The report path was concurrently appended with an unrelated SubscribePage report after this report was created; that content was preserved to avoid overwriting another worker's changes.
-# Task 3 Report: SubscribePage uses API price
-
-## Status
-**DONE** — hardcoded price removed, API hook wired, tsc clean, committed.
-
-## What was implemented
-
-### `SubscribePage.tsx`
-- Removed `const PRICE_RUB = 100`
-- Imported `useSubscriptionPrice` from `@/features/billing`
-- Hook called at top of component (before success/fail early returns)
-- Price block shows loading (`Загрузка цены…`), error (`Цена недоступна`), or API data
-- `priceRub = Math.round(amountKopecks / 100)` with `toLocaleString('ru-RU')`
-- Duration from `price.durationDays` in both price line and description
-- «Оплатить» left enabled during price load (server sets payment amount)
+### Modified
+- `apps/ai-web/src/app/globals.css` — appended `.lp-nav*`, `.lp-hero*`, hero entrance animation + reduced-motion guard
 
 ## Verification
 
-| Step | Result |
-|------|--------|
-| `pnpm --filter ai-food exec tsc --noEmit` | PASS (exit 0) |
-| Linter (SubscribePage.tsx) | No issues |
-
-## Commit
-```
-4692d31 feat(ai-food): show subscription price from API on subscribe page
-```
-Files: `apps/ai-food/src/pages/subscribe/ui/SubscribePage.tsx` only
+| Check | Result |
+|-------|--------|
+| `pnpm --filter ai-web type-check` | PASS (exit 0) |
+| Brief TSX verbatim | OK |
+| Brief CSS appended | OK |
+| No barrel / page.tsx wiring | OK (Task 6) |
+| No Ant Design | OK |
 
 ## Self-review
 
-| Check | Verdict |
-|-------|---------|
-| Rules of Hooks — hook before early returns | OK |
-| No hardcoded PRICE_RUB | OK |
-| Loading/error/success UI states | OK |
-| durationDays fallback text | OK |
+- **CtaButtons:** Uses `landingConfig` URLs and `landingContent.hero` labels; variant classes match Task 2 button tokens.
+- **LandingNav:** Nav items from config; mobile hides links at 720px; external links have `rel="noopener noreferrer"`.
+- **LandingHero:** Headline split on `\n`; `id="top"` for nav anchor; `CtaButtons variant="light"` on dark gradient.
+- **CSS:** Hero animation delays skip glow (child 1); `--lp-*` vars require `.lp-page` wrapper — expected until Task 6.
+- **No concerns** blocking downstream tasks.
 
-## Concerns
-- None blocking. Manual smoke on `/subscribe` with live gateway recommended to confirm price display.
+## Files touched
+
+- `apps/ai-web/src/components/landing/CtaButtons.tsx`
+- `apps/ai-web/src/components/landing/LandingNav.tsx`
+- `apps/ai-web/src/components/landing/LandingHero.tsx`
+- `apps/ai-web/src/app/globals.css`

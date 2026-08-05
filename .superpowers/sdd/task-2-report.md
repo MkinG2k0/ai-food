@@ -1,78 +1,39 @@
-# Task 2 Report: Async subscription price/duration helpers
+# Task 2 Report: Fonts, metadata, landing CSS foundation
 
-**Status:** DONE_WITH_CONCERNS  
-**Branch:** `feat/admin-web`  
-**Commit:** `4170170` — `feat(ai-app): read subscription price/duration from AppSettings with env fallback`
+**Status:** DONE  
+**Branch:** feat/ai-food-landing  
+**Commit:** `153393d` — feat(ai-web): add Herb Lab fonts and landing CSS tokens
 
-## What was done
+## Changes
 
-### Step 1 — Failing tests (TDD)
+### `apps/ai-web/src/app/layout.tsx`
+- Added `Fraunces` (`--font-lp-display`) and `DM_Sans` (`--font-lp-sans`) via `next/font/google` with `latin` + `latin-ext` subsets and `display: swap`
+- Font CSS variables applied on `<html className={...}>`
+- Updated metadata title/description per brief (Russian copy)
 
-Updated `apps/ai-app/src/lib/subscription.test.ts`:
+### `apps/ai-web/src/app/globals.css`
+- Removed generic `main:not(.legal-doc)` grid centering stub
+- Preserved `.legal-doc*`, `.landing`, `.admin-*` rules unchanged
+- Appended Herb Lab `.lp-*` foundation: page tokens, typography, sections, buttons, CTA row, reduced-motion guard
 
-- Replaced sync price/duration tests with async versions + `null` prisma
-- Added `getSubscriptionPriceKopecks prefers positive DB value`
-- Added `getPricingSnapshot reports db vs env sources`
-- Updated `activateYearLicense` mock with `appSettings.findUnique` → `null`
-
-### Step 2 — Red run
-
-```text
-pnpm exec vitest run src/lib/subscription.test.ts
-2 failed | 5 passed (7)
-```
-
-Failures: DB override (sync ignored prisma), `getPricingSnapshot is not a function` — as expected.
-
-### Step 3 — Implementation
-
-Updated `apps/ai-app/src/lib/subscription.ts`:
-
-- Added `PricingSource`, `PricingSnapshot` types
-- Added `envPriceKopecks`, `envDurationDays`, `loadSettings` (DB id=1 with try/catch fallback)
-- Made `getSubscriptionPriceKopecks` / `getSubscriptionDurationDays` async with DB → env → defaults chain
-- Added `getPricingSnapshot` with per-field source tracking
-- `activateYearLicense` now `await getSubscriptionDurationDays(prisma)`
-- `hasActiveSubscription` / `subscriptionPublicFields` unchanged
-
-### Step 4 — Green run
-
-```text
-pnpm exec vitest run src/lib/subscription.test.ts
-✓ 7 passed (7)
-```
-
-### Step 5 — Commit
-
-Staged and committed **only**:
-
-- `apps/ai-app/src/lib/subscription.ts`
-- `apps/ai-app/src/lib/subscription.test.ts`
-
-Unrelated `apps/ai-food` legal changes were **not** staged.
-
-## Self-review
+## Verification
 
 | Check | Result |
 |-------|--------|
-| Types/exports match brief | PASS |
-| DB → env → defaults precedence | PASS |
-| `loadSettings` try/catch on missing table | PASS |
-| `activateYearLicense` awaits duration with prisma | PASS |
-| All 7 subscription tests pass | PASS |
-| Commit message matches brief | PASS |
-| No unrelated files in commit | PASS |
+| `pnpm --filter ai-web type-check` | PASS (exit 0) |
+| Brief layout.tsx verbatim | OK |
+| Brief CSS block appended | OK |
+| `.legal-doc*` / `.admin-*` / `.landing` preserved | OK |
+| `page.tsx` not wired | OK (out of scope) |
 
-## Notes / concerns
+## Self-review
 
-1. **`billing.ts` callers not updated (expected):** `getSubscriptionPriceKopecks()` / `getSubscriptionDurationDays()` in `apps/ai-app/src/routes/billing.ts` still call sync-style (no `await`, no prisma). `tsc --noEmit` reports 4 errors in billing.ts. Plan Task 3 should migrate billing routes to `await` + prisma.
-2. **Intentional scope:** Task brief limits changes to `subscription.ts` + `subscription.test.ts` only.
+- **Fonts:** Variables on `<html>`; `.lp-page` and `.lp-display` reference `--font-lp-sans` / `--font-lp-display` — correct cascade for Task 3+ components.
+- **Metadata:** Matches brief strings exactly.
+- **Layout removal:** Stub home page loses centering until Task 6 migrates to `.lp-page` — intentional per brief.
+- **No concerns** blocking downstream tasks.
 
-## Files changed (committed)
+## Files touched
 
-- `apps/ai-app/src/lib/subscription.ts`
-- `apps/ai-app/src/lib/subscription.test.ts`
-
-## Test summary
-
-`vitest run src/lib/subscription.test.ts` — **7/7 PASS** (TDD red → green confirmed).
+- `apps/ai-web/src/app/layout.tsx`
+- `apps/ai-web/src/app/globals.css`

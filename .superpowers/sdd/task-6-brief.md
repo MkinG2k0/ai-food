@@ -1,124 +1,140 @@
-﻿### Task 6: Scaffold `apps/ai-web` (Next.js + Ant Design)
+### Task 6: Compose page, barrel, cleanup stub, verify
 
 **Files:**
-- Create: `apps/ai-web/package.json`, `tsconfig.json`, `next.config.ts`, `next-env.d.ts`
-- Create: `apps/ai-web/src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`
-- Create: `apps/ai-web/.env.example`, `.gitignore` (if needed)
-- Modify: root `package.json` scripts
-- Modify: `turbo.json` env lists for Next build if needed
+- Create: `apps/ai-web/src/components/landing/index.ts`
+- Modify: `apps/ai-web/src/app/page.tsx`
+- Modify: `apps/ai-web/src/app/globals.css` (remove obsolete `.landing` stub rules)
 
 **Interfaces:**
-- Package name: `ai-web`
-- Dev port: **3001**
-- Dependencies: `next@15`, `react@18`, `react-dom@18`, `antd`, `@ant-design/nextjs-registry`, `@ant-design/icons`, `@tanstack/react-query`, `jose`, `typescript`
+- Consumes: all landing components
+- Produces: public `/` route
 
-- [ ] **Step 1: Create package.json**
+- [ ] **Step 1: Barrel**
 
-```json
-{
-  "name": "ai-web",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --port 3001",
-    "build": "next build",
-    "start": "next start --port 3001",
-    "type-check": "tsc --noEmit",
-    "test": "echo \"no tests yet\" && exit 0"
-  },
-  "dependencies": {
-    "@ant-design/icons": "^5.6.1",
-    "@ant-design/nextjs-registry": "^1.0.2",
-    "@tanstack/react-query": "^5.51.1",
-    "antd": "^5.24.2",
-    "jose": "^6.2.8",
-    "next": "^15.2.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@types/node": "^20.14.10",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "typescript": "^5.5.3"
-  },
-  "engines": {
-    "node": ">=20.19.0",
-    "pnpm": ">=9"
-  }
+`apps/ai-web/src/components/landing/index.ts`:
+
+```ts
+export { CtaButtons } from './CtaButtons';
+export { LandingNav } from './LandingNav';
+export { LandingHero } from './LandingHero';
+export { LandingHowItWorks } from './LandingHowItWorks';
+export { LandingFeatures } from './LandingFeatures';
+export { LandingCompare } from './LandingCompare';
+export { LandingPricing } from './LandingPricing';
+export { LandingFaq } from './LandingFaq';
+export { LandingFinalCta } from './LandingFinalCta';
+export { LandingFooter } from './LandingFooter';
+```
+
+- [ ] **Step 2: Replace `page.tsx`**
+
+`apps/ai-web/src/app/page.tsx`:
+
+```tsx
+import {
+  LandingCompare,
+  LandingFaq,
+  LandingFeatures,
+  LandingFinalCta,
+  LandingFooter,
+  LandingHero,
+  LandingHowItWorks,
+  LandingNav,
+  LandingPricing,
+} from '@/components/landing';
+
+export default function HomePage() {
+  return (
+    <div className="lp-page">
+      <LandingNav />
+      <main>
+        <LandingHero />
+        <LandingHowItWorks />
+        <LandingFeatures />
+        <LandingCompare />
+        <LandingPricing />
+        <LandingFaq />
+        <LandingFinalCta />
+      </main>
+      <LandingFooter />
+    </div>
+  );
 }
 ```
 
-- [ ] **Step 2: tsconfig + next.config**
+- [ ] **Step 3: Remove obsolete stub CSS**
 
-`tsconfig.json` вЂ” Next defaults with `"paths": { "@/*": ["./src/*"] }`, `strict: true`.
+Delete from `globals.css`:
 
-`next.config.ts`:
+```css
+.landing {
+  text-align: center;
+}
 
-```ts
-import type { NextConfig } from 'next';
-const nextConfig: NextConfig = {};
-export default nextConfig;
+.landing h1 {
+  margin: 0;
+  font-size: 48px;
+}
+
+.landing p {
+  margin: 8px 0 0;
+  color: #8c8c8c;
+  font-size: 18px;
+}
 ```
 
-- [ ] **Step 3: Root layout + landing stub**
+- [ ] **Step 4: Verify**
 
-`src/app/layout.tsx` вЂ” html/body, `AntdRegistry`, Russian `ConfigProvider` locale optional.
-
-`src/app/page.tsx` вЂ” minimal stub: product name **AI Food** + В«РЎРєРѕСЂРѕВ» (no Ant Layout chrome).
-
-`src/app/globals.css` вЂ” basic body margin reset.
-
-- [ ] **Step 4: `.env.example`**
-
-```
-# UI login password (generate: openssl rand -base64 24)
-ADMIN_PASSWORD=
-# Session cookie signing (openssl rand -base64 32)
-ADMIN_SESSION_SECRET=
-# Same value as apps/ai-app ADMIN_API_KEY (server-only)
-ADMIN_API_KEY=
-# Gateway base URL
-AI_GATEWAY_URL=http://127.0.0.1:3000
-```
-
-- [ ] **Step 5: Wire monorepo**
-
-Root `package.json`:
-
-```json
-"dev:web": "turbo run dev --filter=ai-web",
-"build:web": "turbo run build --filter=ai-web"
-```
-
-- [ ] **Step 6: Install + type-check**
-
-Run from repo root:
+Run:
 
 ```bash
-pnpm install
 pnpm --filter ai-web type-check
+pnpm --filter ai-web build
 ```
 
-Expected: PASS
+Expected: both PASS; `/` static page built; no «Скоро» in output.
 
-- [ ] **Step 7: Generate local secrets into `apps/ai-web/.env` and append matching `ADMIN_API_KEY` to `apps/ai-app/.env`** (do **not** commit `.env`)
+Manual smoke (`pnpm --filter ai-web dev`):
 
-PowerShell example:
+- [ ] Hero shows brand + headline + two CTAs (web + RuStore)
+- [ ] Anchors scroll to sections
+- [ ] FAQ opens with `<details>`
+- [ ] Footer links to `/terms` `/privacy` `/refunds`
+- [ ] `/admin/login` still loads
+- [ ] No ₽ amounts; no fake ratings/testimonials
+- [ ] Mobile width ~375px: nav collapses links, hero readable
 
-```powershell
-$pwd = [Convert]::ToBase64String((1..24 | ForEach-Object { Get-Random -Max 256 }) -as [byte[]])
-$sess = [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Max 256 }) -as [byte[]])
-$key = [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Max 256 }) -as [byte[]])
-```
-
-Write values into both env files. Print `ADMIN_PASSWORD` once in the commit message notes / terminal for the human (not into git).
-
-- [ ] **Step 8: Commit scaffold only (no `.env`)**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add apps/ai-web package.json turbo.json pnpm-lock.yaml
-git commit -m "feat(ai-web): scaffold Next.js app with Ant Design for admin/landing"
+git add apps/ai-web/src/components/landing/index.ts apps/ai-web/src/app/page.tsx apps/ai-web/src/app/globals.css
+git commit -m "feat(ai-web): ship Herb Lab marketing landing on /"
 ```
 
 ---
+
+## Spec coverage self-check
+
+| Spec requirement | Task |
+|------------------|------|
+| Replace «Скоро» stub | 6 |
+| Web + RuStore CTAs | 1, 3, 5 |
+| Section map (nav→footer) | 3–6 |
+| Early-stage, no fake social proof | 1 content |
+| No ₽ prices | 1 pricing copy |
+| Quota 50 / 150 / unlimited | 1 |
+| Herb Lab + full-bleed hero | 2, 3 |
+| FAQ without client JS | 5 `<details>` |
+| Footer legal + Telegram | 5 |
+| No Ant Design on landing | all tasks |
+| type-check + build | each task / Task 6 |
+
+## Placeholder scan
+
+None intentional — all copy, paths, and CSS included.
+
+## Type consistency
+
+- `landingConfig` / `landingContent` shapes stable across tasks
+- `CtaButtons` `variant: 'dark' | 'light'` used by Hero, Pricing, FinalCta
+- Section `id`s from content match nav `href`s (`#how`, `#features`, `#pricing`, `#faq`)

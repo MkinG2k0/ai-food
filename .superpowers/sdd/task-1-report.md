@@ -1,82 +1,39 @@
-# Task 1 Report: Prisma `AppSettings` model + migration
+# Task 1 Report: Landing config + content modules
 
 **Status:** DONE  
-**Branch:** `feat/admin-web`  
-**Commit:** `5718f17` — `feat(ai-app): add AppSettings singleton for subscription pricing`
+**Branch:** `feat/ai-food-landing`  
+**Commit:** `cf52d9a` — feat(ai-web): add landing config and Russian copy modules
 
 ## What was done
 
-### Step 1 — Schema model
+Created two modules under `apps/ai-web/src/lib/landing/`:
 
-Appended to `apps/ai-app/prisma/schema.prisma` (verbatim from brief):
+| File | Exports |
+|------|---------|
+| `config.ts` | `landingConfig` (productName, URLs, limits, nav), `LandingNavItem` type |
+| `content.ts` | `landingContent` (hero, howItWorks, features, compare, pricing, faq, finalCta) |
 
-```prisma
-model AppSettings {
-  id                       Int      @id @default(1)
-  subscriptionPriceKopecks Int?
-  subscriptionDurationDays Int?
-  updatedAt                DateTime @updatedAt
-}
+Content imports limits and product name from `landingConfig` for interpolated strings in pricing and FAQ.
+
+## Verification
+
+```bash
+pnpm --filter ai-web type-check
 ```
 
-### Step 2 — Migration SQL
+**Result:** PASS (exit 0, `tsc --noEmit`)
 
-Created `apps/ai-app/prisma/migrations/20260804220000_app_settings/migration.sql` (verbatim from brief):
-
-```sql
--- CreateTable
-CREATE TABLE "AppSettings" (
-    "id" INTEGER NOT NULL DEFAULT 1,
-    "subscriptionPriceKopecks" INTEGER,
-    "subscriptionDurationDays" INTEGER,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "AppSettings_pkey" PRIMARY KEY ("id")
-);
-```
-
-### Step 3 — Prisma generate
-
-```text
-pnpm exec prisma generate   # from apps/ai-app
-✔ Generated Prisma Client (7.9.1) to .\src\generated\prisma in 65ms
-```
-
-Verified: `AppSettings` present in `apps/ai-app/src/generated/prisma/models/AppSettings.ts` (gitignored, not committed — matches repo convention).
-
-### Step 4 — Commit
-
-Staged and committed **only**:
-
-- `apps/ai-app/prisma/schema.prisma`
-- `apps/ai-app/prisma/migrations/20260804220000_app_settings/migration.sql`
-
-Unrelated legal-page changes under `apps/ai-food/src/...` were **not** staged or committed.
+No page wiring or CSS changes — as specified.
 
 ## Self-review
 
-| Check | Result |
-|-------|--------|
-| Model fields match brief exactly | PASS |
-| Migration SQL matches brief exactly | PASS |
-| Migration timestamp/name `20260804220000_app_settings` | PASS |
-| `prisma generate` exit 0 | PASS |
-| `AppSettings` on generated client | PASS |
-| Commit message matches brief | PASS |
-| No unrelated files in commit | PASS |
-| Follows existing schema conventions (Int @id, @updatedAt) | PASS |
+- **Spec fidelity:** Values match task brief verbatim (URLs, limits 50/150, nav anchors, all Russian copy sections).
+- **Typo fix during implementation:** Initial draft accidentally used Latin `U` instead of Cyrillic `У` in four `КБЖУ`/`БЖУ` strings; corrected before commit.
+- **Types:** `as const` on both exports; `LandingNavItem` derived from nav array — good for downstream section components.
+- **Scope:** Only the two specified files touched; no unrelated changes.
+- **Concerns:** None blocking. `landingContent` is not yet imported anywhere (expected until Task 2+ wires the page).
 
-## Notes / concerns
+## Files created
 
-1. **`updatedAt` without DB default:** Migration defines `"updatedAt" TIMESTAMP(3) NOT NULL` with no `DEFAULT`. First row insert via raw SQL must supply `updatedAt`. Prisma Client with `@updatedAt` sets it on create/update — acceptable for singleton access via Prisma in later tasks.
-2. **Migration not applied to DB:** Task scope was schema file + migration SQL + generate only. `prisma migrate deploy` / `migrate dev` was not run (no DB in task scope).
-3. **Singleton enforcement:** Schema uses `id @default(1)` but DB does not enforce a CHECK that `id = 1`. Application layer should upsert/read row `id: 1` only (expected in later admin API tasks).
-
-## Files changed (committed)
-
-- `apps/ai-app/prisma/schema.prisma` (+7 lines)
-- `apps/ai-app/prisma/migrations/20260804220000_app_settings/migration.sql` (new)
-
-## Test summary
-
-`pnpm exec prisma generate` succeeded; generated client includes `AppSettingsModel` and related types. No runtime/DB migration test performed (out of scope).
+- `apps/ai-web/src/lib/landing/config.ts` (16 lines)
+- `apps/ai-web/src/lib/landing/content.ts` (133 lines)

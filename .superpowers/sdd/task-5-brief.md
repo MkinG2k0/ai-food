@@ -1,185 +1,311 @@
-﻿### Task 5: Admin pricing + stats + users/subscription routes
+### Task 5: Pricing, FAQ, Final CTA, Footer
 
 **Files:**
-- Create: `apps/ai-app/src/routes/admin.ts`
-- Create: `apps/ai-app/src/routes/admin.test.ts`
-- Modify: `apps/ai-app/src/app.ts`
-- Modify: `apps/ai-app/.env.example`
-- Modify: `turbo.json` (add `ADMIN_API_KEY` to `dev`/`test` `passThroughEnv`)
+- Create: `apps/ai-web/src/components/landing/LandingPricing.tsx`
+- Create: `apps/ai-web/src/components/landing/LandingFaq.tsx`
+- Create: `apps/ai-web/src/components/landing/LandingFinalCta.tsx`
+- Create: `apps/ai-web/src/components/landing/LandingFooter.tsx`
+- Modify: `apps/ai-web/src/app/globals.css`
 
 **Interfaces:**
-- Produces router mounted at `/admin` with:
-  - `GET /stats`
-  - `GET /pricing` в†’ `{ priceKopecks, durationDays, source }` where `source` is `'db'` if **either** field from DB else `'env'` (if mixed, prefer documenting both via snapshot: use `priceSource`/`durationSource` OR single `source: priceSource === 'db' || durationSource === 'db' ? 'db' : 'env'` per spec вЂ” implement **single** `source` as in spec: `'db'` if price **or** duration comes from DB, else `'env'`)
-  - `PUT /pricing` body `{ priceKopecks?: number, durationDays?: number }`
-  - `GET /users?q=`
-  - `POST /users/:id/subscription` body `{ action: 'activate'|'extend'|'revoke', days?: number }`
+- Consumes: `landingContent`, `landingConfig`, `legalConfig`, `formatSellerBlock`
+- Produces: remaining section components
 
-- [ ] **Step 1: Write route tests (supertest + mocked prisma)**
+- [ ] **Step 1: LandingPricing**
 
-Follow patterns from `billing.test.ts`: mock `../lib/prisma.js` `getPrisma` / `isDatabaseConfigured`, set `process.env.ADMIN_API_KEY = 'test-admin'`, use `createApp()` from `../app.js`.
+```tsx
+import { landingContent } from '@/lib/landing/content';
 
-Cover at minimum:
-1. `GET /admin/pricing` without key в†’ 401
-2. `GET /admin/pricing` with key в†’ 200 + fields
-3. `PUT /admin/pricing` upserts and returns db source
-4. `GET /admin/stats` shape
-5. `GET /admin/users?q=alice` search
-6. `POST .../subscription` activate / extend / revoke
-7. unknown user в†’ 404
+import { CtaButtons } from './CtaButtons';
 
-- [ ] **Step 2: Run вЂ” expect FAIL** (routes not mounted)
+export function LandingPricing() {
+  const c = landingContent.pricing;
 
-- [ ] **Step 3: Implement `admin.ts`**
-
-Sketch (full implementation must match tests):
-
-```ts
-import { Router } from 'express';
-import { ApiError } from '../../lib/errors.js';
-import { asyncHandler } from '../middleware/error.js';
-import { requireAdminKey } from '../middleware/adminAuth.js';
-import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
-import {
-  getPricingSnapshot,
-  getSubscriptionDurationDays,
-  subscriptionPublicFields,
-} from '../lib/subscription.js';
-
-function requireDb() { /* same as billing.ts */ }
-
-export const adminRouter = Router();
-adminRouter.use(requireAdminKey);
-
-adminRouter.get('/pricing', asyncHandler(async (_req, res) => {
-  const prisma = getPrisma();
-  const snap = await getPricingSnapshot(prisma);
-  const source =
-    snap.priceSource === 'db' || snap.durationSource === 'db' ? 'db' : 'env';
-  res.json({
-    priceKopecks: snap.priceKopecks,
-    durationDays: snap.durationDays,
-    source,
-  });
-}));
-
-adminRouter.put('/pricing', asyncHandler(async (req, res) => {
-  const prisma = requireDb();
-  const priceKopecks = req.body?.priceKopecks;
-  const durationDays = req.body?.durationDays;
-  if (priceKopecks !== undefined) {
-    if (typeof priceKopecks !== 'number' || !Number.isFinite(priceKopecks) || priceKopecks < 1) {
-      throw new ApiError(400, 'VALIDATION_ERROR', 'priceKopecks must be a positive number.');
-    }
-  }
-  if (durationDays !== undefined) {
-    if (typeof durationDays !== 'number' || !Number.isInteger(durationDays) || durationDays < 1) {
-      throw new ApiError(400, 'VALIDATION_ERROR', 'durationDays must be a positive integer.');
-    }
-  }
-  if (priceKopecks === undefined && durationDays === undefined) {
-    throw new ApiError(400, 'VALIDATION_ERROR', 'Provide priceKopecks and/or durationDays.');
-  }
-  await prisma.appSettings.upsert({
-    where: { id: 1 },
-    create: {
-      id: 1,
-      subscriptionPriceKopecks:
-        priceKopecks !== undefined ? Math.floor(priceKopecks) : null,
-      subscriptionDurationDays:
-        durationDays !== undefined ? durationDays : null,
-    },
-    update: {
-      ...(priceKopecks !== undefined
-        ? { subscriptionPriceKopecks: Math.floor(priceKopecks) }
-        : {}),
-      ...(durationDays !== undefined
-        ? { subscriptionDurationDays: durationDays }
-        : {}),
-    },
-  });
-  const snap = await getPricingSnapshot(prisma);
-  const source =
-    snap.priceSource === 'db' || snap.durationSource === 'db' ? 'db' : 'env';
-  res.json({
-    priceKopecks: snap.priceKopecks,
-    durationDays: snap.durationDays,
-    source,
-  });
-}));
-
-// GET /stats вЂ” prisma.user.count, active count with expiresAt gt now,
-// payment aggregate confirmed, usageEvent counts by kind + createdAt gte
-
-// GET /users?q= вЂ” OR filters on id equals, telegramId equals/contains,
-// username contains (case-insensitive where supported), take 20
-
-// POST /users/:id/subscription вЂ” activate/extend/revoke as spec
-```
-
-**Subscription action logic:**
-
-```ts
-const now = new Date();
-if (action === 'activate') {
-  const days =
-    typeof body.days === 'number' && body.days > 0
-      ? Math.floor(body.days)
-      : await getSubscriptionDurationDays(prisma);
-  const expiresAt = new Date(now);
-  expiresAt.setUTCDate(expiresAt.getUTCDate() + days);
-  // update active + expiresAt
-}
-if (action === 'extend') {
-  if (typeof body.days !== 'number' || !Number.isInteger(body.days) || body.days < 1) {
-    throw new ApiError(400, 'VALIDATION_ERROR', 'days required for extend.');
-  }
-  const base =
-    user.subscriptionExpiresAt && user.subscriptionExpiresAt > now
-      ? user.subscriptionExpiresAt
-      : now;
-  const expiresAt = new Date(base);
-  expiresAt.setUTCDate(expiresAt.getUTCDate() + body.days);
-  // update active + expiresAt
-}
-if (action === 'revoke') {
-  // status none, expiresAt null
+  return (
+    <section className="lp-section lp-section--muted" id={c.id}>
+      <div className="lp-section__inner">
+        <p className="lp-eyebrow">{c.eyebrow}</p>
+        <h2 className="lp-display">{c.title}</h2>
+        <div className="lp-pricing">
+          <article className="lp-pricing__card">
+            <h3>{c.freeTitle}</h3>
+            <p>{c.freeBody}</p>
+          </article>
+          <article className="lp-pricing__card lp-pricing__card--accent">
+            <h3>{c.paidTitle}</h3>
+            <p>{c.paidBody}</p>
+          </article>
+        </div>
+        <p className="lp-pricing__note">{c.ctaNote}</p>
+        <CtaButtons />
+      </div>
+    </section>
+  );
 }
 ```
 
-Response user snapshot: `{ id, telegramId, username, firstName, lastName, ...subscriptionPublicFields(user) }`.
+- [ ] **Step 2: LandingFaq**
 
-- [ ] **Step 4: Mount in `app.ts`**
+```tsx
+import { landingContent } from '@/lib/landing/content';
 
-```ts
-import { adminRouter } from './routes/admin.js';
-// cors methods: add PUT
-// cors allowedHeaders: add 'X-Admin-Key'
-app.use('/admin', adminRouter);
+export function LandingFaq() {
+  const c = landingContent.faq;
+
+  return (
+    <section className="lp-section" id={c.id}>
+      <div className="lp-section__inner">
+        <p className="lp-eyebrow">{c.eyebrow}</p>
+        <h2 className="lp-display">{c.title}</h2>
+        <div className="lp-faq">
+          {c.items.map((item, i) => (
+            <details key={item.q} className="lp-faq__item">
+              <summary>
+                <span className="lp-faq__idx">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                {item.q}
+              </summary>
+              <p>{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 ```
 
-- [ ] **Step 5: Document env**
+- [ ] **Step 3: LandingFinalCta**
 
-Append to `apps/ai-app/.env.example`:
+```tsx
+import { landingContent } from '@/lib/landing/content';
 
+import { CtaButtons } from './CtaButtons';
+
+export function LandingFinalCta() {
+  const c = landingContent.finalCta;
+
+  return (
+    <section className="lp-final">
+      <div className="lp-final__inner">
+        <h2 className="lp-display">{c.title}</h2>
+        <p>{c.body}</p>
+        <CtaButtons variant="light" />
+      </div>
+    </section>
+  );
+}
 ```
-# Admin API (ai-web server в†’ gateway). Required for /admin/* (fail-closed if unset).
-# ADMIN_API_KEY=
+
+- [ ] **Step 4: LandingFooter**
+
+```tsx
+import Link from 'next/link';
+
+import { formatSellerBlock, legalConfig } from '@/lib/legal/legalConfig';
+import { landingConfig } from '@/lib/landing/config';
+
+export function LandingFooter() {
+  return (
+    <footer className="lp-footer">
+      <div className="lp-footer__inner">
+        <p className="lp-footer__brand">{landingConfig.productName}</p>
+        <nav className="lp-footer__nav" aria-label="Документы">
+          <Link href="/terms">Условия</Link>
+          <Link href="/privacy">Конфиденциальность</Link>
+          <Link href="/refunds">Возврат</Link>
+          <a
+            href={legalConfig.telegramSupport}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Поддержка {legalConfig.telegramLabel}
+          </a>
+        </nav>
+        <p className="lp-footer__seller">{formatSellerBlock()}</p>
+        <p className="lp-footer__copy">
+          © {new Date().getFullYear()} {landingConfig.productName}
+        </p>
+      </div>
+    </footer>
+  );
+}
 ```
 
-Add `ADMIN_API_KEY` to `turbo.json` `dev` and `test` `passThroughEnv`.
+- [ ] **Step 5: Append pricing / faq / final / footer CSS**
 
-- [ ] **Step 6: Run tests**
+```css
+.lp-pricing {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr 1fr;
+  margin: 32px 0 20px;
+}
 
-Run: `cd apps/ai-app && pnpm exec vitest run src/routes/admin.test.ts src/middleware/adminAuth.test.ts`
+.lp-pricing__card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid rgba(21, 38, 28, 0.08);
+}
 
+.lp-pricing__card--accent {
+  background: var(--lp-ink);
+  color: #f4f8f5;
+  border-color: transparent;
+}
+
+.lp-pricing__card h3 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.lp-pricing__card p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--lp-muted);
+}
+
+.lp-pricing__card--accent p {
+  color: rgba(244, 248, 245, 0.85);
+}
+
+.lp-pricing__note {
+  margin: 0 0 16px;
+  color: var(--lp-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 700px) {
+  .lp-pricing {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lp-faq {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lp-faq__item {
+  background: #fff;
+  border: 1px solid rgba(21, 38, 28, 0.08);
+  border-radius: 10px;
+  padding: 4px 16px;
+}
+
+.lp-faq__item summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 14px 0;
+  font-weight: 600;
+}
+
+.lp-faq__item summary::-webkit-details-marker {
+  display: none;
+}
+
+.lp-faq__idx {
+  color: var(--lp-sage);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.lp-faq__item p {
+  margin: 0 0 16px;
+  padding-left: 36px;
+  color: var(--lp-muted);
+  font-size: 15px;
+}
+
+.lp-final {
+  background: linear-gradient(
+    160deg,
+    var(--lp-hero-1),
+    var(--lp-hero-2) 55%,
+    var(--lp-hero-3)
+  );
+  color: #f4f8f5;
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.lp-final__inner {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.lp-final h2 {
+  margin: 0 0 12px;
+  font-size: clamp(28px, 4vw, 40px);
+}
+
+.lp-final p {
+  margin: 0 0 24px;
+  color: rgba(244, 248, 245, 0.82);
+}
+
+.lp-final .lp-cta-row {
+  justify-content: center;
+}
+
+.lp-footer {
+  background: #15261c;
+  color: rgba(244, 248, 245, 0.75);
+  padding: 40px 24px 56px;
+  font-size: 14px;
+}
+
+.lp-footer__inner {
+  max-width: var(--lp-max);
+  margin: 0 auto;
+}
+
+.lp-footer__brand {
+  margin: 0 0 16px;
+  color: #f4f8f5;
+  font-family: var(--font-lp-display), Georgia, serif;
+  font-size: 22px;
+}
+
+.lp-footer__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.lp-footer__nav a {
+  color: #c5e063;
+  text-decoration: none;
+}
+
+.lp-footer__nav a:hover {
+  text-decoration: underline;
+}
+
+.lp-footer__seller,
+.lp-footer__copy {
+  margin: 0 0 8px;
+  max-width: 52rem;
+}
+```
+
+- [ ] **Step 6: Type-check + commit**
+
+Run: `pnpm --filter ai-web type-check`  
 Expected: PASS
 
-- [ ] **Step 7: Commit**
-
 ```bash
-git add apps/ai-app/src/routes/admin.ts apps/ai-app/src/routes/admin.test.ts apps/ai-app/src/app.ts apps/ai-app/.env.example turbo.json
-git commit -m "feat(ai-app): add /admin stats pricing and subscription management API"
+git add apps/ai-web/src/components/landing/LandingPricing.tsx apps/ai-web/src/components/landing/LandingFaq.tsx apps/ai-web/src/components/landing/LandingFinalCta.tsx apps/ai-web/src/components/landing/LandingFooter.tsx apps/ai-web/src/app/globals.css
+git commit -m "feat(ai-web): add pricing, FAQ, final CTA, and footer"
 ```
 
 ---
+
