@@ -18,8 +18,12 @@ type MockUser = {
   username: string | null;
   firstName: string | null;
   lastName: string | null;
+  photoUrl: string | null;
   subscriptionStatus: 'none' | 'active';
   subscriptionExpiresAt: Date | null;
+  dataConsentAt: Date | null;
+  dataConsentVersion: string | null;
+  createdAt: Date;
 };
 
 type MockPayment = {
@@ -41,6 +45,21 @@ type MockPromo = {
   updatedAt: Date;
 };
 
+type MockUsageEvent = {
+  id: string;
+  userId: string | null;
+  kind:
+    | 'analyze_photo'
+    | 'analyze_text'
+    | 'analyze_photo_text'
+    | 'refine'
+    | 'manual'
+    | 'barcode';
+  deviceId: string;
+  clientDeviceId: string;
+  createdAt: Date;
+};
+
 describe('admin routes', () => {
   let settings: {
     id: number;
@@ -51,6 +70,7 @@ describe('admin routes', () => {
   let users: MockUser[];
   let payments: MockPayment[];
   let promos: MockPromo[];
+  let usageEvents: MockUsageEvent[];
   let prisma: ReturnType<typeof createMockPrisma>;
 
   function createMockPrisma() {
@@ -106,15 +126,20 @@ describe('admin routes', () => {
         })),
         findMany: vi.fn(
           async ({
+            where,
             include,
             orderBy,
             take,
           }: {
+            where?: { userId?: string };
             include?: { user?: { select: Record<string, boolean> } };
             orderBy?: { createdAt: 'desc' | 'asc' };
             take?: number;
           } = {}) => {
-            const sorted = [...payments].sort((a, b) =>
+            const filtered = where?.userId
+              ? payments.filter((payment) => payment.userId === where.userId)
+              : payments;
+            const sorted = [...filtered].sort((a, b) =>
               orderBy?.createdAt === 'asc'
                 ? a.createdAt.getTime() - b.createdAt.getTime()
                 : b.createdAt.getTime() - a.createdAt.getTime(),
@@ -204,11 +229,75 @@ describe('admin routes', () => {
         fn(prisma),
       ),
       usageEvent: {
-        count: vi.fn(async ({ where }: { where: { kind: string; createdAt: unknown } }) => {
-          const days = where.createdAt ? 1 : 0;
-          if (where.kind === 'analyze') return days ? 7 : 0;
-          return days ? 4 : 0;
-        }),
+        count: vi.fn(
+          async ({
+            where,
+          }: {
+            where: {
+              kind: string | { startsWith: string };
+              createdAt: unknown;
+            };
+          }) => {
+            const days = where.createdAt ? 1 : 0;
+            if (
+              (typeof where.kind === 'string' && where.kind === 'analyze') ||
+              (typeof where.kind === 'object' &&
+                where.kind.startsWith === 'analyze')
+            ) {
+              return days ? 7 : 0;
+            }
+            return days ? 4 : 0;
+          },
+        ),
+        groupBy: vi.fn(
+          async ({
+            where,
+          }: {
+            where: { userId: { in: string[] } };
+          }) => {
+            const counts = new Map<string, number>();
+            for (const event of usageEvents) {
+              if (!event.userId || !where.userId.in.includes(event.userId)) continue;
+              const key = `${event.userId}:${event.kind}`;
+              counts.set(key, (counts.get(key) ?? 0) + 1);
+            }
+            return [...counts].map(([key, count]) => {
+              const [userId, kind] = key.split(':');
+              return { userId, kind, _count: { _all: count } };
+            });
+          },
+        ),
+        findMany: vi.fn(
+          async ({
+            where,
+            orderBy,
+            take,
+            include,
+          }: {
+            where: { userId: string };
+            orderBy: { createdAt: 'desc' | 'asc' };
+            take: number;
+            include?: { device?: { select: { deviceId: boolean } } };
+          }) => {
+            const rows = usageEvents
+              .filter((event) => event.userId === where.userId)
+              .sort((a, b) =>
+                orderBy.createdAt === 'asc'
+                  ? a.createdAt.getTime() - b.createdAt.getTime()
+                  : b.createdAt.getTime() - a.createdAt.getTime(),
+              )
+              .slice(0, take);
+            return rows.map((event) => ({
+              id: event.id,
+              kind: event.kind,
+              deviceId: event.deviceId,
+              createdAt: event.createdAt,
+              ...(include?.device
+                ? { device: { deviceId: event.clientDeviceId } }
+                : {}),
+            }));
+          },
+        ),
       },
     };
   }
@@ -220,6 +309,32 @@ describe('admin routes', () => {
     process.env.SUBSCRIPTION_DURATION_DAYS = '365';
     settings = null;
     promos = [];
+    usageEvents = [
+      {
+        id: 'usage-1',
+        userId: 'user-1',
+        kind: 'analyze_photo',
+        deviceId: 'device-row-1',
+        clientDeviceId: 'client-device-1',
+        createdAt: new Date('2026-08-04T12:00:00.000Z'),
+      },
+      {
+        id: 'usage-2',
+        userId: 'user-1',
+        kind: 'analyze_photo',
+        deviceId: 'device-row-1',
+        clientDeviceId: 'client-device-1',
+        createdAt: new Date('2026-08-05T12:00:00.000Z'),
+      },
+      {
+        id: 'usage-3',
+        userId: 'user-1',
+        kind: 'refine',
+        deviceId: 'device-row-1',
+        clientDeviceId: 'client-device-1',
+        createdAt: new Date('2026-08-05T13:00:00.000Z'),
+      },
+    ];
     payments = [
       {
         id: 'pay-confirmed',
@@ -249,8 +364,12 @@ describe('admin routes', () => {
         username: 'alice',
         firstName: 'Alice',
         lastName: 'Admin',
+        photoUrl: 'https://example.com/alice.jpg',
         subscriptionStatus: 'none',
         subscriptionExpiresAt: null,
+        dataConsentAt: new Date('2026-08-01T09:00:00.000Z'),
+        dataConsentVersion: 'v1',
+        createdAt: new Date('2026-07-01T10:00:00.000Z'),
       },
       {
         id: 'user-2',
@@ -258,8 +377,12 @@ describe('admin routes', () => {
         username: 'bob',
         firstName: 'Bob',
         lastName: null,
+        photoUrl: null,
         subscriptionStatus: 'active',
         subscriptionExpiresAt: new Date('2030-01-01T00:00:00.000Z'),
+        dataConsentAt: null,
+        dataConsentVersion: null,
+        createdAt: new Date('2026-07-02T10:00:00.000Z'),
       },
     ];
     prisma = createMockPrisma();
@@ -343,6 +466,26 @@ describe('admin routes', () => {
     });
   });
 
+  it('GET /admin/stats counts analyze* prefix', async () => {
+    const response = await request(createApp())
+      .get('/admin/stats')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(prisma.usageEvent.count).toHaveBeenNthCalledWith(1, {
+      where: {
+        kind: { startsWith: 'analyze' },
+        createdAt: { gte: expect.any(Date) },
+      },
+    });
+    expect(prisma.usageEvent.count).toHaveBeenNthCalledWith(3, {
+      where: {
+        kind: { startsWith: 'analyze' },
+        createdAt: { gte: expect.any(Date) },
+      },
+    });
+  });
+
   it('GET /admin/users searches by id, telegram id, or username', async () => {
     const response = await request(createApp())
       .get('/admin/users?q=alice')
@@ -368,6 +511,70 @@ describe('admin routes', () => {
       subscriptionStatus: 'none',
       hasActiveSubscription: false,
     });
+  });
+
+  it('GET /admin/users includes usageCounts and consent', async () => {
+    const response = await request(createApp())
+      .get('/admin/users')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body.users[0]).toMatchObject({
+      id: 'user-1',
+      photoUrl: 'https://example.com/alice.jpg',
+      dataConsentAt: '2026-08-01T09:00:00.000Z',
+      dataConsentVersion: 'v1',
+      createdAt: '2026-07-01T10:00:00.000Z',
+      usageCounts: {
+        analyze_photo: 2,
+        analyze_text: 0,
+        analyze_photo_text: 0,
+        refine: 1,
+        manual: 0,
+        barcode: 0,
+        analyze: 0,
+      },
+    });
+  });
+
+  it('GET /admin/users/:id returns payments and recentEvents', async () => {
+    const response = await request(createApp())
+      .get('/admin/users/user-1')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body.user).toMatchObject({
+      id: 'user-1',
+      dataConsentVersion: 'v1',
+    });
+    expect(response.body.usageCounts).toMatchObject({
+      analyze_photo: 2,
+      refine: 1,
+    });
+    expect(response.body.payments).toHaveLength(1);
+    expect(response.body.payments[0].id).toBe('pay-pending');
+    expect(response.body.recentEvents[0]).toEqual({
+      id: 'usage-3',
+      kind: 'refine',
+      deviceId: 'client-device-1',
+      createdAt: '2026-08-05T13:00:00.000Z',
+    });
+    expect(prisma.usageEvent.findMany).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: { device: { select: { deviceId: true } } },
+    });
+  });
+
+  it('GET /admin/users/:id returns 404', async () => {
+    const response = await request(createApp())
+      .get('/admin/users/missing')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(404);
+    expect(response.body.code).toBe('NOT_FOUND');
+    expect(response.body.message).toBe('User not found.');
   });
 
   it('POST /admin/users/:id/subscription activates a subscription', async () => {
