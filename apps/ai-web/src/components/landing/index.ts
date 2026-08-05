@@ -1,0 +1,10 @@
+export { CtaButtons } from './CtaButtons';
+export { LandingNav } from './LandingNav';
+export { LandingHero } from './LandingHero';
+export { LandingHowItWorks } from './LandingHowItWorks';
+export { LandingFeatures } from './LandingFeatures';
+export { LandingCompare } from './LandingCompare';
+export { LandingPricing } from './LandingPricing';
+export { LandingFaq } from './LandingFaq';
+export { LandingFinalCta } from './LandingFinalCta';
+export { LandingFooter } from './LandingFooter';

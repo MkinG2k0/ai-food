@@ -107,21 +107,6 @@ body {
   color: #1677ff;
 }
 
-.landing {
-  text-align: center;
-}
-
-.landing h1 {
-  margin: 0;
-  font-size: 48px;
-}
-
-.landing p {
-  margin: 8px 0 0;
-  color: #8c8c8c;
-  font-size: 18px;
-}
-
 .admin-auth {
   display: grid;
   min-height: 100vh;

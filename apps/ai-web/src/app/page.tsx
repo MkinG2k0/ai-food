@@ -1,10 +1,29 @@
+import {
+  LandingCompare,
+  LandingFaq,
+  LandingFeatures,
+  LandingFinalCta,
+  LandingFooter,
+  LandingHero,
+  LandingHowItWorks,
+  LandingNav,
+  LandingPricing,
+} from '@/components/landing';
+
 export default function HomePage() {
   return (
-    <main>
-      <div className="landing">
-        <h1>AI Food</h1>
-        <p>Скоро</p>
-      </div>
-    </main>
+    <div className="lp-page">
+      <LandingNav />
+      <main>
+        <LandingHero />
+        <LandingHowItWorks />
+        <LandingFeatures />
+        <LandingCompare />
+        <LandingPricing />
+        <LandingFaq />
+        <LandingFinalCta />
+      </main>
+      <LandingFooter />
+    </div>
   );
 }
