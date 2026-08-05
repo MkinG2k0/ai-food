@@ -1,38 +1,68 @@
-# Task 2 Report: Async promo helpers (DB lookup)
+# Task 2 Report: Typed billable usage kinds (quota lib + middleware)
 
-## Status: DONE
+**Status:** ✅ Complete  
+**Branch:** feat/admin-users-data-consent  
+**Date:** 2026-08-06
 
 ## Summary
 
-Replaced hardcoded `Map` in `promos.ts` with async Prisma DB lookup. `lookupPromo` and `resolvePromo` now accept `PrismaClient | null | undefined` as first argument and query `promoCode.findUnique`. `normalizePromoCode` and `applyPromoDiscount` unchanged.
+Extended `apps/ai-app` quota library and middleware to support typed billable usage kinds: `analyze`, `analyze_photo`, `analyze_text`, `analyze_photo_text`, and `refine`. Empty/missing `X-Usage-Kind` now defaults to `analyze`; unknown values map to `other` (non-billable, skips enforcement).
 
-## TDD Evidence
+## TDD Steps
 
 | Step | Action | Result |
 |------|--------|--------|
-| 1 | Rewrote `promos.test.ts` with mock Prisma | — |
-| 2 | `pnpm exec vitest run src/lib/promos.test.ts` | **RED** — 4 failed (sync signature / `raw.trim is not a function`) |
-| 3 | Implemented async `promos.ts` | — |
-| 4 | Re-ran tests | **GREEN** — 6/6 passed |
-| 5 | Commit | `ee9edb3` |
+| 1 | Added failing tests in `quota.test.ts` | 2 failed (missing `isBillableUsageKind`, old `parseUsageKind`) |
+| 2 | `vitest run src/lib/quota.test.ts` | FAIL ✓ |
+| 3 | Implemented `quota.ts` types + helpers | — |
+| 4 | Updated `finalizeQuotaUsage` in middleware | — |
+| 5 | `vitest run src/lib/quota.test.ts src/middleware/quota.test.ts` | 14/14 PASS ✓ |
+| 6 | Commit | `feat(ai-app): typed analyze usage kinds for quota` |
 
-## Files Modified
+## Changes
 
-- `apps/ai-app/src/lib/promos.ts` — removed `PROMOS` Map; added Prisma import; async `lookupPromo` / `resolvePromo`
-- `apps/ai-app/src/lib/promos.test.ts` — mock Prisma via `vi.fn`; async test cases
+### `apps/ai-app/src/lib/quota.ts`
 
-## Self-Review
+- Added `BillableUsageKind` union type (5 values).
+- Added `UsageKind = BillableUsageKind | 'other'`.
+- Replaced `BILLABLE_KINDS` with `BILLABLE_SET` + `isBillableUsageKind()`.
+- `parseUsageKind`: empty/whitespace → `analyze`; known billable → self; else `other`.
+- Added `billableUsageWhere()` — Prisma filter: `refine` OR `kind startsWith 'analyze'`.
+- `countGuestBillableUsage` uses `billableUsageWhere()`.
+- `recordBillableUsage` accepts `BillableUsageKind`.
 
-- Signatures match brief exactly
-- Null/empty prisma and code handled before DB call
-- `applyPromoDiscount` min-1 clamp preserved
-- Only files listed in brief were touched
-- `billing.ts` not updated (Task 3) — expected temporary typecheck gap elsewhere
+### `apps/ai-app/src/middleware/quota.ts`
 
-## Concerns
+- `finalizeQuotaUsage` uses `isBillableUsageKind(q.usageKind)` instead of hardcoded `analyze`/`refine` check.
+- `enforceChatQuota` unchanged: `kind === 'other'` still skips enforcement.
 
-None. Prototype-pollution tests from old sync Map removed per brief (DB lookup has no Map prototype issue).
+### Tests
+
+- `quota.test.ts`: replaced old `parseUsageKind defaults to other` with brief-specified cases + `isBillableUsageKind` test.
+- `middleware/quota.test.ts`: no changes required (existing tests still valid).
+
+## Test Summary
+
+```
+✓ src/lib/quota.test.ts (9 tests)
+✓ src/middleware/quota.test.ts (5 tests)
+Total: 14 passed
+```
 
 ## Commit
 
-- `ee9edb3` — feat(ai-app): resolve promos from database
+```
+feat(ai-app): typed analyze usage kinds for quota
+```
+
+Files: `quota.ts`, `quota.test.ts`, `middleware/quota.ts`
+
+## Concerns / Notes
+
+- `billableUsageWhere()` uses `startsWith: 'analyze'` — any future kind starting with `analyze` (e.g. typo in DB) would count toward quota. Intentional per brief; explicit `BILLABLE_SET` guards recording.
+- Middleware tests do not cover empty header → `analyze` default or typed kinds (`analyze_photo` etc.); covered in lib tests only.
+- No downstream ai-food header changes in this task (Task 4 scope).
+
+## Next
+
+Task 3+ can rely on `parseUsageKind`, `isBillableUsageKind`, and `BillableUsageKind` exports from `apps/ai-app/src/lib/quota.ts`.

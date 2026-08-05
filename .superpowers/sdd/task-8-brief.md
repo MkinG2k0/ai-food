@@ -1,63 +1,86 @@
-﻿### Task 8: Gateway client + admin shell + pages
+﻿### Task 8: ai-food consent screen + auth store + guard
 
 **Files:**
-- Create: `apps/ai-web/src/lib/gatewayAdmin.ts`
-- Create: `apps/ai-web/src/app/api/admin/proxy/[...path]/route.ts` (optional BFF) **OR** server actions
-- Create: `apps/ai-web/src/app/admin/layout.tsx`
-- Create: `apps/ai-web/src/app/admin/page.tsx` (stats)
-- Create: `apps/ai-web/src/app/admin/pricing/page.tsx`
-- Create: `apps/ai-web/src/app/admin/subscriptions/page.tsx`
-- Create: `apps/ai-web/src/components/AdminProviders.tsx` (QueryClient + Antd App)
+- Modify: `apps/ai-food/src/features/auth/model/useAuthStore.ts`
+- Create: `apps/ai-food/src/features/auth/api/submitDataConsent.ts`
+- Create: `apps/ai-food/src/features/auth/api/fetchAuthMe.ts` (optional if login already returns consent вЂ” still useful on app load)
+- Create: `apps/ai-food/src/pages/consent/ui/ConsentPage.tsx`
+- Create: `apps/ai-food/src/pages/consent/index.ts`
+- Create: `apps/ai-food/src/app/ConsentGuard.tsx`
+- Create: `apps/ai-food/src/app/ConsentGuard.test.tsx`
+- Modify: `apps/ai-food/src/app/router.tsx`
+- Modify: `apps/ai-food/src/features/auth/api/signInWithTelegramBot.ts` (+ demo login) to store consent from `user`
+- Modify: `apps/ai-food/src/features/auth/index.ts`
 
-**Preferred BFF pattern (keeps `ADMIN_API_KEY` server-only):**
+**Interfaces:**
+- Auth store:
 
-Route handlers under `src/app/api/admin/gateway/`:
-- `GET stats` в†’ gateway `GET /admin/stats`
-- `GET/PUT pricing`
-- `GET users?q=`
-- `POST users/[id]/subscription`
+```ts
+dataConsentAt: string | null;
+setDataConsent: (at: string | null, version: string | null) => void;
+// signIn(..., userToken, consent?: { dataConsentAt, dataConsentVersion })
+hasDataConsent: () => boolean; // Boolean(dataConsentAt)
+```
 
-Each handler: verify session cookie first; then `fetch(`${AI_GATEWAY_URL}/admin/...`, { headers: { 'X-Admin-Key': process.env.ADMIN_API_KEY!, 'Content-Type': 'application/json' } })`.
+- Constant in food: `export const DATA_CONSENT_VERSION = '2026-08-06'` in `features/auth/model/dataConsentVersion.ts`
 
-`gatewayAdmin.ts` helpers used by those route handlers.
+- [ ] **Step 1: Extend store + submitDataConsent**
 
-- [ ] **Step 1: Implement server gateway helpers + BFF routes**
+`submitDataConsent`: POST `${gateway}/auth/consent` with `X-User-Token`, body `{ version: DATA_CONSENT_VERSION }`, update store from response.
 
-- [ ] **Step 2: Admin layout**
+On bot/demo login success: `set({ session, userToken, dataConsentAt: user.dataConsentAt ?? null, dataConsentVersion: user.dataConsentVersion ?? null })`.
 
-Ant Design `Layout` with `Sider` menu items:
-- `/admin` вЂ” РћР±Р·РѕСЂ
-- `/admin/pricing` вЂ” Р¦РµРЅС‹
-- `/admin/subscriptions` вЂ” РџРѕРґРїРёСЃРєРё  
+Persist consent fields in zustand persist (same `ai-food-auth` key).
 
-Header button В«Р’С‹Р№С‚РёВ» в†’ `POST /api/admin/logout` в†’ `/admin/login`.
+- [ ] **Step 2: ConsentPage UI**
 
-- [ ] **Step 3: Stats page**
+Full-screen page:
+- Title: В«РЎРѕРіР»Р°СЃРёРµ РЅР° РѕР±СЂР°Р±РѕС‚РєСѓ РґР°РЅРЅС‹С…В»
+- Bullet list: Telegram-Р°РєРєР°СѓРЅС‚; deviceId; СЃС‚Р°С‚РёСЃС‚РёРєР° РґРµР№СЃС‚РІРёР№ (С„РѕС‚Рѕ/С‚РµРєСЃС‚/СЂСѓС‡РЅРѕР№/С€С‚СЂРёС…РєРѕРґ/СѓС‚РѕС‡РЅРµРЅРёСЏ); РїР»Р°С‚РµР¶Рё Рё РїРѕРґРїРёСЃРєР°; С‚РµС…РЅРёС‡РµСЃРєРёРµ Р»РѕРіРё
+- Note: РґРЅРµРІРЅРёРє Рё РљР‘Р–РЈ РѕСЃС‚Р°СЋС‚СЃСЏ РЅР° СѓСЃС‚СЂРѕР№СЃС‚РІРµ
+- Link to privacy via existing `legalSiteUrl('/privacy')` helper
+- Checkbox В«РЎРѕРіР»Р°СЃРµРЅ РЅР° РѕР±СЂР°Р±РѕС‚РєСѓ СѓРєР°Р·Р°РЅРЅС‹С… РґР°РЅРЅС‹С…В»
+- Button В«РџСЂРѕРґРѕР»Р¶РёС‚СЊВ» disabled until checked; on click в†’ submit в†’ navigate `/` (or `from` state)
 
-Fetch `/api/admin/gateway/stats`, show `Row`/`Col` of `Statistic` cards matching API fields. Format payment sum as rubles (`sum/100`).
+- [ ] **Step 3: ConsentGuard**
 
-- [ ] **Step 4: Pricing page**
+```tsx
+export function ConsentGuard({ children }: { children: React.ReactNode }) {
+  const token = useAuthStore((s) => s.userToken);
+  const consentAt = useAuthStore((s) => s.dataConsentAt);
+  const location = useLocation();
+  if (token && !consentAt) {
+    return <Navigate to="/consent" replace state={{ from: location.pathname }} />;
+  }
+  return children;
+}
+```
 
-Load pricing; form fields: price in **rubles** (convert Г—100 on save), duration days; show `Tag` with `source`. Save via PUT; `message.success`.
+- `/consent` route: if no token в†’ `/login`; if already consent в†’ `/`
+- Wrap ProfileGuard children (or AppShell authenticated routes) with ConsentGuard **outside or inside** ProfileGuard: order = Consent first then Profile (consent before onboarding is fine). Spec: after login before diary вЂ” wrap the same routes as ProfileGuard + also block settings etc.
 
-- [ ] **Step 5: Subscriptions page**
+```tsx
+{ path: '/consent', element: <ConsentPage /> },
+{ path: '/', element: <ConsentGuard><ProfileGuard><HomePage /></ProfileGuard></ConsentGuard> },
+// same for other protected routes
+```
 
-Search input в†’ table of users в†’ actions:
-- Activate (optional days Modal, default empty = server default)
-- Extend (Modal required days)
-- Revoke (`Popconfirm`)
+Login page itself stays unwrapped.
 
-- [ ] **Step 6: type-check**
+- [ ] **Step 4: ConsentGuard tests**
 
-Run: `pnpm --filter ai-web type-check`
+Redirect when token && !consentAt; render children when consent present or logged out.
 
-Expected: PASS
+- [ ] **Step 5: Run tests**
 
-- [ ] **Step 7: Commit**
+Run: `pnpm --filter ai-food exec vitest run src/app/ConsentGuard.test.tsx`
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add apps/ai-web
-git commit -m "feat(ai-web): admin dashboard for stats pricing and subscriptions"
+git add apps/ai-food/src/features/auth apps/ai-food/src/pages/consent apps/ai-food/src/app/ConsentGuard.tsx apps/ai-food/src/app/ConsentGuard.test.tsx apps/ai-food/src/app/router.tsx
+git commit -m "feat(ai-food): data consent gate after login"
 ```
 
 ---
+

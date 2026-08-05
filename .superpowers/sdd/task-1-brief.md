@@ -1,64 +1,50 @@
-﻿### Task 1: Prisma `PromoCode` model + migration
+﻿### Task 1: Prisma User consent fields
 
 **Files:**
 - Modify: `apps/ai-app/prisma/schema.prisma`
-- Create: `apps/ai-app/prisma/migrations/20260805120000_promo_codes/migration.sql`
+- Create: `apps/ai-app/prisma/migrations/20260806010000_user_data_consent/migration.sql`
+- Create: `apps/ai-app/src/lib/consent.ts`
+- Test: N/A (schema); generate client
 
 **Interfaces:**
-- Produces: Prisma model `PromoCode` with fields below (client regenerated in Step 3)
+- Produces: `User.dataConsentAt: DateTime | null`, `User.dataConsentVersion: String | null`; `DATA_CONSENT_VERSION = '2026-08-06'`
 
-- [ ] **Step 1: Add model to schema**
+- [ ] **Step 1: Add fields to schema**
 
-Append to `apps/ai-app/prisma/schema.prisma` after `AppSettings`:
+In `model User` after `photoUrl`:
 
 ```prisma
-model PromoCode {
-  id              String   @id @default(cuid())
-  code            String   @unique
-  discountPercent Int
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
+  dataConsentAt      DateTime?
+  dataConsentVersion String?
 ```
 
 - [ ] **Step 2: Add migration SQL**
 
-Create `apps/ai-app/prisma/migrations/20260805120000_promo_codes/migration.sql`:
-
 ```sql
--- CreateTable
-CREATE TABLE "PromoCode" (
-    "id" TEXT NOT NULL,
-    "code" TEXT NOT NULL,
-    "discountPercent" INTEGER NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "PromoCode_pkey" PRIMARY KEY ("id")
-);
-
--- CreateIndex
-CREATE UNIQUE INDEX "PromoCode_code_key" ON "PromoCode"("code");
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "dataConsentAt" TIMESTAMP(3),
+ADD COLUMN "dataConsentVersion" TEXT;
 ```
 
-- [ ] **Step 3: Generate Prisma client**
+- [ ] **Step 3: Add consent constant**
 
-Run from `apps/ai-app`:
+`apps/ai-app/src/lib/consent.ts`:
+
+```ts
+export const DATA_CONSENT_VERSION = '2026-08-06';
+```
+
+- [ ] **Step 4: Generate client**
+
+Run: `pnpm --filter openrouter-gateway prisma:generate`  
+Expected: success, no schema errors
+
+- [ ] **Step 5: Commit**
 
 ```bash
-pnpm prisma:generate
+git add apps/ai-app/prisma/schema.prisma apps/ai-app/prisma/migrations/20260806010000_user_data_consent apps/ai-app/src/lib/consent.ts
+git commit -m "feat(ai-app): add User data consent fields"
 ```
-
-Expected: exits 0; `PromoCode` appears under `apps/ai-app/src/generated/prisma`.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add apps/ai-app/prisma/schema.prisma apps/ai-app/prisma/migrations/20260805120000_promo_codes/migration.sql
-git commit -m "feat(ai-app): add PromoCode prisma model"
-```
-
-(If `prisma generate` dirty-checks generated files that are committed in this repo, include them; if generated is gitignored, do not add it.)
 
 ---
 

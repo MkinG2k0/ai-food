@@ -1,40 +1,60 @@
-# Task 3 Report: Wire billing to async resolvePromo
+# Task 3 Report: Auth consent API + publicUser fields
 
-## Status
+**Status:** ✅ Complete  
+**Branch:** feat/admin-users-data-consent  
+**Date:** 2026-08-06
 
-DONE
+## Summary
 
-## What was implemented
+Extended `publicUser` with `dataConsentAt` and `dataConsentVersion`. Added `POST /auth/consent` — accepts `{ version }`, validates against `DATA_CONSENT_VERSION`, sets consent once (idempotent on repeat).
 
-1. **`billing.ts` callsites** — Updated both `resolveSubscribeAmount` and `POST /promo/validate` to `await resolvePromo(prisma, raw, originalAmount)` instead of the sync hardcoded call.
+## TDD Steps
 
-2. **`billing.test.ts` mock prisma** — Added `promoStore` Map and `promoCode.findUnique` mock; seeded `new80` (80%) and `new50` (50%) in `beforeEach` after clearing stores.
+| Step | Action | Result |
+|------|--------|--------|
+| 1 | Added `auth.consent.test.ts` (5 tests) | 5 failed (404 route / missing fields) |
+| 2 | `vitest run auth.consent.test.ts` | FAIL ✓ |
+| 3 | Extended `publicUser` + `POST /auth/consent` in `auth.ts` | — |
+| 4 | Updated demo/telegram test mocks for consent fields | — |
+| 5 | `vitest run auth.consent + demo + telegram` | 16/16 PASS ✓ |
+| 6 | Commit | `feat(ai-app): POST /auth/consent and consent fields on user` |
 
-## What was tested
+## Changes
 
-| Check | Result |
-|-------|--------|
-| `pnpm exec vitest run src/lib/promos.test.ts src/routes/billing.test.ts` | 20/20 PASS (6 promos + 14 billing) |
-| Promo validate `new80` | 200, 2000 final amount |
-| Subscribe `new50` | 5000 discounted amount stored |
-| Unknown/empty promo | 400 INVALID_PROMO, no payment created |
+### `apps/ai-app/src/routes/auth.ts`
 
-## Files changed (committed)
+- Import `DATA_CONSENT_VERSION` from `../lib/consent.js`.
+- `publicUser`: added `dataConsentAt` (ISO string | null), `dataConsentVersion` (string | null).
+- `POST /auth/consent`: 401 without/invalid token; 400 wrong version; idempotent if `dataConsentAt` already set.
 
-- `apps/ai-app/src/routes/billing.ts` — 2 lines: async resolvePromo with prisma
-- `apps/ai-app/src/routes/billing.test.ts` — promoStore + promoCode mock + seed data
+### Tests
+
+- **New:** `auth.consent.test.ts` — 401, 400, set consent, idempotent, GET `/me` null fields.
+- **Updated:** `auth.demo.test.ts`, `auth.telegram.test.ts` — mock users + assertions include consent null defaults.
+
+## Test Summary
+
+```
+✓ auth.consent.test.ts (5)
+✓ auth.demo.test.ts (3)
+✓ auth.telegram.test.ts (8)
+Total: 16 passed
+```
 
 ## Commit
 
-- `877b93b` — `feat(ai-app): billing resolves promos via prisma`
+```
+feat(ai-app): POST /auth/consent and consent fields on user
+```
 
-## Self-review
+Files: `auth.ts`, `auth.consent.test.ts`, `auth.demo.test.ts`, `auth.telegram.test.ts`
 
-- **Completeness:** Both brief steps (callsite updates + test mock) done; tests and commit per brief.
-- **Scope:** Only billing.ts and billing.test.ts touched; no admin CRUD (Task 4).
-- **HTTP contracts:** Unchanged — same JSON shapes for `/promo/validate` and `/subscribe`.
-- **Null prisma:** `resolveSubscribeAmount` already receives prisma from callers; promo validate uses `requireUser` which guarantees prisma.
+## Concerns / Notes
 
-## Concerns
+- Consent timestamp uses `new Date()` at write time — not client-supplied; fine for audit.
+- No Zod schema on consent body (brief uses direct `req.body?.version` check); consistent with brief snippet.
+- Frontend (Task 4+) must call `POST /auth/consent` with `DATA_CONSENT_VERSION` before gated features.
 
-None.
+## Next
+
+Task 4 can consume `dataConsentAt` / `dataConsentVersion` from `/auth/me` and wire consent UI.

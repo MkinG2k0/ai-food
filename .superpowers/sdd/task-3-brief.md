@@ -1,91 +1,107 @@
-﻿### Task 3: Wire billing to async `resolvePromo`
+﻿### Task 3: Auth consent API + publicUser fields
 
 **Files:**
-- Modify: `apps/ai-app/src/routes/billing.ts`
-- Modify: `apps/ai-app/src/routes/billing.test.ts`
+- Modify: `apps/ai-app/src/routes/auth.ts`
+- Modify: `apps/ai-app/src/routes/auth.telegram.test.ts` and/or create `auth.consent.test.ts`
+- Modify: `apps/ai-app/src/routes/auth.demo.test.ts` if asserts full user shape
 
 **Interfaces:**
-- Consumes: `resolvePromo(prisma, raw, originalAmount): Promise<ResolvedPromo | null>`
-- Produces: unchanged HTTP contracts for `/promo/validate` and `/subscribe`
+- Consumes: `DATA_CONSENT_VERSION`, JWT via `X-User-Token`
+- Produces: `publicUser` includes `dataConsentAt: string | null`, `dataConsentVersion: string | null`
+- Produces: `POST /auth/consent` body `{ version: string }` в†’ `publicUser`; 400 wrong version; 401 no/invalid token; idempotent if already set
 
-- [ ] **Step 1: Update billing callsites**
+- [ ] **Step 1: Failing consent tests**
 
-In `apps/ai-app/src/routes/billing.ts`:
-
-1. In `resolveSubscribeAmount`, change:
+Create `apps/ai-app/src/routes/auth.consent.test.ts` mirroring demo/telegram test harness (mock prisma user with consent null; sign token).
 
 ```ts
-  const resolved = resolvePromo(promoCodeRaw, originalAmount);
+describe('POST /auth/consent', () => {
+  it('401 without token', async () => {
+    const res = await request(app).post('/auth/consent').send({ version: '2026-08-06' });
+    expect(res.status).toBe(401);
+  });
+
+  it('400 on wrong version', async () => { /* with valid token */ });
+
+  it('sets consent and returns fields', async () => {
+    // expect dataConsentAt ISO string, dataConsentVersion === '2026-08-06'
+  });
+
+  it('idempotent second call keeps original consent', async () => { /* same at */ });
+});
+
+describe('GET /auth/me', () => {
+  it('includes dataConsentAt null before consent', async () => { /* ... */ });
+});
 ```
 
-to:
+- [ ] **Step 2: Run вЂ” expect FAIL**
+
+Run: `pnpm --filter openrouter-gateway exec vitest run src/routes/auth.consent.test.ts`  
+Expected: FAIL (route missing / fields missing)
+
+- [ ] **Step 3: Extend publicUser + POST /auth/consent**
 
 ```ts
-  const resolved = await resolvePromo(prisma, promoCodeRaw, originalAmount);
-```
+import { DATA_CONSENT_VERSION } from '../lib/consent.js';
 
-2. In `POST /promo/validate`, change:
+function publicUser(user: {
+  // ...existing
+  dataConsentAt: Date | null;
+  dataConsentVersion: string | null;
+}) {
+  return {
+    // ...existing fields
+    dataConsentAt: user.dataConsentAt?.toISOString() ?? null,
+    dataConsentVersion: user.dataConsentVersion,
+  };
+}
 
-```ts
-    const resolved = resolvePromo(raw, originalAmount);
-```
-
-to:
-
-```ts
-    const resolved = await resolvePromo(prisma, raw, originalAmount);
-```
-
-- [ ] **Step 2: Extend billing test mock prisma with `promoCode`**
-
-In `apps/ai-app/src/routes/billing.test.ts`, inside `mockPrisma()`, add a store and `promoCode` API. At the top of the describe (near `paymentStore`), add:
-
-```ts
-  const promoStore = new Map<string, { id: string; code: string; discountPercent: number }>();
-```
-
-Inside `mockPrisma()` return object, add:
-
-```ts
-      promoCode: {
-        findUnique: vi.fn(
-          async ({ where }: { where: { code: string } }) =>
-            promoStore.get(where.code) ?? null,
-        ),
+authRouter.post(
+  '/consent',
+  asyncHandler(async (req, res) => {
+    const header = req.header('x-user-token')?.trim();
+    if (!header) {
+      throw new ApiError(401, 'INVALID_USER_TOKEN', 'X-User-Token required.');
+    }
+    const payload = await verifyUserToken(header);
+    const version = req.body?.version;
+    if (version !== DATA_CONSENT_VERSION) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid consent version.');
+    }
+    const prisma = requireDb();
+    const existing = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!existing) {
+      throw new ApiError(401, 'INVALID_USER_TOKEN', 'User not found.');
+    }
+    if (existing.dataConsentAt) {
+      res.json(publicUser(existing));
+      return;
+    }
+    const updated = await prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        dataConsentAt: new Date(),
+        dataConsentVersion: DATA_CONSENT_VERSION,
       },
+    });
+    res.json(publicUser(updated));
+  }),
+);
 ```
 
-In `beforeEach`, after `paymentStore.clear()`:
+Ensure demo upsert / telegram user create still work (new fields optional defaults null).
 
-```ts
-    promoStore.clear();
-    promoStore.set('new80', {
-      id: 'promo-new80',
-      code: 'new80',
-      discountPercent: 80,
-    });
-    promoStore.set('new50', {
-      id: 'promo-new50',
-      code: 'new50',
-      discountPercent: 50,
-    });
-```
+- [ ] **Step 4: Run вЂ” expect PASS**
 
-Keep existing promo test names/expectations (`new80` / `new50`) вЂ” they now hit the mock store, not hardcoded map.
+Run: `pnpm --filter openrouter-gateway exec vitest run src/routes/auth.consent.test.ts src/routes/auth.demo.test.ts src/routes/auth.telegram.test.ts`  
+Expected: PASS
 
-- [ ] **Step 3: Run billing + promos tests**
+- [ ] **Step 5: Commit**
 
 ```bash
-cd apps/ai-app && pnpm exec vitest run src/lib/promos.test.ts src/routes/billing.test.ts
-```
-
-Expected: all PASS. Existing promo cases still green via mock DB rows.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add apps/ai-app/src/routes/billing.ts apps/ai-app/src/routes/billing.test.ts
-git commit -m "feat(ai-app): billing resolves promos via prisma"
+git add apps/ai-app/src/routes/auth.ts apps/ai-app/src/routes/auth.consent.test.ts apps/ai-app/src/routes/auth.demo.test.ts apps/ai-app/src/routes/auth.telegram.test.ts
+git commit -m "feat(ai-app): POST /auth/consent and consent fields on user"
 ```
 
 ---

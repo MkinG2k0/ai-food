@@ -1,27 +1,26 @@
-# Task 6 Report: Promos section on pricing page
+# Task 6 Report: ai-web admin Users UI + BFF
 
-**Status:** DONE  
-**Branch:** `feat/admin-promo-codes`  
-**Commit:** `a7edee6` — feat(ai-web): manage promo codes on pricing page
+## Status
 
-## Summary
+Completed.
 
-- Added a second `Промокоды` card below the existing pricing card.
-- Added promo list loading through `GET promos`.
-- Added promo creation form with required code and integer discount validation from 1 to 99.
-- Added promo deletion with confirmation through `DELETE promos/${id}`.
-- Added success/error notifications and promo query invalidation after mutations.
+## Commit
+
+`6adcfbc` — `feat(ai-web): admin users list and detail pages`
+
+## Implemented
+
+- Added the `GET /api/admin/gateway/users/[id]` BFF route using the Next.js 15 Promise params pattern.
+- Added the «Пользователи» navigation item and nested-route selection in `AdminShell`.
+- Added `/admin/users` with search, account/subscription/consent data, usage counters, and row navigation.
+- Added `/admin/users/[id]` with profile, generation statistics, payments, and recent usage events.
 
 ## Verification
 
-- `pnpm --filter ai-web type-check` — PASS (exit 0).
-- `pnpm --filter ai-web build` — PASS (exit 0); `/admin/pricing` prerendered.
-- IDE diagnostics for `apps/ai-web/src/app/admin/pricing/page.tsx` — no errors.
-- Manual browser check not run; optional per brief.
+- `pnpm --filter ai-web type-check` — PASS.
+- IDE diagnostics for all changed TypeScript files — no errors.
 
-## Self-review
+## Concerns
 
-- Compared the final diff with every UI and API requirement in the task brief.
-- Only `apps/ai-web/src/app/admin/pricing/page.tsx` was included in the implementation commit.
-- Existing unrelated working-tree changes were not staged or modified by the implementation.
-- No blocking concerns found.
+- `apps/ai-web` currently has no automated test suite (`test` is a placeholder), so verification is limited to TypeScript and diagnostics.
+- Existing unrelated `.superpowers/sdd` modifications were left untouched.

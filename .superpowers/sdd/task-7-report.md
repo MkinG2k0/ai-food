@@ -1,3 +1,35 @@
+# Task 7 Report
+
+## Status
+
+DONE
+
+## Implementation
+
+- Extended `UsageKindHeader` with typed analyze variants and removed the device ID debug log.
+- Added `resolveAnalyzeUsageKind` using TDD for photo, text, and combined analysis.
+- Updated `analyzeFoodApi` to send the resolved `X-Usage-Kind`.
+- Added fire-and-forget `recordUsageEvent` calls after successful manual and barcode meal saves.
+- Exported the new helper and usage event API from the auth public boundary.
+- Updated the existing analyze API assertion for the typed photo usage header.
+
+## TDD Evidence
+
+- RED: helper test suite failed because `resolveAnalyzeUsageKind` did not exist.
+- GREEN: `resolveAnalyzeUsageKind.test.ts` passed all 3 cases after the minimal implementation.
+
+## Verification
+
+- `pnpm --filter ai-food exec vitest run src/features/auth/model/resolveAnalyzeUsageKind.test.ts src/features/analyze-food/api/analyzeFoodApi.test.ts src/features/manual-entry/model/useSaveManualMeal.test.ts`
+  - 3 files passed, 55 tests passed.
+- `pnpm --filter ai-food type-check`
+  - Passed.
+- IDE diagnostics for touched files
+  - No errors.
+
+## Concerns
+
+None.
 # Task 7 Report: Full regression (verify only)
 
 **Status:** DONE  

@@ -1,61 +1,53 @@
-﻿### Task 9: End-to-end verification checklist
+﻿### Task 9: Legal privacy (and terms touch) updates
 
-**Files:** none (verification only); fix bugs if found
+**Files:**
+- Modify: `apps/ai-web/src/lib/legal/privacyContent.ts`
+- Modify: `apps/ai-web/src/lib/legal/legalConfig.ts` (`revisionDate: '2026-08-06'`)
+- Modify: `apps/ai-web/src/lib/legal/termsContent.ts` вЂ” one sentence that account use requires consent to data processing per Privacy Policy (if not already)
 
-- [ ] **Step 1: Migrate DB**
+**Interfaces:**
+- Section 2 paragraphs must explicitly list:
+  - Telegram account fields
+  - deviceId
+  - Usage events: analyze by photo/text/photo+text, refine, manual, barcode (fact+time; not photo/text payloads in UsageEvent)
+  - Payments / subscription
+  - Technical API logs
+  - Local-only: diary, РљР‘Р–РЈ profile on device
+  - First-login consent required; without consent account features unavailable
 
-Run: `cd apps/ai-app && pnpm exec prisma migrate deploy` (or `migrate dev`) against local `DATABASE_URL`.
+- [ ] **Step 1: Rewrite section 2 (+ add consent subsection in section 4 if needed)**
 
-- [ ] **Step 2: Start gateway + web**
+Replace vague diary-on-server implications with clear local vs server split per spec.
 
-```bash
-pnpm dev:app
-pnpm dev:web
-```
+- [ ] **Step 2: Bump revisionDate**
 
-- [ ] **Step 3: Verify matrix**
+- [ ] **Step 3: Spot-check pages render** (optional `pnpm --filter ai-web type-check`)
 
-| Check | Expected |
-|-------|----------|
-| `GET http://127.0.0.1:3000/admin/stats` without key | 401 |
-| Login at `:3001/admin/login` with generated password | enters dashboard |
-| Change price in UI | `GET /billing/price` shows new `amountKopecks` without gateway restart |
-| Search user + activate/extend/revoke | user fields update |
-| `/` stub | В«РЎРєРѕСЂРѕВ» visible |
-| Logged-out `/admin/pricing` | redirect login |
-
-- [ ] **Step 4: Run automated tests**
-
-```bash
-cd apps/ai-app && pnpm exec vitest run src/lib/subscription.test.ts src/middleware/adminAuth.test.ts src/routes/admin.test.ts src/routes/billing.test.ts
-pnpm --filter ai-web type-check
-```
-
-Expected: all PASS
-
-- [ ] **Step 5: Final commit if fixes landed**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add -A
-git commit -m "fix(admin): address e2e verification findings"
+git add apps/ai-web/src/lib/legal
+git commit -m "docs(ai-web): privacy copy for usage analytics and consent"
 ```
-
-(Skip empty commit if nothing to fix.)
 
 ---
 
-## Self-review (plan vs spec)
+## Spec coverage checklist
 
-| Spec requirement | Task |
-|------------------|------|
-| `apps/ai-web` Next.js + Ant Design | 6, 7, 8 |
-| `/` stub, `/admin/*` | 6, 7, 8 |
-| Password + httpOnly session | 7 |
-| `ADMIN_API_KEY` serverв†’gateway | 4, 5, 8 |
-| `AppSettings` + env fallback | 1, 2 |
-| Async price used by billing | 3 |
-| `/admin/stats|pricing|users|subscription` | 5 |
-| activate / extend / revoke | 5, 8 |
-| Tests for middleware/pricing/subs/stats | 4, 5 |
-| `.env.example`, generate secrets | 5, 6 |
-| No promo/refund/Capacitor | respected (non-goals) |
+| Spec item | Task |
+|-----------|------|
+| User.dataConsentAt/Version | 1, 3 |
+| Typed UsageEvent kinds + quota | 2, 7 |
+| POST /auth/consent | 3, 8 |
+| POST /usage/event manual/barcode | 4, 7 |
+| Admin list + detail | 5, 6 |
+| Stats analyze* | 5 |
+| Consent UI /consent | 8 |
+| Privacy text | 9 |
+| Forward-only / no diary sync | Global + 9 |
+
+## Self-review notes
+
+- No TBD placeholders; default missing header = `analyze`, unknown = `other`.
+- `GET /admin/users/:id` must not break `POST .../subscription` (method+path distinct).
+- ai-food package filter: confirm `name` in `apps/ai-food/package.json` before running pnpm filter commands.

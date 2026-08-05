@@ -1,179 +1,118 @@
-﻿### Task 2: Async promo helpers (DB lookup)
+﻿### Task 2: Typed billable usage kinds (quota lib + middleware)
 
 **Files:**
-- Modify: `apps/ai-app/src/lib/promos.ts`
-- Modify: `apps/ai-app/src/lib/promos.test.ts`
+- Modify: `apps/ai-app/src/lib/quota.ts`
+- Modify: `apps/ai-app/src/lib/quota.test.ts`
+- Modify: `apps/ai-app/src/middleware/quota.ts`
+- Modify: `apps/ai-app/src/middleware/quota.test.ts` (if asserts on kind)
 
 **Interfaces:**
-- Consumes: `PrismaClient` from `../generated/prisma/client.js` (field `promoCode`)
 - Produces:
-  - `normalizePromoCode(raw: string): string` (unchanged)
-  - `applyPromoDiscount(originalAmount: number, discountPercent: number): number` (unchanged)
-  - `lookupPromo(prisma: PrismaClient | null | undefined, raw: string): Promise<PromoDefinition | null>`
-  - `resolvePromo(prisma: PrismaClient | null | undefined, raw: string, originalAmount: number): Promise<ResolvedPromo | null>`
+  - `export type BillableUsageKind = 'analyze' | 'analyze_photo' | 'analyze_text' | 'analyze_photo_text' | 'refine'`
+  - `export type UsageKind = BillableUsageKind | 'other'`
+  - `export function isBillableUsageKind(kind: string): kind is BillableUsageKind`
+  - `parseUsageKind(raw): UsageKind` вЂ” empty в†’ `analyze`; known billable в†’ self; else `other`
+  - `countGuestBillableUsage` / `recordBillableUsage` use billable filter / `BillableUsageKind`
+- Consumes: Prisma `usageEvent`
 
-- [ ] **Step 1: Rewrite failing unit tests**
+- [ ] **Step 1: Failing tests for parseUsageKind + billable filter**
 
-Replace `apps/ai-app/src/lib/promos.test.ts` entirely with:
+In `quota.test.ts` replace/extend:
 
 ```ts
-import { describe, it, expect, vi } from 'vitest';
-import {
-  normalizePromoCode,
-  lookupPromo,
-  applyPromoDiscount,
-  resolvePromo,
-} from './promos.js';
+it('parseUsageKind: empty в†’ analyze; typed; unknown в†’ other', () => {
+  expect(parseUsageKind(undefined)).toBe('analyze');
+  expect(parseUsageKind('')).toBe('analyze');
+  expect(parseUsageKind('analyze_photo')).toBe('analyze_photo');
+  expect(parseUsageKind('analyze_text')).toBe('analyze_text');
+  expect(parseUsageKind('analyze_photo_text')).toBe('analyze_photo_text');
+  expect(parseUsageKind('refine')).toBe('refine');
+  expect(parseUsageKind('analyze')).toBe('analyze');
+  expect(parseUsageKind('manual')).toBe('other');
+  expect(parseUsageKind('nope')).toBe('other');
+});
 
-function mockPrisma(rows: { code: string; discountPercent: number }[]) {
-  return {
-    promoCode: {
-      findUnique: vi.fn(async ({ where }: { where: { code: string } }) => {
-        const row = rows.find((r) => r.code === where.code);
-        return row
-          ? { id: 'p1', code: row.code, discountPercent: row.discountPercent }
-          : null;
-      }),
-    },
-  };
-}
-
-describe('promos', () => {
-  it('normalizePromoCode trims and lowercases', () => {
-    expect(normalizePromoCode(' New80 ')).toBe('new80');
-  });
-
-  it('lookupPromo finds code from prisma', async () => {
-    const prisma = mockPrisma([
-      { code: 'new80', discountPercent: 80 },
-      { code: 'new50', discountPercent: 50 },
-    ]);
-    await expect(lookupPromo(prisma as never, 'new80')).resolves.toEqual({
-      code: 'new80',
-      discountPercent: 80,
-    });
-    await expect(lookupPromo(prisma as never, 'NEW50')).resolves.toEqual({
-      code: 'new50',
-      discountPercent: 50,
-    });
-  });
-
-  it('lookupPromo returns null for unknown, empty, or null prisma', async () => {
-    const prisma = mockPrisma([{ code: 'ok', discountPercent: 10 }]);
-    await expect(lookupPromo(prisma as never, 'nope')).resolves.toBeNull();
-    await expect(lookupPromo(prisma as never, '')).resolves.toBeNull();
-    await expect(lookupPromo(prisma as never, '   ')).resolves.toBeNull();
-    await expect(lookupPromo(null, 'ok')).resolves.toBeNull();
-    await expect(lookupPromo(undefined, 'ok')).resolves.toBeNull();
-  });
-
-  it('applyPromoDiscount floors and clamps to min 1', () => {
-    expect(applyPromoDiscount(10_000, 80)).toBe(2_000);
-    expect(applyPromoDiscount(10_000, 50)).toBe(5_000);
-    expect(applyPromoDiscount(1, 80)).toBe(1);
-    expect(applyPromoDiscount(3, 80)).toBe(1);
-  });
-
-  it('resolvePromo returns amounts for valid code', async () => {
-    const prisma = mockPrisma([{ code: 'new80', discountPercent: 80 }]);
-    await expect(resolvePromo(prisma as never, ' new80 ', 10_000)).resolves.toEqual({
-      code: 'new80',
-      discountPercent: 80,
-      originalAmount: 10_000,
-      finalAmount: 2_000,
-    });
-  });
-
-  it('resolvePromo returns null for invalid', async () => {
-    const prisma = mockPrisma([]);
-    await expect(resolvePromo(prisma as never, 'x', 10_000)).resolves.toBeNull();
-    await expect(resolvePromo(null, 'new80', 10_000)).resolves.toBeNull();
-  });
+it('isBillableUsageKind treats analyze* and refine', () => {
+  expect(isBillableUsageKind('analyze_photo')).toBe(true);
+  expect(isBillableUsageKind('manual')).toBe(false);
 });
 ```
 
 - [ ] **Step 2: Run tests вЂ” expect FAIL**
 
-```bash
-cd apps/ai-app && pnpm exec vitest run src/lib/promos.test.ts
-```
+Run: `pnpm --filter openrouter-gateway exec vitest run src/lib/quota.test.ts`  
+Expected: FAIL (old parseUsageKind / missing exports)
 
-Expected: FAIL (sync `lookupPromo` / missing prisma arg / hardcoded map).
+- [ ] **Step 3: Implement quota.ts**
 
-- [ ] **Step 3: Implement `promos.ts`**
-
-Replace `apps/ai-app/src/lib/promos.ts` with:
+Replace `BILLABLE_KINDS` / `UsageKind` / `parseUsageKind` / count / record:
 
 ```ts
-import type { PrismaClient } from '../generated/prisma/client.js';
+export type BillableUsageKind =
+  | 'analyze'
+  | 'analyze_photo'
+  | 'analyze_text'
+  | 'analyze_photo_text'
+  | 'refine';
 
-export type PromoDefinition = {
-  code: string;
-  discountPercent: number;
-};
+export type UsageKind = BillableUsageKind | 'other';
 
-export type ResolvedPromo = {
-  code: string;
-  discountPercent: number;
-  originalAmount: number;
-  finalAmount: number;
-};
+const BILLABLE_SET = new Set<string>([
+  'analyze',
+  'analyze_photo',
+  'analyze_text',
+  'analyze_photo_text',
+  'refine',
+]);
 
-export function normalizePromoCode(raw: string): string {
-  return raw.trim().toLowerCase();
+export function isBillableUsageKind(kind: string): kind is BillableUsageKind {
+  return BILLABLE_SET.has(kind);
 }
 
-export async function lookupPromo(
-  prisma: PrismaClient | null | undefined,
-  raw: string,
-): Promise<PromoDefinition | null> {
-  const key = normalizePromoCode(raw);
-  if (!key || !prisma) return null;
-  const row = await prisma.promoCode.findUnique({ where: { code: key } });
-  if (!row) return null;
-  return { code: row.code, discountPercent: row.discountPercent };
+export function parseUsageKind(raw: string | undefined): UsageKind {
+  const v = raw?.trim();
+  if (!v) return 'analyze';
+  if (isBillableUsageKind(v)) return v;
+  return 'other';
 }
 
-/** finalAmount in kopecks; never below 1. */
-export function applyPromoDiscount(
-  originalAmount: number,
-  discountPercent: number,
-): number {
-  const discounted = Math.floor(
-    (originalAmount * (100 - discountPercent)) / 100,
-  );
-  return Math.max(1, discounted);
-}
-
-export async function resolvePromo(
-  prisma: PrismaClient | null | undefined,
-  raw: string,
-  originalAmount: number,
-): Promise<ResolvedPromo | null> {
-  const promo = await lookupPromo(prisma, raw);
-  if (!promo) return null;
+export function billableUsageWhere() {
   return {
-    code: promo.code,
-    discountPercent: promo.discountPercent,
-    originalAmount,
-    finalAmount: applyPromoDiscount(originalAmount, promo.discountPercent),
+    OR: [{ kind: 'refine' as const }, { kind: { startsWith: 'analyze' } }],
   };
 }
+
+// countGuestBillableUsage:
+// where: { deviceId: deviceRowId, ...billableUsageWhere() }
+
+// recordBillableUsage opts.kind: BillableUsageKind
 ```
 
-- [ ] **Step 4: Run tests вЂ” expect PASS**
+- [ ] **Step 4: Update middleware finalizeQuotaUsage**
 
-```bash
-cd apps/ai-app && pnpm exec vitest run src/lib/promos.test.ts
+```ts
+if (!isBillableUsageKind(q.usageKind)) return;
+await recordBillableUsage(prisma, {
+  deviceRowId: q.deviceRowId,
+  kind: q.usageKind,
+  userId: q.userId ?? null,
+});
 ```
 
-Expected: all PASS.
+Update `enforceChatQuota`: `kind === 'other'` still skips enforcement (unchanged).
 
-- [ ] **Step 5: Commit**
+Fix any middleware tests that expected `undefined` в†’ `other`.
+
+- [ ] **Step 5: Run tests вЂ” expect PASS**
+
+Run: `pnpm --filter openrouter-gateway exec vitest run src/lib/quota.test.ts src/middleware/quota.test.ts`  
+Expected: PASS
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add apps/ai-app/src/lib/promos.ts apps/ai-app/src/lib/promos.test.ts
-git commit -m "feat(ai-app): resolve promos from database"
+git add apps/ai-app/src/lib/quota.ts apps/ai-app/src/lib/quota.test.ts apps/ai-app/src/middleware/quota.ts apps/ai-app/src/middleware/quota.test.ts
+git commit -m "feat(ai-app): typed analyze usage kinds for quota"
 ```
 
 ---

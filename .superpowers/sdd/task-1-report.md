@@ -1,48 +1,68 @@
-# Task 1 Report: Prisma PromoCode model + migration
+# Task 1 Report: Prisma User consent fields
 
-## Status
+**Status:** DONE  
+**Branch:** feat/admin-users-data-consent  
+**Date:** 2026-08-06
 
-DONE
+## Summary
 
-## What was implemented
+Added nullable `dataConsentAt` and `dataConsentVersion` fields to the `User` model, a migration to alter the database table, and a `DATA_CONSENT_VERSION` constant for downstream auth/admin tasks.
 
-1. **Schema** — Added `PromoCode` model to `apps/ai-app/prisma/schema.prisma` immediately after `AppSettings`, with fields exactly as specified in the brief:
-   - `id` (String, cuid)
-   - `code` (String, unique)
-   - `discountPercent` (Int)
-   - `createdAt` / `updatedAt` timestamps
+## Changes
 
-2. **Migration** — Created `apps/ai-app/prisma/migrations/20260805120000_promo_codes/migration.sql` with `CREATE TABLE "PromoCode"` and unique index on `code`, matching the brief verbatim.
+### 1. Schema (`apps/ai-app/prisma/schema.prisma`)
 
-3. **Client generation** — Ran `pnpm prisma:generate` from `apps/ai-app`; exited 0. `PromoCode` model confirmed in `apps/ai-app/src/generated/prisma/models/PromoCode.ts`.
+Added after `photoUrl` in `model User`:
 
-## What was tested
+```prisma
+  dataConsentAt      DateTime?
+  dataConsentVersion String?
+```
 
-| Check | Result |
-|-------|--------|
-| `pnpm prisma:generate` | Exit 0, client generated in 84ms |
-| `PromoCode` in generated client | Present under `src/generated/prisma/models/PromoCode.ts` |
-| Git commit scope | Only `schema.prisma` + `migration.sql` committed |
+### 2. Migration (`apps/ai-app/prisma/migrations/20260806010000_user_data_consent/migration.sql`)
 
-**Not in scope:** `prisma migrate deploy` / DB apply — task only adds schema + SQL file.
+```sql
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "dataConsentAt" TIMESTAMP(3),
+ADD COLUMN "dataConsentVersion" TEXT;
+```
 
-## Files changed (committed)
+### 3. Consent constant (`apps/ai-app/src/lib/consent.ts`)
 
-- `apps/ai-app/prisma/schema.prisma` — +8 lines (PromoCode model)
-- `apps/ai-app/prisma/migrations/20260805120000_promo_codes/migration.sql` — new file
+```ts
+export const DATA_CONSENT_VERSION = '2026-08-06';
+```
+
+## Verification
+
+| Step | Command | Result |
+|------|---------|--------|
+| Generate client | `pnpm --filter openrouter-gateway prisma:generate` | ✔ Success (Prisma Client 7.9.1) |
+
+Generated client includes `User.dataConsentAt: Date | null` and `User.dataConsentVersion: string | null` in `apps/ai-app/src/generated/prisma/models/User.ts` (gitignored, regenerated on build).
 
 ## Commit
 
-- `bec744b` — `feat(ai-app): add PromoCode prisma model`
+| SHA | Subject |
+|-----|---------|
+| `f822957` | feat(ai-app): add User data consent fields |
+
+Files committed:
+- `apps/ai-app/prisma/schema.prisma`
+- `apps/ai-app/prisma/migrations/20260806010000_user_data_consent/migration.sql`
+- `apps/ai-app/src/lib/consent.ts`
 
 ## Self-review
 
-- **Completeness:** All four brief steps completed (schema, migration, generate, commit).
-- **YAGNI:** No extra fields, indexes, or relations beyond the brief.
-- **Scope:** Did not touch `promos.ts`, admin routes, or other application logic.
-- **Generated files:** Correctly excluded from commit (gitignored).
-- **Conventions:** Matches existing migration naming and Prisma schema style in the repo.
+- **Requirements match:** All fields, migration SQL, constant value, and commit message match the task brief verbatim.
+- **Placement:** Fields inserted immediately after `photoUrl` as specified.
+- **Nullability:** Both fields nullable — existing users unaffected until consent is recorded.
+- **Migration naming:** Follows existing timestamp convention (`20260806010000_user_data_consent`).
+- **No scope creep:** No auth logic, no admin UI, no tests (N/A per brief).
+- **Concerns:** None. Migration not applied to a live DB in this task (expected — apply via `prisma migrate deploy` in deployment).
 
-## Concerns
+## Produces (for downstream tasks)
 
-None. Migration follows existing patterns; no application wiring yet (expected for Task 1).
+- `User.dataConsentAt: DateTime | null`
+- `User.dataConsentVersion: String | null`
+- `DATA_CONSENT_VERSION = '2026-08-06'` from `apps/ai-app/src/lib/consent.ts`

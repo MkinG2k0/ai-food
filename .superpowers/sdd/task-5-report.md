@@ -1,4 +1,4 @@
-# Task 5 Report: ai-web gateway proxy for promos
+# Task 5 Report: Admin users aggregates + detail + stats
 
 ## Status
 
@@ -6,27 +6,22 @@ DONE
 
 ## What was implemented
 
-1. **`GET/POST /api/admin/gateway/promos`** — BFF proxy to gateway `/admin/promos` (list + create).
-2. **`DELETE /api/admin/gateway/promos/[id]`** — BFF proxy to gateway `/admin/promos/:id` with `encodeURIComponent(id)`.
+1. Admin user responses now expose consent, photo, and creation fields.
+2. `GET /admin/users` adds per-user typed usage counts from one `groupBy`.
+3. `GET /admin/users/:id` returns the user, usage counts, payments, and 100 recent usage events with client device IDs.
+4. Admin stats count all usage kinds prefixed with `analyze`.
+5. Existing `POST /admin/users/:id/subscription` behavior remains covered.
 
-Both routes use `proxyGatewayAdmin` from `@/lib/gatewayAdmin`, mirroring existing `pricing` and `payments` proxies.
+## TDD and verification
 
-## Type-check
-
-```
-cd apps/ai-web && pnpm exec tsc --noEmit
-✓ PASS (exit 0)
-```
+- RED: focused suite failed in the four expected new behavior areas.
+- GREEN: `pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts` — 28/28 passed.
+- Types: `pnpm --filter openrouter-gateway type-check` — passed.
+- IDE diagnostics: no errors in modified source or test files.
 
 ## Commit
 
-- `016aa8f` — `feat(ai-web): proxy admin promo CRUD`
-
-## Self-review
-
-- Files match the brief verbatim; no UI or gateway changes.
-- Pattern consistent with `payments/[id]/route.ts` (DELETE + encoded id) and `pricing/route.ts` (GET + mutating method with raw body).
-- `proxyGatewayAdmin` handles session auth, env config, and upstream error passthrough — no extra logic needed in routes.
+- `c562e3e` — `feat(ai-app): admin users usage counts and detail`
 
 ## Concerns
 
