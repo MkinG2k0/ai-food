@@ -33,6 +33,14 @@ type MockPayment = {
   createdAt: Date;
 };
 
+type MockPromo = {
+  id: string;
+  code: string;
+  discountPercent: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 describe('admin routes', () => {
   let settings: {
     id: number;
@@ -42,6 +50,7 @@ describe('admin routes', () => {
   } | null;
   let users: MockUser[];
   let payments: MockPayment[];
+  let promos: MockPromo[];
   let prisma: ReturnType<typeof createMockPrisma>;
 
   function createMockPrisma() {
@@ -138,6 +147,59 @@ describe('admin routes', () => {
           return removed;
         }),
       },
+      promoCode: {
+        findMany: vi.fn(async ({ orderBy }: { orderBy?: { createdAt: string } } = {}) => {
+          const rows = [...promos];
+          if (orderBy?.createdAt === 'desc') {
+            rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+          }
+          return rows;
+        }),
+        create: vi.fn(
+          async ({
+            data,
+          }: {
+            data: { code: string; discountPercent: number };
+          }) => {
+            if (promos.some((p) => p.code === data.code)) {
+              const err = new Error('Unique constraint failed') as Error & {
+                code?: string;
+              };
+              err.code = 'P2002';
+              throw err;
+            }
+            const row: MockPromo = {
+              id: `promo-${promos.length + 1}`,
+              code: data.code,
+              discountPercent: data.discountPercent,
+              createdAt: new Date('2026-08-05T10:00:00.000Z'),
+              updatedAt: new Date('2026-08-05T10:00:00.000Z'),
+            };
+            promos.push(row);
+            return row;
+          },
+        ),
+        findUnique: vi.fn(
+          async ({ where }: { where: { id?: string; code?: string } }) => {
+            if (where.id) return promos.find((p) => p.id === where.id) ?? null;
+            if (where.code)
+              return promos.find((p) => p.code === where.code) ?? null;
+            return null;
+          },
+        ),
+        delete: vi.fn(async ({ where }: { where: { id: string } }) => {
+          const index = promos.findIndex((p) => p.id === where.id);
+          if (index < 0) {
+            const err = new Error('Record to delete does not exist') as Error & {
+              code?: string;
+            };
+            err.code = 'P2025';
+            throw err;
+          }
+          const [removed] = promos.splice(index, 1);
+          return removed;
+        }),
+      },
       $transaction: vi.fn(async (fn: (tx: typeof prisma) => Promise<unknown>) =>
         fn(prisma),
       ),
@@ -157,6 +219,7 @@ describe('admin routes', () => {
     process.env.SUBSCRIPTION_PRICE_KOPECKS = '10000';
     process.env.SUBSCRIPTION_DURATION_DAYS = '365';
     settings = null;
+    promos = [];
     payments = [
       {
         id: 'pay-confirmed',
@@ -435,6 +498,88 @@ describe('admin routes', () => {
     const response = await request(createApp()).delete(
       '/admin/payments/pay-pending',
     );
+    expect(response.status).toBe(401);
+  });
+
+  it('GET /admin/promos returns empty list', async () => {
+    const response = await request(createApp())
+      .get('/admin/promos')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ items: [] });
+  });
+
+  it('POST /admin/promos creates a normalized code', async () => {
+    const response = await request(createApp())
+      .post('/admin/promos')
+      .set('X-Admin-Key', 'test-admin')
+      .send({ code: ' Summer20 ', discountPercent: 20 });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({
+      code: 'summer20',
+      discountPercent: 20,
+    });
+    expect(response.body.id).toBeTruthy();
+    expect(response.body.createdAt).toBeTruthy();
+  });
+
+  it('POST /admin/promos rejects duplicate code with 409', async () => {
+    await request(createApp())
+      .post('/admin/promos')
+      .set('X-Admin-Key', 'test-admin')
+      .send({ code: 'dup', discountPercent: 10 });
+
+    const response = await request(createApp())
+      .post('/admin/promos')
+      .set('X-Admin-Key', 'test-admin')
+      .send({ code: 'DUP', discountPercent: 15 });
+
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe('CONFLICT');
+  });
+
+  it('POST /admin/promos rejects invalid percent', async () => {
+    const response = await request(createApp())
+      .post('/admin/promos')
+      .set('X-Admin-Key', 'test-admin')
+      .send({ code: 'x', discountPercent: 0 });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('DELETE /admin/promos/:id removes code', async () => {
+    const created = await request(createApp())
+      .post('/admin/promos')
+      .set('X-Admin-Key', 'test-admin')
+      .send({ code: 'gone', discountPercent: 30 });
+
+    const response = await request(createApp())
+      .delete(`/admin/promos/${created.body.id}`)
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true });
+
+    const list = await request(createApp())
+      .get('/admin/promos')
+      .set('X-Admin-Key', 'test-admin');
+    expect(list.body.items).toEqual([]);
+  });
+
+  it('DELETE /admin/promos/:id returns 404 for missing', async () => {
+    const response = await request(createApp())
+      .delete('/admin/promos/missing')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(404);
+    expect(response.body.code).toBe('NOT_FOUND');
+  });
+
+  it('GET /admin/promos rejects requests without admin key', async () => {
+    const response = await request(createApp()).get('/admin/promos');
     expect(response.status).toBe(401);
   });
 });

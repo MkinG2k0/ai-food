@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ApiError } from '../../lib/errors.js';
+import { normalizePromoCode } from '../lib/promos.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import {
   getPricingSnapshot,
@@ -92,6 +93,32 @@ function paymentResponse(payment: {
   };
 }
 
+function promoResponse(promo: {
+  id: string;
+  code: string;
+  discountPercent: number;
+  createdAt: Date;
+}) {
+  return {
+    id: promo.id,
+    code: promo.code,
+    discountPercent: promo.discountPercent,
+    createdAt: promo.createdAt.toISOString(),
+  };
+}
+
+function isPrismaKnownError(
+  err: unknown,
+  code: string,
+): err is { code: string } {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    (err as { code: unknown }).code === code
+  );
+}
+
 function daysAgo(now: Date, days: number): Date {
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 }
@@ -165,6 +192,74 @@ adminRouter.put(
 
     const snapshot = await getPricingSnapshot(prisma);
     res.json(pricingResponse(snapshot));
+  }),
+);
+
+adminRouter.get(
+  '/promos',
+  asyncHandler(async (_req, res) => {
+    const prisma = requireDb();
+    const items = await prisma.promoCode.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ items: items.map(promoResponse) });
+  }),
+);
+
+adminRouter.post(
+  '/promos',
+  asyncHandler(async (req, res) => {
+    const prisma = requireDb();
+    const code =
+      typeof req.body?.code === 'string'
+        ? normalizePromoCode(req.body.code)
+        : '';
+    const discountPercent = req.body?.discountPercent;
+
+    if (!code) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'code is required.');
+    }
+    if (
+      typeof discountPercent !== 'number' ||
+      !Number.isInteger(discountPercent) ||
+      discountPercent < 1 ||
+      discountPercent > 99
+    ) {
+      throw new ApiError(
+        400,
+        'VALIDATION_ERROR',
+        'discountPercent must be an integer from 1 to 99.',
+      );
+    }
+
+    try {
+      const created = await prisma.promoCode.create({
+        data: { code, discountPercent },
+      });
+      res.status(201).json(promoResponse(created));
+    } catch (err) {
+      if (isPrismaKnownError(err, 'P2002')) {
+        throw new ApiError(409, 'CONFLICT', 'Promo code already exists.');
+      }
+      throw err;
+    }
+  }),
+);
+
+adminRouter.delete(
+  '/promos/:id',
+  asyncHandler(async (req, res) => {
+    const prisma = requireDb();
+    const id = req.params.id;
+    try {
+      await prisma.promoCode.delete({ where: { id } });
+      res.json({ ok: true });
+    } catch (err) {
+      if (isPrismaKnownError(err, 'P2025')) {
+        throw new ApiError(404, 'NOT_FOUND', 'Promo code not found.');
+      }
+      throw err;
+    }
   }),
 );
 
