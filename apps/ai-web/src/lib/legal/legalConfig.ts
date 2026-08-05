@@ -1,5 +1,5 @@
 export const legalConfig = {
-  revisionDate: '2026-08-05',
+  revisionDate: '2026-08-06',
   sellerName: 'Муталимов Камал Тагирович',
   inn: '057201730918',
   ogrnip: '325050000157903',
