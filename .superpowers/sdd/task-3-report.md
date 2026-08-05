@@ -1,35 +1,40 @@
-# Task 3 Report: BFF proxy routes for payments
+# Task 3 Report: Wire billing to async resolvePromo
 
 ## Status
-**COMPLETE**
 
-## Commits
-- `109305d` — `feat(ai-web): proxy admin payments list and delete`
+DONE
 
-## Changes
+## What was implemented
 
-### `apps/ai-web/src/app/api/admin/gateway/payments/route.ts`
-- `GET` → `proxyGatewayAdmin('payments')` — list payments via gateway
+1. **`billing.ts` callsites** — Updated both `resolveSubscribeAmount` and `POST /promo/validate` to `await resolvePromo(prisma, raw, originalAmount)` instead of the sync hardcoded call.
 
-### `apps/ai-web/src/app/api/admin/gateway/payments/[id]/route.ts`
-- `DELETE` → `proxyGatewayAdmin('payments/:id', { method: 'DELETE' })` — delete payment via gateway
+2. **`billing.test.ts` mock prisma** — Added `promoStore` Map and `promoCode.findUnique` mock; seeded `new80` (80%) and `new50` (50%) in `beforeEach` after clearing stores.
 
-## Type-check Results
-```
-pnpm --filter ai-web type-check
-✓ PASS (tsc --noEmit, exit 0)
-```
+## What was tested
 
-## Self-Review
+| Check | Result |
+|-------|--------|
+| `pnpm exec vitest run src/lib/promos.test.ts src/routes/billing.test.ts` | 20/20 PASS (6 promos + 14 billing) |
+| Promo validate `new80` | 200, 2000 final amount |
+| Subscribe `new50` | 5000 discounted amount stored |
+| Unknown/empty promo | 400 INVALID_PROMO, no payment created |
 
-### Correctness
-- Mirrors existing patterns (`pricing`, `users/[id]/subscription`)
-- Uses `encodeURIComponent(id)` for path segment safety
-- Async `params` pattern matches Next.js App Router conventions in repo
+## Files changed (committed)
 
-### Scope
-- BFF proxies only — no nav or payments page UI (as required)
-- Minimal diff: two route files, 17 lines total
+- `apps/ai-app/src/routes/billing.ts` — 2 lines: async resolvePromo with prisma
+- `apps/ai-app/src/routes/billing.test.ts` — promoStore + promoCode mock + seed data
 
-### Concerns
-None blocking. Implementation matches brief verbatim.
+## Commit
+
+- `877b93b` — `feat(ai-app): billing resolves promos via prisma`
+
+## Self-review
+
+- **Completeness:** Both brief steps (callsite updates + test mock) done; tests and commit per brief.
+- **Scope:** Only billing.ts and billing.test.ts touched; no admin CRUD (Task 4).
+- **HTTP contracts:** Unchanged — same JSON shapes for `/promo/validate` and `/subscribe`.
+- **Null prisma:** `resolveSubscribeAmount` already receives prisma from callers; promo validate uses `requireUser` which guarantees prisma.
+
+## Concerns
+
+None.

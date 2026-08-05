@@ -1,56 +1,33 @@
-# Task 5 Report: Payments page UI
+# Task 5 Report: ai-web gateway proxy for promos
 
 ## Status
-**COMPLETE**
 
-## Commits
-- `c4e0dc4` — `feat(ai-web): add admin payments list and delete page`
+DONE
 
-## Changes
+## What was implemented
 
-### `apps/ai-web/src/app/admin/payments/page.tsx`
-- Client page at `/admin/payments` with payments table (createdAt, amount, status, user, paidAt)
-- `useQuery` → `GET payments`; `useMutation` → `DELETE payments/:id`
-- Status-aware Popconfirm (confirmed → revoke subscription warning)
-- Invalidates `admin/payments`, `admin/stats`, `admin/users` on delete success
-- RUB formatting from kopecks; ru-RU date/user formatting
+1. **`GET/POST /api/admin/gateway/promos`** — BFF proxy to gateway `/admin/promos` (list + create).
+2. **`DELETE /api/admin/gateway/promos/[id]`** — BFF proxy to gateway `/admin/promos/:id` with `encodeURIComponent(id)`.
 
-## Type-check Results
+Both routes use `proxyGatewayAdmin` from `@/lib/gatewayAdmin`, mirroring existing `pricing` and `payments` proxies.
+
+## Type-check
+
 ```
-pnpm --filter ai-web type-check
-✓ PASS (tsc --noEmit, exit 0)
+cd apps/ai-web && pnpm exec tsc --noEmit
+✓ PASS (exit 0)
 ```
 
-## Manual Smoke
-**Skipped** — gateway + ai-web servers not running in this session.
+## Commit
 
-## Self-Review
+- `016aa8f` — `feat(ai-web): proxy admin promo CRUD`
 
-### Correctness
-- Types and status enum aligned with gateway/Prisma (`pending|confirmed|rejected|refunded`)
-- Delete flow matches Task 2 contract (`revokedSubscription` toast branch)
-- Error Alert + table empty locale on fetch failure
+## Self-review
 
-### Scope
-- Single file per brief; no gateway/BFF/nav changes
+- Files match the brief verbatim; no UI or gateway changes.
+- Pattern consistent with `payments/[id]/route.ts` (DELETE + encoded id) and `pricing/route.ts` (GET + mutating method with raw body).
+- `proxyGatewayAdmin` handles session auth, env config, and upstream error passthrough — no extra logic needed in routes.
 
-### Concerns
-None blocking. Manual smoke recommended when servers are up.
+## Concerns
 
-## Review Fix (Important)
-
-**Finding:** `statusLabel` showed English enum values in the payments table.
-
-**Fix:** Localized `statusLabel` map in `apps/ai-web/src/app/admin/payments/page.tsx`:
-- `pending` → Ожидает
-- `confirmed` → Подтверждён
-- `rejected` → Отклонён
-- `refunded` → Возвращён
-
-**Commit:** `50012fb` — `fix(ai-web): localize payment status labels`
-
-**Type-check:**
-```
-pnpm --filter ai-web type-check
-✓ PASS (tsc --noEmit, exit 0)
-```
+None.

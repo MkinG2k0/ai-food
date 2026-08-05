@@ -1,153 +1,170 @@
-﻿### Task 2: Gateway `DELETE /admin/payments/:id`
+﻿### Task 2: Async promo helpers (DB lookup)
 
 **Files:**
-- Modify: `apps/ai-app/src/routes/admin.ts`
-- Modify: `apps/ai-app/src/routes/admin.test.ts`
+- Modify: `apps/ai-app/src/lib/promos.ts`
+- Modify: `apps/ai-app/src/lib/promos.test.ts`
 
 **Interfaces:**
-- Consumes: `paymentResponse` helper from Task 1 (optional), `requireDb()`, mock `payment.delete` / `user.update` / `$transaction`
-- Produces: `DELETE /admin/payments/:id` в†’ `{ ok: true, revokedSubscription: boolean }`
+- Consumes: `PrismaClient` from `../generated/prisma/client.js` (field `promoCode`)
+- Produces:
+  - `normalizePromoCode(raw: string): string` (unchanged)
+  - `applyPromoDiscount(originalAmount: number, discountPercent: number): number` (unchanged)
+  - `lookupPromo(prisma: PrismaClient | null | undefined, raw: string): Promise<PromoDefinition | null>`
+  - `resolvePromo(prisma: PrismaClient | null | undefined, raw: string, originalAmount: number): Promise<ResolvedPromo | null>`
 
-- [ ] **Step 1: Write failing DELETE tests**
+- [ ] **Step 1: Rewrite failing unit tests**
 
-Append to `admin.test.ts`:
+Replace `apps/ai-app/src/lib/promos.test.ts` entirely with:
 
 ```ts
-it('DELETE /admin/payments/:id deletes confirmed payment and revokes subscription', async () => {
-  const response = await request(createApp())
-    .delete('/admin/payments/pay-confirmed')
-    .set('X-Admin-Key', 'test-admin');
+import { describe, it, expect, vi } from 'vitest';
+import {
+  normalizePromoCode,
+  lookupPromo,
+  applyPromoDiscount,
+  resolvePromo,
+} from './promos.js';
 
-  expect(response.status).toBe(200);
-  expect(response.body).toEqual({ ok: true, revokedSubscription: true });
-  expect(payments.find((p) => p.id === 'pay-confirmed')).toBeUndefined();
-  expect(users.find((u) => u.id === 'user-2')).toMatchObject({
-    subscriptionStatus: 'none',
-    subscriptionExpiresAt: null,
+function mockPrisma(rows: { code: string; discountPercent: number }[]) {
+  return {
+    promoCode: {
+      findUnique: vi.fn(async ({ where }: { where: { code: string } }) => {
+        const row = rows.find((r) => r.code === where.code);
+        return row
+          ? { id: 'p1', code: row.code, discountPercent: row.discountPercent }
+          : null;
+      }),
+    },
+  };
+}
+
+describe('promos', () => {
+  it('normalizePromoCode trims and lowercases', () => {
+    expect(normalizePromoCode(' New80 ')).toBe('new80');
   });
-});
 
-it('DELETE /admin/payments/:id deletes pending payment without revoking', async () => {
-  const before = users.find((u) => u.id === 'user-1')!;
-  const response = await request(createApp())
-    .delete('/admin/payments/pay-pending')
-    .set('X-Admin-Key', 'test-admin');
+  it('lookupPromo finds code from prisma', async () => {
+    const prisma = mockPrisma([
+      { code: 'new80', discountPercent: 80 },
+      { code: 'new50', discountPercent: 50 },
+    ]);
+    await expect(lookupPromo(prisma as never, 'new80')).resolves.toEqual({
+      code: 'new80',
+      discountPercent: 80,
+    });
+    await expect(lookupPromo(prisma as never, 'NEW50')).resolves.toEqual({
+      code: 'new50',
+      discountPercent: 50,
+    });
+  });
 
-  expect(response.status).toBe(200);
-  expect(response.body).toEqual({ ok: true, revokedSubscription: false });
-  expect(payments.find((p) => p.id === 'pay-pending')).toBeUndefined();
-  expect(users.find((u) => u.id === 'user-1')).toEqual(before);
-});
+  it('lookupPromo returns null for unknown, empty, or null prisma', async () => {
+    const prisma = mockPrisma([{ code: 'ok', discountPercent: 10 }]);
+    await expect(lookupPromo(prisma as never, 'nope')).resolves.toBeNull();
+    await expect(lookupPromo(prisma as never, '')).resolves.toBeNull();
+    await expect(lookupPromo(prisma as never, '   ')).resolves.toBeNull();
+    await expect(lookupPromo(null, 'ok')).resolves.toBeNull();
+    await expect(lookupPromo(undefined, 'ok')).resolves.toBeNull();
+  });
 
-it('DELETE /admin/payments/:id returns 404 for missing payment', async () => {
-  const response = await request(createApp())
-    .delete('/admin/payments/missing')
-    .set('X-Admin-Key', 'test-admin');
+  it('applyPromoDiscount floors and clamps to min 1', () => {
+    expect(applyPromoDiscount(10_000, 80)).toBe(2_000);
+    expect(applyPromoDiscount(10_000, 50)).toBe(5_000);
+    expect(applyPromoDiscount(1, 80)).toBe(1);
+    expect(applyPromoDiscount(3, 80)).toBe(1);
+  });
 
-  expect(response.status).toBe(404);
-  expect(response.body.code).toBe('NOT_FOUND');
-});
+  it('resolvePromo returns amounts for valid code', async () => {
+    const prisma = mockPrisma([{ code: 'new80', discountPercent: 80 }]);
+    await expect(resolvePromo(prisma as never, ' new80 ', 10_000)).resolves.toEqual({
+      code: 'new80',
+      discountPercent: 80,
+      originalAmount: 10_000,
+      finalAmount: 2_000,
+    });
+  });
 
-it('DELETE /admin/payments/:id rejects requests without admin key', async () => {
-  const response = await request(createApp()).delete(
-    '/admin/payments/pay-pending',
-  );
-  expect(response.status).toBe(401);
+  it('resolvePromo returns null for invalid', async () => {
+    const prisma = mockPrisma([]);
+    await expect(resolvePromo(prisma as never, 'x', 10_000)).resolves.toBeNull();
+    await expect(resolvePromo(null, 'new80', 10_000)).resolves.toBeNull();
+  });
 });
 ```
 
 - [ ] **Step 2: Run tests вЂ” expect FAIL**
 
-Run:
-
 ```bash
-pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts
+cd apps/ai-app && pnpm exec vitest run src/lib/promos.test.ts
 ```
 
-Expected: FAIL on DELETE cases (404 / missing route).
+Expected: FAIL (sync `lookupPromo` / missing prisma arg / hardcoded map).
 
-- [ ] **Step 3: Implement `DELETE /admin/payments/:id`**
+- [ ] **Step 3: Implement `promos.ts`**
 
-Append to `apps/ai-app/src/routes/admin.ts`:
+Replace `apps/ai-app/src/lib/promos.ts` with:
 
 ```ts
-adminRouter.delete(
-  '/payments/:id',
-  asyncHandler(async (req, res) => {
-    const prisma = requireDb();
-    const paymentId = req.params.id;
+import type { PrismaClient } from '../generated/prisma/client.js';
 
-    const result = await prisma.$transaction(async (tx) => {
-      const payment = await tx.payment.findUnique({
-        where: { id: paymentId },
-      });
-      if (!payment) {
-        throw new ApiError(404, 'NOT_FOUND', 'Payment not found.');
-      }
+export type PromoDefinition = {
+  code: string;
+  discountPercent: number;
+};
 
-      await tx.payment.delete({ where: { id: payment.id } });
+export type ResolvedPromo = {
+  code: string;
+  discountPercent: number;
+  originalAmount: number;
+  finalAmount: number;
+};
 
-      const revokedSubscription = payment.status === 'confirmed';
-      if (revokedSubscription) {
-        await tx.user.update({
-          where: { id: payment.userId },
-          data: {
-            subscriptionStatus: 'none',
-            subscriptionExpiresAt: null,
-          },
-        });
-      }
+export function normalizePromoCode(raw: string): string {
+  return raw.trim().toLowerCase();
+}
 
-      return { ok: true as const, revokedSubscription };
-    });
+export async function lookupPromo(
+  prisma: PrismaClient | null | undefined,
+  raw: string,
+): Promise<PromoDefinition | null> {
+  const key = normalizePromoCode(raw);
+  if (!key || !prisma) return null;
+  const row = await prisma.promoCode.findUnique({ where: { code: key } });
+  if (!row) return null;
+  return { code: row.code, discountPercent: row.discountPercent };
+}
 
-    res.json(result);
-  }),
-);
+/** finalAmount in kopecks; never below 1. */
+export function applyPromoDiscount(
+  originalAmount: number,
+  discountPercent: number,
+): number {
+  const discounted = Math.floor(
+    (originalAmount * (100 - discountPercent)) / 100,
+  );
+  return Math.max(1, discounted);
+}
+
+export async function resolvePromo(
+  prisma: PrismaClient | null | undefined,
+  raw: string,
+  originalAmount: number,
+): Promise<ResolvedPromo | null> {
+  const promo = await lookupPromo(prisma, raw);
+  if (!promo) return null;
+  return {
+    code: promo.code,
+    discountPercent: promo.discountPercent,
+    originalAmount,
+    finalAmount: applyPromoDiscount(originalAmount, promo.discountPercent),
+  };
+}
 ```
 
-Note: if `ApiError` thrown inside `$transaction` is not rethrown cleanly by Prisma in this codebase, catch after findUnique outside the transaction instead вЂ” preferred equivalent:
-
-```ts
-adminRouter.delete(
-  '/payments/:id',
-  asyncHandler(async (req, res) => {
-    const prisma = requireDb();
-    const payment = await prisma.payment.findUnique({
-      where: { id: req.params.id },
-    });
-    if (!payment) {
-      throw new ApiError(404, 'NOT_FOUND', 'Payment not found.');
-    }
-
-    const revokedSubscription = payment.status === 'confirmed';
-
-    await prisma.$transaction(async (tx) => {
-      await tx.payment.delete({ where: { id: payment.id } });
-      if (revokedSubscription) {
-        await tx.user.update({
-          where: { id: payment.userId },
-          data: {
-            subscriptionStatus: 'none',
-            subscriptionExpiresAt: null,
-          },
-        });
-      }
-    });
-
-    res.json({ ok: true, revokedSubscription });
-  }),
-);
-```
-
-Use the **second** (preferred) form so 404 stays outside the transaction.
-
-- [ ] **Step 4: Run full admin tests вЂ” expect PASS**
-
-Run:
+- [ ] **Step 4: Run tests вЂ” expect PASS**
 
 ```bash
-pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts
+cd apps/ai-app && pnpm exec vitest run src/lib/promos.test.ts
 ```
 
 Expected: all PASS.
@@ -155,12 +172,8 @@ Expected: all PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/ai-app/src/routes/admin.ts apps/ai-app/src/routes/admin.test.ts
-git commit -m "$(cat <<'EOF'
-feat(ai-app): delete admin payments and revoke on confirmed
-
-EOF
-)"
+git add apps/ai-app/src/lib/promos.ts apps/ai-app/src/lib/promos.test.ts
+git commit -m "feat(ai-app): resolve promos from database"
 ```
 
 ---

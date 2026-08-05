@@ -1,17 +1,23 @@
-﻿# SDD Progress - Admin Payments Page
-Plan: docs/superpowers/plans/2026-08-05-admin-payments-page.md
-Branch: feat/admin-payments-page
+﻿# SDD Progress - Admin Promo Codes
+Plan: docs/superpowers/plans/2026-08-05-admin-promo-codes.md
+Branch: feat/admin-promo-codes
 Started: 2026-08-05
 
 
-Task 1: complete (commits 779ff29..9165d04, review clean)
+Task 1: complete (commits e160096..bec744b, review clean)
 
-Task 2: complete (commits 9165d04..35630fa, review clean)
+Task 2: complete (commits bec744b..ee9edb3, review clean)
 
-Task 3: complete (commits 35630fa..109305d, review clean)
+Task 3: complete (commits ee9edb3..877b93b, review clean)
 
-Task 4: complete (commits 109305d..32ec891, review clean)
+Task 4: complete (commits 877b93b..c3d71be, review clean)
 
-Task 5: complete (commits 32ec891..50012fb, review clean after RU status labels fix 50012fb)
+Task 5: complete (commits c3d71be..016aa8f, review clean)
 
-Final review: Ready to merge (minors deferred: pending-test strength, findUnique race, Alert prop order, take:50 UX)
+Task 6: complete (commits 016aa8f..a7edee6, review clean)
+
+Task 7: complete (verify-only, no commit, all checks PASS)
+
+Task 7: complete (verify-only, 124/124 pass, review N/A)
+
+Final review: Ready to merge (minors deferred: none blocking)
