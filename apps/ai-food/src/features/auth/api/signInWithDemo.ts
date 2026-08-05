@@ -11,6 +11,8 @@ type DemoGatewayUser = {
   lastName?: string | null;
   photoUrl?: string | null;
   name?: string | null;
+  dataConsentAt?: string | null;
+  dataConsentVersion?: string | null;
 };
 
 export async function signInWithDemo(opts?: {
@@ -43,6 +45,9 @@ export async function signInWithDemo(opts?: {
   }
 
   const session = mapTelegramUserToSession(body.user);
-  useAuthStore.getState().signIn(session, body.token);
+  useAuthStore.getState().signIn(session, body.token, {
+    dataConsentAt: body.user.dataConsentAt ?? null,
+    dataConsentVersion: body.user.dataConsentVersion ?? null,
+  });
   return session;
 }

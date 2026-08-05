@@ -32,6 +32,8 @@ describe('signInWithTelegramBot', () => {
       username: 'ada',
       name: 'Ada Lovelace',
       photoUrl: 'https://example.com/ada.png',
+      dataConsentAt: '2026-08-06T00:00:00.000Z',
+      dataConsentVersion: '2026-08-06',
     };
     const fetchMock = vi
       .fn<typeof fetch>()
@@ -77,7 +79,10 @@ describe('signInWithTelegramBot', () => {
       'https://gateway.example/auth/telegram/status?challengeId=challenge-1',
       { signal: undefined },
     );
-    expect(signIn).toHaveBeenCalledWith(session, 'jwt-token');
+    expect(signIn).toHaveBeenCalledWith(session, 'jwt-token', {
+      dataConsentAt: '2026-08-06T00:00:00.000Z',
+      dataConsentVersion: '2026-08-06',
+    });
     expect(session).toMatchObject({
       id: 'user-1',
       name: 'Ada Lovelace',

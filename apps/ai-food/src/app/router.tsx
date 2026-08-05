@@ -13,7 +13,9 @@ import { BarcodePage } from '@/pages/barcode';
 import { LoginPage } from '@/pages/login';
 import { SubscribePage } from '@/pages/subscribe';
 import { ModelTestPage } from '@/pages/model-test';
+import { ConsentPage } from '@/pages/consent';
 import { AppShell } from './AppShell';
+import { ConsentGuard } from './ConsentGuard';
 import { ProfileGuard } from './ProfileGuard';
 
 const router = createBrowserRouter([
@@ -25,21 +27,89 @@ const router = createBrowserRouter([
     children: [
       { path: '/onboarding', element: <OnboardingPage /> },
       { path: '/login', element: <LoginPage /> },
+      { path: '/consent', element: <ConsentPage /> },
       { path: '/subscribe', element: <SubscribePage /> },
       { path: '/subscribe/success', element: <SubscribePage /> },
       { path: '/subscribe/fail', element: <SubscribePage /> },
-      { path: '/', element: <ProfileGuard><HomePage /></ProfileGuard> },
-      { path: '/diary', element: <ProfileGuard><DiaryPage /></ProfileGuard> },
-      { path: '/stats', element: <ProfileGuard><StatsPage /></ProfileGuard> },
-      { path: '/settings', element: <ProfileGuard><SettingsPage /></ProfileGuard> },
-      { path: '/news', element: <ProfileGuard><NewsPage /></ProfileGuard> },
-      { path: '/favorites', element: <ProfileGuard><FavoritesPage /></ProfileGuard> },
-      { path: '/manual-entry', element: <ProfileGuard><ManualEntryPage /></ProfileGuard> },
-      { path: '/barcode', element: <ProfileGuard><BarcodePage /></ProfileGuard> },
-      { path: '/meal/:id', element: <ProfileGuard><MealDetailPage /></ProfileGuard> },
+      {
+        path: '/',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><HomePage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/diary',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><DiaryPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/stats',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><StatsPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/settings',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><SettingsPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/news',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><NewsPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/favorites',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><FavoritesPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/manual-entry',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><ManualEntryPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/barcode',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><BarcodePage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/meal/:id',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><MealDetailPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
       {
         path: '/meal/:mealId/item/:itemId',
-        element: <ProfileGuard><FoodItemEditPage /></ProfileGuard>,
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><FoodItemEditPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
       },
     ],
   },

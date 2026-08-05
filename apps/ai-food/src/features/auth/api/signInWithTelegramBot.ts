@@ -11,6 +11,8 @@ type TelegramGatewayUser = {
   lastName?: string | null;
   photoUrl?: string | null;
   name?: string | null;
+  dataConsentAt?: string | null;
+  dataConsentVersion?: string | null;
 };
 
 type TelegramBotLoginOptions = {
@@ -70,7 +72,10 @@ export async function signInWithTelegramBot(
 
     if (status.status === 'ok' && status.token && status.user) {
       const session = mapTelegramUserToSession(status.user);
-      useAuthStore.getState().signIn(session, status.token);
+      useAuthStore.getState().signIn(session, status.token, {
+        dataConsentAt: status.user.dataConsentAt ?? null,
+        dataConsentVersion: status.user.dataConsentVersion ?? null,
+      });
       return session;
     }
     if (status.status === 'expired') {

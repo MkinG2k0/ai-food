@@ -23,7 +23,12 @@ import { signInWithDemo } from './signInWithDemo';
 
 describe('signInWithDemo', () => {
   beforeEach(() => {
-    useAuthStore.setState({ session: null, userToken: null });
+    useAuthStore.setState({
+      session: null,
+      userToken: null,
+      dataConsentAt: null,
+      dataConsentVersion: null,
+    });
     vi.unstubAllEnvs();
     vi.stubEnv('VITE_AI_GATEWAY_URL', 'http://gateway.test');
     vi.restoreAllMocks();
@@ -43,6 +48,8 @@ describe('signInWithDemo', () => {
             firstName: 'Демо',
             lastName: 'пользователь',
             photoUrl: null,
+            dataConsentAt: '2026-08-06T00:00:00.000Z',
+            dataConsentVersion: '2026-08-06',
           },
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
@@ -67,6 +74,10 @@ describe('signInWithDemo', () => {
       telegramId: 100000001,
     });
     expect(useAuthStore.getState().userToken).toBe('jwt-demo');
+    expect(useAuthStore.getState().dataConsentAt).toBe(
+      '2026-08-06T00:00:00.000Z',
+    );
+    expect(useAuthStore.getState().dataConsentVersion).toBe('2026-08-06');
     expect(useAuthStore.getState().session?.name).toContain('Демо');
   });
 

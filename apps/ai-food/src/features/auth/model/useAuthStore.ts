@@ -7,9 +7,20 @@ interface AuthState {
   session: TelegramSession | null;
   /** Gateway user JWT for X-User-Token (real Telegram login). */
   userToken: string | null;
-  signIn: (session: TelegramSession, userToken?: string | null) => void;
+  dataConsentAt: string | null;
+  dataConsentVersion: string | null;
+  signIn: (
+    session: TelegramSession,
+    userToken?: string | null,
+    consent?: {
+      dataConsentAt: string | null;
+      dataConsentVersion: string | null;
+    },
+  ) => void;
+  setDataConsent: (at: string | null, version: string | null) => void;
   signOut: () => void;
   isAuthenticated: () => boolean;
+  hasDataConsent: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -17,9 +28,26 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       session: null,
       userToken: null,
-      signIn: (session, userToken = null) => set({ session, userToken }),
-      signOut: () => set({ session: null, userToken: null }),
+      dataConsentAt: null,
+      dataConsentVersion: null,
+      signIn: (session, userToken = null, consent) =>
+        set({
+          session,
+          userToken,
+          dataConsentAt: consent?.dataConsentAt ?? null,
+          dataConsentVersion: consent?.dataConsentVersion ?? null,
+        }),
+      setDataConsent: (dataConsentAt, dataConsentVersion) =>
+        set({ dataConsentAt, dataConsentVersion }),
+      signOut: () =>
+        set({
+          session: null,
+          userToken: null,
+          dataConsentAt: null,
+          dataConsentVersion: null,
+        }),
       isAuthenticated: () => get().session !== null,
+      hasDataConsent: () => Boolean(get().dataConsentAt),
     }),
     {
       name: 'ai-food-auth',
