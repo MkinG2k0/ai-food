@@ -247,6 +247,36 @@ adminRouter.get(
   }),
 );
 
+adminRouter.delete(
+  '/payments/:id',
+  asyncHandler(async (req, res) => {
+    const prisma = requireDb();
+    const payment = await prisma.payment.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!payment) {
+      throw new ApiError(404, 'NOT_FOUND', 'Payment not found.');
+    }
+
+    const revokedSubscription = payment.status === 'confirmed';
+
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.delete({ where: { id: payment.id } });
+      if (revokedSubscription) {
+        await tx.user.update({
+          where: { id: payment.userId },
+          data: {
+            subscriptionStatus: 'none',
+            subscriptionExpiresAt: null,
+          },
+        });
+      }
+    });
+
+    res.json({ ok: true, revokedSubscription });
+  }),
+);
+
 adminRouter.get(
   '/users',
   asyncHandler(async (req, res) => {

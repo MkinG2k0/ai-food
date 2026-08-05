@@ -395,4 +395,46 @@ describe('admin routes', () => {
     const response = await request(createApp()).get('/admin/payments');
     expect(response.status).toBe(401);
   });
+
+  it('DELETE /admin/payments/:id deletes confirmed payment and revokes subscription', async () => {
+    const response = await request(createApp())
+      .delete('/admin/payments/pay-confirmed')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, revokedSubscription: true });
+    expect(payments.find((p) => p.id === 'pay-confirmed')).toBeUndefined();
+    expect(users.find((u) => u.id === 'user-2')).toMatchObject({
+      subscriptionStatus: 'none',
+      subscriptionExpiresAt: null,
+    });
+  });
+
+  it('DELETE /admin/payments/:id deletes pending payment without revoking', async () => {
+    const before = users.find((u) => u.id === 'user-1')!;
+    const response = await request(createApp())
+      .delete('/admin/payments/pay-pending')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true, revokedSubscription: false });
+    expect(payments.find((p) => p.id === 'pay-pending')).toBeUndefined();
+    expect(users.find((u) => u.id === 'user-1')).toEqual(before);
+  });
+
+  it('DELETE /admin/payments/:id returns 404 for missing payment', async () => {
+    const response = await request(createApp())
+      .delete('/admin/payments/missing')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(404);
+    expect(response.body.code).toBe('NOT_FOUND');
+  });
+
+  it('DELETE /admin/payments/:id rejects requests without admin key', async () => {
+    const response = await request(createApp()).delete(
+      '/admin/payments/pay-pending',
+    );
+    expect(response.status).toBe(401);
+  });
 });
