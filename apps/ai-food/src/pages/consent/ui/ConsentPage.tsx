@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { submitDataConsent, useAuthStore } from '@/features/auth';
+import {
+  submitDataConsent,
+  useAuthHydrated,
+  useAuthStore,
+} from '@/features/auth';
 import { getLegalUrl } from '@/shared/lib';
 import { Button } from '@/shared/ui';
 
@@ -12,11 +16,14 @@ type ConsentLocationState = {
 export function ConsentPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const hydrated = useAuthHydrated();
   const userToken = useAuthStore((state) => state.userToken);
   const dataConsentAt = useAuthStore((state) => state.dataConsentAt);
   const [accepted, setAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const privacyUrl = getLegalUrl('/privacy');
+
+  if (!hydrated) return null;
 
   if (!userToken) {
     return <Navigate to="/login" replace />;

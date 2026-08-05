@@ -1,8 +1,15 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth';
 import { ConsentGuard } from './ConsentGuard';
+
+const mockHydrated = vi.fn(() => true);
+
+vi.mock('@/features/auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/auth')>()),
+  useAuthHydrated: () => mockHydrated(),
+}));
 
 function renderGuard() {
   return render(
@@ -24,12 +31,23 @@ function renderGuard() {
 
 describe('ConsentGuard', () => {
   beforeEach(() => {
+    mockHydrated.mockReset().mockReturnValue(true);
     useAuthStore.setState({
       session: null,
       userToken: null,
       dataConsentAt: null,
       dataConsentVersion: null,
     });
+  });
+
+  it('renders nothing before auth store hydration finishes', () => {
+    mockHydrated.mockReturnValue(false);
+    useAuthStore.setState({ userToken: 'jwt-token' });
+
+    renderGuard();
+
+    expect(screen.queryByText('consent')).not.toBeInTheDocument();
+    expect(screen.queryByText('protected')).not.toBeInTheDocument();
   });
 
   it('redirects authenticated users without consent', () => {

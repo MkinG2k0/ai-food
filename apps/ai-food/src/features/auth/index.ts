@@ -1,5 +1,6 @@
 export type { TelegramSession } from './model/telegramSession';
 export { useAuthStore } from './model/useAuthStore';
+export { useAuthHydrated } from './model/useAuthHydrated';
 export {
   isAuthMockEnabled,
   signOut,
