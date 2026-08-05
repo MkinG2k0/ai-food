@@ -56,6 +56,7 @@ import { buildTbankToken } from '../lib/tbank.js';
 
 describe('billing routes', () => {
   const paymentStore = new Map<string, Record<string, unknown>>();
+  const promoStore = new Map<string, { id: string; code: string; discountPercent: number }>();
   let paymentSeq = 0;
 
   function mockPrisma() {
@@ -141,12 +142,29 @@ describe('billing routes', () => {
           subscriptionExpiresAt: null,
         })),
       },
+      promoCode: {
+        findUnique: vi.fn(
+          async ({ where }: { where: { code: string } }) =>
+            promoStore.get(where.code) ?? null,
+        ),
+      },
     };
   }
 
   beforeEach(() => {
     vi.clearAllMocks();
     paymentStore.clear();
+    promoStore.clear();
+    promoStore.set('new80', {
+      id: 'promo-new80',
+      code: 'new80',
+      discountPercent: 80,
+    });
+    promoStore.set('new50', {
+      id: 'promo-new50',
+      code: 'new50',
+      discountPercent: 50,
+    });
     paymentSeq = 0;
     mockIsDb.mockReturnValue(true);
     mockGetPrisma.mockReturnValue(mockPrisma());

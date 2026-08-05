@@ -67,7 +67,7 @@ async function resolveSubscribeAmount(
   if (typeof promoCodeRaw !== 'string') {
     throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
   }
-  const resolved = resolvePromo(promoCodeRaw, originalAmount);
+  const resolved = await resolvePromo(prisma, promoCodeRaw, originalAmount);
   if (!resolved) {
     throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
   }
@@ -118,7 +118,7 @@ billingRouter.post(
     if (typeof raw !== 'string') {
       throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
     }
-    const resolved = resolvePromo(raw, originalAmount);
+    const resolved = await resolvePromo(prisma, raw, originalAmount);
     if (!resolved) {
       throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
     }
