@@ -1,0 +1,28 @@
+---
+description: AI Gateway backend (apps/ai-app) — OpenRouter proxy + food endpoints used by ai-food
+alwaysApply: true
+---
+
+# Backend: apps/ai-app
+
+AI Food does **not** contain its own AI backend. The gateway lives at:
+
+`apps/ai-app` (npm package `openrouter-gateway`)
+
+- Express proxy → OpenRouter (`OPENROUTER_API_KEY` server-side)
+- Client uses `VITE_AI_GATEWAY_URL` + `VITE_AI_GATEWAY_API_KEY`
+- **Food AI:** `POST /v1/food/analyze` (SSE), `/v1/food/refine`, `/v1/food/ask` (JSON) — prompts, `OPENROUTER_MODEL`, temperature `0`, and `messages[]` live in `apps/ai-app` (`src/food/*` + `routes/food.ts`)
+- **Client keeps:** image compress, XML/JSON response parse, UX; clean bodies only (no `model` / `messages` / `temperature` / system prompts)
+- **Generic proxy:** `POST /v1/chat/completions` remains for other callers (e.g. onboarding micronutrients)
+- Full contract: `apps/ai-food/docs/AI-GATEWAY.md`
+
+## Env (не смешивать)
+
+| App | Файл | Примеры |
+|-----|------|---------|
+| Gateway | `apps/ai-app/.env` | `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `API_KEY`, `DATABASE_URL`, `AUTH_SECRET`, `TBANK_*` |
+| Frontend | `apps/ai-food/.env` | только `VITE_*` (`VITE_AI_GATEWAY_URL`, `VITE_AI_GATEWAY_API_KEY`, …) |
+
+Секреты бэка никогда не в `VITE_*`. Локально: `pnpm dev` из корня (или `dev:app` + `dev:food`).
+
+Do not look for in-repo `/analyze-food` mock server — removed. Gateway + food prompts/params → `apps/ai-app`; analysis UX / compress / parse → `apps/ai-food`.
