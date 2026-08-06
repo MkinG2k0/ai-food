@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ApiError } from '../../lib/errors.js';
 import { normalizePromoCode } from '../lib/promos.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
+import { getQuotaLimits } from '../lib/quota.js';
 import {
   getPricingSnapshot,
   getSubscriptionDurationDays,
@@ -29,14 +30,26 @@ function requireDb() {
   return prisma;
 }
 
-function pricingResponse(snapshot: Awaited<ReturnType<typeof getPricingSnapshot>>) {
+async function pricingResponse(
+  prisma: ReturnType<typeof getPrisma> | ReturnType<typeof requireDb> | null,
+  snapshot: Awaited<ReturnType<typeof getPricingSnapshot>>,
+) {
+  const quota = await getQuotaLimits(prisma);
+  const fromDb =
+    snapshot.priceSource === 'db' ||
+    snapshot.durationSource === 'db' ||
+    quota.freeSource === 'db' ||
+    quota.bonusSource === 'db';
   return {
     priceKopecks: snapshot.priceKopecks,
     durationDays: snapshot.durationDays,
-    source:
-      snapshot.priceSource === 'db' || snapshot.durationSource === 'db'
-        ? ('db' as const)
-        : ('env' as const),
+    freeGenerationLimit: quota.freeGenerationLimit,
+    authLoginGenerationBonus: quota.authLoginGenerationBonus,
+    source: fromDb
+      ? ('db' as const)
+      : snapshot.priceSource === 'env' || snapshot.durationSource === 'env'
+        ? ('env' as const)
+        : ('default' as const),
   };
 }
 
@@ -97,18 +110,39 @@ async function usageCountsForUserIds(
   for (const id of userIds) map.set(id, emptyUsageCounts());
   if (userIds.length === 0) return map;
 
-  const rows = await prisma.usageEvent.groupBy({
-    by: ['userId', 'kind'],
+  const devices = await prisma.device.findMany({
     where: { userId: { in: userIds } },
+    select: { id: true, userId: true },
+  });
+  const deviceToUser = new Map(
+    devices
+      .filter((d): d is { id: string; userId: string } => Boolean(d.userId))
+      .map((d) => [d.id, d.userId]),
+  );
+  const deviceIds = [...deviceToUser.keys()];
+
+  const rows = await prisma.usageEvent.groupBy({
+    by: ['userId', 'kind', 'deviceId'],
+    where: {
+      OR: [
+        { userId: { in: userIds } },
+        ...(deviceIds.length > 0 ? [{ deviceId: { in: deviceIds } }] : []),
+      ],
+    },
     _count: { _all: true },
   });
+
   for (const row of rows) {
-    if (!row.userId) continue;
-    const counts = map.get(row.userId) ?? emptyUsageCounts();
+    const ownerId =
+      (row.userId && map.has(row.userId) ? row.userId : null) ??
+      deviceToUser.get(row.deviceId) ??
+      null;
+    if (!ownerId) continue;
+    const counts = map.get(ownerId) ?? emptyUsageCounts();
     if (row.kind in counts) {
-      counts[row.kind as keyof UsageCounts] = row._count._all;
+      counts[row.kind as keyof UsageCounts] += row._count._all;
     }
-    map.set(row.userId, counts);
+    map.set(ownerId, counts);
   }
   return map;
 }
@@ -147,16 +181,20 @@ function paymentResponse(payment: {
   };
 }
 
-function promoResponse(promo: {
-  id: string;
-  code: string;
-  discountPercent: number;
-  createdAt: Date;
-}) {
+function promoResponse(
+  promo: {
+    id: string;
+    code: string;
+    discountPercent: number;
+    createdAt: Date;
+  },
+  usageCount = 0,
+) {
   return {
     id: promo.id,
     code: promo.code,
     discountPercent: promo.discountPercent,
+    usageCount,
     createdAt: promo.createdAt.toISOString(),
   };
 }
@@ -184,8 +222,9 @@ adminRouter.use(requireAdminKey);
 adminRouter.get(
   '/pricing',
   asyncHandler(async (_req, res) => {
-    const snapshot = await getPricingSnapshot(getPrisma());
-    res.json(pricingResponse(snapshot));
+    const prisma = getPrisma();
+    const snapshot = await getPricingSnapshot(prisma);
+    res.json(await pricingResponse(prisma, snapshot));
   }),
 );
 
@@ -195,6 +234,8 @@ adminRouter.put(
     const prisma = requireDb();
     const priceKopecks = req.body?.priceKopecks;
     const durationDays = req.body?.durationDays;
+    const freeGenerationLimit = req.body?.freeGenerationLimit;
+    const authLoginGenerationBonus = req.body?.authLoginGenerationBonus;
 
     if (
       priceKopecks !== undefined &&
@@ -220,11 +261,40 @@ adminRouter.put(
         'durationDays must be a positive integer.',
       );
     }
-    if (priceKopecks === undefined && durationDays === undefined) {
+    if (
+      freeGenerationLimit !== undefined &&
+      (typeof freeGenerationLimit !== 'number' ||
+        !Number.isInteger(freeGenerationLimit) ||
+        freeGenerationLimit < 1)
+    ) {
       throw new ApiError(
         400,
         'VALIDATION_ERROR',
-        'Provide priceKopecks and/or durationDays.',
+        'freeGenerationLimit must be a positive integer.',
+      );
+    }
+    if (
+      authLoginGenerationBonus !== undefined &&
+      (typeof authLoginGenerationBonus !== 'number' ||
+        !Number.isInteger(authLoginGenerationBonus) ||
+        authLoginGenerationBonus < 0)
+    ) {
+      throw new ApiError(
+        400,
+        'VALIDATION_ERROR',
+        'authLoginGenerationBonus must be a non-negative integer.',
+      );
+    }
+    if (
+      priceKopecks === undefined &&
+      durationDays === undefined &&
+      freeGenerationLimit === undefined &&
+      authLoginGenerationBonus === undefined
+    ) {
+      throw new ApiError(
+        400,
+        'VALIDATION_ERROR',
+        'Provide priceKopecks, durationDays, freeGenerationLimit and/or authLoginGenerationBonus.',
       );
     }
 
@@ -235,17 +305,31 @@ adminRouter.put(
         subscriptionPriceKopecks:
           priceKopecks === undefined ? null : Math.floor(priceKopecks),
         subscriptionDurationDays: durationDays ?? null,
+        freeGenerationLimit:
+          freeGenerationLimit === undefined ? null : freeGenerationLimit,
+        authLoginGenerationBonus:
+          authLoginGenerationBonus === undefined
+            ? null
+            : authLoginGenerationBonus,
       },
       update: {
         ...(priceKopecks === undefined
           ? {}
           : { subscriptionPriceKopecks: Math.floor(priceKopecks) }),
-        ...(durationDays === undefined ? {} : { subscriptionDurationDays: durationDays }),
+        ...(durationDays === undefined
+          ? {}
+          : { subscriptionDurationDays: durationDays }),
+        ...(freeGenerationLimit === undefined
+          ? {}
+          : { freeGenerationLimit }),
+        ...(authLoginGenerationBonus === undefined
+          ? {}
+          : { authLoginGenerationBonus }),
       },
     });
 
     const snapshot = await getPricingSnapshot(prisma);
-    res.json(pricingResponse(snapshot));
+    res.json(await pricingResponse(prisma, snapshot));
   }),
 );
 
@@ -256,7 +340,28 @@ adminRouter.get(
     const items = await prisma.promoCode.findMany({
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ items: items.map(promoResponse) });
+    const codes = items.map((item) => item.code);
+    const usageRows =
+      codes.length === 0
+        ? []
+        : await prisma.payment.groupBy({
+            by: ['promoCode'],
+            where: {
+              promoCode: { in: codes },
+              status: 'confirmed',
+            },
+            _count: { _all: true },
+          });
+    const usageByCode = new Map(
+      usageRows
+        .filter((row) => row.promoCode != null)
+        .map((row) => [row.promoCode as string, row._count._all]),
+    );
+    res.json({
+      items: items.map((item) =>
+        promoResponse(item, usageByCode.get(item.code) ?? 0),
+      ),
+    });
   }),
 );
 

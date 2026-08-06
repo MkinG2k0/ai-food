@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
-import { Input, Table, Tag, Typography } from 'antd';
+import { Flex, Input, InputNumber, Space, Table, Tag, Typography } from 'antd';
 
 import { PageHeader } from '@/components/PageHeader';
 import { adminApi } from '@/lib/adminApi';
@@ -39,6 +39,18 @@ type UsersResponse = {
   users: AdminUser[];
 };
 
+const DEFAULT_COST_PER_GENERATION = 0.32;
+
+/** AI-billable generations: photo + text + photo+text + refine (без ручного/ШК/legacy). */
+function aiGenerationTotal(counts: UsageCounts): number {
+  return (
+    counts.analyze_photo +
+    counts.analyze_text +
+    counts.analyze_photo_text +
+    counts.refine
+  );
+}
+
 const formatDate = (value?: string | null) =>
   value
     ? new Intl.DateTimeFormat('ru-RU', {
@@ -47,131 +59,199 @@ const formatDate = (value?: string | null) =>
       }).format(new Date(value))
     : '—';
 
+const formatRub = (value: number) =>
+  new Intl.NumberFormat('ru-RU', {
+    currency: 'RUB',
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: 'currency',
+  }).format(value);
+
 export default function UsersPage() {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [costPerGeneration, setCostPerGeneration] = useState(
+    DEFAULT_COST_PER_GENERATION,
+  );
   const usersQuery = useQuery({
     queryKey: ['admin', 'users', query],
     queryFn: () =>
       adminApi<UsersResponse>(`users?q=${encodeURIComponent(query)}`),
   });
 
-  const columns: ColumnsType<AdminUser> = [
-    {
-      key: 'name',
-      render: (_, user) => {
-        const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
-        return (
-          <Typography.Text strong>
-            {name || user.username || 'Без имени'}
-          </Typography.Text>
-        );
+  const rate =
+    typeof costPerGeneration === 'number' && Number.isFinite(costPerGeneration)
+      ? Math.max(0, costPerGeneration)
+      : DEFAULT_COST_PER_GENERATION;
+
+  const columns: ColumnsType<AdminUser> = useMemo(
+    () => [
+      {
+        key: 'name',
+        render: (_, user) => {
+          const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
+          return (
+            <Typography.Text strong>
+              {name || user.username || 'Без имени'}
+            </Typography.Text>
+          );
+        },
+        title: 'Имя',
+        width: 180,
       },
-      title: 'Имя',
-      width: 180,
-    },
-    {
-      dataIndex: 'username',
-      key: 'username',
-      render: (username: string | null) => (username ? `@${username}` : '—'),
-      title: 'Username',
-      width: 160,
-    },
-    {
-      dataIndex: 'telegramId',
-      key: 'telegramId',
-      title: 'Telegram ID',
-      width: 160,
-    },
-    {
-      key: 'subscription',
-      render: (_, user) => (
-        <Tag color={user.hasActiveSubscription ? 'success' : 'default'}>
-          {user.hasActiveSubscription ? 'Активна' : 'Не активна'}
-        </Tag>
-      ),
-      title: 'Подписка',
-      width: 130,
-    },
-    {
-      key: 'consent',
-      render: (_, user) => (
-        <>
-          <Tag color={user.dataConsentAt ? 'success' : 'default'}>
-            {user.dataConsentAt ? 'Да' : 'Нет'}
+      {
+        dataIndex: 'username',
+        key: 'username',
+        render: (username: string | null) => (username ? `@${username}` : '—'),
+        title: 'Username',
+        width: 160,
+      },
+      {
+        dataIndex: 'telegramId',
+        key: 'telegramId',
+        title: 'Telegram ID',
+        width: 160,
+      },
+      {
+        key: 'subscription',
+        render: (_, user) => (
+          <Tag color={user.hasActiveSubscription ? 'success' : 'default'}>
+            {user.hasActiveSubscription ? 'Активна' : 'Не активна'}
           </Tag>
-          {user.dataConsentAt ? formatDate(user.dataConsentAt) : null}
-        </>
-      ),
-      title: 'Согласие',
-      width: 220,
-    },
-    {
-      dataIndex: ['usageCounts', 'analyze_photo'],
-      key: 'analyze_photo',
-      title: 'Фото',
-      width: 80,
-    },
-    {
-      dataIndex: ['usageCounts', 'analyze_text'],
-      key: 'analyze_text',
-      title: 'Текст',
-      width: 80,
-    },
-    {
-      dataIndex: ['usageCounts', 'analyze_photo_text'],
-      key: 'analyze_photo_text',
-      title: 'Ф+Т',
-      width: 70,
-    },
-    {
-      dataIndex: ['usageCounts', 'refine'],
-      key: 'refine',
-      title: 'Refine',
-      width: 80,
-    },
-    {
-      dataIndex: ['usageCounts', 'manual'],
-      key: 'manual',
-      title: 'Ручн.',
-      width: 80,
-    },
-    {
-      dataIndex: ['usageCounts', 'barcode'],
-      key: 'barcode',
-      title: 'ШК',
-      width: 65,
-    },
-    {
-      dataIndex: ['usageCounts', 'analyze'],
-      key: 'analyze',
-      title: 'Legacy',
-      width: 80,
-    },
-    {
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: formatDate,
-      title: 'Создан',
-      width: 180,
-    },
-  ];
+        ),
+        title: 'Подписка',
+        width: 130,
+      },
+      {
+        key: 'aiTotal',
+        defaultSortOrder: 'descend',
+        render: (_, user) => (
+          <Typography.Text strong>
+            {aiGenerationTotal(user.usageCounts)}
+          </Typography.Text>
+        ),
+        sorter: (a, b) =>
+          aiGenerationTotal(a.usageCounts) - aiGenerationTotal(b.usageCounts),
+        title: 'Лимит потрачен',
+        width: 130,
+      },
+      {
+        key: 'aiCost',
+        render: (_, user) =>
+          formatRub(aiGenerationTotal(user.usageCounts) * rate),
+        sorter: (a, b) =>
+          aiGenerationTotal(a.usageCounts) - aiGenerationTotal(b.usageCounts),
+        title: 'Расход ≈',
+        width: 120,
+      },
+      {
+        key: 'consent',
+        render: (_, user) => (
+          <>
+            <Tag color={user.dataConsentAt ? 'success' : 'default'}>
+              {user.dataConsentAt ? 'Да' : 'Нет'}
+            </Tag>
+            {user.dataConsentAt ? formatDate(user.dataConsentAt) : null}
+          </>
+        ),
+        title: 'Согласие',
+        width: 220,
+      },
+      {
+        dataIndex: ['usageCounts', 'analyze_photo'],
+        key: 'analyze_photo',
+        title: 'Фото',
+        width: 80,
+      },
+      {
+        dataIndex: ['usageCounts', 'analyze_text'],
+        key: 'analyze_text',
+        title: 'Текст',
+        width: 80,
+      },
+      {
+        dataIndex: ['usageCounts', 'analyze_photo_text'],
+        key: 'analyze_photo_text',
+        title: 'Ф+Т',
+        width: 70,
+      },
+      {
+        dataIndex: ['usageCounts', 'refine'],
+        key: 'refine',
+        title: 'Refine',
+        width: 80,
+      },
+      {
+        dataIndex: ['usageCounts', 'manual'],
+        key: 'manual',
+        title: 'Ручн.',
+        width: 80,
+      },
+      {
+        dataIndex: ['usageCounts', 'barcode'],
+        key: 'barcode',
+        title: 'ШК',
+        width: 65,
+      },
+      {
+        dataIndex: ['usageCounts', 'analyze'],
+        key: 'analyze',
+        title: 'Legacy',
+        width: 80,
+      },
+      {
+        dataIndex: 'createdAt',
+        key: 'createdAt',
+        render: formatDate,
+        title: 'Создан',
+        width: 180,
+      },
+    ],
+    [rate],
+  );
 
   const users = usersQuery.data?.users ?? [];
 
   return (
     <>
       <PageHeader
-        subtitle="Аккаунты, согласие и статистика генераций"
+        subtitle="Аккаунты, согласие и сколько ИИ-лимитов потратил каждый пользователь"
         title="Пользователи"
       />
-      <Input.Search
-        allowClear
-        enterButton="Найти"
-        onSearch={(value) => setQuery(value.trim())}
-        placeholder="ID, Telegram ID или имя пользователя"
-        style={{ maxWidth: 420, width: '100%' }}
-      />
+      <Flex gap={16} wrap="wrap" align="flex-end" style={{ marginBottom: 16 }}>
+        <Input.Search
+          allowClear
+          enterButton="Найти"
+          onSearch={(value) => setQuery(value.trim())}
+          placeholder="ID, Telegram ID или имя пользователя"
+          style={{ maxWidth: 420, width: '100%' }}
+        />
+        <Space align="center">
+          <Typography.Text type="secondary">
+            Коэф. ₽ / ИИ-генерация
+          </Typography.Text>
+          <Space.Compact>
+            <InputNumber
+              min={0}
+              step={0.01}
+              precision={2}
+              value={costPerGeneration}
+              onChange={(value) =>
+                setCostPerGeneration(
+                  typeof value === 'number' ? value : DEFAULT_COST_PER_GENERATION,
+                )
+              }
+              style={{ width: 100 }}
+            />
+            <Input
+              readOnly
+              tabIndex={-1}
+              value="₽"
+              style={{ width: 40, pointerEvents: 'none' }}
+            />
+          </Space.Compact>
+        </Space>
+      </Flex>
       <Table<AdminUser>
         columns={columns}
         dataSource={users}
@@ -191,7 +271,7 @@ export default function UsersPage() {
           showTotal: (total) => `Всего ${total}`,
         }}
         rowKey="id"
-        scroll={{ x: 1700 }}
+        scroll={{ x: 1900 }}
         size="middle"
       />
     </>

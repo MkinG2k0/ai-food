@@ -153,6 +153,7 @@ billingRouter.post(
         userId: user.id,
         amount,
         status: 'pending',
+        promoCode,
         tbankOrderId: `tmp_${crypto.randomUUID()}`,
       },
     });

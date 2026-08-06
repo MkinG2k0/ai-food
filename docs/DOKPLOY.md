@@ -38,8 +38,6 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_BOT_USERNAME=
 TELEGRAM_WEBHOOK_SECRET=
 PUBLIC_GATEWAY_URL=https://<gateway-domain>
-FREE_GENERATION_LIMIT=50
-AUTH_LOGIN_GENERATION_BONUS=100
 PUBLIC_APP_URL=https://<frontend-domain>
 SUBSCRIPTION_PRICE_KOPECKS=10000
 SUBSCRIPTION_DURATION_DAYS=365
@@ -48,6 +46,8 @@ TBANK_PASSWORD=
 TBANK_API_URL=https://securepay.tinkoff.ru
 # TBANK_MOCK=true
 ```
+
+Лимиты бесплатных генераций (`freeGenerationLimit` / `authLoginGenerationBonus`) настраиваются в админке (`/admin/pricing`), не через env. Defaults: 50 / 100.
 
 `PUBLIC_GATEWAY_URL` — публичный origin gateway (для `setWebhook` → `/telegram/webhook`).  
 `PUBLIC_APP_URL` — публичный URL **фронта** (Success/Fail/Notification T-Bank).

@@ -95,7 +95,6 @@ export async function streamChatCompletions(
         const delta = extractDeltaContent(parsed);
         if (delta) {
           content += delta;
-          console.log('[analyzeFood] sse delta', { delta, accumulated: content });
           onDelta?.(content);
         }
 

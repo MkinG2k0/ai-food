@@ -349,6 +349,7 @@ describe('billing routes', () => {
     expect(res.body.originalAmount).toBe(10_000);
     expect(res.body.promoCode).toBe('new50');
     expect(paymentStore.get(res.body.paymentId)?.amount).toBe(5_000);
+    expect(paymentStore.get(res.body.paymentId)?.promoCode).toBe('new50');
   });
 
   it('POST /billing/subscribe with bad promo does not create payment', async () => {

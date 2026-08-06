@@ -16,7 +16,7 @@ const { Content, Header, Sider } = Layout;
 
 const menuItems = [
   { icon: <BarChartOutlined />, key: '/admin', label: 'Обзор' },
-  { icon: <TagsOutlined />, key: '/admin/pricing', label: 'Цены' },
+  { icon: <TagsOutlined />, key: '/admin/pricing', label: 'Цены и лимиты' },
   {
     icon: <UserOutlined />,
     key: '/admin/users',
@@ -32,7 +32,7 @@ const menuItems = [
 
 const pageTitles: Record<string, string> = {
   '/admin': 'Обзор',
-  '/admin/pricing': 'Цены',
+  '/admin/pricing': 'Цены и лимиты',
   '/admin/users': 'Пользователи',
   '/admin/payments': 'Платежи',
   '/admin/subscriptions': 'Подписки',

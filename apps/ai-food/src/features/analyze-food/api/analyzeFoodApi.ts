@@ -658,7 +658,6 @@ export async function analyzeFoodApi(
     const key = partialFingerprint(partial);
     if (key === '{}' || key === lastPartialKey) return;
     lastPartialKey = key;
-    console.log('[analyzeFood] partial xml', partial);
     options?.onPartial?.(partial);
   };
 

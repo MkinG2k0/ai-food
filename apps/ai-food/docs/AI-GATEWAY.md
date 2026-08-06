@@ -48,8 +48,7 @@ ai-app (openrouter-gateway)
 | — | `DATABASE_URL`, `AUTH_SECRET` | Auth + квота |
 | — | `TELEGRAM_BOT_TOKEN` (или `AUTH_TELEGRAM_BOT_TOKEN`), `TELEGRAM_BOT_USERNAME` | Bot deep-link login |
 | — | `TELEGRAM_WEBHOOK_SECRET`, `PUBLIC_GATEWAY_URL` | Webhook `POST /telegram/webhook` + `setWebhook` при старте |
-| — | `FREE_GENERATION_LIMIT` | Guest AI budget (default 50) |
-| — | `AUTH_LOGIN_GENERATION_BONUS` | Extra AI after Telegram login (default 100; summed with free → 150) |
+| — | *(admin UI)* | Guest free limit + login bonus (`AppSettings`, defaults 50 / 100) |
 | `VITE_TELEGRAM_BOT_USERNAME` (опц.) | — | Подпись кнопки «Войти через Telegram» на фронте |
 | — | `SUBSCRIPTION_*`, `TBANK_*`, `PUBLIC_APP_URL` | Годовая лицензия (см. [SUBSCRIPTION.md](./SUBSCRIPTION.md)) |
 

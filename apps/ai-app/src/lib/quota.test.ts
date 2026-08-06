@@ -1,8 +1,11 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
+  DEFAULT_AUTH_LOGIN_GENERATION_BONUS,
+  DEFAULT_FREE_GENERATION_LIMIT,
   getAuthLoginBonus,
   getEffectiveLimit,
   getFreeLimit,
+  getQuotaLimits,
   getUsageSnapshot,
   isBillableUsageKind,
   parseUsageKind,
@@ -10,16 +13,10 @@ import {
 } from './quota.js';
 
 describe('quota helpers', () => {
-  const prevLimit = process.env.FREE_GENERATION_LIMIT;
-  const prevBonus = process.env.AUTH_LOGIN_GENERATION_BONUS;
   const prevDb = process.env.DATABASE_URL;
   const prevEnforce = process.env.QUOTA_ENFORCE;
 
   afterEach(() => {
-    if (prevLimit === undefined) delete process.env.FREE_GENERATION_LIMIT;
-    else process.env.FREE_GENERATION_LIMIT = prevLimit;
-    if (prevBonus === undefined) delete process.env.AUTH_LOGIN_GENERATION_BONUS;
-    else process.env.AUTH_LOGIN_GENERATION_BONUS = prevBonus;
     if (prevDb === undefined) delete process.env.DATABASE_URL;
     else process.env.DATABASE_URL = prevDb;
     if (prevEnforce === undefined) delete process.env.QUOTA_ENFORCE;
@@ -43,25 +40,37 @@ describe('quota helpers', () => {
     expect(isBillableUsageKind('manual')).toBe(false);
   });
 
-  it('getFreeLimit defaults to 50', () => {
-    delete process.env.FREE_GENERATION_LIMIT;
-    expect(getFreeLimit()).toBe(50);
-    process.env.FREE_GENERATION_LIMIT = '25';
-    expect(getFreeLimit()).toBe(25);
+  it('getQuotaLimits uses defaults when settings missing', async () => {
+    const prisma = {
+      appSettings: { findUnique: vi.fn().mockResolvedValue(null) },
+    } as never;
+    await expect(getFreeLimit(prisma)).resolves.toBe(
+      DEFAULT_FREE_GENERATION_LIMIT,
+    );
+    await expect(getAuthLoginBonus(prisma)).resolves.toBe(
+      DEFAULT_AUTH_LOGIN_GENERATION_BONUS,
+    );
+    await expect(getEffectiveLimit(false, prisma)).resolves.toBe(50);
+    await expect(getEffectiveLimit(true, prisma)).resolves.toBe(150);
   });
 
-  it('getAuthLoginBonus defaults to 100', () => {
-    delete process.env.AUTH_LOGIN_GENERATION_BONUS;
-    expect(getAuthLoginBonus()).toBe(100);
-    process.env.AUTH_LOGIN_GENERATION_BONUS = '75';
-    expect(getAuthLoginBonus()).toBe(75);
-  });
-
-  it('getEffectiveLimit sums free + login bonus when authenticated', () => {
-    process.env.FREE_GENERATION_LIMIT = '50';
-    process.env.AUTH_LOGIN_GENERATION_BONUS = '100';
-    expect(getEffectiveLimit(false)).toBe(50);
-    expect(getEffectiveLimit(true)).toBe(150);
+  it('getQuotaLimits reads AppSettings overrides', async () => {
+    const prisma = {
+      appSettings: {
+        findUnique: vi.fn().mockResolvedValue({
+          freeGenerationLimit: 25,
+          authLoginGenerationBonus: 75,
+        }),
+      },
+    } as never;
+    const limits = await getQuotaLimits(prisma);
+    expect(limits).toEqual({
+      freeGenerationLimit: 25,
+      authLoginGenerationBonus: 75,
+      freeSource: 'db',
+      bonusSource: 'db',
+    });
+    await expect(getEffectiveLimit(true, prisma)).resolves.toBe(100);
   });
 
   it('shouldEnforceQuota follows DATABASE_URL and QUOTA_ENFORCE', () => {
@@ -78,9 +87,8 @@ describe('quota helpers', () => {
   });
 
   it('getUsageSnapshot: auth with subscription → remaining null', async () => {
-    process.env.FREE_GENERATION_LIMIT = '50';
-    process.env.AUTH_LOGIN_GENERATION_BONUS = '100';
     const prisma = {
+      appSettings: { findUnique: vi.fn().mockResolvedValue(null) },
       device: { findUnique: vi.fn() },
     } as never;
     const snap = await getUsageSnapshot(prisma, 'dev-1', {
@@ -93,13 +101,14 @@ describe('quota helpers', () => {
       remaining: null,
       authenticated: true,
       hasActiveSubscription: true,
+      freeGenerationLimit: 50,
+      authLoginGenerationBonus: 100,
     });
   });
 
   it('getUsageSnapshot: auth without subscription → free + login bonus', async () => {
-    process.env.FREE_GENERATION_LIMIT = '50';
-    process.env.AUTH_LOGIN_GENERATION_BONUS = '100';
     const prisma = {
+      appSettings: { findUnique: vi.fn().mockResolvedValue(null) },
       device: {
         findUnique: vi.fn().mockResolvedValue({ id: 'drow' }),
       },
@@ -117,13 +126,14 @@ describe('quota helpers', () => {
       remaining: 140,
       authenticated: true,
       hasActiveSubscription: false,
+      freeGenerationLimit: 50,
+      authLoginGenerationBonus: 100,
     });
   });
 
   it('getUsageSnapshot: guest → free limit only', async () => {
-    process.env.FREE_GENERATION_LIMIT = '50';
-    process.env.AUTH_LOGIN_GENERATION_BONUS = '100';
     const prisma = {
+      appSettings: { findUnique: vi.fn().mockResolvedValue(null) },
       device: {
         findUnique: vi.fn().mockResolvedValue({ id: 'drow' }),
       },
@@ -141,6 +151,8 @@ describe('quota helpers', () => {
       remaining: 40,
       authenticated: false,
       hasActiveSubscription: false,
+      freeGenerationLimit: 50,
+      authLoginGenerationBonus: 100,
     });
   });
 });

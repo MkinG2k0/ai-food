@@ -45,6 +45,7 @@ model Payment {
   user           User          @relation(fields: [userId], references: [id])
   amount         Int
   status         PaymentStatus @default(pending)
+  promoCode      String?
   tbankPaymentId String?       @unique
   tbankOrderId   String        @unique
   paidAt         DateTime?
@@ -52,6 +53,7 @@ model Payment {
   updatedAt      DateTime      @updatedAt
 
   @@index([userId, status])
+  @@index([promoCode, status])
 }
 
 model Device {
@@ -81,6 +83,8 @@ model AppSettings {
   id                       Int      @id @default(1)
   subscriptionPriceKopecks Int?
   subscriptionDurationDays Int?
+  freeGenerationLimit      Int?
+  authLoginGenerationBonus Int?
   updatedAt                DateTime @updatedAt
 }
 

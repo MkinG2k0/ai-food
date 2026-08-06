@@ -23,7 +23,9 @@ import { adminApi } from '@/lib/adminApi';
 type Pricing = {
   priceKopecks: number;
   durationDays: number;
-  source: 'db' | 'env';
+  freeGenerationLimit: number;
+  authLoginGenerationBonus: number;
+  source: 'db' | 'env' | 'default';
 };
 
 type PricingFormValues = {
@@ -31,10 +33,16 @@ type PricingFormValues = {
   durationDays: number;
 };
 
+type QuotaFormValues = {
+  freeGenerationLimit: number;
+  authLoginGenerationBonus: number;
+};
+
 type PromoItem = {
   id: string;
   code: string;
   discountPercent: number;
+  usageCount: number;
   createdAt: string;
 };
 
@@ -45,10 +53,17 @@ type PromoFormValues = {
   discountPercent: number;
 };
 
+function sourceLabel(source: Pricing['source'] | undefined) {
+  if (source === 'db') return 'База данных';
+  if (source === 'env') return 'Переменные окружения';
+  return 'По умолчанию';
+}
+
 export default function PricingPage() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [form] = Form.useForm<PricingFormValues>();
+  const [quotaForm] = Form.useForm<QuotaFormValues>();
   const pricingQuery = useQuery({
     queryKey: ['admin', 'pricing'],
     queryFn: () => adminApi<Pricing>('pricing'),
@@ -65,6 +80,21 @@ export default function PricingPage() {
     onSuccess: (pricing) => {
       queryClient.setQueryData(['admin', 'pricing'], pricing);
       message.success('Настройки цены сохранены');
+    },
+    onError: (error) => message.error(error.message),
+  });
+  const saveQuota = useMutation({
+    mutationFn: (values: QuotaFormValues) =>
+      adminApi<Pricing>('pricing', {
+        body: JSON.stringify({
+          freeGenerationLimit: values.freeGenerationLimit,
+          authLoginGenerationBonus: values.authLoginGenerationBonus,
+        }),
+        method: 'PUT',
+      }),
+    onSuccess: (pricing) => {
+      queryClient.setQueryData(['admin', 'pricing'], pricing);
+      message.success('Лимиты генераций сохранены');
     },
     onError: (error) => message.error(error.message),
   });
@@ -107,14 +137,18 @@ export default function PricingPage() {
         durationDays: pricingQuery.data.durationDays,
         priceRubles: pricingQuery.data.priceKopecks / 100,
       });
+      quotaForm.setFieldsValue({
+        freeGenerationLimit: pricingQuery.data.freeGenerationLimit,
+        authLoginGenerationBonus: pricingQuery.data.authLoginGenerationBonus,
+      });
     }
-  }, [form, pricingQuery.data]);
+  }, [form, quotaForm, pricingQuery.data]);
 
   return (
     <>
       <PageHeader
-        subtitle="Цена и срок подписки для оплаты"
-        title="Цены"
+        subtitle="Подписка, бесплатные лимиты и промокоды"
+        title="Цены и лимиты"
       />
       {pricingQuery.error ? (
         <Alert
@@ -129,9 +163,7 @@ export default function PricingPage() {
           <div>
             <Typography.Text type="secondary">Источник настроек: </Typography.Text>
             <Tag color={pricingQuery.data?.source === 'db' ? 'success' : 'processing'}>
-              {pricingQuery.data?.source === 'db'
-                ? 'База данных'
-                : 'Переменные окружения'}
+              {sourceLabel(pricingQuery.data?.source)}
             </Tag>
           </div>
           <Form<PricingFormValues>
@@ -178,10 +210,62 @@ export default function PricingPage() {
               loading={savePricing.isPending}
               type="primary"
             >
-              Сохранить
+              Сохранить цену
             </Button>
           </Form>
         </Space>
+      </Card>
+      <Card
+        loading={pricingQuery.isLoading}
+        style={{ maxWidth: 640, marginTop: 24 }}
+        title="Лимиты генераций"
+      >
+        <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+          Гость: только бесплатный лимит. После входа: бесплатный + бонус.
+          Подписчики без лимита.
+        </Typography.Paragraph>
+        <Form<QuotaFormValues>
+          form={quotaForm}
+          layout="vertical"
+          onFinish={(values) => saveQuota.mutate(values)}
+          requiredMark={false}
+        >
+          <Form.Item
+            label="Бесплатный лимит (гость)"
+            name="freeGenerationLimit"
+            rules={[
+              { message: 'Укажите лимит', required: true },
+              {
+                message: 'Лимит должен быть целым ≥ 1',
+                min: 1,
+                type: 'integer',
+              },
+            ]}
+          >
+            <InputNumber min={1} precision={0} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            label="Бонус после входа"
+            name="authLoginGenerationBonus"
+            rules={[
+              { message: 'Укажите бонус', required: true },
+              {
+                message: 'Бонус должен быть целым ≥ 0',
+                min: 0,
+                type: 'integer',
+              },
+            ]}
+          >
+            <InputNumber min={0} precision={0} style={{ width: '100%' }} />
+          </Form.Item>
+          <Button
+            htmlType="submit"
+            loading={saveQuota.isPending}
+            type="primary"
+          >
+            Сохранить лимиты
+          </Button>
+        </Form>
       </Card>
       <Card
         loading={promosQuery.isLoading}
@@ -243,6 +327,12 @@ export default function PricingPage() {
                 render: (value: number) => `${value}%`,
                 title: 'Скидка',
                 width: 100,
+              },
+              {
+                dataIndex: 'usageCount',
+                key: 'usageCount',
+                title: 'Использовано',
+                width: 120,
               },
               {
                 key: 'actions',

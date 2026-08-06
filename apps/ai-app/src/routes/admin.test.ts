@@ -31,6 +31,7 @@ type MockPayment = {
   userId: string;
   amount: number;
   status: 'pending' | 'confirmed' | 'rejected' | 'refunded';
+  promoCode: string | null;
   tbankPaymentId: string | null;
   tbankOrderId: string;
   paidAt: Date | null;
@@ -65,6 +66,8 @@ describe('admin routes', () => {
     id: number;
     subscriptionPriceKopecks: number | null;
     subscriptionDurationDays: number | null;
+    freeGenerationLimit: number | null;
+    authLoginGenerationBonus: number | null;
     updatedAt: Date;
   } | null;
   let users: MockUser[];
@@ -124,6 +127,35 @@ describe('admin routes', () => {
           _count: 3,
           _sum: { amount: 45_000 },
         })),
+        groupBy: vi.fn(
+          async ({
+            by,
+            where,
+          }: {
+            by: string[];
+            where?: {
+              promoCode?: { in: string[] };
+              status?: string;
+            };
+          }) => {
+            if (!by.includes('promoCode')) return [];
+            const codes = where?.promoCode?.in ?? [];
+            const counts = new Map<string, number>();
+            for (const payment of payments) {
+              if (where?.status && payment.status !== where.status) continue;
+              if (!payment.promoCode) continue;
+              if (codes.length > 0 && !codes.includes(payment.promoCode)) continue;
+              counts.set(
+                payment.promoCode,
+                (counts.get(payment.promoCode) ?? 0) + 1,
+              );
+            }
+            return [...counts.entries()].map(([promoCode, count]) => ({
+              promoCode,
+              _count: { _all: count },
+            }));
+          },
+        ),
         findMany: vi.fn(
           async ({
             where,
@@ -228,6 +260,28 @@ describe('admin routes', () => {
       $transaction: vi.fn(async (fn: (tx: typeof prisma) => Promise<unknown>) =>
         fn(prisma),
       ),
+      device: {
+        findMany: vi.fn(
+          async ({
+            where,
+          }: {
+            where: { userId: { in: string[] } };
+            select?: { id: boolean; userId: boolean };
+          }) => {
+            const userIds = where.userId.in;
+            const byDevice = new Map<string, string>();
+            for (const event of usageEvents) {
+              if (event.userId && userIds.includes(event.userId)) {
+                byDevice.set(event.deviceId, event.userId);
+              }
+            }
+            return [...byDevice.entries()].map(([id, userId]) => ({
+              id,
+              userId,
+            }));
+          },
+        ),
+      },
       usageEvent: {
         count: vi.fn(
           async ({
@@ -253,17 +307,37 @@ describe('admin routes', () => {
           async ({
             where,
           }: {
-            where: { userId: { in: string[] } };
+            where: {
+              OR?: Array<{
+                userId?: { in: string[] };
+                deviceId?: { in: string[] };
+              }>;
+              userId?: { in: string[] };
+            };
           }) => {
+            const userIds =
+              where.userId?.in ??
+              where.OR?.find((c) => c.userId)?.userId?.in ??
+              [];
+            const deviceIds =
+              where.OR?.find((c) => c.deviceId)?.deviceId?.in ?? [];
             const counts = new Map<string, number>();
             for (const event of usageEvents) {
-              if (!event.userId || !where.userId.in.includes(event.userId)) continue;
-              const key = `${event.userId}:${event.kind}`;
+              const matchUser =
+                event.userId != null && userIds.includes(event.userId);
+              const matchDevice = deviceIds.includes(event.deviceId);
+              if (!matchUser && !matchDevice) continue;
+              const key = `${event.userId ?? ''}:${event.kind}:${event.deviceId}`;
               counts.set(key, (counts.get(key) ?? 0) + 1);
             }
             return [...counts].map(([key, count]) => {
-              const [userId, kind] = key.split(':');
-              return { userId, kind, _count: { _all: count } };
+              const [userId, kind, deviceId] = key.split(':');
+              return {
+                userId: userId || null,
+                kind,
+                deviceId,
+                _count: { _all: count },
+              };
             });
           },
         ),
@@ -341,6 +415,7 @@ describe('admin routes', () => {
         userId: 'user-2',
         amount: 90_000,
         status: 'confirmed',
+        promoCode: null,
         tbankPaymentId: 'tb-1',
         tbankOrderId: 'pay-confirmed',
         paidAt: new Date('2026-08-01T12:00:00.000Z'),
@@ -351,6 +426,7 @@ describe('admin routes', () => {
         userId: 'user-1',
         amount: 90_000,
         status: 'pending',
+        promoCode: null,
         tbankPaymentId: null,
         tbankOrderId: 'pay-pending',
         paidAt: null,
@@ -412,6 +488,8 @@ describe('admin routes', () => {
     expect(response.body).toEqual({
       priceKopecks: 10_000,
       durationDays: 365,
+      freeGenerationLimit: 50,
+      authLoginGenerationBonus: 100,
       source: 'env',
     });
   });
@@ -420,7 +498,12 @@ describe('admin routes', () => {
     const response = await request(createApp())
       .put('/admin/pricing')
       .set('X-Admin-Key', 'test-admin')
-      .send({ priceKopecks: 25_000, durationDays: 30 });
+      .send({
+        priceKopecks: 25_000,
+        durationDays: 30,
+        freeGenerationLimit: 40,
+        authLoginGenerationBonus: 80,
+      });
 
     expect(response.status).toBe(200);
     expect(prisma.appSettings.upsert).toHaveBeenCalledWith({
@@ -429,15 +512,21 @@ describe('admin routes', () => {
         id: 1,
         subscriptionPriceKopecks: 25_000,
         subscriptionDurationDays: 30,
+        freeGenerationLimit: 40,
+        authLoginGenerationBonus: 80,
       },
       update: {
         subscriptionPriceKopecks: 25_000,
         subscriptionDurationDays: 30,
+        freeGenerationLimit: 40,
+        authLoginGenerationBonus: 80,
       },
     });
     expect(response.body).toEqual({
       priceKopecks: 25_000,
       durationDays: 30,
+      freeGenerationLimit: 40,
+      authLoginGenerationBonus: 80,
       source: 'db',
     });
   });
@@ -727,9 +816,66 @@ describe('admin routes', () => {
     expect(response.body).toMatchObject({
       code: 'summer20',
       discountPercent: 20,
+      usageCount: 0,
     });
     expect(response.body.id).toBeTruthy();
     expect(response.body.createdAt).toBeTruthy();
+  });
+
+  it('GET /admin/promos includes confirmed usage counts', async () => {
+    await request(createApp())
+      .post('/admin/promos')
+      .set('X-Admin-Key', 'test-admin')
+      .send({ code: 'summer80', discountPercent: 80 });
+
+    payments.push(
+      {
+        id: 'pay-promo-1',
+        userId: 'user-1',
+        amount: 20_000,
+        status: 'confirmed',
+        promoCode: 'summer80',
+        tbankPaymentId: 'tb-promo-1',
+        tbankOrderId: 'pay-promo-1',
+        paidAt: new Date('2026-08-03T12:00:00.000Z'),
+        createdAt: new Date('2026-08-03T11:00:00.000Z'),
+      },
+      {
+        id: 'pay-promo-2',
+        userId: 'user-2',
+        amount: 20_000,
+        status: 'confirmed',
+        promoCode: 'summer80',
+        tbankPaymentId: 'tb-promo-2',
+        tbankOrderId: 'pay-promo-2',
+        paidAt: new Date('2026-08-04T12:00:00.000Z'),
+        createdAt: new Date('2026-08-04T11:00:00.000Z'),
+      },
+      {
+        id: 'pay-promo-pending',
+        userId: 'user-1',
+        amount: 20_000,
+        status: 'pending',
+        promoCode: 'summer80',
+        tbankPaymentId: null,
+        tbankOrderId: 'pay-promo-pending',
+        paidAt: null,
+        createdAt: new Date('2026-08-05T11:00:00.000Z'),
+      },
+    );
+
+    const response = await request(createApp())
+      .get('/admin/promos')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body.items).toEqual([
+      expect.objectContaining({
+        code: 'summer80',
+        discountPercent: 80,
+        usageCount: 2,
+      }),
+    ]);
   });
 
   it('POST /admin/promos rejects duplicate code with 409', async () => {

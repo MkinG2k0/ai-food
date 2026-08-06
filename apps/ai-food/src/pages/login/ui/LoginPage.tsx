@@ -1,14 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
-  AUTH_LOGIN_GENERATION_BONUS,
-  GUEST_FREE_USAGE_LIMIT,
-  getEffectiveFreeLimit,
   isAuthMockEnabled,
   signInWithDemo,
   signOut,
   TelegramBotLoginButton,
   useAuthStore,
+  useUsage,
 } from '@/features/auth';
 import { Button, SubpageShell } from '@/shared/ui';
 
@@ -16,6 +14,10 @@ export function LoginPage() {
   const navigate = useNavigate();
   const session = useAuthStore((s) => s.session);
   const mockEnabled = isAuthMockEnabled();
+  const { data: usage } = useUsage();
+  const freeLimit = usage.freeGenerationLimit;
+  const loginBonus = usage.authLoginGenerationBonus;
+  const totalAfterLogin = freeLimit + loginBonus;
 
   const handleDemoSignIn = async () => {
     if (!mockEnabled) {
@@ -63,12 +65,10 @@ export function LoginPage() {
       ) : (
         <section className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Гостям доступно {GUEST_FREE_USAGE_LIMIT} бесплатных
-            анализов/дополнений. После входа через Telegram — ещё{' '}
-            {AUTH_LOGIN_GENERATION_BONUS} (итого{' '}
-            {getEffectiveFreeLimit(true)}). Когда лимит кончится, оформите
-            годовую лицензию. Дневник, ручной ввод и статистика работают без
-            оплаты.
+            Гостям доступно {freeLimit} бесплатных анализов/дополнений. После
+            входа через Telegram — ещё {loginBonus} (итого {totalAfterLogin}).
+            Когда лимит кончится, оформите годовую лицензию. Дневник, ручной
+            ввод и статистика работают без оплаты.
           </p>
 
           <div className="rounded-md border border-border bg-card px-4 py-5">

@@ -5,10 +5,10 @@ import {
   type UsageKindHeader,
 } from '../model/quotaHeaders';
 
-/** Guest free analyze/refine quota (must match gateway FREE_GENERATION_LIMIT). */
+/** Offline UI fallback for guest free quota (server truth: AppSettings / GET /usage). */
 export const GUEST_FREE_USAGE_LIMIT = 50;
 
-/** Extra generations after Telegram login (must match AUTH_LOGIN_GENERATION_BONUS). */
+/** Offline UI fallback for login bonus (server truth: AppSettings / GET /usage). */
 export const AUTH_LOGIN_GENERATION_BONUS = 100;
 
 /** Guest: free only. Authenticated (no sub): free + login bonus. */
@@ -25,6 +25,8 @@ export type UsageSnapshot = {
   remaining: number | null;
   authenticated: boolean;
   hasActiveSubscription?: boolean;
+  freeGenerationLimit: number;
+  authLoginGenerationBonus: number;
   degraded?: boolean;
 };
 
@@ -44,6 +46,8 @@ export function createDefaultGuestUsage(
     remaining: limit,
     authenticated,
     hasActiveSubscription: false,
+    freeGenerationLimit: GUEST_FREE_USAGE_LIMIT,
+    authLoginGenerationBonus: AUTH_LOGIN_GENERATION_BONUS,
   };
 }
 
@@ -58,11 +62,27 @@ function isUsageSnapshot(value: unknown): value is UsageSnapshot {
   );
 }
 
+function normalizeUsageSnapshot(value: UsageSnapshot): UsageSnapshot {
+  return {
+    ...value,
+    freeGenerationLimit:
+      typeof value.freeGenerationLimit === 'number' &&
+      Number.isFinite(value.freeGenerationLimit)
+        ? value.freeGenerationLimit
+        : GUEST_FREE_USAGE_LIMIT,
+    authLoginGenerationBonus:
+      typeof value.authLoginGenerationBonus === 'number' &&
+      Number.isFinite(value.authLoginGenerationBonus)
+        ? value.authLoginGenerationBonus
+        : AUTH_LOGIN_GENERATION_BONUS,
+  };
+}
+
 function parseUsageSnapshot(raw: string | null | undefined): UsageSnapshot | null {
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
-    return isUsageSnapshot(parsed) ? parsed : null;
+    return isUsageSnapshot(parsed) ? normalizeUsageSnapshot(parsed) : null;
   } catch {
     return null;
   }
@@ -162,7 +182,7 @@ export async function fetchUsage(): Promise<UsageSnapshot> {
   if (!res.ok) {
     throw new Error(`usage ${res.status}`);
   }
-  const snap = (await res.json()) as UsageSnapshot;
+  const snap = normalizeUsageSnapshot((await res.json()) as UsageSnapshot);
   await persistUsageCache(snap);
   return snap;
 }

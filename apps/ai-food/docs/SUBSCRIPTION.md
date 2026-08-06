@@ -6,9 +6,9 @@
 
 ## Воронка
 
-1. Гость: 50 бесплатных AI (`analyze` + `refine`) по `X-Device-Id` (`FREE_GENERATION_LIMIT`)
+1. Гость: бесплатные AI (`analyze` + `refine`) по `X-Device-Id` (лимит в админке, default 50)
 2. Лимит → `/login` (Telegram)
-3. После входа: +100 к квоте устройства (`AUTH_LOGIN_GENERATION_BONUS`) → итого **150** (использованные гостевые генерации не сбрасываются)
+3. После входа: бонус к квоте устройства (админка, default +100 → итого **150**; использованные гостевые генерации не сбрасываются)
 4. Логин **сам по себе не даёт** unlimited
 5. Без лицензии — device-квота с повышенным лимитом; после исчерпания → `/subscribe`
 6. Оплата T-Bank → `hasActiveSubscription` → unlimited AI до `subscriptionExpiresAt`

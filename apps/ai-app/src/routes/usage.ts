@@ -4,7 +4,11 @@ import { ApiError } from '../../lib/errors.js';
 import { asyncHandler } from '../middleware/error.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import { verifyUserToken } from '../lib/jwt.js';
-import { ensureDevice, getEffectiveLimit, getUsageSnapshot } from '../lib/quota.js';
+import {
+  ensureDevice,
+  getQuotaLimits,
+  getUsageSnapshot,
+} from '../lib/quota.js';
 import { hasActiveSubscription } from '../lib/subscription.js';
 
 export const usageRouter = Router();
@@ -22,13 +26,15 @@ usageRouter.get(
     }
 
     if (!isDatabaseConfigured()) {
-      const limit = getEffectiveLimit(false);
+      const quota = await getQuotaLimits();
       res.json({
         used: 0,
-        limit,
-        remaining: limit,
+        limit: quota.freeGenerationLimit,
+        remaining: quota.freeGenerationLimit,
         authenticated: false,
         hasActiveSubscription: false,
+        freeGenerationLimit: quota.freeGenerationLimit,
+        authLoginGenerationBonus: quota.authLoginGenerationBonus,
         degraded: true,
       });
       return;

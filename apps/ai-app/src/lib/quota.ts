@@ -18,6 +18,10 @@ const BILLABLE_SET = new Set<string>([
   'refine',
 ]);
 
+/** Defaults when AppSettings has no override. */
+export const DEFAULT_FREE_GENERATION_LIMIT = 50;
+export const DEFAULT_AUTH_LOGIN_GENERATION_BONUS = 100;
+
 export function isBillableUsageKind(kind: string): kind is BillableUsageKind {
   return BILLABLE_SET.has(kind);
 }
@@ -35,20 +39,71 @@ export function billableUsageWhere() {
   };
 }
 
-export function getFreeLimit(): number {
-  const n = Number(process.env.FREE_GENERATION_LIMIT);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 50;
+export type QuotaLimits = {
+  freeGenerationLimit: number;
+  authLoginGenerationBonus: number;
+  freeSource: 'db' | 'default';
+  bonusSource: 'db' | 'default';
+};
+
+async function loadQuotaSettings(prisma?: PrismaClient | null) {
+  if (!prisma) return null;
+  try {
+    return await prisma.appSettings.findUnique({ where: { id: 1 } });
+  } catch {
+    return null;
+  }
+}
+
+function normalizeFreeLimit(n: number | null | undefined): number | null {
+  if (n == null || !Number.isFinite(n) || n < 1) return null;
+  return Math.floor(n);
+}
+
+function normalizeBonus(n: number | null | undefined): number | null {
+  if (n == null || !Number.isFinite(n) || n < 0) return null;
+  return Math.floor(n);
+}
+
+export async function getQuotaLimits(
+  prisma?: PrismaClient | null,
+): Promise<QuotaLimits> {
+  const row = await loadQuotaSettings(prisma);
+  const free = normalizeFreeLimit(row?.freeGenerationLimit);
+  const bonus = normalizeBonus(row?.authLoginGenerationBonus);
+  return {
+    freeGenerationLimit: free ?? DEFAULT_FREE_GENERATION_LIMIT,
+    authLoginGenerationBonus: bonus ?? DEFAULT_AUTH_LOGIN_GENERATION_BONUS,
+    freeSource: free != null ? 'db' : 'default',
+    bonusSource: bonus != null ? 'db' : 'default',
+  };
+}
+
+export async function getFreeLimit(
+  prisma?: PrismaClient | null,
+): Promise<number> {
+  const limits = await getQuotaLimits(prisma);
+  return limits.freeGenerationLimit;
 }
 
 /** Extra generations granted after sign-in (summed with guest free limit). */
-export function getAuthLoginBonus(): number {
-  const n = Number(process.env.AUTH_LOGIN_GENERATION_BONUS);
-  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 100;
+export async function getAuthLoginBonus(
+  prisma?: PrismaClient | null,
+): Promise<number> {
+  const limits = await getQuotaLimits(prisma);
+  return limits.authLoginGenerationBonus;
 }
 
 /** Guest: FREE only. Authenticated (no sub): FREE + login bonus. */
-export function getEffectiveLimit(authenticated: boolean): number {
-  return getFreeLimit() + (authenticated ? getAuthLoginBonus() : 0);
+export async function getEffectiveLimit(
+  authenticated: boolean,
+  prisma?: PrismaClient | null,
+): Promise<number> {
+  const limits = await getQuotaLimits(prisma);
+  return (
+    limits.freeGenerationLimit +
+    (authenticated ? limits.authLoginGenerationBonus : 0)
+  );
 }
 
 export function shouldEnforceQuota(): boolean {
@@ -97,11 +152,20 @@ export async function getUsageSnapshot(
   remaining: number | null;
   authenticated: boolean;
   hasActiveSubscription: boolean;
+  freeGenerationLimit: number;
+  authLoginGenerationBonus: number;
 }> {
   const options: UsageSnapshotOpts =
     typeof opts === 'boolean' ? { authenticated: opts } : opts;
   const hasSub = Boolean(options.hasActiveSubscription);
-  const limit = getEffectiveLimit(options.authenticated);
+  const quota = await getQuotaLimits(prisma);
+  const limit =
+    quota.freeGenerationLimit +
+    (options.authenticated ? quota.authLoginGenerationBonus : 0);
+  const quotaFields = {
+    freeGenerationLimit: quota.freeGenerationLimit,
+    authLoginGenerationBonus: quota.authLoginGenerationBonus,
+  };
 
   if (options.authenticated && hasSub) {
     return {
@@ -110,6 +174,7 @@ export async function getUsageSnapshot(
       remaining: null,
       authenticated: true,
       hasActiveSubscription: true,
+      ...quotaFields,
     };
   }
 
@@ -123,6 +188,7 @@ export async function getUsageSnapshot(
     remaining: Math.max(0, limit - used),
     authenticated: options.authenticated,
     hasActiveSubscription: false,
+    ...quotaFields,
   };
 }
 
@@ -137,7 +203,7 @@ export async function assertGuestQuotaOrThrow(
   const authenticated = Boolean(opts?.authenticated);
   const device = await ensureDevice(prisma, clientDeviceId.trim());
   const used = await countGuestBillableUsage(prisma, device.id);
-  const limit = getEffectiveLimit(authenticated);
+  const limit = await getEffectiveLimit(authenticated, prisma);
   if (used >= limit) {
     const message = authenticated
       ? 'Free generation limit reached. Purchase a yearly license to continue.'
