@@ -1,6 +1,6 @@
 # AI Gateway (sibling backend)
 
-**Последнее обновление:** 2026-08-04
+**Последнее обновление:** 2026-08-06
 
 ## Что это
 
@@ -64,10 +64,11 @@ ai-app (openrouter-gateway)
 |-------|------|------|---------|
 | `GET` | `/health` | нет | `{ "status": "ok" }` |
 | `POST` | `/auth/telegram/start` | нет* | `{ challengeId, botDeepLink, expiresAt }` — старт bot deep-link login |
-| `GET` | `/auth/telegram/status?challengeId=` | нет* | `{ status: "pending" \| "expired" }` или `{ status: "ok", token, user }` |
-| `POST` | `/auth/demo/login` | нет* | Демо-юзер + JWT; только если `AUTH_MOCK≠false`. Body: `{ deviceId? }` → `{ token, user }` |
+| `GET` | `/auth/telegram/status?challengeId=` | нет* | `{ status: "pending" \| "expired" }` или `{ status: "ok", token, user }`; `user.nutritionProfile` — объект `{ profile, targets }` или `null` |
+| `POST` | `/auth/demo/login` | нет* | Демо-юзер + JWT; только если `AUTH_MOCK≠false`. Body: `{ deviceId? }` → `{ token, user }`; `user.nutritionProfile` — объект или `null` |
 | `POST` | `/telegram/webhook` | `X-Telegram-Bot-Api-Secret-Token` | Telegram Bot API updates; подтверждение challenge |
-| `GET` | `/auth/me` | `X-User-Token` | Профиль + `subscriptionExpiresAt` / `hasActiveSubscription` |
+| `GET` | `/auth/me` | `X-User-Token` | Профиль + `subscriptionExpiresAt` / `hasActiveSubscription`; `nutritionProfile` — объект `{ profile, targets }` или `null` |
+| `PUT` | `/auth/profile` | `X-User-Token` | Body `{ profile, targets }` → публичный user с `nutritionProfile` |
 | `GET` | `/usage` | device (+ optional JWT) | Квота: unlimited **только** при active лицензии |
 | `POST` | `/billing/promo/validate` | `X-User-Token` | Проверка промокода и цена со скидкой |
 | `POST` | `/billing/subscribe` | `X-User-Token` | T-Bank Init / mock; опционально `{ promoCode }`; ответ: `amount`, `originalAmount`, `promoCode` |
@@ -91,7 +92,7 @@ ai-app (openrouter-gateway)
 | `src/features/analyze-food/api/refineMealApi.ts` | Уточнение результата |
 | `src/features/analyze-food/api/fetchMealCustomContentApi.ts` | Доп. markdown-контент по блюду |
 | `src/features/onboarding/api/micronutrientTargetsApi.ts` | Цели по микронутриентам |
-| `src/features/auth/*` | Bot login + `signInWithDemo` (`/auth/demo/login`), `/usage` |
+| `src/features/auth/*` | Bot login + `signInWithDemo` (`/auth/demo/login`), `fetchAuthMe` (`GET /auth/me`), `putNutritionProfile` (`PUT /auth/profile`), `/usage` |
 | `src/features/billing/*` | Subscribe / status / sync |
 
 Ошибки gateway (`RATE_LIMITED`, `UPSTREAM_TIMEOUT`, `QUOTA_EXCEEDED`, …) мапятся в клиентские `ApiError`. При `402` UI ведёт гостя на `/login`, авторизованного — на `/subscribe`.

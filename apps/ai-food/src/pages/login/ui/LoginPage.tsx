@@ -9,6 +9,10 @@ import {
   useAuthStore,
   useUsage,
 } from '@/features/auth';
+import {
+  applyRemoteNutritionProfile,
+  useProfileStore,
+} from '@/features/onboarding';
 import { Button, SubpageShell } from '@/shared/ui';
 
 export function LoginPage() {
@@ -20,15 +24,26 @@ export function LoginPage() {
   const loginBonus = usage.authLoginGenerationBonus;
   const totalAfterLogin = freeLimit + loginBonus;
 
+  const handleLoginSuccess = (result: AuthLoginResult) => {
+    if (result.nutritionProfile) {
+      applyRemoteNutritionProfile(result.nutritionProfile);
+      toast.success('С возвращением');
+      navigate('/', { replace: true });
+      return;
+    }
+    toast.success('Вход выполнен');
+    const hasLocal = useProfileStore.getState().profile !== null;
+    navigate(hasLocal ? '/' : '/onboarding', { replace: true });
+  };
+
   const handleDemoSignIn = async () => {
     if (!mockEnabled) {
       toast.message('Демо-вход выключен (VITE_AUTH_MOCK=false)');
       return;
     }
     try {
-      await signInWithDemo();
-      toast.success('Вход выполнен');
-      navigate('/', { replace: true });
+      const result = await signInWithDemo();
+      handleLoginSuccess(result);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Демо-вход не удался');
     }
@@ -37,11 +52,6 @@ export function LoginPage() {
   const handleSignOut = () => {
     signOut();
     toast.success('Вы вышли');
-  };
-
-  const handleTelegramSuccess = (_result: AuthLoginResult) => {
-    toast.success('Вход выполнен');
-    navigate('/', { replace: true });
   };
 
   return (
@@ -75,7 +85,7 @@ export function LoginPage() {
           <div className="rounded-md border border-border bg-card px-4 py-5">
             <p className="mb-3 text-center text-sm font-medium">Telegram</p>
             <TelegramBotLoginButton
-              onSuccess={handleTelegramSuccess}
+              onSuccess={handleLoginSuccess}
               onError={(message) => toast.error(message)}
             />
           </div>
