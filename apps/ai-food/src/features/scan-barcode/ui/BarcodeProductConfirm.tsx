@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import { formatCalories, formatMacro } from '@/shared/lib';
 import { Button } from '@/shared/ui';
-import type { OffProduct } from '../api/fetchProductByBarcode';
+import {
+  defaultBarcodeGrams,
+  type OffProduct,
+} from '../api/fetchProductByBarcode';
 import { scaleOffProductToItem } from '../api/mapOffProductToMeal';
 
 export interface BarcodeProductConfirmProps {
@@ -17,7 +20,9 @@ export function BarcodeProductConfirm({
   onCancel,
   saving = false,
 }: BarcodeProductConfirmProps) {
-  const [gramsRaw, setGramsRaw] = useState('100');
+  const [gramsRaw, setGramsRaw] = useState(() =>
+    String(defaultBarcodeGrams(product)),
+  );
 
   const grams = useMemo(() => {
     const n = Number(gramsRaw.replace(',', '.'));

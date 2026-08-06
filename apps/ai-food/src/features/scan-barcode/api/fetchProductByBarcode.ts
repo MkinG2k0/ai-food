@@ -77,6 +77,24 @@ export function normalizeBarcode(raw: string): string {
   return raw.replace(/\D/g, '');
 }
 
+/** Parse grams from OFF serving_size strings like "32 g", "32g", "1 bar (32 g)". */
+export function parseServingGrams(servingSize?: string): number | null {
+  if (!servingSize?.trim()) return null;
+  // Longer units first; avoid \\b — it breaks on Cyrillic in JS.
+  const match = servingSize.match(
+    /(\d+(?:[.,]\d+)?)\s*(?:грамм|гр|g|г)(?![a-zа-яё])/i,
+  );
+  if (!match) return null;
+  const n = Number(match[1].replace(',', '.'));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(n);
+}
+
+/** Default portion: package serving when known, otherwise 100 g. */
+export function defaultBarcodeGrams(product: Pick<OffProduct, 'servingSize'>): number {
+  return parseServingGrams(product.servingSize) ?? 100;
+}
+
 export function mapOffApiToProduct(
   code: string,
   product: OffApiProduct,
