@@ -21,6 +21,11 @@ import {
 } from '../lib/telegramBotApi.js';
 import { subscriptionPublicFields } from '../lib/subscription.js';
 import { DATA_CONSENT_VERSION } from '../lib/consent.js';
+import {
+  nutritionProfileBodySchema,
+  parseNutritionProfile,
+  serializeNutritionProfile,
+} from '../lib/nutritionProfile.js';
 
 const StartBodySchema = z.object({
   deviceId: z.string().min(1).optional(),
@@ -88,6 +93,7 @@ function publicUser(user: {
   subscriptionExpiresAt: Date | null;
   dataConsentAt: Date | null;
   dataConsentVersion: string | null;
+  nutritionProfile?: unknown;
 }) {
   return {
     id: user.id,
@@ -99,6 +105,7 @@ function publicUser(user: {
     ...subscriptionPublicFields(user),
     dataConsentAt: user.dataConsentAt?.toISOString() ?? null,
     dataConsentVersion: user.dataConsentVersion,
+    nutritionProfile: parseNutritionProfile(user.nutritionProfile ?? null),
   };
 }
 
@@ -221,6 +228,36 @@ authRouter.get(
       throw new ApiError(401, 'INVALID_USER_TOKEN', 'User not found.');
     }
 
+    res.json(publicUser(user));
+  }),
+);
+
+authRouter.put(
+  '/profile',
+  asyncHandler(async (req, res) => {
+    assertAuthConfigured();
+    const header = req.header('x-user-token')?.trim();
+    if (!header) {
+      throw new ApiError(401, 'INVALID_USER_TOKEN', 'X-User-Token required.');
+    }
+
+    const payload = await verifyUserToken(header);
+    const parsed = nutritionProfileBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid nutrition profile.');
+    }
+
+    const prisma = requireDb();
+    const existing = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!existing) {
+      throw new ApiError(401, 'INVALID_USER_TOKEN', 'User not found.');
+    }
+
+    const nutritionProfile = serializeNutritionProfile(parsed.data);
+    const user = await prisma.user.update({
+      where: { id: existing.id },
+      data: { nutritionProfile },
+    });
     res.json(publicUser(user));
   }),
 );

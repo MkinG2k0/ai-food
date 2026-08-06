@@ -30,6 +30,7 @@ model User {
   photoUrl               String?
   dataConsentAt          DateTime?
   dataConsentVersion     String?
+  nutritionProfile       Json?
   subscriptionStatus     SubscriptionStatus @default(none)
   subscriptionExpiresAt  DateTime?
   createdAt              DateTime           @default(now())
