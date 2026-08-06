@@ -102,7 +102,16 @@ describe('admin routes', () => {
         count: vi.fn(async ({ where }: { where?: unknown } = {}) =>
           where ? 2 : users.length,
         ),
-        findMany: vi.fn(async () => [users[0]]),
+        findMany: vi.fn(
+          async ({
+            select,
+          }: {
+            select?: { createdAt?: boolean };
+          } = {}) =>
+            select?.createdAt
+              ? users.map((user) => ({ createdAt: user.createdAt }))
+              : [users[0]],
+        ),
         findUnique: vi.fn(
           async ({ where }: { where: { id: string } }) =>
             users.find((user) => user.id === where.id) ?? null,
@@ -162,21 +171,36 @@ describe('admin routes', () => {
             include,
             orderBy,
             take,
+            select,
           }: {
-            where?: { userId?: string };
+            where?: { userId?: string; status?: string };
             include?: { user?: { select: Record<string, boolean> } };
             orderBy?: { createdAt: 'desc' | 'asc' };
             take?: number;
+            select?: {
+              amount?: boolean;
+              paidAt?: boolean;
+              createdAt?: boolean;
+            };
           } = {}) => {
-            const filtered = where?.userId
-              ? payments.filter((payment) => payment.userId === where.userId)
-              : payments;
+            const filtered = payments.filter((payment) => {
+              if (where?.userId && payment.userId !== where.userId) return false;
+              if (where?.status && payment.status !== where.status) return false;
+              return true;
+            });
             const sorted = [...filtered].sort((a, b) =>
               orderBy?.createdAt === 'asc'
                 ? a.createdAt.getTime() - b.createdAt.getTime()
                 : b.createdAt.getTime() - a.createdAt.getTime(),
             );
             const sliced = typeof take === 'number' ? sorted.slice(0, take) : sorted;
+            if (select) {
+              return sliced.map((payment) => ({
+                amount: payment.amount,
+                paidAt: payment.paidAt,
+                createdAt: payment.createdAt,
+              }));
+            }
             return sliced.map((payment) => {
               const user = users.find((u) => u.id === payment.userId);
               if (!include?.user || !user) return payment;
@@ -347,21 +371,36 @@ describe('admin routes', () => {
             orderBy,
             take,
             include,
+            select,
           }: {
-            where: { userId: string };
-            orderBy: { createdAt: 'desc' | 'asc' };
-            take: number;
+            where?: {
+              userId?: string;
+              createdAt?: { gte?: Date };
+            };
+            orderBy?: { createdAt: 'desc' | 'asc' };
+            take?: number;
             include?: { device?: { select: { deviceId: boolean } } };
+            select?: { kind?: boolean; createdAt?: boolean };
           }) => {
-            const rows = usageEvents
-              .filter((event) => event.userId === where.userId)
+            let rows = usageEvents;
+            if (where?.createdAt?.gte) {
+              rows = rows.filter((event) => event.createdAt >= where.createdAt!.gte!);
+            }
+            if (select) {
+              return rows.map((event) => ({
+                kind: event.kind,
+                createdAt: event.createdAt,
+              }));
+            }
+            return rows
+              .filter((event) => event.userId === where?.userId)
               .sort((a, b) =>
-                orderBy.createdAt === 'asc'
+                orderBy?.createdAt === 'asc'
                   ? a.createdAt.getTime() - b.createdAt.getTime()
                   : b.createdAt.getTime() - a.createdAt.getTime(),
               )
-              .slice(0, take);
-            return rows.map((event) => ({
+              .slice(0, take)
+              .map((event) => ({
               id: event.id,
               kind: event.kind,
               deviceId: event.deviceId,
@@ -369,7 +408,7 @@ describe('admin routes', () => {
               ...(include?.device
                 ? { device: { deviceId: event.clientDeviceId } }
                 : {}),
-            }));
+              }));
           },
         ),
       },
@@ -573,6 +612,30 @@ describe('admin routes', () => {
         createdAt: { gte: expect.any(Date) },
       },
     });
+  });
+
+  it('GET /admin/stats/series returns day series shape', async () => {
+    const response = await request(createApp())
+      .get('/admin/stats/series?days=7')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body.days).toBe(7);
+    expect(response.body.series.users).toHaveLength(7);
+    expect(response.body.series.payments).toHaveLength(7);
+    expect(response.body.series.usage).toHaveLength(7);
+    expect(response.body.series.users[0]).toEqual(
+      expect.objectContaining({
+        date: expect.any(String),
+        new: expect.any(Number),
+        total: expect.any(Number),
+      }),
+    );
+  });
+
+  it('GET /admin/stats/series requires admin key', async () => {
+    const response = await request(createApp()).get('/admin/stats/series');
+    expect(response.status).toBe(401);
   });
 
   it('GET /admin/users searches by id, telegram id, or username', async () => {

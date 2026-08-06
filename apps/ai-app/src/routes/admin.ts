@@ -1,5 +1,9 @@
 import { Router } from 'express';
 import { ApiError } from '../../lib/errors.js';
+import {
+  buildAdminStatsSeries,
+  clampSeriesDays,
+} from '../lib/adminStatsSeries.js';
 import { normalizePromoCode } from '../lib/promos.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import { getQuotaLimits } from '../lib/quota.js';
@@ -481,6 +485,44 @@ adminRouter.get(
       usageAnalyzeLast30Days,
       usageRefineLast30Days,
     });
+  }),
+);
+
+adminRouter.get(
+  '/stats/series',
+  asyncHandler(async (req, res) => {
+    const prisma = requireDb();
+    const days = clampSeriesDays(req.query.days);
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    const [userRows, paymentRows, usageRows] = await Promise.all([
+      prisma.user.findMany({ select: { createdAt: true } }),
+      prisma.payment.findMany({
+        where: { status: 'confirmed' },
+        select: { amount: true, paidAt: true, createdAt: true },
+      }),
+      prisma.usageEvent.findMany({
+        where: { createdAt: { gte: windowStart } },
+        select: { kind: true, createdAt: true },
+      }),
+    ]);
+
+    res.json(
+      buildAdminStatsSeries({
+        days,
+        now,
+        userCreatedAts: userRows.map((user) => user.createdAt),
+        payments: paymentRows.map((payment) => ({
+          amount: payment.amount,
+          at: payment.paidAt ?? payment.createdAt,
+        })),
+        usageEvents: usageRows.map((event) => ({
+          kind: event.kind,
+          at: event.createdAt,
+        })),
+      }),
+    );
   }),
 );
 
