@@ -1,7 +1,11 @@
 import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import type { UserProfile } from '@ai-food/shared-types';
-import { fetchAuthMe, useAuthStore } from '@/features/auth';
+import {
+  fetchAuthMe,
+  useAuthHydrated,
+  useAuthStore,
+} from '@/features/auth';
 import { applyRemoteNutritionProfile } from '../model/applyRemoteNutritionProfile';
 import { useOnboarding } from '../model/useOnboarding';
 import { useProfileStore } from '../model/useProfileStore';
@@ -21,11 +25,12 @@ const TOTAL_STEPS = 8;
 
 export function OnboardingPage() {
   const hydrated = useProfileHydrated();
+  const authHydrated = useAuthHydrated();
   const isComplete = useProfileStore((s) => s.isComplete());
   const { step, draft, next, back, finish, skip } = useOnboarding();
 
   useEffect(() => {
-    if (!hydrated || isComplete) return;
+    if (!hydrated || !authHydrated || isComplete) return;
 
     let cancelled = false;
 
@@ -46,7 +51,7 @@ export function OnboardingPage() {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, isComplete]);
+  }, [authHydrated, hydrated, isComplete]);
 
   if (!hydrated) return null;
   if (isComplete) return <Navigate to="/" replace />;

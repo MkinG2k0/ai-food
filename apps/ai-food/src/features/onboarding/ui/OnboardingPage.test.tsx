@@ -4,11 +4,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   applyRemoteNutritionProfile: vi.fn(),
+  authHydrated: false,
   fetchAuthMe: vi.fn(),
 }));
 
 vi.mock('@/features/auth', () => ({
   fetchAuthMe: mocks.fetchAuthMe,
+  useAuthHydrated: () => mocks.authHydrated,
   useAuthStore: {
     getState: () => ({ userToken: 'user-token' }),
   },
@@ -71,7 +73,16 @@ describe('OnboardingPage', () => {
     mocks.fetchAuthMe.mockResolvedValue({ nutritionProfile });
     const { OnboardingPage } = await import('./OnboardingPage');
 
-    render(
+    const { rerender } = render(
+      <MemoryRouter>
+        <OnboardingPage />
+      </MemoryRouter>,
+    );
+
+    expect(mocks.fetchAuthMe).not.toHaveBeenCalled();
+
+    mocks.authHydrated = true;
+    rerender(
       <MemoryRouter>
         <OnboardingPage />
       </MemoryRouter>,

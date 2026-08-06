@@ -10,3 +10,13 @@
 - **Paths:**
   - `apps/ai-food/src/features/auth/api/recordUsageEvent.ts`
   - `apps/ai-food/src/features/auth/api/recordUsageEvent.test.ts`
+
+## Onboarding — auth hydration race
+
+- **Finding:** Cold-start profile restore ran before the auth store had hydrated and did not retry when the token appeared.
+- **Fix:** `OnboardingPage` now waits for both profile and auth hydration; the effect depends on both hydration states.
+- **Regression test:** Covers the `authHydrated: false -> true` transition and verifies that `/auth/me` is not requested early.
+- **Status:** Fixed
+- **Tests:**
+  - `pnpm --dir apps/ai-food exec vitest run src/features/onboarding/ui/OnboardingPage.test.tsx` — PASS (1/1)
+  - `pnpm --dir apps/ai-food type-check` — PASS
