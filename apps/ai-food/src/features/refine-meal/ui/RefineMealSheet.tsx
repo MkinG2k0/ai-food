@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BottomSheet, Button, Textarea } from '@/shared/ui';
+import { BottomSheet, Button, TextareaWithVoice } from '@/shared/ui';
 
 export interface RefineMealSheetProps {
   open: boolean;
@@ -28,7 +28,7 @@ export function RefineMealSheet({ open, onClose, onSubmit }: RefineMealSheetProp
       <div className="w-full space-y-4 px-2 py-2">
         <h2 className="text-lg font-semibold text-foreground">Уточнить блюдо</h2>
 
-        <Textarea
+        <TextareaWithVoice
           placeholder="Например: съел половину или котлета из говядины, не куриная"
           value={text}
           onChange={(e) => setText(e.target.value)}

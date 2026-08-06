@@ -10,6 +10,7 @@ import { NewsPage } from '@/pages/news';
 import { FavoritesPage } from '@/pages/favorites';
 import { ManualEntryPage } from '@/pages/manual-entry';
 import { BarcodePage } from '@/pages/barcode';
+import { ScanPage } from '@/pages/scan';
 import { LoginPage } from '@/pages/login';
 import { SubscribePage } from '@/pages/subscribe';
 import { ModelTestPage } from '@/pages/model-test';
@@ -84,6 +85,14 @@ const router = createBrowserRouter([
         element: (
           <ConsentGuard>
             <ProfileGuard><ManualEntryPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/scan',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><ScanPage /></ProfileGuard>
           </ConsentGuard>
         ),
       },

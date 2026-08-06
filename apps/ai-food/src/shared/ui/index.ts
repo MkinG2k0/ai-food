@@ -10,6 +10,14 @@ export {
 export { Skeleton } from './skeleton';
 export { Badge, type BadgeProps } from './badge';
 export { Textarea, type TextareaProps } from './textarea';
+export {
+  TextareaWithVoice,
+  type TextareaWithVoiceProps,
+} from './textarea-with-voice';
+export {
+  VoiceInputButton,
+  type VoiceInputButtonProps,
+} from './voice-input-button';
 export { BottomSheet, type BottomSheetProps } from './bottom-sheet';
 export {
   ImageLightbox,

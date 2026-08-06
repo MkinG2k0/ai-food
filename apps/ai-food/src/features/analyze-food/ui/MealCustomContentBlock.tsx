@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner';
 import type { ApiError } from '@ai-food/shared-types';
 import { cn } from '@/shared/lib';
-import { Button, Skeleton, Textarea } from '@/shared/ui';
+import { Button, Skeleton, TextareaWithVoice } from '@/shared/ui';
 import { useMealCustomContent } from '../model/useMealCustomContent';
 
 interface MealCustomContentBlockProps {
@@ -223,7 +223,7 @@ export function MealCustomContentBlock({ mealId }: MealCustomContentBlockProps) 
             <label htmlFor="meal-custom-question" className="sr-only">
               Вопрос по блюду
             </label>
-            <Textarea
+            <TextareaWithVoice
               id="meal-custom-question"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}

@@ -23,7 +23,7 @@ import {
 } from '@/features/settings';
 import { useWeightStore } from '@/features/stats';
 import { cn, getLegalUrl } from '@/shared/lib';
-import { BottomSheet, Button, SubpageShell, Textarea } from '@/shared/ui';
+import { BottomSheet, Button, SubpageShell, TextareaWithVoice } from '@/shared/ui';
 
 const GENDER_LABELS: Record<UserProfile['gender'], string> = {
   male: 'Мужской',
@@ -585,7 +585,7 @@ export function SettingsPage() {
                 </label>
                 {customInstructionsEnabled && (
                   <>
-                    <Textarea
+                    <TextareaWithVoice
                       id="custom-instructions"
                       value={customInstructions}
                       maxLength={2000}

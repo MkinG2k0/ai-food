@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260806-u2q — food prompts/model → ai-app
-last_updated: "2026-08-06T18:59:00.000Z"
+stopped_at: Completed quick task 260806-vce — scan food/barcode + voice
+last_updated: "2026-08-06T19:55:00.000Z"
 last_activity: 2026-08-06
-last_activity_desc: "Completed quick task 260806-u2q: server food endpoints + thin clients"
+last_activity_desc: "Unified /scan (Еда|Штрихкод) + TextareaWithVoice"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -96,6 +96,7 @@ Recent decisions affecting current work:
 - 260803-wue: features/auth mock Telegram session (ai-food-auth); /login optional; Settings Аккаунт; no next-auth
 - 260804-3gx: one-time T-Bank yearly license (ai-app billing) + paywall; login ≠ unlimited; hasActiveSubscription gates AI
 - 260806-u2q: food prompts + OPENROUTER_MODEL + temperature 0 on ai-app `/v1/food/*`; clients send clean bodies only
+- 260806-vce: `/scan` Еда|Штрихкод (CalZen-style); TextareaWithVoice (Capgo native / Web Speech); AddFoodSheet simplified
 
 ### Pending Todos
 
@@ -160,6 +161,7 @@ None yet.
 | fast | Vercel SPA rewrite: hard reload on deep routes no longer 404 | 2026-08-04 | 617650e | — |
 | 260806-tfe | Reject off-topic ask-about-dish and edit-meal inputs with user notification | 2026-08-06 | 45d0946, e866022, 5ab6654 | [260806-tfe-reject-off-topic-ask-about-dish-and-edit](./quick/260806-tfe-reject-off-topic-ask-about-dish-and-edit/) |
 | 260806-u2q | Food prompts/model/temperature → ai-app `/v1/food/analyze|refine|ask` | 2026-08-06 | 8e8f081, aa20cb4, 1c97998, 9bd3312 | [260806-u2q-apps-ai-food-apps-ai-app-model-params](./quick/260806-u2q-apps-ai-food-apps-ai-app-model-params/) |
+| 260806-vce | Unified /scan (Еда\|Штрихкод) + voice on textareas | 2026-08-06 | — | [260806-vce-scan-food-barcode-voice](./quick/260806-vce-scan-food-barcode-voice/) |
 
 ### Blockers/Concerns
 
