@@ -33,3 +33,6 @@ apps/ai-food/android/.gradle/
 apps/ai-food/android/app/build/
 apps/ai-food/android/build/
 apps/ai-food/android/capacitor-cordova-android-plugins/
+
+# Git worktrees
+.worktrees/
