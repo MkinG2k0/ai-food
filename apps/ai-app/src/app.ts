@@ -8,6 +8,7 @@ import { healthRouter } from './routes/health.js';
 import { modelsRouter } from './routes/models.js';
 import { embeddingsRouter } from './routes/embeddings.js';
 import { chatRouter } from './routes/chat.js';
+import { foodRouter } from './routes/food.js';
 import { authRouter } from './routes/auth.js';
 import { usageRouter } from './routes/usage.js';
 import { billingRouter } from './routes/billing.js';
@@ -46,6 +47,7 @@ export function createApp() {
   v1.use('/models', modelsRouter);
   v1.use('/embeddings', embeddingsRouter);
   v1.use('/chat/completions', enforceChatQuota, chatRouter);
+  v1.use('/food', enforceChatQuota, foodRouter);
   app.use('/v1', v1);
 
   app.use((_req, _res, next) => {
