@@ -71,7 +71,7 @@ describe('stripMarkdownFences / normalizeCustomContent', () => {
   });
 });
 
-describe('fetchMealCustomContentApi', () => {
+describe('fetchMealCustomContentApi (food/ask)', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_AI_GATEWAY_URL', GATEWAY_URL);
     vi.stubEnv('VITE_AI_GATEWAY_API_KEY', GATEWAY_KEY);
@@ -87,13 +87,12 @@ describe('fetchMealCustomContentApi', () => {
     const result = await fetchMealCustomContentApi({
       mealContext,
       customInstructions: '   ',
-      model: 'google/gemini-3-flash-preview',
     });
     expect(result).toBe('');
     expect(axios.post).not.toHaveBeenCalled();
   });
 
-  it('answers a follow-up question without requiring settings instructions', async () => {
+  it('posts clean ask body without model/messages/temperature', async () => {
     vi.mocked(axios.post).mockResolvedValue({
       data: gatewaySuccessBody('**Энергия:** 4/5'),
     });
@@ -101,18 +100,38 @@ describe('fetchMealCustomContentApi', () => {
     const result = await fetchMealCustomContentApi({
       mealContext,
       question: 'Ожидаемая энергия 1–5 через час',
-      model: 'openai/gpt-4.1-mini',
     });
 
     expect(result).toBe('**Энергия:** 4/5');
-    const body = vi.mocked(axios.post).mock.calls[0][1] as {
-      messages: Array<{ role: string; content: string }>;
-    };
-    expect(body.messages[0].content).toMatch(/ТОЛЬКО на этот вопрос/i);
-    expect(body.messages[1].content).toContain('Ожидаемая энергия');
+    const [url, body, config] = vi.mocked(axios.post).mock.calls[0];
+    expect(String(url)).toBe(`${GATEWAY_URL}/v1/food/ask`);
+    expect(config?.headers?.Authorization).toBe(`Bearer ${GATEWAY_KEY}`);
+    expect(config?.headers?.['X-Usage-Kind']).toBe('other');
+    expect(body).toMatchObject({
+      mealContext,
+      question: 'Ожидаемая энергия 1–5 через час',
+    });
+    expect(body).not.toHaveProperty('model');
+    expect(body).not.toHaveProperty('messages');
+    expect(body).not.toHaveProperty('temperature');
   });
 
-  it('does not pass settings recipe instructions into follow-up question prompt', async () => {
+  it('sends settings instructions without question', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody('## Рецепт\n- шаг'),
+    });
+
+    await fetchMealCustomContentApi({
+      mealContext,
+      customInstructions: 'дай краткий рецепт',
+    });
+
+    const body = vi.mocked(axios.post).mock.calls[0][1] as Record<string, unknown>;
+    expect(body.customInstructions).toBe('дай краткий рецепт');
+    expect(body.question).toBeUndefined();
+  });
+
+  it('prefers question over settings when both provided (question-only body)', async () => {
     vi.mocked(axios.post).mockResolvedValue({
       data: gatewaySuccessBody('Айран или минералка'),
     });
@@ -123,12 +142,11 @@ describe('fetchMealCustomContentApi', () => {
       question: 'что взять попить коротко',
     });
 
-    const body = vi.mocked(axios.post).mock.calls[0][1] as {
-      messages: Array<{ role: string; content: string }>;
-    };
-    expect(body.messages[1].content).toContain('что взять попить коротко');
-    expect(body.messages[1].content).not.toContain('дай полный рецепт');
-    expect(body.messages[1].content).toMatch(/ТОЛЬКО на этот вопрос/);
+    const body = vi.mocked(axios.post).mock.calls[0][1] as Record<string, unknown>;
+    expect(body.question).toBe('что взять попить коротко');
+    // Client still may send instructions; server ask route uses question mode when question set.
+    // Prefer not sending recipe instructions for follow-ups (previous client behavior).
+    expect(body.customInstructions).toBeUndefined();
   });
 
   it('rejects when gateway env is missing', async () => {
@@ -150,24 +168,9 @@ describe('fetchMealCustomContentApi', () => {
     const result = await fetchMealCustomContentApi({
       mealContext,
       customInstructions: 'дай краткий рецепт',
-      model: 'openai/gpt-4.1-mini',
     });
 
     expect(result).toBe('## Рецепт\n- шаг 1');
-    expect(String(vi.mocked(axios.post).mock.calls[0][0])).toContain(
-      `${GATEWAY_URL}/v1/chat/completions`,
-    );
-    const config = vi.mocked(axios.post).mock.calls[0][2] as {
-      headers?: Record<string, string>;
-    };
-    expect(config?.headers?.['X-Device-Id']).toBe('test-device-id');
-    expect(config?.headers?.['X-Usage-Kind']).toBe('other');
-    const body = vi.mocked(axios.post).mock.calls[0][1] as {
-      messages: Array<{ role: string; content: string }>;
-    };
-    expect(body.messages[0].content).toMatch(/Markdown/);
-    expect(body.messages[1].content).toContain('дай краткий рецепт');
-    expect(body.messages[1].content).toContain('Борщ');
   });
 
   it('allows empty model content', async () => {
@@ -220,37 +223,6 @@ describe('fetchMealCustomContentApi', () => {
       }),
     ).rejects.toMatchObject({ code: 'OFF_TOPIC', status: 400 });
 
-    expect(axios.post).toHaveBeenCalled();
-  });
-
-  it('QUESTION_SYSTEM_PROMPT instructs OFF_TOPIC for off-topic questions', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody('Около 320 ккал.'),
-    });
-
-    await fetchMealCustomContentApi({
-      mealContext,
-      question: 'сколько калорий в этом блюде',
-    });
-
-    const body = vi.mocked(axios.post).mock.calls[0][1] as {
-      messages: Array<{ role: string; content: string }>;
-    };
-    expect(body.messages[0].content).toMatch(/OFF_TOPIC/);
-    expect(body.messages[1].content).toMatch(/OFF_TOPIC/);
-  });
-
-  it('posts valid food question and returns markdown', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody('**Калории:** около 320 ккал'),
-    });
-
-    const result = await fetchMealCustomContentApi({
-      mealContext,
-      question: 'сколько калорий в этом блюде',
-    });
-
-    expect(result).toBe('**Калории:** около 320 ккал');
     expect(axios.post).toHaveBeenCalled();
   });
 });

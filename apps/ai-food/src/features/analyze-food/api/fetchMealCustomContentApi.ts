@@ -1,7 +1,6 @@
 import axios from 'axios';
 import type { ApiError } from '@ai-food/shared-types';
 import { getQuotaHeaders } from '@/features/auth';
-import { temperatureForModel } from '@/features/settings';
 import {
   isObviouslyIrrelevantFoodInput,
   isOffTopicAskResponse,
@@ -29,32 +28,7 @@ export interface MealCustomContentInput {
   customInstructions?: string;
   /** Follow-up question about this meal (appends a new carousel slide). */
   question?: string;
-  model?: string;
 }
-
-const SETTINGS_SYSTEM_PROMPT = `Ты помощник по еде. Пользователь сохранил приём пищи и задал кастомные инструкции в настройках.
-
-Ответь ТОЛЬКО на запросы дополнительного контента из инструкций (рецепт, острота, комментарий, советы по приготовлению и т.п.).
-Предпочтения диеты/единиц измерения/стиля анализа НЕ дублируй как весь ответ, если пользователь не просил такой контент.
-Если в инструкциях только предпочтения без контентного запроса — верни пустую строку (ничего не пиши).
-
-Формат ответа:
-- Чистый Markdown на русском (заголовки, списки, абзацы по необходимости).
-- Без XML, без JSON, без обёртки \`\`\`markdown\`\`\`.
-- Без текста вне ответа (без преамбулы вроде «Вот рецепт:» отдельно от MD — можно сразу с MD).
-- Держи ответ практичным и не слишком длинным.`;
-
-const QUESTION_SYSTEM_PROMPT = `Ты помощник по еде. Пользователь задаёт ОДИН вопрос о конкретном приёме пищи.
-
-Ответь ТОЛЬКО на этот вопрос по контексту блюда (состав, КБЖУ, приготовление, ингредиенты, аллергены, порция, советы по еде).
-Не добавляй рецепт, ингредиенты для готовки, шаги приготовления, общую «оценку блюда» и другие разделы, если пользователь об этом не спрашивал.
-Если вопрос оценочный (энергия, сытость, острота и т.п.) — дай краткую обоснованную оценку в Markdown, без лишних блоков.
-
-Если вопрос НЕ о этом блюде/еде (математика, код, личность ассистента, политика, бессмыслица, мусор) — ответь РОВНО одним токеном OFF_TOPIC и больше ничего. Без Markdown, без пояснений.
-
-Формат ответа (когда вопрос по теме):
-- Чистый Markdown на русском, короткий и по делу.
-- Без XML, без JSON, без обёртки \`\`\`markdown\`\`\`.`;
 
 function rejectApiError(message: string, code: string, status: number): never {
   const apiError: ApiError = { message, code, status };
@@ -133,39 +107,6 @@ export function normalizeCustomContent(raw: string): string {
   return stripped.slice(0, MAX_CUSTOM_CONTENT_LENGTH);
 }
 
-function buildSettingsUserText(
-  instructions: string,
-  mealContext: MealCustomContentInput['mealContext'],
-): string {
-  return [
-    'Кастомные инструкции пользователя:',
-    instructions,
-    '',
-    'Контекст приёма пищи (JSON):',
-    JSON.stringify(mealContext),
-    '',
-    'Верни Markdown-ответ на доп. запросы или пустую строку.',
-  ].join('\n');
-}
-
-function buildQuestionUserText(
-  question: string,
-  mealContext: MealCustomContentInput['mealContext'],
-): string {
-  // Do not attach settings customInstructions — they often ask for a recipe
-  // and the model would repeat it instead of answering only the question.
-  return [
-    'Вопрос пользователя:',
-    question,
-    '',
-    'Контекст приёма пищи (JSON):',
-    JSON.stringify(mealContext),
-    '',
-    'Верни Markdown-ответ ТОЛЬКО на этот вопрос о блюде/еде. Не добавляй рецепт и посторонние разделы.',
-    'Если вопрос не о этом блюде/еде — ответь ровно OFF_TOPIC.',
-  ].join('\n');
-}
-
 export async function fetchMealCustomContentApi(
   input: MealCustomContentInput,
 ): Promise<string> {
@@ -192,25 +133,15 @@ export async function fetchMealCustomContentApi(
     throw offTopicApiError('ask');
   }
 
-  const systemContent = isQuestion
-    ? QUESTION_SYSTEM_PROMPT
-    : SETTINGS_SYSTEM_PROMPT;
-  const userText = isQuestion
-    ? buildQuestionUserText(question, input.mealContext)
-    : buildSettingsUserText(instructions, input.mealContext);
-
   let response;
   try {
-    const temperature = temperatureForModel(input.model);
     response = await axios.post(
-      `${gatewayUrl}/v1/chat/completions`,
+      `${gatewayUrl}/v1/food/ask`,
       {
-        model: input.model,
-        ...(temperature !== undefined ? { temperature } : {}),
-        messages: [
-          { role: 'system', content: systemContent },
-          { role: 'user', content: userText },
-        ],
+        mealContext: input.mealContext,
+        ...(isQuestion
+          ? { question }
+          : { customInstructions: instructions }),
       },
       {
         headers: {

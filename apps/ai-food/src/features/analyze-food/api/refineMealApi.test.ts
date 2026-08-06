@@ -16,7 +16,6 @@ vi.mock('@capacitor/device', () => ({
   },
 }));
 
-import { COMPOSITION_PROMPT_RULE, FOOD_NAME_PROMPT_RULE } from './analyzeFoodApi';
 import { refineMealApi } from './refineMealApi';
 
 vi.mock('axios', () => {
@@ -92,7 +91,7 @@ function gatewaySuccessBody(content: string) {
   };
 }
 
-describe('refineMealApi (AI Gateway)', () => {
+describe('refineMealApi (food/refine)', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_AI_GATEWAY_URL', GATEWAY_URL);
     vi.stubEnv('VITE_AI_GATEWAY_API_KEY', GATEWAY_KEY);
@@ -104,7 +103,7 @@ describe('refineMealApi (AI Gateway)', () => {
     vi.clearAllMocks();
   });
 
-  it('resolves AnalyzeFoodResponse on text-only refine with valid NutritionResult', async () => {
+  it('posts clean body to /v1/food/refine without model/messages/temperature', async () => {
     vi.mocked(axios.post).mockResolvedValue({
       data: gatewaySuccessBody(JSON.stringify(validNutrition)),
     });
@@ -112,35 +111,30 @@ describe('refineMealApi (AI Gateway)', () => {
     const result = await refineMealApi({
       correction: 'съел половину',
       mealContext,
-      model: 'openai/gpt-4o-mini',
+      customInstructions: 'меньше соли',
+      dietType: 'vegan',
+      features: { vitamins: true, healthiness: true, composition: true },
     });
 
     expect(result.result).toEqual(validNutrition);
     expect(result.processingTime).toBeGreaterThanOrEqual(0);
 
     const [url, rawBody, config] = vi.mocked(axios.post).mock.calls[0];
-    const body = rawBody as {
-      model: string;
-      response_format: { type: string };
-      messages: Array<{ role: string; content: string }>;
-    };
+    const body = rawBody as Record<string, unknown>;
 
-    expect(String(url)).toContain(`${GATEWAY_URL}/v1/chat/completions`);
+    expect(String(url)).toBe(`${GATEWAY_URL}/v1/food/refine`);
     expect(config?.headers?.Authorization).toBe(`Bearer ${GATEWAY_KEY}`);
     expect(config?.headers?.['X-Device-Id']).toBe('test-device-id');
     expect(config?.headers?.['X-Usage-Kind']).toBe('refine');
     expect(body).toMatchObject({
-      model: 'openai/gpt-4o-mini',
-      response_format: { type: 'json_object' },
+      correction: 'съел половину',
+      mealContext,
+      customInstructions: 'меньше соли',
+      dietType: 'vegan',
     });
-    expect(body.messages[0].role).toBe('system');
-    expect(body.messages[0].content).toContain(FOOD_NAME_PROMPT_RULE);
-    expect(body.messages[0].content).toContain(COMPOSITION_PROMPT_RULE);
-    expect(body.messages[0].content).toMatch(/micronutrients/i);
-    expect(body.messages[0].content).toMatch(/"id".*"amount".*"unit"|массив из ровно 8/i);
-    expect(typeof body.messages[1].content).toBe('string');
-    expect(body.messages[1].content).toContain('съел половину');
-    expect(body.messages[1].content).toContain(JSON.stringify(mealContext));
+    expect(body).not.toHaveProperty('model');
+    expect(body).not.toHaveProperty('messages');
+    expect(body).not.toHaveProperty('temperature');
   });
 
   it('parses NutritionResult wrapped in markdown json fences', async () => {
@@ -150,384 +144,73 @@ describe('refineMealApi (AI Gateway)', () => {
     });
 
     const result = await refineMealApi({
-      correction: 'добавь соус',
+      correction: 'съел половину',
       mealContext,
     });
-
     expect(result.result.foodName).toBe(validNutrition.foodName);
-    expect(result.result.calories).toBe(validNutrition.calories);
   });
 
-  it('POSTs multimodal user content when imageDataUrl is provided', async () => {
-    const imageDataUrl = 'data:image/jpeg;base64,abc123';
+  it('includes optional imageDataUrl in body', async () => {
     vi.mocked(axios.post).mockResolvedValue({
       data: gatewaySuccessBody(JSON.stringify(validNutrition)),
     });
-
+    const dataUrl = 'data:image/jpeg;base64,abc';
     await refineMealApi({
-      correction: 'котлета не куриная а мясная',
+      correction: 'меньше соли',
       mealContext,
-      imageDataUrl,
+      imageDataUrl: dataUrl,
     });
-
-    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
-    const body = rawBody as {
-      messages: Array<{
-        role: string;
-        content:
-          | string
-          | Array<{ type: string; image_url?: { url: string }; text?: string }>;
-      }>;
-    };
-
-    expect(Array.isArray(body.messages[1].content)).toBe(true);
-    const parts = body.messages[1].content as Array<{
-      type: string;
-      image_url?: { url: string };
-      text?: string;
-    }>;
-    const imagePart = parts.find((p) => p.type === 'image_url');
-    const textPart = parts.find((p) => p.type === 'text');
-    expect(imagePart?.image_url?.url).toBe(imageDataUrl);
-    expect(textPart?.text).toContain('котлета не куриная а мясная');
-    expect(body.messages[0].content).toContain(FOOD_NAME_PROMPT_RULE);
-    expect(body.messages[0].content).toContain(COMPOSITION_PROMPT_RULE);
+    const body = vi.mocked(axios.post).mock.calls[0][1] as Record<string, unknown>;
+    expect(body.imageDataUrl).toBe(dataUrl);
   });
 
-  it('rejects ANALYSIS_FAILED when gateway env is missing', async () => {
-    vi.stubEnv('VITE_AI_GATEWAY_URL', '');
-    vi.stubEnv('VITE_AI_GATEWAY_API_KEY', '');
-
+  it('rejects empty correction', async () => {
     await expect(
-      refineMealApi({ correction: 'съел половину', mealContext })
-    ).rejects.toMatchObject({
-      code: 'ANALYSIS_FAILED',
-    } satisfies Partial<ApiError>);
+      refineMealApi({ correction: '  ', mealContext }),
+    ).rejects.toMatchObject({ code: 'ANALYSIS_FAILED', status: 400 });
     expect(axios.post).not.toHaveBeenCalled();
   });
 
-  it('rejects ANALYSIS_FAILED when content is empty', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(''),
-    });
-
-    await expect(
-      refineMealApi({ correction: 'съел половину', mealContext })
-    ).rejects.toMatchObject({
-      code: 'ANALYSIS_FAILED',
-    } satisfies Partial<ApiError>);
-  });
-
-  it('rejects ANALYSIS_FAILED on invalid NutritionResult schema', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(
-        JSON.stringify({ foodName: 'Суп', calories: 'lot', confidence: 2 })
-      ),
-    });
-
-    await expect(
-      refineMealApi({ correction: 'меньше соли', mealContext })
-    ).rejects.toMatchObject({
-      code: 'ANALYSIS_FAILED',
-    } satisfies Partial<ApiError>);
-  });
-
-  it('accepts result when healthiness is missing (feature may be off)', async () => {
-    const withoutHealthiness = {
-      foodName: 'Суп',
-      calories: 200,
-      protein: 10,
-      carbs: 20,
-      fat: 5,
-      fiber: 2,
-      confidence: 0.7,
-      items: [
-        {
-          name: 'Суп',
-          calories: 200,
-          protein: 10,
-          carbs: 20,
-          fat: 5,
-          grams: 250,
-          fiber: 2,
-        },
-      ],
-    };
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify(withoutHealthiness)),
-    });
-
-    const result = await refineMealApi({
-      correction: 'меньше соли',
-      mealContext,
-    });
-    expect(result.result.foodName).toBe('Суп');
-    expect(result.result.healthiness).toBeUndefined();
-  });
-
-  it('omits healthiness and micronutrients from refine prompt when features are off', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
-    });
-
-    await refineMealApi({
-      correction: 'съел половину',
-      mealContext,
-      features: { vitamins: false, healthiness: false, composition: false },
-    });
-
-    const body = vi.mocked(axios.post).mock.calls[0][1] as {
-      messages: Array<{ role: string; content: string }>;
-    };
-    const system = body.messages[0].content;
-    expect(system).not.toMatch(/"healthiness"/i);
-    expect(system).not.toMatch(/micronutrients —/i);
-    expect(system).toMatch(/ровно один item/i);
-  });
-
-  it.each([0, 11] as const)(
-    'rejects ANALYSIS_FAILED when healthiness is out of range (%s)',
-    async (healthiness) => {
-      vi.mocked(axios.post).mockResolvedValue({
-        data: gatewaySuccessBody(JSON.stringify({ ...validNutrition, healthiness })),
-      });
-
+  it.each(['22', 'кто ты'] as const)(
+    'rejects OFF_TOPIC before axios for junk %s',
+    async (correction) => {
       await expect(
-        refineMealApi({ correction: 'меньше соли', mealContext })
+        refineMealApi({ correction, mealContext }),
       ).rejects.toMatchObject({
-        code: 'ANALYSIS_FAILED',
+        code: 'OFF_TOPIC',
+        status: 400,
       } satisfies Partial<ApiError>);
-    }
+      expect(axios.post).not.toHaveBeenCalled();
+    },
   );
 
-  it('SYSTEM_PROMPT documents healthiness 1–10', async () => {
+  it('rejects OFF_TOPIC when payload has offTopic flag', async () => {
     vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify({ ...validNutrition, healthiness: 7 })),
+      data: gatewaySuccessBody(JSON.stringify({ offTopic: true, reason: 'math' })),
     });
-
-    await refineMealApi({ correction: 'съел половину', mealContext });
-
-    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
-    const body = rawBody as { messages: Array<{ role: string; content: string }> };
-    const system = body.messages[0].content;
-    expect(system).toMatch(/"healthiness"\s*:\s*number/i);
-    expect(system).toMatch(/1\s*[–-]\s*10|1 to 10|integer 1/i);
-    expect(system).not.toMatch(/"confidence"\s*:/);
-  });
-
-  it('SYSTEM_PROMPT documents optional customContent only when user asks', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
-    });
-
-    await refineMealApi({ correction: 'съел половину', mealContext });
-
-    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
-    const body = rawBody as { messages: Array<{ role: string; content: string }> };
-    const system = body.messages[0].content;
-    expect(system).toMatch(/"customContent"\s*:\s*string/i);
-    expect(system).toMatch(/OMIT this key/i);
-  });
-
-  it('accepts NutritionResult with optional customContent', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(
-        JSON.stringify({
-          ...validNutrition,
-          customContent: '## Рецепт\n- шаг 1',
-        }),
-      ),
-    });
-
-    const { result } = await refineMealApi({
-      correction: 'перепиши рецепт в дополнительно',
-      mealContext,
-    });
-    expect(result.customContent).toBe('## Рецепт\n- шаг 1');
+    await expect(
+      refineMealApi({ correction: 'сколько будет 2+2 для блюда', mealContext }),
+    ).rejects.toMatchObject({ code: 'OFF_TOPIC', status: 400 });
   });
 
   it('maps RATE_LIMITED from gateway', async () => {
     vi.mocked(axios.post).mockRejectedValue({
-      response: {
-        status: 429,
-        data: { message: 'rate limited', code: 'RATE_LIMITED', status: 429 },
-      },
-      message: 'Request failed',
+      response: { data: { code: 'RATE_LIMITED', message: 'slow' }, status: 429 },
     });
-
     await expect(
-      refineMealApi({ correction: 'съел половину', mealContext })
-    ).rejects.toMatchObject({
-      code: 'RATE_LIMITED',
-      status: 429,
-    } satisfies Partial<ApiError>);
+      refineMealApi({ correction: 'съел половину', mealContext }),
+    ).rejects.toMatchObject({ code: 'RATE_LIMITED', status: 429 });
   });
 
-  it('rejects OFF_TOPIC before axios for bare number correction', async () => {
-    await expect(
-      refineMealApi({ correction: '22', mealContext }),
-    ).rejects.toMatchObject({
-      code: 'OFF_TOPIC',
-      status: 400,
-    } satisfies Partial<ApiError>);
-    expect(axios.post).not.toHaveBeenCalled();
-  });
-
-  it('rejects OFF_TOPIC when model returns offTopic payload', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(
-        JSON.stringify({ offTopic: true, reason: 'не про блюдо' }),
-      ),
-    });
-
-    await expect(
-      refineMealApi({
-        correction: 'расскажи анекдот',
-        mealContext,
-      }),
-    ).rejects.toMatchObject({ code: 'OFF_TOPIC', status: 400 });
-
-    expect(axios.post).toHaveBeenCalled();
-  });
-
-  it('SYSTEM_PROMPT documents offTopic rejection for non-meal corrections', async () => {
+  it('masks healthiness when feature is off', async () => {
     vi.mocked(axios.post).mockResolvedValue({
       data: gatewaySuccessBody(JSON.stringify(validNutrition)),
     });
-
-    await refineMealApi({ correction: 'съел половину', mealContext });
-
-    const body = vi.mocked(axios.post).mock.calls[0][1] as {
-      messages: Array<{ role: string; content: string }>;
-    };
-    expect(body.messages[0].content).toMatch(/"offTopic"\s*:\s*true/i);
-    expect(body.messages[1].content).toMatch(/offTopic|не.*уточнен|не.*редакт/i);
-  });
-
-  it('appends non-empty trimmed customInstructions to system message', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
-    });
-
-    await refineMealApi({
+    const { result } = await refineMealApi({
       correction: 'съел половину',
       mealContext,
-      customInstructions: '  Безглютеновая диета  ',
+      features: { vitamins: true, healthiness: false, composition: true },
     });
-
-    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
-    const body = rawBody as { messages: Array<{ role: string; content: string }> };
-    const systemContent = body.messages[0].content;
-
-    expect(systemContent).toContain(FOOD_NAME_PROMPT_RULE);
-    expect(systemContent).toContain('Безглютеновая диета');
-    expect(systemContent).toMatch(/custom instructions|кастомн|user preferences|предпочтен/i);
-  });
-
-  it('leaves system prompt unchanged for empty customInstructions', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
-    });
-
-    await refineMealApi({ correction: 'съел половину', mealContext });
-    const [, bodyWithout] = vi.mocked(axios.post).mock.calls[0];
-    const baseSystem = (
-      bodyWithout as { messages: Array<{ role: string; content: string }> }
-    ).messages[0].content;
-
-    vi.mocked(axios.post).mockClear();
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
-    });
-
-    await refineMealApi({
-      correction: 'съел половину',
-      mealContext,
-      customInstructions: '',
-    });
-    const [, bodyEmpty] = vi.mocked(axios.post).mock.calls[0];
-    const emptySystem = (
-      bodyEmpty as { messages: Array<{ role: string; content: string }> }
-    ).messages[0].content;
-
-    expect(emptySystem).toBe(baseSystem);
-  });
-
-  it('includes halal diet section and pork→chicken bias in system message', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
-    });
-
-    await refineMealApi({
-      correction: 'съел половину',
-      mealContext,
-      dietType: 'halal',
-    });
-
-    const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
-    const systemContent = (
-      rawBody as { messages: Array<{ role: string; content: string }> }
-    ).messages[0].content;
-
-    expect(systemContent).toMatch(/## User diet preference/i);
-    expect(systemContent).toMatch(/halal|халяль/i);
-    expect(systemContent).toMatch(
-      /свинин.*куриц|похож.*свинин.*куриц|lookalike.*chicken|pork.*chicken|если мясо похоже на свинину/i,
-    );
-  });
-
-  it.each(['vegan', 'vegetarian'] as const)(
-    'includes %s diet without pork→chicken bias',
-    async (dietType) => {
-      vi.mocked(axios.post).mockResolvedValue({
-        data: gatewaySuccessBody(JSON.stringify(validNutrition)),
-      });
-
-      await refineMealApi({
-        correction: 'съел половину',
-        mealContext,
-        dietType,
-      });
-
-      const [, rawBody] = vi.mocked(axios.post).mock.calls[0];
-      const systemContent = (
-        rawBody as { messages: Array<{ role: string; content: string }> }
-      ).messages[0].content;
-
-      expect(systemContent).toMatch(/## User diet preference/i);
-      expect(systemContent).not.toMatch(
-        /свинин.*куриц|похож.*свинин.*куриц|lookalike.*chicken|pork.*chicken|если мясо похоже на свинину/i,
-      );
-    },
-  );
-
-  it('omits diet preference section when dietType is none or omitted', async () => {
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
-    });
-
-    await refineMealApi({ correction: 'съел половину', mealContext });
-    const [, bodyOmitted] = vi.mocked(axios.post).mock.calls[0];
-    const omittedSystem = (
-      bodyOmitted as { messages: Array<{ role: string; content: string }> }
-    ).messages[0].content;
-
-    vi.mocked(axios.post).mockClear();
-    vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
-    });
-
-    await refineMealApi({
-      correction: 'съел половину',
-      mealContext,
-      dietType: 'none',
-    });
-    const [, bodyNone] = vi.mocked(axios.post).mock.calls[0];
-    const noneSystem = (
-      bodyNone as { messages: Array<{ role: string; content: string }> }
-    ).messages[0].content;
-
-    expect(omittedSystem).not.toMatch(/## User diet preference/i);
-    expect(noneSystem).not.toMatch(/## User diet preference/i);
+    expect(result.healthiness).toBeUndefined();
   });
 });

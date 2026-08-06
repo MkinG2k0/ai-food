@@ -31,8 +31,6 @@ export function useMealCustomContent(mealId: string | undefined) {
     (s) => s.customInstructionsEnabled,
   );
   const customInstructionsRaw = useSettingsStore((s) => s.customInstructions);
-  const aiModel = useSettingsStore((s) => s.aiModel);
-
   const instructions = customInstructionsEnabled
     ? customInstructionsRaw.trim()
     : '';
@@ -55,13 +53,12 @@ export function useMealCustomContent(mealId: string | undefined) {
   }, [slides.length]);
 
   const query = useQuery({
-    queryKey: ['meal-custom-content', mealId, instructions, aiModel],
+    queryKey: ['meal-custom-content', mealId, instructions],
     enabled: needsInitialFetch,
     queryFn: () =>
       fetchMealCustomContentApi({
         mealContext: buildMealContext(meal!),
         customInstructions: instructions,
-        model: aiModel,
       }),
     staleTime: Infinity,
     retry: 1,
@@ -97,7 +94,6 @@ export function useMealCustomContent(mealId: string | undefined) {
       const content = await fetchMealCustomContentApi({
         mealContext: buildMealContext(current),
         question: trimmed,
-        model: aiModel,
       });
       if (!content.trim()) {
         const err: ApiError = {

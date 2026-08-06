@@ -56,7 +56,6 @@ describe('useAnalyzeFood', () => {
     expect(analyzeFoodApiModule.analyzeFoodApi).toHaveBeenCalledWith(file, {
       customInstructions: '',
       dietType: 'none',
-      model: expect.any(String),
       features: {
         vitamins: true,
         healthiness: true,

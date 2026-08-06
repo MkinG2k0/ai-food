@@ -3,9 +3,6 @@ export { useMealCustomContent } from './model/useMealCustomContent';
 export { MealCustomContentBlock } from './ui/MealCustomContentBlock';
 export {
   analyzeFoodApi,
-  appendCustomInstructions,
-  appendDietPreference,
-  MICRONUTRIENTS_PROMPT_RULE,
   type AnalyzeFoodInput,
   type AnalyzeFoodOptions,
   type PartialNutritionXml,
@@ -13,6 +10,7 @@ export {
 export {
   normalizeMicronutrients,
   isNutritionResult,
+  MICRONUTRIENTS_PROMPT_RULE,
 } from './api/nutritionResultSchema';
 export {
   refineMealApi,

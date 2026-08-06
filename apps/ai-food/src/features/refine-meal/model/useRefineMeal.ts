@@ -4,7 +4,7 @@ import { normalizePortions, resolveItemGrams, sumItemGrams, useDiaryStore } from
 import { refineMealApi } from '@/features/analyze-food';
 import { usageQueryKey } from '@/features/auth';
 import { useProfileStore } from '@/features/onboarding';
-import { getActiveCustomInstructions, getAnalyzeFeaturesFromSettings, useSettingsStore } from '@/features/settings';
+import { getActiveCustomInstructions, getAnalyzeFeaturesFromSettings } from '@/features/settings';
 import { queryClient } from '@/shared/lib';
 
 function rejectApiError(message: string, code: string, status: number): never {
@@ -101,7 +101,6 @@ export function useRefineMeal() {
       correction: trimmed,
       customInstructions: getActiveCustomInstructions(),
       dietType: useProfileStore.getState().profile?.dietType ?? 'none',
-      model: useSettingsStore.getState().aiModel,
       features: getAnalyzeFeaturesFromSettings(),
       mealContext: {
         name: meal.name,

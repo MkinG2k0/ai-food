@@ -5,16 +5,6 @@ import type {
   DietType,
 } from '@ai-food/shared-types';
 import {
-  appendCustomInstructions,
-  appendDietPreference,
-  COMPOSITION_PROMPT_RULE,
-  FOOD_NAME_PROMPT_RULE,
-  ITEM_COUNT_PROMPT_RULE,
-  PACKAGED_FOOD_PROMPT_RULE,
-  SINGLE_ITEM_COMPOSITION_RULE,
-} from './analyzeFoodApi';
-import {
-  applyAnalyzeFeaturesToPrompt,
   DEFAULT_ANALYZE_FEATURES,
   maskNutritionResultByFeatures,
   type AnalyzeFeatures,
@@ -23,7 +13,6 @@ import {
   isNutritionResult,
   normalizeMicronutrients,
 } from './nutritionResultSchema';
-import { temperatureForModel } from '@/features/settings';
 import { getQuotaHeaders } from '@/features/auth';
 import {
   isObviouslyIrrelevantFoodInput,
@@ -49,64 +38,7 @@ export interface RefineMealInput {
   imageDataUrl?: string;
   customInstructions?: string;
   dietType?: DietType;
-  model?: string;
   features?: AnalyzeFeatures;
-}
-
-/** JSON-oriented micronutrient rule (analyze uses XML; refine stays on JSON). */
-const REFINE_MICRONUTRIENTS_RULE = `micronutrients — массив из ровно 8 объектов { "id", "amount", "unit" } для всей порции (оценка, не меддиагноз):
-id ∈ vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium;
-amount — неотрицательное число в канонических единицах; неизвестно → 0;
-unit строго по id: vitaminA/vitaminD/vitaminB12/folate → "µg"; vitaminC/iron/calcium/magnesium → "mg".
-Всегда включай все 8 id. Не возвращай качественные level.`;
-
-const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
-{
-  "foodName": string (краткое название всего блюда/приёма на русском),
-  "itemCount": number (поштучные единицы: 5 роллов → 5; 8 крылышек → 8; салат/паста/рагу → 1; КБЖУ на все штуки; НЕ равно длине items),
-  "totalGrams": number (оценка веса всего блюда в граммах; обычно ≈ сумма items[].grams),
-  "calories": number (суммарные килокалории — сумма items),
-  "protein": number (grams, сумма по составу),
-  "carbs": number (grams, сумма по составу),
-  "addedSugar": number (optional, grams of added/free sugar within carbs, 0 if none),
-  "fat": number (grams, сумма по составу),
-  "fiber": number (grams, сумма по составу),
-  "healthiness": number (integer 1–10),
-  "healthinessReason": string (optional, короткое пояснение на русском),
-  "portionReference": string (optional, якорь размера порции),
-  "items": [
-    {
-      "name": string (название атомарного ингредиента/слоя на русском),
-      "calories": number,
-      "protein": number,
-      "carbs": number,
-      "fat": number,
-      "grams": number (оценка веса в граммах; только число),
-      "fiber": number
-    }
-  ],
-  "micronutrients": [
-    { "id": "vitaminA"|"vitaminC"|"vitaminD"|"vitaminB12"|"iron"|"calcium"|"folate"|"magnesium", "amount": number, "unit": "mg"|"µg" }
-  ],
-  "disclaimers": string[] (optional, скрытые калории / неопределённость; omit if none),
-  "customContent": string (optional Markdown; include ONLY when the user correction explicitly asks to update/rewrite the extra custom answer — recipe, spiciness notes, «перепиши дополнительно», etc.; otherwise OMIT this key entirely so the client keeps the previous value)
-}
-${FOOD_NAME_PROMPT_RULE}
-${COMPOSITION_PROMPT_RULE}
-${ITEM_COUNT_PROMPT_RULE}
-${PACKAGED_FOOD_PROMPT_RULE}
-${REFINE_MICRONUTRIENTS_RULE}
-Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many countable units were eaten (e.g. «съел 3 из 5 роллов» → itemCount=3; KBJU for those units). Update totalGrams to match the revised dish weight.
-If the correction is NOT a meal edit (not about portion, ingredients, swaps, composition, calories of THIS dish — e.g. math, code, identity, jokes, bare numbers without food intent) — return ONLY JSON {"offTopic":true,"reason":"..."} instead of NutritionResult. Never invent a new meal for off-topic input.
-Do not include any text outside the JSON object. No markdown fences.`;
-
-function buildRefineSystemPrompt(features: AnalyzeFeatures): string {
-  return applyAnalyzeFeaturesToPrompt(
-    SYSTEM_PROMPT_BASE,
-    features,
-    COMPOSITION_PROMPT_RULE,
-    SINGLE_ITEM_COMPOSITION_RULE,
-  );
 }
 
 const APP_ERROR_CODES = new Set([
@@ -142,49 +74,36 @@ function mapGatewayError(error: unknown): never {
     rejectApiError(
       gatewayMessage ?? 'Превышен лимит запросов. Попробуйте позже.',
       'RATE_LIMITED',
-      429
+      429,
     );
   }
   if (gatewayCode === 'UPSTREAM_TIMEOUT') {
     rejectApiError(
       gatewayMessage ?? 'Анализ превысил время ожидания. Попробуйте ещё раз.',
       'ANALYSIS_TIMEOUT',
-      504
+      504,
     );
   }
   if (gatewayCode === 'BAD_REQUEST') {
     rejectApiError(
       gatewayMessage ?? 'Не удалось обработать изображение. Попробуйте другое фото.',
       'INVALID_IMAGE',
-      400
+      400,
     );
   }
   if (gatewayCode && APP_ERROR_CODES.has(gatewayCode)) {
     rejectApiError(
       gatewayMessage ?? 'Анализ не удался. Попробуйте ещё раз.',
       gatewayCode,
-      axiosError.response?.data?.status ?? axiosError.response?.status ?? 500
+      axiosError.response?.data?.status ?? axiosError.response?.status ?? 500,
     );
   }
 
   rejectApiError(
     gatewayMessage ?? axiosError.message ?? 'Анализ не удался. Попробуйте ещё раз.',
     'ANALYSIS_FAILED',
-    500
+    500,
   );
-}
-
-function buildUserText(correction: string, mealContext: RefineMealInput['mealContext']): string {
-  return [
-    'Уточнение пользователя:',
-    correction,
-    '',
-    'Текущий снимок приёма пищи (JSON):',
-    JSON.stringify(mealContext),
-    '',
-    'Если уточнение — правка этого блюда (порция, состав, ингредиенты, калории) — верни полный обновлённый NutritionResult в формате JSON. Без markdown.',
-    'Если уточнение не о правке блюда — верни {"offTopic":true,"reason":"..."} и не придумывай новое блюдо.',
-  ].join('\n');
 }
 
 /** Strip ```json fences and extract the outermost JSON object if needed. */
@@ -220,7 +139,7 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
     rejectApiError(
       'Не заданы параметры AI Gateway. Проверьте конфигурацию приложения.',
       'ANALYSIS_FAILED',
-      500
+      500,
     );
   }
 
@@ -233,36 +152,22 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
     throw offTopicApiError('edit');
   }
 
-  const userText = buildUserText(correction, input.mealContext);
-  const imageDataUrl = input.imageDataUrl?.trim();
-  const userContent =
-    imageDataUrl && imageDataUrl.startsWith('data:')
-      ? [
-          { type: 'image_url' as const, image_url: { url: imageDataUrl } },
-          { type: 'text' as const, text: userText },
-        ]
-      : userText;
   const features = input.features ?? DEFAULT_ANALYZE_FEATURES;
-  const systemContent = appendDietPreference(
-    appendCustomInstructions(buildRefineSystemPrompt(features), input.customInstructions),
-    input.dietType,
-  );
-
   const startTime = Date.now();
 
   let response;
   try {
-    const temperature = temperatureForModel(input.model);
     response = await axios.post(
-      `${gatewayUrl}/v1/chat/completions`,
+      `${gatewayUrl}/v1/food/refine`,
       {
-        model: input.model,
-        ...(temperature !== undefined ? { temperature } : {}),
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: systemContent },
-          { role: 'user', content: userContent },
-        ],
+        correction,
+        mealContext: input.mealContext,
+        ...(input.imageDataUrl ? { imageDataUrl: input.imageDataUrl } : {}),
+        ...(input.customInstructions
+          ? { customInstructions: input.customInstructions }
+          : {}),
+        ...(input.dietType ? { dietType: input.dietType } : {}),
+        features,
       },
       {
         headers: {
@@ -271,7 +176,7 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
           ...(await getQuotaHeaders('refine')),
         },
         timeout: 30_000,
-      }
+      },
     );
   } catch (error) {
     mapGatewayError(error);
@@ -291,7 +196,7 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
     rejectApiError(
       'Ответ анализа не соответствует ожидаемой схеме.',
       'ANALYSIS_FAILED',
-      500
+      500,
     );
   }
 
@@ -303,7 +208,7 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
     rejectApiError(
       'Ответ анализа не соответствует ожидаемой схеме.',
       'ANALYSIS_FAILED',
-      500
+      500,
     );
   }
 

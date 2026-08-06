@@ -1,14 +1,22 @@
 import type { ApiError } from '@ai-food/shared-types';
 
-export interface StreamChatCompletionsParams {
+export interface StreamFoodAnalyzeParams {
   gatewayUrl: string;
   apiKey: string;
-  body: Record<string, unknown>;
-  /** Abort / timeout signal */
+  /** Clean analyze body — no messages/model/temperature */
+  body: {
+    images?: string[];
+    description?: string;
+    customInstructions?: string;
+    dietType?: string;
+    features?: {
+      vitamins?: boolean;
+      healthiness?: boolean;
+      composition?: boolean;
+    };
+  };
   signal?: AbortSignal;
-  /** Called with cumulative content after each delta */
   onDelta?: (accumulated: string) => void;
-  /** Extra headers (quota / user token) */
   extraHeaders?: Record<string, string>;
 }
 
@@ -18,12 +26,130 @@ function rejectApiError(message: string, code: string, status: number): never {
 }
 
 /**
- * POST /v1/chat/completions with stream:true, parse OpenAI SSE,
- * accumulate choices[0].delta.content. Returns full assistant text.
+ * POST /v1/food/analyze as SSE, accumulate choices[0].delta.content.
  */
-export async function streamChatCompletions(
-  params: StreamChatCompletionsParams,
+export async function streamFoodAnalyze(
+  params: StreamFoodAnalyzeParams,
 ): Promise<string> {
+  const { gatewayUrl, apiKey, body, signal, onDelta, extraHeaders } = params;
+
+  let response: Response;
+  try {
+    response = await fetch(`${gatewayUrl}/v1/food/analyze`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        ...extraHeaders,
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (error) {
+    if (signal?.aborted) {
+      rejectApiError(
+        'Анализ превысил время ожидания. Попробуйте ещё раз.',
+        'ANALYSIS_TIMEOUT',
+        504,
+      );
+    }
+    const message =
+      error instanceof Error ? error.message : 'Анализ не удался. Попробуйте ещё раз.';
+    rejectApiError(message, 'ANALYSIS_FAILED', 500);
+  }
+
+  if (!response.ok) {
+    await mapHttpError(response);
+  }
+
+  if (!response.body) {
+    rejectApiError('Анализ вернул пустой поток.', 'ANALYSIS_FAILED', 500);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let lineBuffer = '';
+  let content = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      lineBuffer += decoder.decode(value, { stream: true });
+      const lines = lineBuffer.split('\n');
+      lineBuffer = lines.pop() ?? '';
+
+      for (const rawLine of lines) {
+        const line = rawLine.trimEnd();
+        if (!line || line.startsWith(':')) continue;
+        if (!line.startsWith('data:')) continue;
+
+        const data = line.slice(5).trimStart();
+        if (data === '[DONE]') {
+          return content;
+        }
+
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(data);
+        } catch {
+          continue;
+        }
+
+        const delta = extractDeltaContent(parsed);
+        if (delta) {
+          content += delta;
+          onDelta?.(content);
+        }
+
+        const usage = (parsed as { usage?: unknown })?.usage;
+        if (usage && typeof usage === 'object') {
+          const u = usage as {
+            prompt_tokens?: number;
+            completion_tokens?: number;
+            prompt_tokens_details?: {
+              cached_tokens?: number;
+              cache_write_tokens?: number;
+            };
+          };
+          console.debug('[analyzeFood] usage', {
+            prompt_tokens: u.prompt_tokens,
+            completion_tokens: u.completion_tokens,
+            cached_tokens: u.prompt_tokens_details?.cached_tokens,
+            cache_write_tokens: u.prompt_tokens_details?.cache_write_tokens,
+          });
+        }
+      }
+    }
+  } catch (error) {
+    if (signal?.aborted) {
+      rejectApiError(
+        'Анализ превысил время ожидания. Попробуйте ещё раз.',
+        'ANALYSIS_TIMEOUT',
+        504,
+      );
+    }
+    rejectApiError(
+      error instanceof Error ? error.message : 'Поток анализа оборвался.',
+      'ANALYSIS_FAILED',
+      500,
+    );
+  }
+
+  return content;
+}
+
+/** @deprecated Prefer streamFoodAnalyze — kept for any leftover generic callers. */
+export async function streamChatCompletions(params: {
+  gatewayUrl: string;
+  apiKey: string;
+  body: Record<string, unknown>;
+  signal?: AbortSignal;
+  onDelta?: (accumulated: string) => void;
+  extraHeaders?: Record<string, string>;
+}): Promise<string> {
   const { gatewayUrl, apiKey, body, signal, onDelta, extraHeaders } = params;
 
   let response: Response;
@@ -88,7 +214,6 @@ export async function streamChatCompletions(
         try {
           parsed = JSON.parse(data);
         } catch {
-          // Ignore malformed SSE chunks; final XML parse will fail if needed
           continue;
         }
 
@@ -96,24 +221,6 @@ export async function streamChatCompletions(
         if (delta) {
           content += delta;
           onDelta?.(content);
-        }
-
-        const usage = (parsed as { usage?: unknown })?.usage;
-        if (usage && typeof usage === 'object') {
-          const u = usage as {
-            prompt_tokens?: number;
-            completion_tokens?: number;
-            prompt_tokens_details?: {
-              cached_tokens?: number;
-              cache_write_tokens?: number;
-            };
-          };
-          console.debug('[analyzeFood] usage', {
-            prompt_tokens: u.prompt_tokens,
-            completion_tokens: u.completion_tokens,
-            cached_tokens: u.prompt_tokens_details?.cached_tokens,
-            cache_write_tokens: u.prompt_tokens_details?.cache_write_tokens,
-          });
         }
       }
     }

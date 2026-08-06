@@ -306,7 +306,6 @@ export function useModelTest() {
             const response = await analyzeFoodApi(
               { images: files },
               {
-                model,
                 customInstructions: '',
                 signal,
                 features: {

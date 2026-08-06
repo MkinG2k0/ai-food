@@ -16,7 +16,6 @@ export function useAnalyzeFood(image: File | null) {
   const customInstructions = customInstructionsEnabled
     ? customInstructionsRaw
     : '';
-  const aiModel = useSettingsStore((s) => s.aiModel);
   const featureVitamins = useSettingsStore((s) => s.featureVitamins);
   const featureHealthiness = useSettingsStore((s) => s.featureHealthiness);
   const featureComposition = useSettingsStore((s) => s.featureComposition);
@@ -30,7 +29,6 @@ export function useAnalyzeFood(image: File | null) {
       image?.lastModified,
       customInstructions,
       dietType,
-      aiModel,
       featureVitamins,
       featureHealthiness,
       featureComposition,
@@ -39,7 +37,6 @@ export function useAnalyzeFood(image: File | null) {
       analyzeFoodApi(image!, {
         customInstructions: getActiveCustomInstructions(),
         dietType,
-        model: aiModel,
         features: getAnalyzeFeaturesFromSettings(),
       }),
     enabled: image !== null,

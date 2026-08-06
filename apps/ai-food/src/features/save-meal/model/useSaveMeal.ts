@@ -101,7 +101,6 @@ export function useSaveMeal() {
       const analyzeOptions = {
         customInstructions,
         dietType,
-        model: aiModel,
         features,
         onPartial: (partial: PartialNutritionXml) =>
           applyPartialAnalyzeResultToMeal(mealId, partial, itemId),
@@ -117,7 +116,6 @@ export function useSaveMeal() {
                 trimmedDescription,
                 customInstructions,
                 dietType,
-                aiModel,
                 features,
               ]
             : [
@@ -126,7 +124,6 @@ export function useSaveMeal() {
                 trimmedDescription,
                 customInstructions,
                 dietType,
-                aiModel,
                 features,
               ],
         queryFn: () =>

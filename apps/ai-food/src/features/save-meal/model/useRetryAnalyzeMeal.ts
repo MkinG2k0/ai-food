@@ -68,7 +68,6 @@ export function useRetryAnalyzeMeal() {
                 ...images.map((f) => `${f.name}:${f.size}:${f.lastModified}`),
                 customInstructions,
                 dietType,
-                aiModel,
                 features,
               ]
             : [
@@ -79,7 +78,6 @@ export function useRetryAnalyzeMeal() {
                 description,
                 customInstructions,
                 dietType,
-                aiModel,
                 features,
               ],
         queryFn: () =>
@@ -94,7 +92,6 @@ export function useRetryAnalyzeMeal() {
                 {
                   customInstructions,
                   dietType,
-                  model: aiModel,
                   features,
                   onPartial: (partial) =>
                     applyPartialAnalyzeResultToMeal(
@@ -109,7 +106,6 @@ export function useRetryAnalyzeMeal() {
                 {
                   customInstructions,
                   dietType,
-                  model: aiModel,
                   features,
                   onPartial: (partial) =>
                     applyPartialAnalyzeResultToMeal(
