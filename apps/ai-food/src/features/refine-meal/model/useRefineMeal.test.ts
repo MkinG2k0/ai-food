@@ -159,6 +159,34 @@ describe('useRefineMeal', () => {
     expect(meal.items).toHaveLength(2);
   });
 
+  it('does not call updateMeal when refineMealApi rejects OFF_TOPIC', async () => {
+    const apiError: ApiError = {
+      message:
+        'Уточнение невалидно или не по теме блюда и не меняет состав.',
+      code: 'OFF_TOPIC',
+      status: 400,
+    };
+    vi.mocked(refineMealApi).mockRejectedValue(apiError);
+
+    const realUpdate = useDiaryStore.getState().updateMeal;
+    const updateMealSpy = vi.fn(realUpdate);
+    useDiaryStore.setState({ updateMeal: updateMealSpy });
+
+    const { result } = renderHook(() => useRefineMeal());
+
+    await expect(
+      act(async () => {
+        await result.current('meal-1', '22');
+      }),
+    ).rejects.toMatchObject({ code: 'OFF_TOPIC', status: 400 });
+
+    expect(updateMealSpy).not.toHaveBeenCalled();
+    expect(useDiaryStore.getState().meals[0].totalCalories).toBe(850);
+    expect(useDiaryStore.getState().meals[0].items[0].grams).toBe(80);
+
+    useDiaryStore.setState({ updateMeal: realUpdate });
+  });
+
   it('continues text-only when image read fails', async () => {
     vi.mocked(Filesystem.readFile).mockRejectedValue(new Error('read failed'));
 
