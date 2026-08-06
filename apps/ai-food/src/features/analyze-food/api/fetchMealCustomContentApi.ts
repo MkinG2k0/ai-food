@@ -2,6 +2,11 @@ import axios from 'axios';
 import type { ApiError } from '@ai-food/shared-types';
 import { getQuotaHeaders } from '@/features/auth';
 import { temperatureForModel } from '@/features/settings';
+import {
+  isObviouslyIrrelevantFoodInput,
+  isOffTopicAskResponse,
+  offTopicApiError,
+} from '../lib/foodTopicGuard';
 
 const MAX_CUSTOM_CONTENT_LENGTH = 8000;
 
@@ -41,11 +46,13 @@ const SETTINGS_SYSTEM_PROMPT = `Ты помощник по еде. Пользо�
 
 const QUESTION_SYSTEM_PROMPT = `Ты помощник по еде. Пользователь задаёт ОДИН вопрос о конкретном приёме пищи.
 
-Ответь ТОЛЬКО на этот вопрос по контексту блюда (состав, КБЖУ).
+Ответь ТОЛЬКО на этот вопрос по контексту блюда (состав, КБЖУ, приготовление, ингредиенты, аллергены, порция, советы по еде).
 Не добавляй рецепт, ингредиенты для готовки, шаги приготовления, общую «оценку блюда» и другие разделы, если пользователь об этом не спрашивал.
 Если вопрос оценочный (энергия, сытость, острота и т.п.) — дай краткую обоснованную оценку в Markdown, без лишних блоков.
 
-Формат ответа:
+Если вопрос НЕ о этом блюде/еде (математика, код, личность ассистента, политика, бессмыслица, мусор) — ответь РОВНО одним токеном OFF_TOPIC и больше ничего. Без Markdown, без пояснений.
+
+Формат ответа (когда вопрос по теме):
 - Чистый Markdown на русском, короткий и по делу.
 - Без XML, без JSON, без обёртки \`\`\`markdown\`\`\`.`;
 
@@ -154,7 +161,8 @@ function buildQuestionUserText(
     'Контекст приёма пищи (JSON):',
     JSON.stringify(mealContext),
     '',
-    'Верни Markdown-ответ ТОЛЬКО на этот вопрос. Не добавляй рецепт и посторонние разделы.',
+    'Верни Markdown-ответ ТОЛЬКО на этот вопрос о блюде/еде. Не добавляй рецепт и посторонние разделы.',
+    'Если вопрос не о этом блюде/еде — ответь ровно OFF_TOPIC.',
   ].join('\n');
 }
 
@@ -180,6 +188,10 @@ export async function fetchMealCustomContentApi(
   }
 
   const isQuestion = question.length > 0;
+  if (isQuestion && isObviouslyIrrelevantFoodInput(question)) {
+    throw offTopicApiError('ask');
+  }
+
   const systemContent = isQuestion
     ? QUESTION_SYSTEM_PROMPT
     : SETTINGS_SYSTEM_PROMPT;
@@ -221,5 +233,10 @@ export async function fetchMealCustomContentApi(
     rejectApiError('Пустой ответ доп. запроса.', 'ANALYSIS_FAILED', 500);
   }
 
-  return normalizeCustomContent(rawContent);
+  const normalized = normalizeCustomContent(rawContent);
+  if (isQuestion && isOffTopicAskResponse(normalized)) {
+    throw offTopicApiError('ask');
+  }
+
+  return normalized;
 }

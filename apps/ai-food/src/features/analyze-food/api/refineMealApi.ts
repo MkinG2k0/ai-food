@@ -25,6 +25,11 @@ import {
 } from './nutritionResultSchema';
 import { temperatureForModel } from '@/features/settings';
 import { getQuotaHeaders } from '@/features/auth';
+import {
+  isObviouslyIrrelevantFoodInput,
+  isOffTopicRefinePayload,
+  offTopicApiError,
+} from '../lib/foodTopicGuard';
 
 export interface RefineMealContextItem {
   name: string;
@@ -92,6 +97,7 @@ ${ITEM_COUNT_PROMPT_RULE}
 ${PACKAGED_FOOD_PROMPT_RULE}
 ${REFINE_MICRONUTRIENTS_RULE}
 Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many countable units were eaten (e.g. «съел 3 из 5 роллов» → itemCount=3; KBJU for those units). Update totalGrams to match the revised dish weight.
+If the correction is NOT a meal edit (not about portion, ingredients, swaps, composition, calories of THIS dish — e.g. math, code, identity, jokes, bare numbers without food intent) — return ONLY JSON {"offTopic":true,"reason":"..."} instead of NutritionResult. Never invent a new meal for off-topic input.
 Do not include any text outside the JSON object. No markdown fences.`;
 
 function buildRefineSystemPrompt(features: AnalyzeFeatures): string {
@@ -176,7 +182,8 @@ function buildUserText(correction: string, mealContext: RefineMealInput['mealCon
     'Текущий снимок приёма пищи (JSON):',
     JSON.stringify(mealContext),
     '',
-    'Верни полный обновлённый NutritionResult в формате JSON с учётом уточнения. Без markdown.',
+    'Если уточнение — правка этого блюда (порция, состав, ингредиенты, калории) — верни полный обновлённый NutritionResult в формате JSON. Без markdown.',
+    'Если уточнение не о правке блюда — верни {"offTopic":true,"reason":"..."} и не придумывай новое блюдо.',
   ].join('\n');
 }
 
@@ -220,6 +227,10 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
   const correction = input.correction.trim();
   if (!correction) {
     rejectApiError('Текст уточнения не передан.', 'ANALYSIS_FAILED', 400);
+  }
+
+  if (isObviouslyIrrelevantFoodInput(correction)) {
+    throw offTopicApiError('edit');
   }
 
   const userText = buildUserText(correction, input.mealContext);
@@ -282,6 +293,10 @@ export async function refineMealApi(input: RefineMealInput): Promise<AnalyzeFood
       'ANALYSIS_FAILED',
       500
     );
+  }
+
+  if (isOffTopicRefinePayload(parsed)) {
+    throw offTopicApiError('edit');
   }
 
   if (!isNutritionResult(parsed)) {

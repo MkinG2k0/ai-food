@@ -194,4 +194,63 @@ describe('fetchMealCustomContentApi', () => {
       }),
     ).rejects.toMatchObject({ code: 'RATE_LIMITED', status: 429 });
   });
+
+  it.each(['22', 'кто ты'] as const)(
+    'rejects OFF_TOPIC before axios for obvious junk question %s',
+    async (question) => {
+      await expect(
+        fetchMealCustomContentApi({ mealContext, question }),
+      ).rejects.toMatchObject({
+        code: 'OFF_TOPIC',
+        status: 400,
+      } satisfies Partial<ApiError>);
+      expect(axios.post).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects OFF_TOPIC when model returns OFF_TOPIC sentinel', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody('OFF_TOPIC'),
+    });
+
+    await expect(
+      fetchMealCustomContentApi({
+        mealContext,
+        question: 'расскажи анекдот про политику',
+      }),
+    ).rejects.toMatchObject({ code: 'OFF_TOPIC', status: 400 });
+
+    expect(axios.post).toHaveBeenCalled();
+  });
+
+  it('QUESTION_SYSTEM_PROMPT instructs OFF_TOPIC for off-topic questions', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody('Около 320 ккал.'),
+    });
+
+    await fetchMealCustomContentApi({
+      mealContext,
+      question: 'сколько калорий в этом блюде',
+    });
+
+    const body = vi.mocked(axios.post).mock.calls[0][1] as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    expect(body.messages[0].content).toMatch(/OFF_TOPIC/);
+    expect(body.messages[1].content).toMatch(/OFF_TOPIC/);
+  });
+
+  it('posts valid food question and returns markdown', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody('**Калории:** около 320 ккал'),
+    });
+
+    const result = await fetchMealCustomContentApi({
+      mealContext,
+      question: 'сколько калорий в этом блюде',
+    });
+
+    expect(result).toBe('**Калории:** около 320 ккал');
+    expect(axios.post).toHaveBeenCalled();
+  });
 });

@@ -363,6 +363,47 @@ describe('refineMealApi (AI Gateway)', () => {
     } satisfies Partial<ApiError>);
   });
 
+  it('rejects OFF_TOPIC before axios for bare number correction', async () => {
+    await expect(
+      refineMealApi({ correction: '22', mealContext }),
+    ).rejects.toMatchObject({
+      code: 'OFF_TOPIC',
+      status: 400,
+    } satisfies Partial<ApiError>);
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it('rejects OFF_TOPIC when model returns offTopic payload', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(
+        JSON.stringify({ offTopic: true, reason: 'не про блюдо' }),
+      ),
+    });
+
+    await expect(
+      refineMealApi({
+        correction: 'расскажи анекдот',
+        mealContext,
+      }),
+    ).rejects.toMatchObject({ code: 'OFF_TOPIC', status: 400 });
+
+    expect(axios.post).toHaveBeenCalled();
+  });
+
+  it('SYSTEM_PROMPT documents offTopic rejection for non-meal corrections', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify(validNutrition)),
+    });
+
+    await refineMealApi({ correction: 'съел половину', mealContext });
+
+    const body = vi.mocked(axios.post).mock.calls[0][1] as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    expect(body.messages[0].content).toMatch(/"offTopic"\s*:\s*true/i);
+    expect(body.messages[1].content).toMatch(/offTopic|не.*уточнен|не.*редакт/i);
+  });
+
   it('appends non-empty trimmed customInstructions to system message', async () => {
     vi.mocked(axios.post).mockResolvedValue({
       data: gatewaySuccessBody(JSON.stringify(validNutrition)),
