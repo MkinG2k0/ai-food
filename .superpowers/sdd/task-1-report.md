@@ -1,68 +1,52 @@
-# Task 1 Report: Prisma User consent fields
+# Task 1 Report: Pure series builder + unit tests
 
-**Status:** DONE  
-**Branch:** feat/admin-users-data-consent  
-**Date:** 2026-08-06
+**Status:** DONE_WITH_CONCERNS  
+**Branch:** feat/admin-overview-charts  
+**Commit:** `baaf07d` — feat(admin): add pure stats series day-bucket builder
 
-## Summary
+## TDD steps executed
 
-Added nullable `dataConsentAt` and `dataConsentVersion` fields to the `User` model, a migration to alter the database table, and a `DATA_CONSENT_VERSION` constant for downstream auth/admin tasks.
+1. Created `apps/ai-app/src/lib/adminStatsSeries.test.ts` (verbatim from brief).
+2. Ran vitest — **FAIL** as expected (`adminStatsSeries.js` module not found).
+3. Created `apps/ai-app/src/lib/adminStatsSeries.ts`.
+4. Ran vitest — initial **FAIL** (3/6): `buildAdminStatsSeries` used `clampSeriesDays(input.days)`, clamping `days: 2/3` to 7 and producing 7-element arrays.
+5. Fixed: use `input.days` directly in builder (clamp belongs to route layer per plan Task 2).
+6. Ran vitest — **PASS** (6/6).
 
-## Changes
+## Files created
 
-### 1. Schema (`apps/ai-app/prisma/schema.prisma`)
+| File | Purpose |
+|------|---------|
+| `apps/ai-app/src/lib/adminStatsSeries.ts` | Pure day-bucket builder: `clampSeriesDays`, `utcDayKey`, `buildAdminStatsSeries` |
+| `apps/ai-app/src/lib/adminStatsSeries.test.ts` | Unit tests for clamp, empty series, users cumulative, payments cumulative, usage buckets |
 
-Added after `photoUrl` in `model User`:
+## Exports
 
-```prisma
-  dataConsentAt      DateTime?
-  dataConsentVersion String?
+- `AdminStatsSeriesResponse`, `BuildAdminStatsSeriesInput` — types
+- `clampSeriesDays(raw: unknown): number` — default 30, clamp 7–90
+- `utcDayKey(d: Date): string` — `YYYY-MM-DD` UTC
+- `buildAdminStatsSeries(input)` — builds users/payments/usage series with absolute cumulative totals
+
+## Test summary
+
+```
+pnpm --filter openrouter-gateway exec vitest run src/lib/adminStatsSeries.test.ts
+✓ 6 tests passed (clampSeriesDays ×2, buildAdminStatsSeries ×4)
 ```
 
-### 2. Migration (`apps/ai-app/prisma/migrations/20260806010000_user_data_consent/migration.sql`)
+## Deviation from brief
 
-```sql
--- AlterTable
-ALTER TABLE "User" ADD COLUMN "dataConsentAt" TIMESTAMP(3),
-ADD COLUMN "dataConsentVersion" TEXT;
-```
-
-### 3. Consent constant (`apps/ai-app/src/lib/consent.ts`)
-
-```ts
-export const DATA_CONSENT_VERSION = '2026-08-06';
-```
-
-## Verification
-
-| Step | Command | Result |
-|------|---------|--------|
-| Generate client | `pnpm --filter openrouter-gateway prisma:generate` | ✔ Success (Prisma Client 7.9.1) |
-
-Generated client includes `User.dataConsentAt: Date | null` and `User.dataConsentVersion: string | null` in `apps/ai-app/src/generated/prisma/models/User.ts` (gitignored, regenerated on build).
-
-## Commit
-
-| SHA | Subject |
-|-----|---------|
-| `f822957` | feat(ai-app): add User data consent fields |
-
-Files committed:
-- `apps/ai-app/prisma/schema.prisma`
-- `apps/ai-app/prisma/migrations/20260806010000_user_data_consent/migration.sql`
-- `apps/ai-app/src/lib/consent.ts`
+Brief Step 3 snippet had `const days = clampSeriesDays(input.days)` inside `buildAdminStatsSeries`. This contradicts unit tests using `days: 2` and `days: 3`, and the plan's Task 2 where the **route** calls `clampSeriesDays(req.query.days)` before invoking the builder. Implemented with `const days = input.days` so the pure function trusts pre-clamped input.
 
 ## Self-review
 
-- **Requirements match:** All fields, migration SQL, constant value, and commit message match the task brief verbatim.
-- **Placement:** Fields inserted immediately after `photoUrl` as specified.
-- **Nullability:** Both fields nullable — existing users unaffected until consent is recorded.
-- **Migration naming:** Follows existing timestamp convention (`20260806010000_user_data_consent`).
-- **No scope creep:** No auth logic, no admin UI, no tests (N/A per brief).
-- **Concerns:** None. Migration not applied to a live DB in this task (expected — apply via `prisma migrate deploy` in deployment).
+- **Scope:** Only the two lib files; no routes, UI, or changelog touched.
+- **Semantics:** Users/payments include pre-window baseline in cumulative; usage buckets `analyze*` and `refine` only; unknown kinds ignored.
+- **UTC:** Day keys via `toISOString().slice(0, 10)`; enumeration walks backward from `utcDayKey(now)`.
+- **Lint:** No linter errors on new files.
+- **Concern:** Brief implementation snippet should be updated to match route-layer clamping pattern.
 
-## Produces (for downstream tasks)
+## Not committed (per instructions)
 
-- `User.dataConsentAt: DateTime | null`
-- `User.dataConsentVersion: String | null`
-- `DATA_CONSENT_VERSION = '2026-08-06'` from `apps/ai-app/src/lib/consent.ts`
+- `apps/ai-food/src/features/news/model/changelog.ts`
+- Plan/spec markdown docs

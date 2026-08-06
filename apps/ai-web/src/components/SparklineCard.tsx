@@ -41,13 +41,12 @@ export function SparklineCard({
   return (
     <>
       <Card
-        className="admin-stat-card"
+        className="admin-chart-card"
         loading={loading}
         size="small"
         styles={{ body: { paddingBottom: 8 } }}
         title={title}
       >
-        {summary ? <div style={{ marginBottom: 8 }}>{summary}</div> : null}
         <div
           aria-label={`Открыть график: ${title}`}
           role="button"
@@ -66,7 +65,7 @@ export function SparklineCard({
             data={plotData}
             height={height}
             legend={false}
-            axis={{ x: false, y: false }}
+            axis={false}
             colorField="category"
             seriesField="category"
             theme="classicDark"
@@ -75,6 +74,7 @@ export function SparklineCard({
             yField="value"
           />
         </div>
+        {summary ? <div style={{ marginTop: 8 }}>{summary}</div> : null}
       </Card>
       <ChartModal
         data={data}

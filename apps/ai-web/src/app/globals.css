@@ -111,6 +111,20 @@ body {
   align-items: center;
 }
 
+.admin-chart-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+
+.admin-chart-card .ant-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+}
+
 @media (max-width: 575px) {
   .admin-header,
   .admin-content {

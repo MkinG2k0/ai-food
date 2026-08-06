@@ -1,28 +1,12 @@
-# Task 5 Report: Admin users aggregates + detail + stats
+# Task 5 Report
 
-## Status
+**Status:** DONE
 
-DONE
+**Commits:** `148edc3` feat(ai-web): show overview sparklines with modal charts
 
-## What was implemented
+**Test summary:** `pnpm --filter ai-web type-check` — PASS; linter diagnostics — clean.
 
-1. Admin user responses now expose consent, photo, and creation fields.
-2. `GET /admin/users` adds per-user typed usage counts from one `groupBy`.
-3. `GET /admin/users/:id` returns the user, usage counts, payments, and 100 recent usage events with client device IDs.
-4. Admin stats count all usage kinds prefixed with `analyze`.
-5. Existing `POST /admin/users/:id/subscription` behavior remains covered.
+**Concerns:** Manual smoke test not run: ai-web and gateway servers were not confirmed running.
 
-## TDD and verification
+**Report path:** `.superpowers/sdd/task-5-report.md`
 
-- RED: focused suite failed in the four expected new behavior areas.
-- GREEN: `pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts` — 28/28 passed.
-- Types: `pnpm --filter openrouter-gateway type-check` — passed.
-- IDE diagnostics: no errors in modified source or test files.
-
-## Commit
-
-- `c562e3e` — `feat(ai-app): admin users usage counts and detail`
-
-## Concerns
-
-None.

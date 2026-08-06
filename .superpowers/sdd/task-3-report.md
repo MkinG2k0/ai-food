@@ -1,60 +1,30 @@
-# Task 3 Report: Auth consent API + publicUser fields
+# Task 3 Report: BFF proxy for stats series
 
-**Status:** ✅ Complete  
-**Branch:** feat/admin-users-data-consent  
-**Date:** 2026-08-06
+**Status:** DONE  
+**Branch:** `feat/admin-overview-charts`  
+**Commit:** `f535090 feat(ai-web): proxy admin stats series endpoint`
 
 ## Summary
 
-Extended `publicUser` with `dataConsentAt` and `dataConsentVersion`. Added `POST /auth/consent` — accepts `{ version }`, validates against `DATA_CONSENT_VERSION`, sets consent once (idempotent on repeat).
+Added `GET /api/admin/gateway/stats/series` BFF route that mirrors the existing
+`stats` proxy pattern. Forwards the `days` query param (default `30`) to gateway
+`/admin/stats/series` via `proxyGatewayAdmin`.
 
-## TDD Steps
+## Changed Files
 
-| Step | Action | Result |
-|------|--------|--------|
-| 1 | Added `auth.consent.test.ts` (5 tests) | 5 failed (404 route / missing fields) |
-| 2 | `vitest run auth.consent.test.ts` | FAIL ✓ |
-| 3 | Extended `publicUser` + `POST /auth/consent` in `auth.ts` | — |
-| 4 | Updated demo/telegram test mocks for consent fields | — |
-| 5 | `vitest run auth.consent + demo + telegram` | 16/16 PASS ✓ |
-| 6 | Commit | `feat(ai-app): POST /auth/consent and consent fields on user` |
+- `apps/ai-web/src/app/api/admin/gateway/stats/series/route.ts` (new)
 
-## Changes
+## Verification
 
-### `apps/ai-app/src/routes/auth.ts`
+```text
+pnpm --filter ai-web type-check
+PASS (exit 0)
 
-- Import `DATA_CONSENT_VERSION` from `../lib/consent.js`.
-- `publicUser`: added `dataConsentAt` (ISO string | null), `dataConsentVersion` (string | null).
-- `POST /auth/consent`: 401 without/invalid token; 400 wrong version; idempotent if `dataConsentAt` already set.
-
-### Tests
-
-- **New:** `auth.consent.test.ts` — 401, 400, set consent, idempotent, GET `/me` null fields.
-- **Updated:** `auth.demo.test.ts`, `auth.telegram.test.ts` — mock users + assertions include consent null defaults.
-
-## Test Summary
-
-```
-✓ auth.consent.test.ts (5)
-✓ auth.demo.test.ts (3)
-✓ auth.telegram.test.ts (8)
-Total: 16 passed
+git show --check --oneline HEAD
+f535090 feat(ai-web): proxy admin stats series endpoint
 ```
 
-## Commit
+## Notes
 
-```
-feat(ai-app): POST /auth/consent and consent fields on user
-```
-
-Files: `auth.ts`, `auth.consent.test.ts`, `auth.demo.test.ts`, `auth.telegram.test.ts`
-
-## Concerns / Notes
-
-- Consent timestamp uses `new Date()` at write time — not client-supplied; fine for audit.
-- No Zod schema on consent body (brief uses direct `req.body?.version` check); consistent with brief snippet.
-- Frontend (Task 4+) must call `POST /auth/consent` with `DATA_CONSENT_VERSION` before gated features.
-
-## Next
-
-Task 4 can consume `dataConsentAt` / `dataConsentVersion` from `/auth/me` and wire consent UI.
+- No runtime/E2E test for BFF in this task; gateway route covered in Task 2.
+- Changelog and unrelated docs untouched per brief.

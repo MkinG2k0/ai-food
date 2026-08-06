@@ -1,188 +1,244 @@
-﻿### Task 5: Admin users aggregates + detail + stats
+### Task 5: Wire admin overview page
 
 **Files:**
-- Modify: `apps/ai-app/src/routes/admin.ts`
-- Modify: `apps/ai-app/src/routes/admin.test.ts`
+- Modify: `apps/ai-web/src/app/admin/page.tsx`
 
 **Interfaces:**
-- Produces empty counts helper:
+- Consumes: `adminApi`; `SparklineCard`; existing `Stats` totals type; series type matching `AdminStatsSeriesResponse`
+- Produces: overview with totals + 3 sparklines; Usage section without 7/30 Statistic cards
 
-```ts
-export type UsageCounts = {
-  analyze_photo: number;
-  analyze_text: number;
-  analyze_photo_text: number;
-  refine: number;
-  manual: number;
-  barcode: number;
-  analyze: number;
+- [ ] **Step 1: Replace page implementation**
+
+Rewrite `apps/ai-web/src/app/admin/page.tsx` to:
+
+```tsx
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { Alert, Card, Col, Row, Statistic, Typography } from 'antd';
+
+import { PageHeader } from '@/components/PageHeader';
+import { SparklineCard } from '@/components/SparklineCard';
+import { adminApi } from '@/lib/adminApi';
+
+type Stats = {
+  usersTotal: number;
+  activeSubscriptions: number;
+  paymentsConfirmedCount: number;
+  paymentsConfirmedSumKopecks: number;
+  usageAnalyzeLast7Days: number;
+  usageRefineLast7Days: number;
+  usageAnalyzeLast30Days: number;
+  usageRefineLast30Days: number;
 };
 
-function emptyUsageCounts(): UsageCounts {
-  return {
-    analyze_photo: 0,
-    analyze_text: 0,
-    analyze_photo_text: 0,
-    refine: 0,
-    manual: 0,
-    barcode: 0,
-    analyze: 0,
+type StatsSeries = {
+  days: number;
+  series: {
+    users: Array<{ date: string; new: number; total: number }>;
+    payments: Array<{ date: string; sumKopecks: number; totalKopecks: number }>;
+    usage: Array<{ date: string; analyze: number; refine: number }>;
   };
-}
-```
+};
 
-- `userResponse` adds `dataConsentAt`, `dataConsentVersion`, `photoUrl?` (optional for list вЂ” include if already on model)
-- `GET /admin/users` в†’ `{ users: Array<userResponse & { usageCounts: UsageCounts }> }`
-- `GET /admin/users/:id` в†’ `{ user, usageCounts, payments, recentEvents }`
-- Stats: analyze counts use `kind: { startsWith: 'analyze' }`
+const formatRubles = (kopecks: number) =>
+  new Intl.NumberFormat('ru-RU', {
+    currency: 'RUB',
+    maximumFractionDigits: 2,
+    style: 'currency',
+  }).format(kopecks / 100);
 
-**Note:** Register `GET /users/:id` **before** `POST /users/:id/subscription` is fine (different methods); do not shadow subscription route.
-
-- [ ] **Step 1: Failing admin tests**
-
-Extend mock prisma with `usageEvent.groupBy`, `usageEvent.findMany`, consent fields on users.
-
-```ts
-it('GET /admin/users includes usageCounts and consent', async () => { /* ... */ });
-it('GET /admin/users/:id returns payments and recentEvents', async () => { /* ... */ });
-it('GET /admin/users/:id 404', async () => { /* ... */ });
-it('GET /admin/stats counts analyze* prefix', async () => { /* mock count where startsWith */ });
-```
-
-- [ ] **Step 2: Run вЂ” FAIL**
-
-Run: `pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts`
-
-- [ ] **Step 3: Implement**
-
-Update `userResponse`:
-
-```ts
-function userResponse(user: {
-  id: string;
-  telegramId: string;
-  username: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  photoUrl?: string | null;
-  subscriptionStatus: 'none' | 'active' | 'canceled' | 'past_due';
-  subscriptionExpiresAt: Date | null;
-  dataConsentAt?: Date | null;
-  dataConsentVersion?: string | null;
-  createdAt?: Date;
-}) {
-  return {
-    id: user.id,
-    telegramId: user.telegramId,
-    username: user.username,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    photoUrl: user.photoUrl ?? null,
-    dataConsentAt: user.dataConsentAt?.toISOString() ?? null,
-    dataConsentVersion: user.dataConsentVersion ?? null,
-    createdAt: user.createdAt?.toISOString() ?? undefined,
-    ...subscriptionPublicFields(user),
-  };
-}
-
-async function usageCountsForUserIds(
-  prisma: ReturnType<typeof requireDb>,
-  userIds: string[],
-): Promise<Map<string, UsageCounts>> {
-  const map = new Map<string, UsageCounts>();
-  for (const id of userIds) map.set(id, emptyUsageCounts());
-  if (userIds.length === 0) return map;
-  const rows = await prisma.usageEvent.groupBy({
-    by: ['userId', 'kind'],
-    where: { userId: { in: userIds } },
-    _count: { _all: true },
+export default function AdminPage() {
+  const statsQuery = useQuery({
+    queryKey: ['admin', 'stats'],
+    queryFn: () => adminApi<Stats>('stats'),
   });
-  for (const row of rows) {
-    if (!row.userId) continue;
-    const counts = map.get(row.userId) ?? emptyUsageCounts();
-    if (row.kind in counts) {
-      counts[row.kind as keyof UsageCounts] = row._count._all;
-    }
-    map.set(row.userId, counts);
-  }
-  return map;
+  const seriesQuery = useQuery({
+    queryKey: ['admin', 'stats', 'series'],
+    queryFn: () => adminApi<StatsSeries>('stats/series?days=30'),
+  });
+
+  const data = statsQuery.data;
+  const series = seriesQuery.data?.series;
+  const usageAnalyzeSum =
+    series?.usage.reduce((acc, p) => acc + p.analyze, 0) ?? 0;
+  const usageRefineSum =
+    series?.usage.reduce((acc, p) => acc + p.refine, 0) ?? 0;
+
+  return (
+    <>
+      <PageHeader
+        subtitle="Сводка по пользователям, платежам и usage"
+        title="Обзор"
+      />
+      {statsQuery.error ? (
+        <Alert
+          description={statsQuery.error.message}
+          message="Не удалось загрузить статистику"
+          showIcon
+          type="error"
+        />
+      ) : null}
+      {seriesQuery.error ? (
+        <Alert
+          description={seriesQuery.error.message}
+          message="Не удалось загрузить графики"
+          showIcon
+          style={{ marginTop: statsQuery.error ? 12 : 0 }}
+          type="error"
+        />
+      ) : null}
+
+      <div>
+        <Typography.Title className="admin-section-title" level={4}>
+          Пользователи
+        </Typography.Title>
+        <Row className="admin-stat-row" gutter={[16, 16]}>
+          <Col lg={6} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
+              <Statistic
+                loading={statsQuery.isLoading}
+                title="Всего пользователей"
+                value={data?.usersTotal ?? 0}
+              />
+            </Card>
+          </Col>
+          <Col lg={6} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
+              <Statistic
+                loading={statsQuery.isLoading}
+                title="Активные подписки"
+                value={data?.activeSubscriptions ?? 0}
+                valueStyle={{ color: '#3f8600' }}
+              />
+            </Card>
+          </Col>
+          {!seriesQuery.error ? (
+            <Col lg={12} md={24} sm={24} xs={24}>
+              <SparklineCard
+                data={series?.users ?? []}
+                loading={seriesQuery.isLoading}
+                title="Пользователи за 30 дней"
+                yFields={[
+                  { key: 'new', label: 'Новые' },
+                  { key: 'total', label: 'Всего' },
+                ]}
+              />
+            </Col>
+          ) : null}
+        </Row>
+      </div>
+
+      <div>
+        <Typography.Title className="admin-section-title" level={4}>
+          Платежи
+        </Typography.Title>
+        <Row className="admin-stat-row" gutter={[16, 16]}>
+          <Col lg={6} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
+              <Statistic
+                loading={statsQuery.isLoading}
+                title="Подтверждённые платежи"
+                value={data?.paymentsConfirmedCount ?? 0}
+              />
+            </Card>
+          </Col>
+          <Col lg={6} md={12} sm={12} xs={24}>
+            <Card className="admin-stat-card" size="small">
+              <Statistic
+                formatter={() =>
+                  data ? formatRubles(data.paymentsConfirmedSumKopecks) : '—'
+                }
+                loading={statsQuery.isLoading}
+                title="Сумма платежей"
+                value={data?.paymentsConfirmedSumKopecks ?? 0}
+              />
+            </Card>
+          </Col>
+          {!seriesQuery.error ? (
+            <Col lg={12} md={24} sm={24} xs={24}>
+              <SparklineCard
+                data={series?.payments ?? []}
+                loading={seriesQuery.isLoading}
+                title="Сумма платежей за 30 дней"
+                valueFormatter={formatRubles}
+                yFields={[
+                  { key: 'sumKopecks', label: 'За день' },
+                  { key: 'totalKopecks', label: 'Накопительно' },
+                ]}
+              />
+            </Col>
+          ) : null}
+        </Row>
+      </div>
+
+      <div>
+        <Typography.Title className="admin-section-title" level={4}>
+          Usage
+        </Typography.Title>
+        <Row className="admin-stat-row" gutter={[16, 16]}>
+          {!seriesQuery.error ? (
+            <Col span={24}>
+              <SparklineCard
+                data={series?.usage ?? []}
+                loading={seriesQuery.isLoading}
+                summary={
+                  <Typography.Text type="secondary">
+                    За 30 дней: анализы {usageAnalyzeSum}, уточнения{' '}
+                    {usageRefineSum}
+                  </Typography.Text>
+                }
+                title="Usage за 30 дней"
+                yFields={[
+                  { key: 'analyze', label: 'Анализы' },
+                  { key: 'refine', label: 'Уточнения' },
+                ]}
+              />
+            </Col>
+          ) : null}
+        </Row>
+      </div>
+    </>
+  );
 }
 ```
 
-List handler: after findMany, `usageCountsForUserIds`, map users with counts + include `createdAt`/`photoUrl`/`dataConsent*` in select (findMany returns full model by default).
+- [ ] **Step 2: Type-check**
 
-Detail:
+Run: `pnpm --filter ai-web type-check`
 
-```ts
-adminRouter.get(
-  '/users/:id',
-  asyncHandler(async (req, res) => {
-    const prisma = requireDb();
-    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
-    if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found.');
-    const countsMap = await usageCountsForUserIds(prisma, [user.id]);
-    const payments = await prisma.payment.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      include: {
-        user: {
-          select: {
-            id: true,
-            telegramId: true,
-            username: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
-    const recentEvents = await prisma.usageEvent.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-      select: {
-        id: true,
-        kind: true,
-        deviceId: true,
-        createdAt: true,
-      },
-    });
-    // map deviceId (DB row id) вЂ” optionally join Device.deviceId client string:
-    // prefer include device: { select: { deviceId: true } } and expose clientDeviceId
-    res.json({
-      user: userResponse(user),
-      usageCounts: countsMap.get(user.id) ?? emptyUsageCounts(),
-      payments: payments.map(paymentResponse),
-      recentEvents: recentEvents.map((e) => ({
-        id: e.id,
-        kind: e.kind,
-        deviceId: e.deviceId,
-        createdAt: e.createdAt.toISOString(),
-      })),
-    });
-  }),
-);
-```
+Expected: PASS
 
-Prefer `include: { device: { select: { deviceId: true } } }` and return `deviceId: e.device.deviceId` (client id) in recentEvents.
+- [ ] **Step 3: Manual smoke (when gateway + ai-web running)**
 
-Stats analyze counts:
+1. Open `/admin` (logged in)
+2. See totals + three sparklines; no «Анализы за 7/30 дней» cards
+3. Click each sparkline → Modal with large chart; Esc closes
 
-```ts
-prisma.usageEvent.count({
-  where: { kind: { startsWith: 'analyze' }, createdAt: { gte: last7Days } },
-}),
-```
-
-- [ ] **Step 4: Run вЂ” PASS**
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add apps/ai-app/src/routes/admin.ts apps/ai-app/src/routes/admin.test.ts
-git commit -m "feat(ai-app): admin users usage counts and detail"
+git add apps/ai-web/src/app/admin/page.tsx
+git commit -m "$(cat <<'EOF'
+feat(ai-web): show overview sparklines with modal charts
+
+EOF
+)"
 ```
 
 ---
 
+## Self-review (plan vs spec)
+
+| Spec requirement | Task |
+|------------------|------|
+| `GET /admin/stats/series`, days clamp 7–90, UTC days | 1–2 |
+| users new+total, payments sum+total, usage analyze+refine | 1 |
+| Absolute cumulative includes before window | 1 tests |
+| BFF proxy | 3 |
+| `@ant-design/plots`, SparklineCard, ChartModal | 4 |
+| Overview layout: keep totals, replace Usage 4 cards | 5 |
+| Series error Alert without breaking totals | 5 |
+| Gateway tests + ai-web type-check | 1–2, 4–5 |
+
+No TBD/placeholder steps remain. Types `AdminStatsSeriesResponse` / page `StatsSeries` aligned on field names `new`, `total`, `sumKopecks`, `totalKopecks`, `analyze`, `refine`.

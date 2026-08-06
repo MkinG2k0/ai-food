@@ -1,77 +1,208 @@
-﻿### Task 4: `POST /usage/event` for manual/barcode
+### Task 4: Chart components + dependency
 
 **Files:**
-- Modify: `apps/ai-app/src/routes/usage.ts`
-- Create: `apps/ai-app/src/routes/usage.event.test.ts`
+- Modify: `apps/ai-web/package.json` (via pnpm add)
+- Create: `apps/ai-web/src/components/ChartModal.tsx`
+- Create: `apps/ai-web/src/components/SparklineCard.tsx`
 
 **Interfaces:**
-- Consumes: `X-Device-Id` required; optional `X-User-Token`; `ensureDevice`
-- Produces: `POST /usage/event` body `{ kind: 'manual' | 'barcode' }` в†’ `{ ok: true }`; 400 other kinds; creates UsageEvent (no quota check)
+- Consumes: `Line` from `@ant-design/plots`; Ant Design `Card`, `Modal`, `Typography`
+- Produces:
+  - `ChartSeriesPoint = { date: string } & Record<string, number>`
+  - `ChartModalProps = { open: boolean; onClose: () => void; title: string; data: ChartSeriesPoint[]; yFields: Array<{ key: string; label: string }>; valueFormatter?: (n: number) => string }`
+  - `SparklineCardProps = { title: string; summary?: React.ReactNode; data: ChartSeriesPoint[]; yFields: Array<{ key: string; label: string }>; loading?: boolean; valueFormatter?: (n: number) => string; height?: number }`
 
-- [ ] **Step 1: Failing tests**
+- [ ] **Step 1: Install dependency**
 
-```ts
-it('records manual with device', async () => { /* 200, prisma.usageEvent.create called */ });
-it('rejects analyze kind', async () => { /* 400 */ });
-it('requires device id', async () => { /* 400 */ });
+From repo root:
+
+```bash
+pnpm --filter ai-web add @ant-design/plots
 ```
 
-- [ ] **Step 2: Run вЂ” FAIL**
+- [ ] **Step 2: Create `ChartModal.tsx`**
 
-Run: `pnpm --filter openrouter-gateway exec vitest run src/routes/usage.event.test.ts`
+```tsx
+'use client';
 
-- [ ] **Step 3: Implement route**
+import { Line } from '@ant-design/plots';
+import { Modal } from 'antd';
 
-```ts
-const EventBodySchema = z.object({
-  kind: z.enum(['manual', 'barcode']),
-});
+export type ChartSeriesPoint = { date: string } & Record<string, number>;
 
-usageRouter.post(
-  '/event',
-  asyncHandler(async (req, res) => {
-    const deviceId = req.header('x-device-id')?.trim();
-    if (!deviceId) {
-      throw new ApiError(400, 'DEVICE_ID_REQUIRED', 'X-Device-Id header is required.');
-    }
-    const parsed = EventBodySchema.safeParse(req.body ?? {});
-    if (!parsed.success) {
-      throw new ApiError(400, 'VALIDATION_ERROR', 'kind must be manual or barcode.');
-    }
-    // require DB same as GET /
-    let userId: string | undefined;
-    const userToken = req.header('x-user-token')?.trim();
-    if (userToken) {
-      try {
-        const payload = await verifyUserToken(userToken);
-        userId = payload.sub;
-      } catch {
-        /* ignore invalid token for event logging */
-      }
-    }
-    const device = await ensureDevice(prisma, deviceId, userId);
-    await prisma.usageEvent.create({
-      data: {
-        kind: parsed.data.kind,
-        deviceId: device.id,
-        userId: userId ?? null,
-      },
-    });
-    res.json({ ok: true });
-  }),
-);
+export type ChartYField = { key: string; label: string };
+
+export type ChartModalProps = {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  data: ChartSeriesPoint[];
+  yFields: ChartYField[];
+  valueFormatter?: (n: number) => string;
+};
+
+export function ChartModal({
+  open,
+  onClose,
+  title,
+  data,
+  yFields,
+  valueFormatter,
+}: ChartModalProps) {
+  const plotData = data.flatMap((row) =>
+    yFields.map((f) => ({
+      date: row.date,
+      value: Number(row[f.key] ?? 0),
+      category: f.label,
+    })),
+  );
+
+  return (
+    <Modal
+      centered
+      destroyOnClose
+      footer={null}
+      open={open}
+      title={title}
+      width={840}
+      onCancel={onClose}
+    >
+      <div style={{ height: 360 }}>
+        <Line
+          autoFit
+          data={plotData}
+          height={360}
+          legend={{ position: 'top' }}
+          seriesField="category"
+          tooltip={{
+            formatter: (datum: { category?: string; value?: number }) => ({
+              name: String(datum.category ?? ''),
+              value: valueFormatter
+                ? valueFormatter(Number(datum.value ?? 0))
+                : String(datum.value ?? 0),
+            }),
+          }}
+          xField="date"
+          yField="value"
+        />
+      </div>
+    </Modal>
+  );
+}
 ```
 
-Import `z`, `ensureDevice`.
+If `@ant-design/plots` Line API differs (v2 vs Ant Design Charts), adjust props to the installed package’s `Line` docs — keep fields: multi-series by category, x=`date`, y=`value`.
 
-- [ ] **Step 4: Run вЂ” PASS**
+- [ ] **Step 3: Create `SparklineCard.tsx`**
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { Line } from '@ant-design/plots';
+import { Card } from 'antd';
+
+import {
+  ChartModal,
+  type ChartSeriesPoint,
+  type ChartYField,
+} from '@/components/ChartModal';
+
+export type SparklineCardProps = {
+  title: string;
+  summary?: React.ReactNode;
+  data: ChartSeriesPoint[];
+  yFields: ChartYField[];
+  loading?: boolean;
+  valueFormatter?: (n: number) => string;
+  height?: number;
+};
+
+export function SparklineCard({
+  title,
+  summary,
+  data,
+  yFields,
+  loading,
+  valueFormatter,
+  height = 96,
+}: SparklineCardProps) {
+  const [open, setOpen] = useState(false);
+  const plotData = data.flatMap((row) =>
+    yFields.map((f) => ({
+      date: row.date,
+      value: Number(row[f.key] ?? 0),
+      category: f.label,
+    })),
+  );
+
+  return (
+    <>
+      <Card
+        className="admin-stat-card"
+        loading={loading}
+        size="small"
+        styles={{ body: { paddingBottom: 8 } }}
+        title={title}
+      >
+        {summary ? <div style={{ marginBottom: 8 }}>{summary}</div> : null}
+        <div
+          role="button"
+          tabIndex={0}
+          style={{ cursor: 'pointer', height }}
+          onClick={() => setOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setOpen(true);
+            }
+          }}
+        >
+          <Line
+            autoFit
+            data={plotData}
+            height={height}
+            legend={false}
+            seriesField="category"
+            tooltip={false}
+            xField="date"
+            xAxis={false}
+            yField="value"
+            yAxis={false}
+          />
+        </div>
+      </Card>
+      <ChartModal
+        data={data}
+        open={open}
+        title={title}
+        valueFormatter={valueFormatter}
+        yFields={yFields}
+        onClose={() => setOpen(false)}
+      />
+    </>
+  );
+}
+```
+
+- [ ] **Step 4: Type-check**
+
+Run: `pnpm --filter ai-web type-check`
+
+Expected: PASS. Fix Line prop types if the package’s typings reject `tooltip={false}` / `xAxis={false}` — use package-supported disable flags.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/ai-app/src/routes/usage.ts apps/ai-app/src/routes/usage.event.test.ts
-git commit -m "feat(ai-app): POST /usage/event for manual and barcode"
+git add apps/ai-web/package.json apps/ai-web/pnpm-lock.yaml pnpm-lock.yaml apps/ai-web/src/components/ChartModal.tsx apps/ai-web/src/components/SparklineCard.tsx
+git commit -m "$(cat <<'EOF'
+feat(ai-web): add SparklineCard and ChartModal
+
+EOF
+)"
 ```
+
+(Only stage lockfile paths that actually change.)
 
 ---
 

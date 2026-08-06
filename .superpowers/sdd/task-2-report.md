@@ -1,68 +1,52 @@
-# Task 2 Report: Typed billable usage kinds (quota lib + middleware)
+# Task 2 Report: Gateway `GET /admin/stats/series`
 
-**Status:** ✅ Complete  
-**Branch:** feat/admin-users-data-consent  
-**Date:** 2026-08-06
+**Status:** DONE  
+**Branch:** `feat/admin-overview-charts`  
+**Commit:** `40c3bd3 feat(admin): expose GET /admin/stats/series`
 
 ## Summary
 
-Extended `apps/ai-app` quota library and middleware to support typed billable usage kinds: `analyze`, `analyze_photo`, `analyze_text`, `analyze_photo_text`, and `refine`. Empty/missing `X-Usage-Kind` now defaults to `analyze`; unknown values map to `other` (non-billable, skips enforcement).
+Added the authenticated `GET /admin/stats/series` gateway route. It clamps
+`days` at the route boundary, fetches all user and confirmed-payment rows for
+cumulative totals, fetches only in-window usage rows, and delegates response
+construction to `buildAdminStatsSeries`.
 
-## TDD Steps
+## TDD
 
-| Step | Action | Result |
-|------|--------|--------|
-| 1 | Added failing tests in `quota.test.ts` | 2 failed (missing `isBillableUsageKind`, old `parseUsageKind`) |
-| 2 | `vitest run src/lib/quota.test.ts` | FAIL ✓ |
-| 3 | Implemented `quota.ts` types + helpers | — |
-| 4 | Updated `finalizeQuotaUsage` in middleware | — |
-| 5 | `vitest run src/lib/quota.test.ts src/middleware/quota.test.ts` | 14/14 PASS ✓ |
-| 6 | Commit | `feat(ai-app): typed analyze usage kinds for quota` |
+1. Extended Prisma test doubles and added endpoint shape/authentication tests.
+2. Ran the focused test before production changes: it failed as expected with
+   `404` instead of `200`.
+3. Implemented the route and imported `clampSeriesDays` and
+   `buildAdminStatsSeries` from `../lib/adminStatsSeries.js`.
+4. Re-ran focused and broader tests successfully.
 
-## Changes
+## Changed Files
 
-### `apps/ai-app/src/lib/quota.ts`
+- `apps/ai-app/src/routes/admin.ts`
+- `apps/ai-app/src/routes/admin.test.ts`
 
-- Added `BillableUsageKind` union type (5 values).
-- Added `UsageKind = BillableUsageKind | 'other'`.
-- Replaced `BILLABLE_KINDS` with `BILLABLE_SET` + `isBillableUsageKind()`.
-- `parseUsageKind`: empty/whitespace → `analyze`; known billable → self; else `other`.
-- Added `billableUsageWhere()` — Prisma filter: `refine` OR `kind startsWith 'analyze'`.
-- `countGuestBillableUsage` uses `billableUsageWhere()`.
-- `recordBillableUsage` accepts `BillableUsageKind`.
+## Verification
 
-### `apps/ai-app/src/middleware/quota.ts`
+```text
+pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts -t "stats/series"
+2 passed | 29 skipped
 
-- `finalizeQuotaUsage` uses `isBillableUsageKind(q.usageKind)` instead of hardcoded `analyze`/`refine` check.
-- `enforceChatQuota` unchanged: `kind === 'other'` still skips enforcement.
+pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts src/lib/adminStatsSeries.test.ts
+37 passed
 
-### Tests
-
-- `quota.test.ts`: replaced old `parseUsageKind defaults to other` with brief-specified cases + `isBillableUsageKind` test.
-- `middleware/quota.test.ts`: no changes required (existing tests still valid).
-
-## Test Summary
-
-```
-✓ src/lib/quota.test.ts (9 tests)
-✓ src/middleware/quota.test.ts (5 tests)
-Total: 14 passed
+git show --check --oneline HEAD
+40c3bd3 feat(admin): expose GET /admin/stats/series
 ```
 
-## Commit
+IDE diagnostics for both changed route files: no errors.
 
-```
-feat(ai-app): typed analyze usage kinds for quota
-```
+## Self-Review
 
-Files: `quota.ts`, `quota.test.ts`, `middleware/quota.ts`
+The route applies authentication through the existing router middleware,
+uses the required status filter and projections, uses `paidAt` with
+`createdAt` fallback, and leaves day-bucket logic in the existing pure helper.
+No unrelated files were included in the commit.
 
-## Concerns / Notes
+## Concerns
 
-- `billableUsageWhere()` uses `startsWith: 'analyze'` — any future kind starting with `analyze` (e.g. typo in DB) would count toward quota. Intentional per brief; explicit `BILLABLE_SET` guards recording.
-- Middleware tests do not cover empty header → `analyze` default or typed kinds (`analyze_photo` etc.); covered in lib tests only.
-- No downstream ai-food header changes in this task (Task 4 scope).
-
-## Next
-
-Task 3+ can rely on `parseUsageKind`, `isBillableUsageKind`, and `BillableUsageKind` exports from `apps/ai-app/src/lib/quota.ts`.
+None.

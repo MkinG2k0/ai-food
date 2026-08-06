@@ -1,56 +1,30 @@
-# Task 4 Report: POST /usage/event for manual/barcode
+# Task 4 Report
 
-**Status:** ✅ Complete  
-**Branch:** feat/admin-users-data-consent  
-**Date:** 2026-08-06
+**Status:** DONE
 
-## Summary
+**Commits:** `22afc4c` feat(ai-web): add SparklineCard and ChartModal
 
-Added `POST /usage/event` on `usageRouter` — accepts `{ kind: 'manual' | 'barcode' }`, requires `X-Device-Id`, optional `X-User-Token`. Creates `UsageEvent` via `ensureDevice` + `prisma.usageEvent.create`; no quota deduction.
+**Test summary:** `pnpm --filter ai-web type-check` — PASS
 
-## TDD Steps
+**Concerns:** No runtime/visual test; integration deferred to Task 5.
 
-| Step | Action | Result |
-|------|--------|--------|
-| 1 | Added `usage.event.test.ts` (3 tests) | 3 failed (404 route) |
-| 2 | `vitest run usage.event.test.ts` | FAIL ✓ |
-| 3 | Implemented `POST /event` in `usage.ts` | — |
-| 4 | `vitest run usage.event.test.ts` | 3/3 PASS ✓ |
-| 5 | Commit | `feat(ai-app): POST /usage/event for manual and barcode` |
+**Report path:** `.superpowers/sdd/task-4-report.md`
 
-## Changes
+---
 
-### `apps/ai-app/src/routes/usage.ts`
+## Review fixes (2026-08-07)
 
-- Import `z` from zod, `ensureDevice` from quota lib.
-- `EventBodySchema`: `kind` enum `manual | barcode`.
-- `POST /event`: 400 without device / invalid kind; 503 if DB unavailable; optional token → `userId`; `{ ok: true }` on success.
+**Status:** DONE
 
-### Tests
+**Changes:** Broadened `ChartSeriesPoint` values to `string | number` for date-plus-series objects; applied the supported AntV `classicDark` theme to both line charts.
 
-- **New:** `usage.event.test.ts` — manual event, reject analyze, require device id.
+**Verification:** `pnpm --filter ai-web type-check` — PASS
 
-## Test Summary
+**Output:**
 
-```
-✓ usage.event.test.ts (3)
-Total: 3 passed
+```text
+> ai-web@0.1.0 type-check D:\Project\Main\ai-food-base\apps\ai-web
+> tsc --noEmit
 ```
 
-## Commit
-
-```
-feat(ai-app): POST /usage/event for manual and barcode
-```
-
-Files: `usage.ts`, `usage.event.test.ts`
-
-## Concerns / Notes
-
-- Invalid `X-User-Token` silently ignored (per brief) — event logged as guest.
-- DB required (503) unlike GET `/usage` degraded mode — consistent with write semantics.
-- No test for barcode kind or authenticated userId path; brief only specified 3 cases.
-
-## Next
-
-Frontend can call `POST /usage/event` when user logs manual entry or scans barcode.
+**Concerns:** No runtime/visual test was run; `classicDark` type-checks with the installed `@ant-design/plots` version.

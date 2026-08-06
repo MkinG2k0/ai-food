@@ -1,118 +1,177 @@
-﻿### Task 2: Typed billable usage kinds (quota lib + middleware)
+### Task 2: Gateway `GET /admin/stats/series`
 
 **Files:**
-- Modify: `apps/ai-app/src/lib/quota.ts`
-- Modify: `apps/ai-app/src/lib/quota.test.ts`
-- Modify: `apps/ai-app/src/middleware/quota.ts`
-- Modify: `apps/ai-app/src/middleware/quota.test.ts` (if asserts on kind)
+- Modify: `apps/ai-app/src/routes/admin.ts`
+- Modify: `apps/ai-app/src/routes/admin.test.ts`
 
 **Interfaces:**
-- Produces:
-  - `export type BillableUsageKind = 'analyze' | 'analyze_photo' | 'analyze_text' | 'analyze_photo_text' | 'refine'`
-  - `export type UsageKind = BillableUsageKind | 'other'`
-  - `export function isBillableUsageKind(kind: string): kind is BillableUsageKind`
-  - `parseUsageKind(raw): UsageKind` вЂ” empty в†’ `analyze`; known billable в†’ self; else `other`
-  - `countGuestBillableUsage` / `recordBillableUsage` use billable filter / `BillableUsageKind`
-- Consumes: Prisma `usageEvent`
+- Consumes: `buildAdminStatsSeries`, `clampSeriesDays` from `../lib/adminStatsSeries.js`; `requireDb()`; Prisma `user.findMany`, `payment.findMany`, `usageEvent.findMany`
+- Produces: `GET /admin/stats/series?days=30` → `AdminStatsSeriesResponse` JSON
 
-- [ ] **Step 1: Failing tests for parseUsageKind + billable filter**
+- [ ] **Step 1: Extend mock prisma for series fetches + add failing route test**
 
-In `quota.test.ts` replace/extend:
+In `apps/ai-app/src/routes/admin.test.ts`:
+
+1. Extend `user.findMany` so when `select: { createdAt: true }` (or equivalent), return `users.map(u => ({ createdAt: u.createdAt }))`. Keep existing behavior for other callers if needed — inspect current `findMany` usages; simplest: implement filtering by returning full users and let route map, OR make findMany return based on `select`.
+
+Recommended mock change for `user.findMany`:
 
 ```ts
-it('parseUsageKind: empty в†’ analyze; typed; unknown в†’ other', () => {
-  expect(parseUsageKind(undefined)).toBe('analyze');
-  expect(parseUsageKind('')).toBe('analyze');
-  expect(parseUsageKind('analyze_photo')).toBe('analyze_photo');
-  expect(parseUsageKind('analyze_text')).toBe('analyze_text');
-  expect(parseUsageKind('analyze_photo_text')).toBe('analyze_photo_text');
-  expect(parseUsageKind('refine')).toBe('refine');
-  expect(parseUsageKind('analyze')).toBe('analyze');
-  expect(parseUsageKind('manual')).toBe('other');
-  expect(parseUsageKind('nope')).toBe('other');
-});
-
-it('isBillableUsageKind treats analyze* and refine', () => {
-  expect(isBillableUsageKind('analyze_photo')).toBe(true);
-  expect(isBillableUsageKind('manual')).toBe(false);
-});
+findMany: vi.fn(async (args: { select?: { createdAt?: boolean }; where?: unknown } = {}) => {
+  if (args.select?.createdAt) {
+    return users.map((u) => ({ createdAt: u.createdAt }));
+  }
+  // existing list behavior used by GET /admin/users — keep as today
+  return [users[0]];
+}),
 ```
 
-- [ ] **Step 2: Run tests вЂ” expect FAIL**
-
-Run: `pnpm --filter openrouter-gateway exec vitest run src/lib/quota.test.ts`  
-Expected: FAIL (old parseUsageKind / missing exports)
-
-- [ ] **Step 3: Implement quota.ts**
-
-Replace `BILLABLE_KINDS` / `UsageKind` / `parseUsageKind` / count / record:
+2. Extend `payment.findMany` to honor `where: { status: 'confirmed' }` and `select: { amount, paidAt, createdAt }` — return matching payments (already has findMany; add status filter):
 
 ```ts
-export type BillableUsageKind =
-  | 'analyze'
-  | 'analyze_photo'
-  | 'analyze_text'
-  | 'analyze_photo_text'
-  | 'refine';
-
-export type UsageKind = BillableUsageKind | 'other';
-
-const BILLABLE_SET = new Set<string>([
-  'analyze',
-  'analyze_photo',
-  'analyze_text',
-  'analyze_photo_text',
-  'refine',
-]);
-
-export function isBillableUsageKind(kind: string): kind is BillableUsageKind {
-  return BILLABLE_SET.has(kind);
-}
-
-export function parseUsageKind(raw: string | undefined): UsageKind {
-  const v = raw?.trim();
-  if (!v) return 'analyze';
-  if (isBillableUsageKind(v)) return v;
-  return 'other';
-}
-
-export function billableUsageWhere() {
-  return {
-    OR: [{ kind: 'refine' as const }, { kind: { startsWith: 'analyze' } }],
-  };
-}
-
-// countGuestBillableUsage:
-// where: { deviceId: deviceRowId, ...billableUsageWhere() }
-
-// recordBillableUsage opts.kind: BillableUsageKind
-```
-
-- [ ] **Step 4: Update middleware finalizeQuotaUsage**
-
-```ts
-if (!isBillableUsageKind(q.usageKind)) return;
-await recordBillableUsage(prisma, {
-  deviceRowId: q.deviceRowId,
-  kind: q.usageKind,
-  userId: q.userId ?? null,
+// inside findMany filter:
+const filtered = payments.filter((payment) => {
+  if (where?.userId && payment.userId !== where.userId) return false;
+  if (where?.status && payment.status !== where.status) return false;
+  return true;
 });
 ```
 
-Update `enforceChatQuota`: `kind === 'other'` still skips enforcement (unchanged).
+Update the `where` type to include `status?: string`.
 
-Fix any middleware tests that expected `undefined` в†’ `other`.
+3. Extend `usageEvent.findMany` (if missing) to return `usageEvents` filtered by `createdAt.gte` when provided; with `select: { kind, createdAt }`.
 
-- [ ] **Step 5: Run tests вЂ” expect PASS**
+Find existing `usageEvent` mock block and ensure `findMany` exists:
 
-Run: `pnpm --filter openrouter-gateway exec vitest run src/lib/quota.test.ts src/middleware/quota.test.ts`  
-Expected: PASS
+```ts
+findMany: vi.fn(
+  async ({
+    where,
+    select,
+  }: {
+    where?: { createdAt?: { gte?: Date } };
+    select?: { kind?: boolean; createdAt?: boolean };
+  } = {}) => {
+    let rows = usageEvents;
+    if (where?.createdAt?.gte) {
+      const gte = where.createdAt.gte;
+      rows = rows.filter((e) => e.createdAt >= gte);
+    }
+    if (select) {
+      return rows.map((e) => ({
+        kind: e.kind,
+        createdAt: e.createdAt,
+      }));
+    }
+    return rows;
+  },
+),
+```
 
-- [ ] **Step 6: Commit**
+4. Add test after the existing `/admin/stats` tests:
+
+```ts
+it('GET /admin/stats/series returns day series shape', async () => {
+  const response = await request(createApp())
+    .get('/admin/stats/series?days=7')
+    .set('X-Admin-Key', 'test-admin');
+
+  expect(response.status).toBe(200);
+  expect(response.body.days).toBe(7);
+  expect(response.body.series.users).toHaveLength(7);
+  expect(response.body.series.payments).toHaveLength(7);
+  expect(response.body.series.usage).toHaveLength(7);
+  expect(response.body.series.users[0]).toEqual(
+    expect.objectContaining({
+      date: expect.any(String),
+      new: expect.any(Number),
+      total: expect.any(Number),
+    }),
+  );
+});
+
+it('GET /admin/stats/series requires admin key', async () => {
+  const response = await request(createApp()).get('/admin/stats/series');
+  expect(response.status).toBe(401);
+});
+```
+
+- [ ] **Step 2: Run route test — expect FAIL**
+
+Run: `pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts -t "stats/series"`
+
+Expected: FAIL (404 / missing route)
+
+- [ ] **Step 3: Implement route**
+
+In `apps/ai-app/src/routes/admin.ts`, add imports:
+
+```ts
+import {
+  buildAdminStatsSeries,
+  clampSeriesDays,
+} from '../lib/adminStatsSeries.js';
+```
+
+Add handler **after** existing `GET /stats` block:
+
+```ts
+adminRouter.get(
+  '/stats/series',
+  asyncHandler(async (req, res) => {
+    const prisma = requireDb();
+    const days = clampSeriesDays(req.query.days);
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    const [userRows, paymentRows, usageRows] = await Promise.all([
+      prisma.user.findMany({ select: { createdAt: true } }),
+      prisma.payment.findMany({
+        where: { status: 'confirmed' },
+        select: { amount: true, paidAt: true, createdAt: true },
+      }),
+      prisma.usageEvent.findMany({
+        where: { createdAt: { gte: windowStart } },
+        select: { kind: true, createdAt: true },
+      }),
+    ]);
+
+    res.json(
+      buildAdminStatsSeries({
+        days,
+        now,
+        userCreatedAts: userRows.map((u) => u.createdAt),
+        payments: paymentRows.map((p) => ({
+          amount: p.amount,
+          at: p.paidAt ?? p.createdAt,
+        })),
+        usageEvents: usageRows.map((e) => ({
+          kind: e.kind,
+          at: e.createdAt,
+        })),
+      }),
+    );
+  }),
+);
+```
+
+Note: users/payments load all rows for absolute cumulative base (admin-scale OK per spec). Usage only needs window (and builder ignores out-of-window).
+
+- [ ] **Step 4: Run tests — expect PASS**
+
+Run: `pnpm --filter openrouter-gateway exec vitest run src/routes/admin.test.ts src/lib/adminStatsSeries.test.ts`
+
+Expected: PASS (including existing `/admin/stats` tests)
+
+- [ ] **Step 5: Commit**
 
 ```bash
-git add apps/ai-app/src/lib/quota.ts apps/ai-app/src/lib/quota.test.ts apps/ai-app/src/middleware/quota.ts apps/ai-app/src/middleware/quota.test.ts
-git commit -m "feat(ai-app): typed analyze usage kinds for quota"
+git add apps/ai-app/src/routes/admin.ts apps/ai-app/src/routes/admin.test.ts
+git commit -m "$(cat <<'EOF'
+feat(admin): expose GET /admin/stats/series
+
+EOF
+)"
 ```
 
 ---

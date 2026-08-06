@@ -40,12 +40,20 @@ export default function AdminPage() {
     queryFn: () => adminApi<Stats>('stats'),
   });
   const seriesQuery = useQuery({
-    queryKey: ['admin', 'stats', 'series'],
-    queryFn: () => adminApi<StatsSeries>('stats/series?days=30'),
+    queryKey: ['admin', 'stats', 'series', 7],
+    queryFn: () => adminApi<StatsSeries>('stats/series?days=7'),
   });
 
   const data = statsQuery.data;
   const series = seriesQuery.data?.series;
+  const usersNewSum =
+    series?.users.reduce((acc, point) => acc + point.new, 0) ?? 0;
+  const usersTotalLatest =
+    series?.users[series.users.length - 1]?.total ?? 0;
+  const paymentsPeriodSum =
+    series?.payments.reduce((acc, point) => acc + point.sumKopecks, 0) ?? 0;
+  const paymentsTotalLatest =
+    series?.payments[series.payments.length - 1]?.totalKopecks ?? 0;
   const usageAnalyzeSum =
     series?.usage.reduce((acc, point) => acc + point.analyze, 0) ?? 0;
   const usageRefineSum =
@@ -80,7 +88,7 @@ export default function AdminPage() {
           Пользователи
         </Typography.Title>
         <Row className="admin-stat-row" gutter={[16, 16]}>
-          <Col lg={6} md={12} sm={12} xs={24}>
+          <Col lg={12} md={12} sm={12} xs={24}>
             <Card className="admin-stat-card" size="small">
               <Statistic
                 loading={statsQuery.isLoading}
@@ -89,7 +97,7 @@ export default function AdminPage() {
               />
             </Card>
           </Col>
-          <Col lg={6} md={12} sm={12} xs={24}>
+          <Col lg={12} md={12} sm={12} xs={24}>
             <Card className="admin-stat-card" size="small">
               <Statistic
                 loading={statsQuery.isLoading}
@@ -99,19 +107,6 @@ export default function AdminPage() {
               />
             </Card>
           </Col>
-          {!seriesQuery.error ? (
-            <Col lg={12} md={24} sm={24} xs={24}>
-              <SparklineCard
-                data={series?.users ?? []}
-                loading={seriesQuery.isLoading}
-                title="Пользователи за 30 дней"
-                yFields={[
-                  { key: 'new', label: 'Новые' },
-                  { key: 'total', label: 'Всего' },
-                ]}
-              />
-            </Col>
-          ) : null}
         </Row>
       </div>
 
@@ -120,7 +115,7 @@ export default function AdminPage() {
           Платежи
         </Typography.Title>
         <Row className="admin-stat-row" gutter={[16, 16]}>
-          <Col lg={6} md={12} sm={12} xs={24}>
+          <Col lg={12} md={12} sm={12} xs={24}>
             <Card className="admin-stat-card" size="small">
               <Statistic
                 loading={statsQuery.isLoading}
@@ -129,7 +124,7 @@ export default function AdminPage() {
               />
             </Card>
           </Col>
-          <Col lg={6} md={12} sm={12} xs={24}>
+          <Col lg={12} md={12} sm={12} xs={24}>
             <Card className="admin-stat-card" size="small">
               <Statistic
                 formatter={() =>
@@ -141,12 +136,44 @@ export default function AdminPage() {
               />
             </Card>
           </Col>
-          {!seriesQuery.error ? (
-            <Col lg={12} md={24} sm={24} xs={24}>
+        </Row>
+      </div>
+
+      {!seriesQuery.error ? (
+        <div>
+          <Typography.Title className="admin-section-title" level={4}>
+            Графики за 7 дней
+          </Typography.Title>
+          <Row className="admin-stat-row" gutter={[16, 16]}>
+            <Col lg={8} md={8} sm={24} xs={24}>
+              <SparklineCard
+                data={series?.users ?? []}
+                height={120}
+                loading={seriesQuery.isLoading}
+                summary={
+                  <Typography.Text type="secondary">
+                    За 7 дней: новых {usersNewSum}, всего {usersTotalLatest}
+                  </Typography.Text>
+                }
+                title="Пользователи"
+                yFields={[
+                  { key: 'new', label: 'Новые' },
+                  { key: 'total', label: 'Всего' },
+                ]}
+              />
+            </Col>
+            <Col lg={8} md={8} sm={24} xs={24}>
               <SparklineCard
                 data={series?.payments ?? []}
+                height={120}
                 loading={seriesQuery.isLoading}
-                title="Сумма платежей за 30 дней"
+                summary={
+                  <Typography.Text type="secondary">
+                    За 7 дней: {formatRubles(paymentsPeriodSum)}, всего{' '}
+                    {formatRubles(paymentsTotalLatest)}
+                  </Typography.Text>
+                }
+                title="Сумма платежей"
                 valueFormatter={formatRubles}
                 yFields={[
                   { key: 'sumKopecks', label: 'За день' },
@@ -154,36 +181,27 @@ export default function AdminPage() {
                 ]}
               />
             </Col>
-          ) : null}
-        </Row>
-      </div>
-
-      <div>
-        <Typography.Title className="admin-section-title" level={4}>
-          Usage
-        </Typography.Title>
-        <Row className="admin-stat-row" gutter={[16, 16]}>
-          {!seriesQuery.error ? (
-            <Col span={24}>
+            <Col lg={8} md={8} sm={24} xs={24}>
               <SparklineCard
                 data={series?.usage ?? []}
+                height={120}
                 loading={seriesQuery.isLoading}
                 summary={
                   <Typography.Text type="secondary">
-                    За 30 дней: анализы {usageAnalyzeSum}, уточнения{' '}
+                    За 7 дней: анализы {usageAnalyzeSum}, уточнения{' '}
                     {usageRefineSum}
                   </Typography.Text>
                 }
-                title="Usage за 30 дней"
+                title="Usage"
                 yFields={[
                   { key: 'analyze', label: 'Анализы' },
                   { key: 'refine', label: 'Уточнения' },
                 ]}
               />
             </Col>
-          ) : null}
-        </Row>
-      </div>
+          </Row>
+        </div>
+      ) : null}
     </>
   );
 }
