@@ -8,6 +8,7 @@ type SpeechRecognitionCtor = new () => {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
+  maxAlternatives: number;
   start: () => void;
   stop: () => void;
   abort: () => void;
@@ -30,6 +31,38 @@ function getWebSpeechRecognition(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+function webSpeechErrorMessage(code: string | undefined): string | null {
+  switch (code) {
+    case 'aborted':
+    case 'no-speech':
+      return null;
+    case 'not-allowed':
+    case 'service-not-allowed':
+      return 'Разрешите доступ к микрофону в браузере';
+    case 'audio-capture':
+      return 'Микрофон недоступен';
+    case 'network':
+      return 'Нет связи с сервисом распознавания (нужен интернет / Chrome). На Android надёжнее нативное приложение.';
+    case 'language-not-supported':
+      return 'Язык ru-RU не поддерживается этим браузером';
+    default:
+      return 'Не удалось распознать речь';
+  }
+}
+
+/** Warm up mic permission — Chrome STT often fails without a prior getUserMedia grant. */
+async function ensureMicPermission(): Promise<boolean> {
+  if (!navigator.mediaDevices?.getUserMedia) return true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((t) => t.stop());
+    return true;
+  } catch {
+    toast.error('Разрешите доступ к микрофону');
+    return false;
+  }
+}
+
 export interface UseSpeechToTextOptions {
   language?: string;
   /** Called with the latest transcript chunk (final or interim). */
@@ -46,6 +79,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
   const webRecognitionRef = useRef<InstanceType<SpeechRecognitionCtor> | null>(
     null,
   );
+  const intentionalStopRef = useRef(false);
   const nativeListenerHandlesRef = useRef<Array<{ remove: () => Promise<void> }>>(
     [],
   );
@@ -66,7 +100,13 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
         }
         return;
       }
-      if (!cancelled) setSupported(getWebSpeechRecognition() !== null);
+
+      const hasApi = getWebSpeechRecognition() !== null;
+      const secure =
+        typeof window.isSecureContext === 'boolean'
+          ? window.isSecureContext
+          : true;
+      if (!cancelled) setSupported(hasApi && secure);
     };
 
     void check();
@@ -82,6 +122,8 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
   }, []);
 
   const stop = useCallback(async () => {
+    intentionalStopRef.current = true;
+
     if (Capacitor.isNativePlatform()) {
       try {
         const { SpeechRecognition } = await import(
@@ -110,6 +152,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
 
   const start = useCallback(async () => {
     if (listening) return;
+    intentionalStopRef.current = false;
 
     if (Capacitor.isNativePlatform()) {
       try {
@@ -166,16 +209,28 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
       return;
     }
 
-    const Ctor = getWebSpeechRecognition();
-    if (!Ctor) {
-      toast.message('Голосовой ввод не поддерживается в этом браузере');
+    if (!window.isSecureContext) {
+      toast.message(
+        'Голос в браузере только по HTTPS или localhost (не по IP вроде 192.168.x.x)',
+      );
       return;
     }
 
+    const Ctor = getWebSpeechRecognition();
+    if (!Ctor) {
+      toast.message('Голосовой ввод не поддерживается в этом браузере — откройте Chrome');
+      return;
+    }
+
+    const micOk = await ensureMicPermission();
+    if (!micOk) return;
+
     const recognition = new Ctor();
     recognition.lang = language;
-    recognition.continuous = false;
+    // continuous: пользователь сам жмёт mic ещё раз, чтобы остановить
+    recognition.continuous = true;
     recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
 
     recognition.onresult = (event) => {
       let interim = '';
@@ -194,14 +249,16 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}) {
     };
 
     recognition.onerror = (event) => {
-      if (event.error && event.error !== 'aborted' && event.error !== 'no-speech') {
-        toast.message('Не удалось распознать речь');
+      if (!intentionalStopRef.current) {
+        const message = webSpeechErrorMessage(event.error);
+        if (message) toast.message(message);
       }
       setListening(false);
       webRecognitionRef.current = null;
     };
 
     recognition.onend = () => {
+      // Chrome ends the session after a pause even with continuous in some versions
       setListening(false);
       webRecognitionRef.current = null;
     };
