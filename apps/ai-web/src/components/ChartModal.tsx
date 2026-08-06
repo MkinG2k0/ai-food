@@ -38,7 +38,6 @@ export function ChartModal({
   return (
     <Modal
       centered
-      destroyOnClose
       footer={null}
       open={open}
       title={title}
@@ -51,15 +50,17 @@ export function ChartModal({
           data={plotData}
           height={360}
           legend={{ position: 'top' }}
+          colorField="category"
           seriesField="category"
           theme="classicDark"
           tooltip={{
-            formatter: (datum: { category?: string; value?: number }) => ({
-              name: String(datum.category ?? ''),
-              value: valueFormatter
-                ? valueFormatter(Number(datum.value ?? 0))
-                : String(datum.value ?? 0),
-            }),
+            items: [
+              {
+                channel: 'y',
+                valueFormatter: (value) =>
+                  valueFormatter ? valueFormatter(Number(value)) : String(value),
+              },
+            ],
           }}
           xField="date"
           yField="value"

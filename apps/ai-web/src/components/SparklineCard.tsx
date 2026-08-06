@@ -49,6 +49,7 @@ export function SparklineCard({
       >
         {summary ? <div style={{ marginBottom: 8 }}>{summary}</div> : null}
         <div
+          aria-label={`Открыть график: ${title}`}
           role="button"
           tabIndex={0}
           style={{ cursor: 'pointer', height }}
@@ -65,13 +66,13 @@ export function SparklineCard({
             data={plotData}
             height={height}
             legend={false}
+            axis={{ x: false, y: false }}
+            colorField="category"
             seriesField="category"
             theme="classicDark"
             tooltip={false}
             xField="date"
-            xAxis={false}
             yField="value"
-            yAxis={false}
           />
         </div>
       </Card>

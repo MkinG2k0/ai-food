@@ -20,3 +20,11 @@
 - **Tests:**
   - `pnpm --dir apps/ai-food exec vitest run src/features/onboarding/ui/OnboardingPage.test.tsx` — PASS (1/1)
   - `pnpm --dir apps/ai-food type-check` — PASS
+
+## Admin overview charts — Ant Design Plots v2 API
+
+- **Finding:** Chart series, tooltip formatter, and hidden axes used v1-style props ignored by `@ant-design/plots@2`.
+- **Fix:** Added `colorField`, migrated tooltip to G2 v5 `valueFormatter`, and replaced axis props with `axis={{ x: false, y: false }}`. The chart trigger has an accessible label; unused local `Stats` fields were removed.
+- **Status:** Fixed
+- **Test:** `pnpm --filter ai-web type-check` — PASS (exit 0).
+- **Concern:** `antd@5.24.2` does not support `destroyOnHidden`; deprecated `destroyOnClose` was removed.

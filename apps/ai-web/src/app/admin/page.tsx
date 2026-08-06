@@ -12,10 +12,6 @@ type Stats = {
   activeSubscriptions: number;
   paymentsConfirmedCount: number;
   paymentsConfirmedSumKopecks: number;
-  usageAnalyzeLast7Days: number;
-  usageRefineLast7Days: number;
-  usageAnalyzeLast30Days: number;
-  usageRefineLast30Days: number;
 };
 
 type StatsSeries = {
