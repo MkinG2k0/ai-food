@@ -27,4 +27,4 @@
 - **Fix:** Added `colorField`, migrated tooltip to G2 v5 `valueFormatter`, and replaced axis props with `axis={{ x: false, y: false }}`. The chart trigger has an accessible label; unused local `Stats` fields were removed.
 - **Status:** Fixed
 - **Test:** `pnpm --filter ai-web type-check` — PASS (exit 0).
-- **Concern:** `antd@5.24.2` does not support `destroyOnHidden`; deprecated `destroyOnClose` was removed.
+- **Concern:** `antd@5.24.2` does not support `destroyOnHidden`, so the existing `destroyOnClose` remains for equivalent modal teardown behavior.
