@@ -6,9 +6,9 @@ current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
 stopped_at: Completed fast task — Vercel SPA rewrite
-last_updated: "2026-08-04T14:56:00.000Z"
-last_activity: 2026-08-04
-last_activity_desc: "Completed fast: vercel.json SPA rewrite for deep-link hard reload"
+last_updated: "2026-08-06T18:20:00.000Z"
+last_activity: 2026-08-06
+last_activity_desc: "Completed quick task 260806-tfe: off-topic ask/edit rejection"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-08-03 - Completed quick task 260803-wue: вход по Telegram через Auth.js с моками без бэка
+Last activity: 2026-08-06 - Completed quick task 260806-tfe: Reject off-topic ask-about-dish and edit-meal inputs with user notification
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -157,6 +157,7 @@ None yet.
 | 260804-3gx | One-time T-Bank yearly license + paywall (ai-app + ai-food) | 2026-08-04 | ai-app: 6f15ad3,cc016b3,af7d95b,281b401; ai-food: aced7b9 | [260804-3gx-one-time-t-bank-backend-ai-app-paywall-a](./quick/260804-3gx-one-time-t-bank-backend-ai-app-paywall-a/) |
 | fast | Login quota: 50 guest + 100 after auth (sum 150) | 2026-08-04 | 9e935d1 | — |
 | fast | Vercel SPA rewrite: hard reload on deep routes no longer 404 | 2026-08-04 | 617650e | — |
+| 260806-tfe | Reject off-topic ask-about-dish and edit-meal inputs with user notification | 2026-08-06 | 45d0946, e866022, 5ab6654 | [260806-tfe-reject-off-topic-ask-about-dish-and-edit](./quick/260806-tfe-reject-off-topic-ask-about-dish-and-edit/) |
 
 ### Blockers/Concerns
 
@@ -165,7 +166,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-04T00:41:00Z
-Stopped at: Completed quick task 260804-3gx
+Last session: 2026-08-06T18:20:00Z
+Stopped at: Completed quick task 260806-tfe
 Resume file: None
 Next: Run /gsd-plan-phase for Phase 2 (Photo Capture & Analysis Loading) or smoke-test billing with TBANK_MOCK=true
