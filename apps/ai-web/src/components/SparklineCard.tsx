@@ -66,6 +66,7 @@ export function SparklineCard({
             height={height}
             legend={false}
             seriesField="category"
+            theme="classicDark"
             tooltip={false}
             xField="date"
             xAxis={false}

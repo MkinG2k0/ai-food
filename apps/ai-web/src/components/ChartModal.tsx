@@ -3,7 +3,10 @@
 import { Line } from '@ant-design/plots';
 import { Modal } from 'antd';
 
-export type ChartSeriesPoint = { date: string } & Record<string, number>;
+export type ChartSeriesPoint = {
+  date: string;
+  [key: string]: string | number;
+};
 
 export type ChartYField = { key: string; label: string };
 
@@ -49,6 +52,7 @@ export function ChartModal({
           height={360}
           legend={{ position: 'top' }}
           seriesField="category"
+          theme="classicDark"
           tooltip={{
             formatter: (datum: { category?: string; value?: number }) => ({
               name: String(datum.category ?? ''),
