@@ -8,7 +8,10 @@ import { recoverStaleAnalyzingMeals, useDiaryStore } from '@/entities/meal';
 import { signOut, useAuthStore, useUsage } from '@/features/auth';
 import { useBillingStatus } from '@/features/billing';
 import { useFavoritesStore } from '@/features/favorites';
-import { useProfileStore } from '@/features/onboarding';
+import {
+  syncNutritionProfileToServer,
+  useProfileStore,
+} from '@/features/onboarding';
 import {
   AppDataBackupError,
   buildAppDataExport,
@@ -154,6 +157,7 @@ export function SettingsPage() {
       return;
     }
     updateTargets(next);
+    syncNutritionProfileToServer();
     handleCloseEditTargets();
     toast.success('Цели обновлены');
   };
@@ -229,6 +233,7 @@ export function SettingsPage() {
       targets: snapshot.targets,
       micronutrientTargets: snapshot.micronutrientTargets,
     });
+    syncNutritionProfileToServer();
 
     useSettingsStore.setState({
       customInstructions: snapshot.settings.customInstructions.slice(0, 2000),

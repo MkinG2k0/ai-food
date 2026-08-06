@@ -5,6 +5,7 @@ import { useSettingsStore } from '@/features/settings';
 import { useProfileStore } from './useProfileStore';
 import { calculateTargets } from './calculateTargets';
 import { createDefaultProfile } from './defaultProfile';
+import { syncNutritionProfileToServer } from './syncNutritionProfileToServer';
 import { micronutrientTargetsApi } from '../api/micronutrientTargetsApi';
 
 export function useOnboarding() {
@@ -26,6 +27,7 @@ export function useOnboarding() {
   async function completeWithProfile(profile: UserProfile) {
     const targets = calculateTargets(profile);
     setProfile(profile, targets);
+    syncNutritionProfileToServer();
     const micronutrientTargets = await micronutrientTargetsApi(profile, {
       model: useSettingsStore.getState().aiModel,
     });
