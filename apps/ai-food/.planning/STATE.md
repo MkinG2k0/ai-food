@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed fast task — Vercel SPA rewrite
-last_updated: "2026-08-06T18:20:00.000Z"
+stopped_at: Completed quick task 260806-u2q — food prompts/model → ai-app
+last_updated: "2026-08-06T18:59:00.000Z"
 last_activity: 2026-08-06
-last_activity_desc: "Completed quick task 260806-tfe: off-topic ask/edit rejection"
+last_activity_desc: "Completed quick task 260806-u2q: server food endpoints + thin clients"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-08-06 - Completed quick task 260806-tfe: Reject off-topic ask-about-dish and edit-meal inputs with user notification
+Last activity: 2026-08-06 - Completed quick task 260806-u2q: Move food prompts/model/temperature to ai-app `/v1/food/*`
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -95,6 +95,7 @@ Recent decisions affecting current work:
 - 260716-5gj: vite-plugin-pwa autoUpdate + safe-area; Meal Detail thicker Полезность/Точность bars, 2×2 macros
 - 260803-wue: features/auth mock Telegram session (ai-food-auth); /login optional; Settings Аккаунт; no next-auth
 - 260804-3gx: one-time T-Bank yearly license (ai-app billing) + paywall; login ≠ unlimited; hasActiveSubscription gates AI
+- 260806-u2q: food prompts + OPENROUTER_MODEL + temperature 0 on ai-app `/v1/food/*`; clients send clean bodies only
 
 ### Pending Todos
 
@@ -158,6 +159,7 @@ None yet.
 | fast | Login quota: 50 guest + 100 after auth (sum 150) | 2026-08-04 | 9e935d1 | — |
 | fast | Vercel SPA rewrite: hard reload on deep routes no longer 404 | 2026-08-04 | 617650e | — |
 | 260806-tfe | Reject off-topic ask-about-dish and edit-meal inputs with user notification | 2026-08-06 | 45d0946, e866022, 5ab6654 | [260806-tfe-reject-off-topic-ask-about-dish-and-edit](./quick/260806-tfe-reject-off-topic-ask-about-dish-and-edit/) |
+| 260806-u2q | Food prompts/model/temperature → ai-app `/v1/food/analyze|refine|ask` | 2026-08-06 | 8e8f081, aa20cb4, 1c97998, 9bd3312 | [260806-u2q-apps-ai-food-apps-ai-app-model-params](./quick/260806-u2q-apps-ai-food-apps-ai-app-model-params/) |
 
 ### Blockers/Concerns
 
@@ -166,7 +168,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-06T18:20:00Z
-Stopped at: Completed quick task 260806-tfe
+Last session: 2026-08-06T18:59:00Z
+Stopped at: Completed quick task 260806-u2q
 Resume file: None
-Next: Run /gsd-plan-phase for Phase 2 (Photo Capture & Analysis Loading) or smoke-test billing with TBANK_MOCK=true
+Next: Run /gsd-plan-phase for Phase 2 (Photo Capture & Analysis Loading) or smoke-test food analyze via `pnpm dev`
