@@ -698,7 +698,6 @@ export async function analyzeFoodApi(
   }
 
   const processingTime = Date.now() - startTime;
-  console.log('[analyzeFood] stream complete', { rawContent, processingTime });
 
   if (!rawContent || typeof rawContent !== 'string') {
     rejectApiError('Анализ вернул пустой ответ.', 'ANALYSIS_FAILED', 500);

@@ -1,6 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ApiError } from '@ai-food/shared-types';
 import axios from 'axios';
+
+vi.mock('@capacitor/preferences', () => ({
+  Preferences: {
+    get: vi.fn().mockResolvedValue({ value: null }),
+    set: vi.fn().mockResolvedValue(undefined),
+    remove: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+vi.mock('@capacitor/device', () => ({
+  Device: {
+    getId: vi.fn().mockResolvedValue({ identifier: 'test-device-id' }),
+  },
+}));
+
 import {
   fetchMealCustomContentApi,
   normalizeCustomContent,
@@ -142,6 +157,11 @@ describe('fetchMealCustomContentApi', () => {
     expect(String(vi.mocked(axios.post).mock.calls[0][0])).toContain(
       `${GATEWAY_URL}/v1/chat/completions`,
     );
+    const config = vi.mocked(axios.post).mock.calls[0][2] as {
+      headers?: Record<string, string>;
+    };
+    expect(config?.headers?.['X-Device-Id']).toBe('test-device-id');
+    expect(config?.headers?.['X-Usage-Kind']).toBe('other');
     const body = vi.mocked(axios.post).mock.calls[0][1] as {
       messages: Array<{ role: string; content: string }>;
     };

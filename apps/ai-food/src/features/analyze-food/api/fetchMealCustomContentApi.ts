@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { ApiError } from '@ai-food/shared-types';
+import { getQuotaHeaders } from '@/features/auth';
 import { temperatureForModel } from '@/features/settings';
 
 const MAX_CUSTOM_CONTENT_LENGTH = 8000;
@@ -203,6 +204,7 @@ export async function fetchMealCustomContentApi(
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
+          ...(await getQuotaHeaders('other')),
         },
         timeout: 30_000,
       },
