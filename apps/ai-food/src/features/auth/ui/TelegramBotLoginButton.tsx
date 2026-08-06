@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/shared/ui';
+import type { AuthLoginResult } from '../model/authLoginResult';
 import { signInWithTelegramBot } from '../api/signInWithTelegramBot';
 
 type TelegramBotLoginButtonProps = {
-  onSuccess: () => void;
+  onSuccess: (result: AuthLoginResult) => void;
   onError: (message: string) => void;
 };
 
@@ -27,8 +28,10 @@ export function TelegramBotLoginButton({
     setBusy(true);
 
     try {
-      await signInWithTelegramBot({ signal: controller.signal });
-      onSuccess();
+      const result = await signInWithTelegramBot({
+        signal: controller.signal,
+      });
+      onSuccess(result);
     } catch (error) {
       if (!controller.signal.aborted) {
         onError(

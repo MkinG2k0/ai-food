@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
+  type AuthLoginResult,
   isAuthMockEnabled,
   signInWithDemo,
   signOut,
@@ -38,7 +39,7 @@ export function LoginPage() {
     toast.success('Вы вышли');
   };
 
-  const handleTelegramSuccess = () => {
+  const handleTelegramSuccess = (_result: AuthLoginResult) => {
     toast.success('Вход выполнен');
     navigate('/', { replace: true });
   };

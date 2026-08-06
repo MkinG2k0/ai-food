@@ -1,4 +1,5 @@
 export type { TelegramSession } from './model/telegramSession';
+export type { AuthLoginResult } from './model/authLoginResult';
 export { useAuthStore } from './model/useAuthStore';
 export { useAuthHydrated } from './model/useAuthHydrated';
 export {

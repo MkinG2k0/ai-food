@@ -1,7 +1,14 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { UserProfile } from '@ai-food/shared-types';
+import { toast } from 'sonner';
+import {
+  TelegramBotLoginButton,
+  useAuthStore,
+} from '@/features/auth';
 import { Button } from '@/shared/ui';
 import { cn } from '@/shared/lib';
+import { applyRemoteNutritionProfile } from '../../model/applyRemoteNutritionProfile';
 import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
 interface StepGenderProps {
@@ -14,6 +21,8 @@ const OPTIONS: { value: UserProfile['gender']; label: string; emoji: string }[] 
 ];
 
 export function StepGender({ onNext }: StepGenderProps) {
+  const navigate = useNavigate();
+  const session = useAuthStore((state) => state.session);
   const [selected, setSelected] = useState<UserProfile['gender'] | null>(null);
 
   return (
@@ -41,6 +50,32 @@ export function StepGender({ onNext }: StepGenderProps) {
       <Button disabled={!selected} onClick={() => selected && onNext({ gender: selected })}>
         Далее
       </Button>
+      {session ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Вы вошли как {session.name}
+          {session.username ? ` (@${session.username})` : ''}
+        </p>
+      ) : (
+        <>
+          <div className="relative flex items-center gap-3 py-1">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">или</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <TelegramBotLoginButton
+            onSuccess={(result) => {
+              if (result.nutritionProfile) {
+                applyRemoteNutritionProfile(result.nutritionProfile);
+                toast.success('С возвращением');
+                navigate('/', { replace: true });
+                return;
+              }
+              toast.success('Вы вошли — заполните профиль');
+            }}
+            onError={(message) => toast.error(message)}
+          />
+        </>
+      )}
     </div>
   );
 }

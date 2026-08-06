@@ -26,6 +26,26 @@ describe('signInWithTelegramBot', () => {
   });
 
   it('opens the bot link and stores the token after pending status', async () => {
+    const nutritionProfile = {
+      profile: {
+        gender: 'female',
+        age: 36,
+        height: 165,
+        weight: 60,
+        targetWeight: 58,
+        targetWeightDate: '2026-10-01',
+        activity: 'medium',
+        goal: 'lose',
+        dietType: 'none',
+      },
+      targets: {
+        kcal: 1800,
+        protein: 100,
+        fat: 60,
+        carbs: 210,
+        fiber: 25,
+      },
+    };
     const user = {
       id: 'user-1',
       telegramId: '42',
@@ -34,6 +54,7 @@ describe('signInWithTelegramBot', () => {
       photoUrl: 'https://example.com/ada.png',
       dataConsentAt: '2026-08-06T00:00:00.000Z',
       dataConsentVersion: '2026-08-06',
+      nutritionProfile,
     };
     const fetchMock = vi
       .fn<typeof fetch>()
@@ -61,7 +82,7 @@ describe('signInWithTelegramBot', () => {
 
     const resultPromise = signInWithTelegramBot({ openLink });
     await vi.advanceTimersByTimeAsync(3_000);
-    const session = await resultPromise;
+    const result = await resultPromise;
 
     expect(openLink).toHaveBeenCalledWith(
       'https://t.me/example_bot?start=challenge-1',
@@ -79,15 +100,18 @@ describe('signInWithTelegramBot', () => {
       'https://gateway.example/auth/telegram/status?challengeId=challenge-1',
       { signal: undefined },
     );
-    expect(signIn).toHaveBeenCalledWith(session, 'jwt-token', {
+    expect(signIn).toHaveBeenCalledWith(result.session, 'jwt-token', {
       dataConsentAt: '2026-08-06T00:00:00.000Z',
       dataConsentVersion: '2026-08-06',
     });
-    expect(session).toMatchObject({
-      id: 'user-1',
-      name: 'Ada Lovelace',
-      username: 'ada',
-      telegramId: 42,
+    expect(result).toMatchObject({
+      session: {
+        id: 'user-1',
+        name: 'Ada Lovelace',
+        username: 'ada',
+        telegramId: 42,
+      },
+      nutritionProfile,
     });
   });
 });

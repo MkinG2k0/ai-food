@@ -37,6 +37,26 @@ describe('signInWithDemo', () => {
   });
 
   it('signs in with token and session from gateway', async () => {
+    const nutritionProfile = {
+      profile: {
+        gender: 'male',
+        age: 30,
+        height: 180,
+        weight: 80,
+        targetWeight: 75,
+        targetWeightDate: '2026-12-01',
+        activity: 'high',
+        goal: 'lose',
+        dietType: 'none',
+      },
+      targets: {
+        kcal: 2200,
+        protein: 140,
+        fat: 70,
+        carbs: 250,
+        fiber: 30,
+      },
+    };
     vi.mocked(fetch).mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -50,15 +70,16 @@ describe('signInWithDemo', () => {
             photoUrl: null,
             dataConsentAt: '2026-08-06T00:00:00.000Z',
             dataConsentVersion: '2026-08-06',
+            nutritionProfile,
           },
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       ),
     );
 
-    let session;
+    let result;
     await act(async () => {
-      session = await signInWithDemo();
+      result = await signInWithDemo();
     });
 
     expect(fetch).toHaveBeenCalledWith(
@@ -68,10 +89,13 @@ describe('signInWithDemo', () => {
         body: JSON.stringify({ deviceId: 'device-demo' }),
       }),
     );
-    expect(session).toMatchObject({
-      id: 'user-demo',
-      username: 'demo_user',
-      telegramId: 100000001,
+    expect(result).toMatchObject({
+      session: {
+        id: 'user-demo',
+        username: 'demo_user',
+        telegramId: 100000001,
+      },
+      nutritionProfile,
     });
     expect(useAuthStore.getState().userToken).toBe('jwt-demo');
     expect(useAuthStore.getState().dataConsentAt).toBe(

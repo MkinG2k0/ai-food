@@ -1,5 +1,6 @@
 import { getDeviceId } from '@/shared/lib';
-import type { TelegramSession } from '../model/telegramSession';
+import type { AuthLoginResult } from '../model/authLoginResult';
+import { parseNutritionProfile } from '../model/nutritionProfile';
 import { useAuthStore } from '../model/useAuthStore';
 import { mapTelegramUserToSession } from './signInWithTelegram';
 
@@ -13,11 +14,12 @@ type DemoGatewayUser = {
   name?: string | null;
   dataConsentAt?: string | null;
   dataConsentVersion?: string | null;
+  nutritionProfile?: unknown;
 };
 
 export async function signInWithDemo(opts?: {
   signal?: AbortSignal;
-}): Promise<TelegramSession> {
+}): Promise<AuthLoginResult> {
   const gatewayUrl = import.meta.env.VITE_AI_GATEWAY_URL as string | undefined;
   if (!gatewayUrl?.trim()) {
     throw new Error('VITE_AI_GATEWAY_URL не задан');
@@ -45,9 +47,10 @@ export async function signInWithDemo(opts?: {
   }
 
   const session = mapTelegramUserToSession(body.user);
+  const nutritionProfile = parseNutritionProfile(body.user.nutritionProfile);
   useAuthStore.getState().signIn(session, body.token, {
     dataConsentAt: body.user.dataConsentAt ?? null,
     dataConsentVersion: body.user.dataConsentVersion ?? null,
   });
-  return session;
+  return { session, nutritionProfile };
 }

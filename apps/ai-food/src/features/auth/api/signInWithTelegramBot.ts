@@ -1,5 +1,6 @@
 import { getDeviceId } from '@/shared/lib';
-import type { TelegramSession } from '../model/telegramSession';
+import type { AuthLoginResult } from '../model/authLoginResult';
+import { parseNutritionProfile } from '../model/nutritionProfile';
 import { useAuthStore } from '../model/useAuthStore';
 import { mapTelegramUserToSession } from './signInWithTelegram';
 
@@ -13,6 +14,7 @@ type TelegramGatewayUser = {
   name?: string | null;
   dataConsentAt?: string | null;
   dataConsentVersion?: string | null;
+  nutritionProfile?: unknown;
 };
 
 type TelegramBotLoginOptions = {
@@ -22,7 +24,7 @@ type TelegramBotLoginOptions = {
 
 export async function signInWithTelegramBot(
   opts?: TelegramBotLoginOptions,
-): Promise<TelegramSession> {
+): Promise<AuthLoginResult> {
   const gatewayUrl = import.meta.env.VITE_AI_GATEWAY_URL as string | undefined;
   if (!gatewayUrl?.trim()) {
     throw new Error('VITE_AI_GATEWAY_URL не задан');
@@ -72,11 +74,14 @@ export async function signInWithTelegramBot(
 
     if (status.status === 'ok' && status.token && status.user) {
       const session = mapTelegramUserToSession(status.user);
+      const nutritionProfile = parseNutritionProfile(
+        status.user.nutritionProfile,
+      );
       useAuthStore.getState().signIn(session, status.token, {
         dataConsentAt: status.user.dataConsentAt ?? null,
         dataConsentVersion: status.user.dataConsentVersion ?? null,
       });
-      return session;
+      return { session, nutritionProfile };
     }
     if (status.status === 'expired') {
       throw new Error('Сессия входа истекла. Попробуйте снова.');

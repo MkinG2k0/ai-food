@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import type { UserProfile } from '@ai-food/shared-types';
+import { fetchAuthMe, useAuthStore } from '@/features/auth';
+import { applyRemoteNutritionProfile } from '../model/applyRemoteNutritionProfile';
 import { useOnboarding } from '../model/useOnboarding';
 import { useProfileStore } from '../model/useProfileStore';
 import { useProfileHydrated } from '../model/useProfileHydrated';
@@ -20,6 +23,30 @@ export function OnboardingPage() {
   const hydrated = useProfileHydrated();
   const isComplete = useProfileStore((s) => s.isComplete());
   const { step, draft, next, back, finish, skip } = useOnboarding();
+
+  useEffect(() => {
+    if (!hydrated || isComplete) return;
+
+    let cancelled = false;
+
+    async function restore() {
+      const token = useAuthStore.getState().userToken;
+      if (!token || useProfileStore.getState().profile) return;
+
+      try {
+        const me = await fetchAuthMe();
+        if (cancelled || !me.nutritionProfile) return;
+        applyRemoteNutritionProfile(me.nutritionProfile);
+      } catch {
+        // The user can still log in again or complete onboarding manually.
+      }
+    }
+
+    void restore();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, isComplete]);
 
   if (!hydrated) return null;
   if (isComplete) return <Navigate to="/" replace />;
