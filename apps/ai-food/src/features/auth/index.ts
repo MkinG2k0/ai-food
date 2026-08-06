@@ -10,6 +10,14 @@ export { resolveAnalyzeUsageKind } from './model/resolveAnalyzeUsageKind';
 export { DATA_CONSENT_VERSION } from './model/dataConsentVersion';
 export { recordUsageEvent } from './api/recordUsageEvent';
 export { submitDataConsent } from './api/submitDataConsent';
+export { putNutritionProfile } from './api/putNutritionProfile';
+export { fetchAuthMe } from './api/fetchAuthMe';
+export {
+  parseNutritionProfile,
+  type NutritionProfilePayload,
+  type UserProfile,
+  type DailyTargets,
+} from './model/nutritionProfile';
 export {
   fetchUsage,
   getCachedUsage,
