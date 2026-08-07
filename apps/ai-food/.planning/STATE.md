@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260807-jk6 — today KBJU rings home widget
-last_updated: "2026-08-07T11:25:00.000Z"
+stopped_at: Completed quick task 260807-k0v — weekly calorie chart widget
+last_updated: "2026-08-07T11:40:00.000Z"
 last_activity: 2026-08-07
-last_activity_desc: "Android KBJU rings widget for today"
+last_activity_desc: "Android weekly calorie chart home widget"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-08-07 - Completed quick task 260807-jk6: today KBJU rings home widget
+Last activity: 2026-08-07 - Completed quick task 260807-k0v: weekly calorie chart widget
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -100,6 +100,7 @@ Recent decisions affecting current work:
 - 260807-itx: Android home widget 6 buttons → `aifood://add/<action>` → DeepLinkHandler / AddFoodSheet
 - 260807-j74: Six separate 1×1 App Widgets (one per AddFood action); tall 6-button widget removed
 - 260807-jk6: Today KBJU rings 2×2 widget + Preferences snapshot sync + KbjuWidget.refresh
+- 260807-k0v: Weekly calorie stacked-bar chart widget (Б/Ж/У) + aifood://stats deep link
 
 ### Pending Todos
 
@@ -168,6 +169,7 @@ None yet.
 | 260807-itx | Android widgets: quick-action buttons matching AddFoodSheet | 2026-08-07 | aed20d5, d1b710b, c4961a9 | [260807-itx-android-widgets-quick-action-buttons-mat](./quick/260807-itx-android-widgets-quick-action-buttons-mat/) |
 | 260807-j74 | Android: separate 1×1 home widgets per AddFood action | 2026-08-07 | 0a92316, 4d53b00 | [260807-j74-android-separate-1x1-home-widgets-per-ad](./quick/260807-j74-android-separate-1x1-home-widgets-per-ad/) |
 | 260807-jk6 | Android: today KBJU progress rings widget | 2026-08-07 | 50b86a1, e01d474 | [260807-jk6-android-home-widget-today-kbju-progress-](./quick/260807-jk6-android-home-widget-today-kbju-progress-/) |
+| 260807-k0v | Android: weekly calorie chart widget with KBJU | 2026-08-07 | 26a6031, 56d7183 | [260807-k0v-android-home-widget-weekly-calorie-chart](./quick/260807-k0v-android-home-widget-weekly-calorie-chart/) |
 
 ### Blockers/Concerns
 
@@ -176,7 +178,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-07T11:25:00Z
-Stopped at: Completed quick task 260807-jk6
+Last session: 2026-08-07T11:40:00Z
+Stopped at: Completed quick task 260807-k0v
 Resume file: None
-Next: Device smoke-test KBJU widget (`pnpm cap:build`) or /gsd-plan-phase for Phase 2
+Next: Device smoke-test weekly chart widget (`pnpm cap:build`) or /gsd-plan-phase for Phase 2
