@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260807-itx — Android add-food widget deep links
-last_updated: "2026-08-07T10:45:00.000Z"
+stopped_at: Completed quick task 260807-j74 — six separate 1×1 AddFood widgets
+last_updated: "2026-08-07T10:55:00.000Z"
 last_activity: 2026-08-07
-last_activity_desc: "Android home widget + aifood://add deep links"
+last_activity_desc: "Six separate 1×1 Android add-food widgets"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-08-07 - Completed quick task 260807-itx: Android widgets quick-action buttons
+Last activity: 2026-08-07 - Completed quick task 260807-j74: separate 1×1 Android add-food widgets
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -98,6 +98,7 @@ Recent decisions affecting current work:
 - 260806-u2q: food prompts + OPENROUTER_MODEL + temperature 0 on ai-app `/v1/food/*`; clients send clean bodies only
 - 260806-vce: `/scan` Еда|Штрихкод (CalZen-style); TextareaWithVoice (Capgo native / Web Speech); AddFoodSheet simplified
 - 260807-itx: Android home widget 6 buttons → `aifood://add/<action>` → DeepLinkHandler / AddFoodSheet
+- 260807-j74: Six separate 1×1 App Widgets (one per AddFood action); tall 6-button widget removed
 
 ### Pending Todos
 
@@ -164,6 +165,7 @@ None yet.
 | 260806-u2q | Food prompts/model/temperature → ai-app `/v1/food/analyze|refine|ask` | 2026-08-06 | 8e8f081, aa20cb4, 1c97998, 9bd3312 | [260806-u2q-apps-ai-food-apps-ai-app-model-params](./quick/260806-u2q-apps-ai-food-apps-ai-app-model-params/) |
 | 260806-vce | Unified /scan (Еда\|Штрихкод) + voice on textareas | 2026-08-06 | — | [260806-vce-scan-food-barcode-voice](./quick/260806-vce-scan-food-barcode-voice/) |
 | 260807-itx | Android widgets: quick-action buttons matching AddFoodSheet | 2026-08-07 | aed20d5, d1b710b, c4961a9 | [260807-itx-android-widgets-quick-action-buttons-mat](./quick/260807-itx-android-widgets-quick-action-buttons-mat/) |
+| 260807-j74 | Android: separate 1×1 home widgets per AddFood action | 2026-08-07 | 0a92316, 4d53b00 | [260807-j74-android-separate-1x1-home-widgets-per-ad](./quick/260807-j74-android-separate-1x1-home-widgets-per-ad/) |
 
 ### Blockers/Concerns
 
@@ -172,7 +174,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-07T10:45:00Z
-Stopped at: Completed quick task 260807-itx
+Last session: 2026-08-07T10:55:00Z
+Stopped at: Completed quick task 260807-j74
 Resume file: None
-Next: Device smoke-test widget (`pnpm cap:build`) or /gsd-plan-phase for Phase 2
+Next: Device smoke-test 1×1 widgets (`pnpm cap:build`) or /gsd-plan-phase for Phase 2
