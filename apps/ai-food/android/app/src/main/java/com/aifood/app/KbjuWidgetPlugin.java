@@ -9,7 +9,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-/** Capacitor bridge: JS {@code KbjuWidget.refresh()} → update rings + weekly chart widgets. */
+/** Capacitor bridge: JS {@code KbjuWidget.refresh()} → update KBJU rings + weekly chart widgets. */
 @CapacitorPlugin(name = "KbjuWidget")
 public class KbjuWidgetPlugin extends Plugin {
 
@@ -19,6 +19,7 @@ public class KbjuWidgetPlugin extends Plugin {
         AppWidgetManager manager = AppWidgetManager.getInstance(context);
 
         notifyProvider(context, manager, KbjuRingsWidgetProvider.class);
+        notifyProvider(context, manager, KbjuActivityRingsWidgetProvider.class);
         notifyProvider(context, manager, WeeklyCaloriesWidgetProvider.class);
 
         call.resolve();

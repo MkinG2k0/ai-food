@@ -14,6 +14,7 @@
     <string name="widget_action_scan_short">Камера</string>
     <string name="widget_action_scan_describe_short">Камера+</string>
     <string name="widget_kbju_description">КБЖУ сегодня</string>
+    <string name="widget_kbju_activity_description">КБЖУ кольца</string>
     <string name="widget_kbju_label_kcal">Ккал</string>
     <string name="widget_kbju_label_protein">Белки</string>
     <string name="widget_kbju_label_fat">Жиры</string>
