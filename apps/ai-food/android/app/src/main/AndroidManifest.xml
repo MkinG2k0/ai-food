@@ -162,6 +162,16 @@
                 android:resource="@xml/widget_weekly_calories_info" />
         </receiver>
 
+        <!-- Refresh all widgets when system night mode toggles (API 29+). -->
+        <receiver
+            android:name=".WidgetThemeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.app.action.ENTERING_NIGHT_MODE" />
+                <action android:name="android.app.action.EXITING_NIGHT_MODE" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

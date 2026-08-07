@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Surfaces / chrome (zinc dark) -->
+    <color name="widget_icon_emerald">#34D399</color>
+    <color name="widget_button_bg">#27272A</color>
+    <color name="widget_button_stroke">#3F3F46</color>
+    <color name="widget_label">#FAFAFA</color>
+    <color name="widget_root_bg">#18181B</color>
+
+    <!-- KBJU accents — slightly brighter on dark surfaces -->
+    <color name="widget_kbju_kcal">#34D399</color>
+    <color name="widget_kbju_protein">#FB7185</color>
+    <color name="widget_kbju_fat">#FBBF24</color>
+    <color name="widget_kbju_carbs">#38BDF8</color>
+    <color name="widget_kbju_over">#F87171</color>
+    <color name="widget_kbju_track">#3F3F46</color>
+    <color name="widget_kbju_card">#27272A</color>
+
+    <color name="widget_week_kcal_muted">#A1A1AA</color>
+    <color name="widget_week_kcal_goal_line">#71717A</color>
+</resources>
