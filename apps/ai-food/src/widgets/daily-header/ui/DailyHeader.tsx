@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart2, User } from 'lucide-react';
 import { useDiaryStore } from '@/entities/meal';
@@ -5,6 +6,7 @@ import { useProfileStore } from '@/features/onboarding';
 import { isSameDay } from '@/shared/lib';
 import { WeekStrip } from './WeekStrip';
 import { NutritionSummaryCard } from './NutritionSummaryCard';
+import { DailyBudgetSheet } from './DailyBudgetSheet';
 
 interface DailyHeaderProps {
   selectedDate: Date;
@@ -30,6 +32,7 @@ export function DailyHeader({
   const navigate = useNavigate();
   const meals = useDiaryStore((s) => s.meals);
   const targets = useProfileStore((s) => s.targets);
+  const [budgetOpen, setBudgetOpen] = useState(false);
 
   const goalKcal = targets?.kcal ?? FALLBACK_TARGETS.kcal;
   const goalProtein = targets?.protein ?? FALLBACK_TARGETS.protein;
@@ -102,6 +105,15 @@ export function DailyHeader({
         goalFat={goalFat}
         goalCarbs={goalCarbs}
         goalFiber={goalFiber}
+        onFlameClick={() => setBudgetOpen(true)}
+      />
+
+      <DailyBudgetSheet
+        open={budgetOpen}
+        onClose={() => setBudgetOpen(false)}
+        meals={dayMeals}
+        consumedKcal={consumedKcal}
+        goalKcal={goalKcal}
       />
     </header>
   );

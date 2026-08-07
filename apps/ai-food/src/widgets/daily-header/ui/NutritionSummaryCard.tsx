@@ -14,6 +14,7 @@ interface NutritionSummaryCardProps {
   goalFat: number;
   goalCarbs: number;
   goalFiber: number;
+  onFlameClick?: () => void;
 }
 
 const RING_SIZE = 72;
@@ -72,6 +73,7 @@ export function NutritionSummaryCard({
   goalFat,
   goalCarbs,
   goalFiber,
+  onFlameClick,
 }: NutritionSummaryCardProps) {
   const reducedMotion = useReducedMotion();
   const remainingTarget = Math.max(0, Math.round(goalKcal - consumedKcal));
@@ -112,16 +114,19 @@ export function NutritionSummaryCard({
           )}
         </div>
 
-        <div
-          className="relative shrink-0"
+        <button
+          type="button"
+          className="relative shrink-0 rounded-full outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           style={{ width: RING_SIZE, height: RING_SIZE }}
-          aria-hidden
+          aria-label="Бюджет дня"
+          onClick={onFlameClick}
         >
           <svg
             width={RING_SIZE}
             height={RING_SIZE}
             viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
             className="-rotate-90"
+            aria-hidden
           >
             <circle
               cx={RING_SIZE / 2}
@@ -163,10 +168,11 @@ export function NutritionSummaryCard({
                 className={`h-5 w-5 ${
                   overGoal ? 'text-destructive' : 'text-primary'
                 }`}
+                aria-hidden
               />
             </motion.div>
           </div>
-        </div>
+        </button>
       </div>
 
       <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-3">
