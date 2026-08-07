@@ -20,5 +20,6 @@ export { capacitorStorage } from './capacitorStorage';
 export { takePhotoAsFile, mediaResultToFile } from './takePhoto';
 export { useSpeechToText } from './useSpeechToText';
 export type { UseSpeechToTextOptions } from './useSpeechToText';
+export { useAnimatedNumber } from './useAnimatedNumber';
 export { getDeviceId } from './deviceId';
 export { getLegalUrl, type LegalPath } from './legalSiteUrl';
