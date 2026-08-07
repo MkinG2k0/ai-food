@@ -48,22 +48,24 @@ ai-app (openrouter-gateway)
 
 Файлы **раздельные** — не класть секреты бэка в `VITE_*` и не объединять в корневой `.env`.
 
-| `apps/ai-food/.env` | `apps/ai-app/.env` | Назначение |
-|---------------------|--------------------|------------|
-| `VITE_AI_GATEWAY_URL` | — (URL сервиса) | Базовый URL gateway, без `/v1` |
-| `VITE_AI_GATEWAY_API_KEY` | `API_KEY` | Общий секрет клиента; если `API_KEY` не задан на бэке — auth отключён |
-| — | `OPENROUTER_API_KEY` | Ключ провайдера (только на сервере) |
-| — | `OPENROUTER_MODEL` | Модель для `/v1/food/*` (fallback: `google/gemini-3-flash-preview`) |
-| — | `PORT` | HTTP-порт (по умолчанию **3000**) |
-| — | `OPENROUTER_HTTP_REFERER` / `OPENROUTER_APP_TITLE` | Опциональные заголовки атрибуции OpenRouter |
-| — | `DATABASE_URL`, `AUTH_SECRET` | Auth + квота |
-| — | `TELEGRAM_BOT_TOKEN` (или `AUTH_TELEGRAM_BOT_TOKEN`), `TELEGRAM_BOT_USERNAME` | Bot deep-link login |
-| — | `TELEGRAM_WEBHOOK_SECRET`, `PUBLIC_GATEWAY_URL` | Webhook `POST /telegram/webhook` + `setWebhook` при старте |
-| — | *(admin UI)* | Guest free limit + login bonus (`AppSettings`, defaults 50 / 100) |
-| `VITE_TELEGRAM_BOT_USERNAME` (опц.) | — | Подпись кнопки «Войти через Telegram» на фронте |
-| — | `SUBSCRIPTION_*`, `TBANK_*`, `PUBLIC_APP_URL` | Годовая лицензия (см. [SUBSCRIPTION.md](./SUBSCRIPTION.md)) |
+| `apps/ai-food/.env` | `apps/ai-food/.env.mobile` | `apps/ai-app/.env` | Назначение |
+|---------------------|----------------------------|--------------------|------------|
+| `VITE_AI_GATEWAY_URL` | override для APK | — (URL сервиса) | Базовый URL gateway, без `/v1` |
+| `VITE_AI_GATEWAY_API_KEY` | override для APK | `API_KEY` | Общий секрет клиента; если `API_KEY` не задан на бэке — auth отключён |
+| — | — | `OPENROUTER_API_KEY` | Ключ провайдера (только на сервере) |
+| — | — | `OPENROUTER_MODEL` | Модель для `/v1/food/*` (fallback: `google/gemini-3-flash-preview`) |
+| — | — | `PORT` | HTTP-порт (по умолчанию **3000**) |
+| — | — | `OPENROUTER_HTTP_REFERER` / `OPENROUTER_APP_TITLE` | Опциональные заголовки атрибуции OpenRouter |
+| — | — | `DATABASE_URL`, `AUTH_SECRET` | Auth + квота |
+| — | — | `TELEGRAM_BOT_TOKEN` (или `AUTH_TELEGRAM_BOT_TOKEN`), `TELEGRAM_BOT_USERNAME` | Bot deep-link login |
+| — | — | `TELEGRAM_WEBHOOK_SECRET`, `PUBLIC_GATEWAY_URL` | Webhook `POST /telegram/webhook` + `setWebhook` при старте |
+| — | — | *(admin UI)* | Guest free limit + login bonus (`AppSettings`, defaults 50 / 100) |
+| `VITE_TELEGRAM_BOT_USERNAME` (опц.) | опц. override | — | Подпись кнопки «Войти через Telegram» на фронте |
+| — | — | `SUBSCRIPTION_*`, `TBANK_*`, `PUBLIC_APP_URL` | Годовая лицензия (см. [SUBSCRIPTION.md](./SUBSCRIPTION.md)) |
 
 `PUBLIC_GATEWAY_URL` — публичный origin **gateway** (webhook). `PUBLIC_APP_URL` — origin **фронта** (T-Bank redirects).
+
+**Capacitor / APK:** `pnpm cap:build` → `vite build --mode mobile` (файл `.env.mobile` поверх `.env`). Шаблон: `.env.mobile.example`. Web `pnpm build` / `pnpm dev` mobile-файл не используют.
 
 Локально из корня monorepo: `pnpm dev` (оба), или `pnpm dev:food` (:5173) + `pnpm dev:app` (:3000). Turbo **не** подгружает `.env` — это делают Vite и `tsx --env-file=.env`.
 
