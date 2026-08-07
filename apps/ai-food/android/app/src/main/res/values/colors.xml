@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_icon_emerald">#059669</color>
+    <color name="widget_button_bg">#FFFFFF</color>
+    <color name="widget_button_stroke">#E4E4E7</color>
+    <color name="widget_label">#18181B</color>
+    <color name="widget_root_bg">#FAFAFA</color>
+</resources>
