@@ -1,17 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import { AddFoodSheet } from '@/features/add-food';
+import { AddFoodSheet, type AddFoodAutoAction } from '@/features/add-food';
 import { useDiaryStore } from '@/entities/meal';
 import { DailyHeader } from '@/widgets/daily-header';
 import { MealList } from '@/widgets/meal-list';
 import { Button } from '@/shared/ui';
 import { getWeekDays, isSameDay } from '@/shared/lib';
 
+function parseHomeAddParam(
+  value: string | null,
+): AddFoodAutoAction | null {
+  if (value === 'gallery' || value === 'describe') return value;
+  return null;
+}
+
 export function HomePage() {
   const [weekOffset, setWeekOffset] = useState(0);
   const selectedDate = useDiaryStore((s) => s.selectedDate);
   const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [autoAction, setAutoAction] = useState<AddFoodAutoAction | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const add = parseHomeAddParam(searchParams.get('add'));
+    if (!add) return;
+
+    setAutoAction(add);
+    setIsAddOpen(true);
+
+    const next = new URLSearchParams(searchParams);
+    next.delete('add');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   function handleWeekChange(delta: 1 | -1) {
     const newOffset = weekOffset + delta;
@@ -42,7 +64,15 @@ export function HomePage() {
           <Plus className="h-6 w-6" />
         </Button>
       </div>
-      <AddFoodSheet open={isAddOpen} onClose={() => setIsAddOpen(false)} />
+      <AddFoodSheet
+        open={isAddOpen}
+        onClose={() => {
+          setIsAddOpen(false);
+          setAutoAction(null);
+        }}
+        autoAction={autoAction}
+        onAutoActionConsumed={() => setAutoAction(null)}
+      />
     </div>
   );
 }

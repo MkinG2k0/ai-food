@@ -15,19 +15,33 @@ import { useSaveMeal } from '@/features/save-meal';
 /** Max photos per meal analysis — more angles rarely help. */
 export const MAX_FOOD_IMAGES = 3;
 
+export type AddFoodAutoAction = 'gallery' | 'describe';
+
 export interface AddFoodSheetProps {
   open: boolean;
   onClose: () => void;
+  /** When sheet opens, run gallery picker or switch to describe once. */
+  autoAction?: AddFoodAutoAction | null;
+  onAutoActionConsumed?: () => void;
 }
 
 type SheetMode = 'menu' | 'describe';
 
-export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
+export function AddFoodSheet({
+  open,
+  onClose,
+  autoAction = null,
+  onAutoActionConsumed,
+}: AddFoodSheetProps) {
   const navigate = useNavigate();
   const [mode, setMode] = useState<SheetMode>('menu');
   const [text, setText] = useState('');
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const submitFood = useSaveMeal();
+  const autoActionRef = useRef(autoAction);
+  autoActionRef.current = autoAction;
+  const onAutoActionConsumedRef = useRef(onAutoActionConsumed);
+  onAutoActionConsumedRef.current = onAutoActionConsumed;
 
   useEffect(() => {
     if (!open) {
@@ -35,6 +49,24 @@ export function AddFoodSheet({ open, onClose }: AddFoodSheetProps) {
       setText('');
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !autoAction) return;
+
+    if (autoAction === 'gallery') {
+      // Defer so the hidden input is mounted with the menu mode.
+      const id = window.setTimeout(() => {
+        galleryInputRef.current?.click();
+        onAutoActionConsumedRef.current?.();
+      }, 0);
+      return () => window.clearTimeout(id);
+    }
+
+    if (autoAction === 'describe') {
+      setMode('describe');
+      onAutoActionConsumedRef.current?.();
+    }
+  }, [open, autoAction]);
 
   const resetSheetState = () => {
     setMode('menu');

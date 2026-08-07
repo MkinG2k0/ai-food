@@ -23,3 +23,9 @@ export type { UseSpeechToTextOptions } from './useSpeechToText';
 export { useAnimatedNumber } from './useAnimatedNumber';
 export { getDeviceId } from './deviceId';
 export { getLegalUrl, type LegalPath } from './legalSiteUrl';
+export {
+  ADD_FOOD_DEEP_LINK_ACTIONS,
+  parseAddFoodDeepLink,
+  type AddFoodDeepLinkAction,
+  type AddFoodDeepLinkResult,
+} from './addFoodDeepLink';
