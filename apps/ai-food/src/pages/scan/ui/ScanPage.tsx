@@ -12,38 +12,11 @@ import {
 } from '@/features/scan-barcode';
 import { useSaveMeal } from '@/features/save-meal';
 import { TextareaWithVoice, Button } from '@/shared/ui';
-import { cn } from '@/shared/lib';
+import { AI_IMAGE_MAX_SIDE, cn } from '@/shared/lib';
+import { captureVideoFrame } from '../lib/captureVideoFrame';
+import { createCaptureLock } from '../lib/createCaptureLock';
 
 type ScanMode = 'food' | 'barcode';
-
-function captureVideoFrame(video: HTMLVideoElement): Promise<File | null> {
-  const width = video.videoWidth;
-  const height = video.videoHeight;
-  if (!width || !height) return Promise.resolve(null);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return Promise.resolve(null);
-  ctx.drawImage(video, 0, 0, width, height);
-
-  return new Promise((resolve) => {
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          resolve(null);
-          return;
-        }
-        resolve(
-          new File([blob], `food-${Date.now()}.jpg`, { type: 'image/jpeg' }),
-        );
-      },
-      'image/jpeg',
-      0.92,
-    );
-  });
-}
 
 export function ScanPage() {
   const navigate = useNavigate();
@@ -63,10 +36,12 @@ export function ScanPage() {
   const [lookupCode, setLookupCode] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
   const [savingBarcode, setSavingBarcode] = useState(false);
+  const [capturing, setCapturing] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const captureLockRef = useRef(createCaptureLock());
 
   const submitFood = useSaveMeal();
   const saveBarcodeMeal = useSaveBarcodeMeal();
@@ -95,7 +70,24 @@ export function ScanPage() {
       streamRef.current = stream;
       const video = videoRef.current;
       if (video) {
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
         video.srcObject = stream;
+        // Android WebView may need metadata before play; avoid leaving paused overlay.
+        if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+          await new Promise<void>((resolve) => {
+            const onReady = () => {
+              cleanup();
+              resolve();
+            };
+            const timer = window.setTimeout(onReady, 1500);
+            const cleanup = () => {
+              window.clearTimeout(timer);
+              video.removeEventListener('loadedmetadata', onReady);
+            };
+            video.addEventListener('loadedmetadata', onReady);
+          });
+        }
         await video.play().catch(() => undefined);
       }
 
@@ -142,6 +134,8 @@ export function ScanPage() {
 
   const handleModeChange = (next: ScanMode) => {
     if (next === mode) return;
+    captureLockRef.current.unlock();
+    setCapturing(false);
     setLookupCode(null);
     setManualCode('');
     setPendingPhoto(null);
@@ -183,20 +177,35 @@ export function ScanPage() {
   };
 
   const handleShutter = async () => {
-    const video = videoRef.current;
-    if (!video) return;
-    const file = await captureVideoFrame(video);
-    if (!file) {
-      toast.error('Не удалось сделать снимок');
-      return;
-    }
-    acceptFoodFile(file);
+    if (cameraError) return;
+
+    await captureLockRef.current.run(async () => {
+      setCapturing(true);
+      const video = videoRef.current;
+      if (!video) {
+        captureLockRef.current.unlock();
+        setCapturing(false);
+        return;
+      }
+      const file = await captureVideoFrame(video, {
+        maxSide: AI_IMAGE_MAX_SIDE,
+      });
+      if (!file) {
+        captureLockRef.current.unlock();
+        setCapturing(false);
+        toast.error('Не удалось сделать снимок');
+        return;
+      }
+      acceptFoodFile(file);
+    });
   };
 
   const handleGalleryChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (capturing) return;
     const file = e.currentTarget.files?.[0];
     e.currentTarget.value = '';
     if (!file) return;
+    setCapturing(true);
     acceptFoodFile(file);
   };
 
@@ -283,6 +292,8 @@ export function ScanPage() {
             variant="ghost"
             size="icon"
             onClick={() => {
+              captureLockRef.current.unlock();
+              setCapturing(false);
               setPendingPhoto(null);
               setDescription('');
               setPreviewUrl((prev) => {
@@ -343,10 +354,16 @@ export function ScanPage() {
             <>
               <video
                 ref={videoRef}
-                playsInline
-                muted
+                className="camera-preview h-full w-full object-cover"
                 autoPlay
-                className="h-full w-full object-cover"
+                muted
+                playsInline
+                disablePictureInPicture
+                disableRemotePlayback
+                controls={false}
+                controlsList="nodownload nofullscreen noremoteplayback"
+                // Legacy iOS/Android WebView inline playback (React camelCase misses this).
+                {...{ 'webkit-playsinline': 'true' }}
               />
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="relative h-48 w-64">
@@ -447,18 +464,25 @@ export function ScanPage() {
             <button
               type="button"
               onClick={() => void handleShutter()}
-              disabled={Boolean(cameraError)}
+              disabled={Boolean(cameraError) || capturing}
               className="flex h-18 w-18 items-center justify-center rounded-full border-4 border-white/80 bg-white disabled:opacity-40"
               style={{ height: '4.5rem', width: '4.5rem' }}
               aria-label="Сфотографировать"
+              aria-busy={capturing}
             >
-              <span className="h-14 w-14 rounded-full bg-white" />
+              <span
+                className={cn(
+                  'h-14 w-14 rounded-full bg-white transition-opacity',
+                  capturing && 'opacity-50',
+                )}
+              />
             </button>
 
             <button
               type="button"
               onClick={() => galleryInputRef.current?.click()}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-black/45"
+              disabled={capturing}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-black/45 disabled:opacity-40"
               aria-label="Галерея"
             >
               <ImageIcon className="h-5 w-5" />

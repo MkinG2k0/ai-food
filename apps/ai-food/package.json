@@ -6,14 +6,13 @@
   "scripts": {
     "dev": "vite --host",
     "build": "tsc && vite build",
-    "build:mobile": "tsc && vite build --mode mobile",
+    "build:mobile": "tsc && vite build --mode mobile && npm run cap:sync",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
     "cap:sync": "cap sync",
     "cap:open:android": "cap open android",
-    "cap:build": "npm run build:mobile && npm run cap:sync",
     "cap:open:ios": "cap open ios"
   },
   "dependencies": {

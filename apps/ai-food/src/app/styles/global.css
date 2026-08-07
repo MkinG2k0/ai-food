@@ -86,5 +86,22 @@
   .pb-safe {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+
+  /*
+   * Android WebView draws a giant "start playback" overlay on <video>.
+   * Camera preview must never show native media controls.
+   */
+  .camera-preview::-webkit-media-controls {
+    display: none !important;
+  }
+
+  .camera-preview::-webkit-media-controls-enclosure {
+    display: none !important;
+  }
+
+  .camera-preview::-webkit-media-controls-start-playback-button {
+    display: none !important;
+    -webkit-appearance: none;
+  }
 }
 

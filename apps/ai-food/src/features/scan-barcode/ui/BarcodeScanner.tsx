@@ -67,7 +67,7 @@ export function BarcodeScanner({ onScan, paused = false }: BarcodeScannerProps) 
     <div className="space-y-2">
       <div
         id="barcode-reader"
-        className="overflow-hidden rounded-xl bg-muted [&_video]:w-full"
+        className="overflow-hidden rounded-xl bg-muted [&_video]:camera-preview [&_video]:w-full"
       />
       {cameraError ? (
         <p className="text-sm text-muted-foreground">{cameraError}</p>
