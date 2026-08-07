@@ -34,15 +34,75 @@
         </activity>
 
         <receiver
-            android:name=".AddFoodWidgetProvider"
+            android:name=".ScanWidgetProvider"
             android:exported="true"
-            android:label="@string/widget_add_food_description">
+            android:label="@string/widget_action_scan">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/add_food_widget_info" />
+                android:resource="@xml/widget_scan_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ScanDescribeWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_action_scan_describe">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_scan_describe_info" />
+        </receiver>
+
+        <receiver
+            android:name=".GalleryWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_action_gallery">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_gallery_info" />
+        </receiver>
+
+        <receiver
+            android:name=".DescribeWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_action_describe">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_describe_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ManualWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_action_manual">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_manual_info" />
+        </receiver>
+
+        <receiver
+            android:name=".FavoritesWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_action_favorites">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_favorites_info" />
         </receiver>
 
         <provider
