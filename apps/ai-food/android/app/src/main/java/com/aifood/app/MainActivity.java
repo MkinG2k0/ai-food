@@ -7,6 +7,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        registerPlugin(KbjuWidgetPlugin.class);
         super.onCreate(savedInstanceState);
         // Ensure Capacitor sees the launch VIEW URI (widget deep link).
         Intent intent = getIntent();

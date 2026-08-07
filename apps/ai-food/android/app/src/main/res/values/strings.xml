@@ -10,4 +10,9 @@
     <string name="widget_action_describe">Описать</string>
     <string name="widget_action_manual">Вручную</string>
     <string name="widget_action_favorites">Избранное</string>
+    <string name="widget_kbju_description">КБЖУ сегодня</string>
+    <string name="widget_kbju_label_kcal">Ккал</string>
+    <string name="widget_kbju_label_protein">Белки</string>
+    <string name="widget_kbju_label_fat">Жиры</string>
+    <string name="widget_kbju_label_carbs">Углеводы</string>
 </resources>

@@ -105,6 +105,18 @@
                 android:resource="@xml/widget_favorites_info" />
         </receiver>
 
+        <receiver
+            android:name=".KbjuRingsWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_kbju_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_kbju_rings_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
