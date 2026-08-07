@@ -4,9 +4,8 @@
     <string name="title_activity_main">AI Food</string>
     <string name="package_name">com.aifood.app</string>
     <string name="custom_url_scheme">com.aifood.app</string>
-    <string name="widget_add_food_description">Быстрое добавление еды</string>
-    <string name="widget_action_scan">Камера / Штрихкод</string>
-    <string name="widget_action_scan_describe">Камера + Описание</string>
+    <string name="widget_action_scan">Камера</string>
+    <string name="widget_action_scan_describe">Камера+</string>
     <string name="widget_action_gallery">Галерея</string>
     <string name="widget_action_describe">Описать</string>
     <string name="widget_action_manual">Вручную</string>
