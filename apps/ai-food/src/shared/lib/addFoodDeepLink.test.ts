@@ -63,15 +63,30 @@ describe('parseAddFoodDeepLink', () => {
   });
 
   it('documents the six action tokens shared with AddFoodWidgetProvider', () => {
-    expect([...ADD_FOOD_DEEP_LINK_ACTIONS].sort()).toEqual(
-      [
-        'describe',
-        'favorites',
-        'gallery',
-        'manual',
-        'scan',
-        'scan-describe',
-      ].sort(),
+    expect([...ADD_FOOD_DEEP_LINK_ACTIONS]).toEqual([
+      'scan',
+      'scan-describe',
+      'gallery',
+      'describe',
+      'manual',
+      'favorites',
+    ]);
+  });
+
+  it('parses the full widget URI list for every documented action', () => {
+    const uris = ADD_FOOD_DEEP_LINK_ACTIONS.map(
+      (action) => `aifood://add/${action}`,
     );
+    expect(uris).toEqual([
+      'aifood://add/scan',
+      'aifood://add/scan-describe',
+      'aifood://add/gallery',
+      'aifood://add/describe',
+      'aifood://add/manual',
+      'aifood://add/favorites',
+    ]);
+    for (const uri of uris) {
+      expect(parseAddFoodDeepLink(uri)).not.toBeNull();
+    }
   });
 });
