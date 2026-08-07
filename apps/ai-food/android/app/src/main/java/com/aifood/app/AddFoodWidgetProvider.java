@@ -33,7 +33,8 @@ public class AddFoodWidgetProvider extends AppWidgetProvider {
         R.id.btn_favorites
     };
 
-    private static final int REQUEST_CODE_BASE = 1001;
+    /** Offset from 1×1 widget request codes (1001–1006) to avoid PendingIntent collisions. */
+    private static final int REQUEST_CODE_BASE = 2001;
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {

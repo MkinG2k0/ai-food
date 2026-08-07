@@ -7,13 +7,8 @@ public final class ScanDescribeWidgetProvider extends AddFoodActionWidgetProvide
     }
 
     @Override
-    protected int getIconResId() {
-        return R.drawable.ic_widget_pen;
-    }
-
-    @Override
-    protected int getLabelResId() {
-        return R.string.widget_action_scan_describe;
+    protected int getLayoutResId() {
+        return R.layout.widget_preview_scan_describe;
     }
 
     @Override

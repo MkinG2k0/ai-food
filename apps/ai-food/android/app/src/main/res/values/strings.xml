@@ -4,12 +4,15 @@
     <string name="title_activity_main">AI Food</string>
     <string name="package_name">com.aifood.app</string>
     <string name="custom_url_scheme">com.aifood.app</string>
-    <string name="widget_action_scan">Камера</string>
-    <string name="widget_action_scan_describe">Камера+</string>
+    <string name="widget_add_food_description">Быстрое добавление еды</string>
+    <string name="widget_action_scan">Камера / Штрихкод</string>
+    <string name="widget_action_scan_describe">Камера + Описание</string>
     <string name="widget_action_gallery">Галерея</string>
     <string name="widget_action_describe">Описать</string>
     <string name="widget_action_manual">Вручную</string>
     <string name="widget_action_favorites">Избранное</string>
+    <string name="widget_action_scan_short">Камера</string>
+    <string name="widget_action_scan_describe_short">Камера+</string>
     <string name="widget_kbju_description">КБЖУ сегодня</string>
     <string name="widget_kbju_label_kcal">Ккал</string>
     <string name="widget_kbju_label_protein">Белки</string>

@@ -7,13 +7,8 @@ public final class FavoritesWidgetProvider extends AddFoodActionWidgetProvider {
     }
 
     @Override
-    protected int getIconResId() {
-        return R.drawable.ic_widget_star;
-    }
-
-    @Override
-    protected int getLabelResId() {
-        return R.string.widget_action_favorites;
+    protected int getLayoutResId() {
+        return R.layout.widget_preview_favorites;
     }
 
     @Override

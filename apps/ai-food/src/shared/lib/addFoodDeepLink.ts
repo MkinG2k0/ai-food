@@ -1,6 +1,6 @@
 /**
  * Canonical add-food deep link actions.
- * Android twin: `AddFoodActionWidgetProvider` + six 1×1 providers use `aifood://add/<action>`.
+ * Android twin: tall `AddFoodWidgetProvider` + six 1×1 `AddFoodActionWidgetProvider`s use `aifood://add/<action>`.
  * Tokens must stay in sync: scan | scan-describe | gallery | describe | manual | favorites
  */
 export const ADD_FOOD_DEEP_LINK_ACTIONS = [

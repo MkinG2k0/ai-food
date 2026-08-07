@@ -34,9 +34,21 @@
         </activity>
 
         <receiver
+            android:name=".AddFoodWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_add_food_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/add_food_widget_info" />
+        </receiver>
+
+        <receiver
             android:name=".ScanWidgetProvider"
             android:exported="true"
-            android:label="@string/widget_action_scan">
+            android:label="@string/widget_action_scan_short">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -48,7 +60,7 @@
         <receiver
             android:name=".ScanDescribeWidgetProvider"
             android:exported="true"
-            android:label="@string/widget_action_scan_describe">
+            android:label="@string/widget_action_scan_describe_short">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

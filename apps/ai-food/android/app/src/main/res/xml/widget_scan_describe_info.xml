@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:description="@string/widget_action_scan_describe"
-    android:initialLayout="@layout/widget_add_food_action"
+    android:description="@string/widget_action_scan_describe_short"
+    android:initialLayout="@layout/widget_preview_scan_describe"
+    android:previewLayout="@layout/widget_preview_scan_describe"
+    android:previewImage="@drawable/widget_preview_scan_describe"
     android:minWidth="40dp"
     android:minHeight="40dp"
     android:targetCellWidth="1"

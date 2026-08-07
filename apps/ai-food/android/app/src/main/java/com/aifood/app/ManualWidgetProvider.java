@@ -7,13 +7,8 @@ public final class ManualWidgetProvider extends AddFoodActionWidgetProvider {
     }
 
     @Override
-    protected int getIconResId() {
-        return R.drawable.ic_widget_keyboard;
-    }
-
-    @Override
-    protected int getLabelResId() {
-        return R.string.widget_action_manual;
+    protected int getLayoutResId() {
+        return R.layout.widget_preview_manual;
     }
 
     @Override

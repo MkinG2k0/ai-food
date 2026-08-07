@@ -12,23 +12,20 @@ import android.widget.RemoteViews;
 /**
  * Shared 1×1 home-screen widget base for a single AddFood action.
  * Deep-link contract twin: JS {@code parseAddFoodDeepLink} / {@code aifood://add/<action>}.
+ * Subclasses supply a filled layout (icon+label) used for both home and widget-picker preview.
  */
 public abstract class AddFoodActionWidgetProvider extends AppWidgetProvider {
 
     protected abstract String getAction();
 
-    protected abstract int getIconResId();
-
-    protected abstract int getLabelResId();
+    protected abstract int getLayoutResId();
 
     protected abstract int getRequestCode();
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
-            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_add_food_action);
-            views.setImageViewResource(R.id.widget_action_icon, getIconResId());
-            views.setTextViewText(R.id.widget_action_label, context.getString(getLabelResId()));
+            RemoteViews views = new RemoteViews(context.getPackageName(), getLayoutResId());
             views.setOnClickPendingIntent(
                 R.id.widget_action_root,
                 buildActionPendingIntent(context, getAction(), getRequestCode())
