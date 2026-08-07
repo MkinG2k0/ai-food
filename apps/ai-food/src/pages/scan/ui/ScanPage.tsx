@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Camera } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 import { ImageIcon, X, Zap, ZapOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -15,6 +17,7 @@ import { TextareaWithVoice, Button } from '@/shared/ui';
 import { AI_IMAGE_MAX_SIDE, cn } from '@/shared/lib';
 import { captureVideoFrame } from '../lib/captureVideoFrame';
 import { createCaptureLock } from '../lib/createCaptureLock';
+import { drawVideoCover } from '../lib/drawVideoCover';
 
 type ScanMode = 'food' | 'barcode';
 
@@ -39,6 +42,7 @@ export function ScanPage() {
   const [capturing, setCapturing] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const captureLockRef = useRef(createCaptureLock());
@@ -49,67 +53,129 @@ export function ScanPage() {
     useProductByBarcode(lookupCode);
 
   const stopStream = useCallback(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.srcObject = null;
+    }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     setTorchOn(false);
     setTorchSupported(false);
   }, []);
 
-  const startFoodCamera = useCallback(async () => {
-    setCameraError(null);
-    stopStream();
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-      });
-      streamRef.current = stream;
-      const video = videoRef.current;
-      if (video) {
-        video.setAttribute('playsinline', 'true');
-        video.setAttribute('webkit-playsinline', 'true');
-        video.srcObject = stream;
-        // Android WebView may need metadata before play; avoid leaving paused overlay.
-        if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
-          await new Promise<void>((resolve) => {
-            const onReady = () => {
-              cleanup();
-              resolve();
-            };
-            const timer = window.setTimeout(onReady, 1500);
-            const cleanup = () => {
-              window.clearTimeout(timer);
-              video.removeEventListener('loadedmetadata', onReady);
-            };
-            video.addEventListener('loadedmetadata', onReady);
-          });
-        }
-        await video.play().catch(() => undefined);
-      }
-
-      const track = stream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities?.() as
-        | (MediaTrackCapabilities & { torch?: boolean })
-        | undefined;
-      setTorchSupported(Boolean(capabilities?.torch));
-    } catch {
-      setCameraError('Камера недоступна');
-      toast.error('Не удалось открыть камеру');
-    }
-  }, [stopStream]);
-
+  // Live preview: getUserMedia → hidden <video> → canvas (Android WebView paints a
+  // giant Play overlay on <video>; CSS cannot reliably hide it).
   useEffect(() => {
     if (mode !== 'food' || pendingPhoto) {
       stopStream();
       return;
     }
-    void startFoodCamera();
-    return () => stopStream();
-  }, [mode, pendingPhoto, startFoodCamera, stopStream]);
+
+    let cancelled = false;
+
+    const start = async () => {
+      setCameraError(null);
+      try {
+        if (Capacitor.isNativePlatform()) {
+          const status = await Camera.requestPermissions({
+            permissions: ['camera'],
+          });
+          if (cancelled) return;
+          if (status.camera !== 'granted' && status.camera !== 'limited') {
+            throw new Error('camera-permission');
+          }
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: 'environment' } },
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        const video = videoRef.current;
+        if (!video) {
+          stream.getTracks().forEach((t) => t.stop());
+          streamRef.current = null;
+          return;
+        }
+
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.muted = true;
+        video.playsInline = true;
+        video.srcObject = stream;
+
+        if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+          await new Promise<void>((resolve) => {
+            const done = () => {
+              window.clearTimeout(timer);
+              video.removeEventListener('loadedmetadata', done);
+              resolve();
+            };
+            const timer = window.setTimeout(done, 2000);
+            video.addEventListener('loadedmetadata', done);
+          });
+        }
+        if (cancelled) {
+          stopStream();
+          return;
+        }
+
+        await video.play().catch(() => undefined);
+        if (cancelled) {
+          stopStream();
+          return;
+        }
+
+        const track = stream.getVideoTracks()[0];
+        const capabilities = track?.getCapabilities?.() as
+          | (MediaTrackCapabilities & { torch?: boolean })
+          | undefined;
+        setTorchSupported(Boolean(capabilities?.torch));
+      } catch {
+        if (!cancelled) {
+          setCameraError('Камера недоступна');
+          toast.error('Не удалось открыть камеру');
+        }
+      }
+    };
+
+    void start();
+    return () => {
+      cancelled = true;
+      stopStream();
+    };
+  }, [mode, pendingPhoto, stopStream]);
+
+  // Mirror camera frames onto canvas so the WebView Play glyph never shows.
+  useEffect(() => {
+    if (mode !== 'food' || pendingPhoto || cameraError) return;
+
+    let raf = 0;
+    const tick = () => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (video && canvas && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        if (w > 0 && h > 0) {
+          if (canvas.width !== w || canvas.height !== h) {
+            canvas.width = w;
+            canvas.height = h;
+          }
+          const ctx = canvas.getContext('2d');
+          if (ctx) drawVideoCover(ctx, video, w, h);
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [mode, pendingPhoto, cameraError]);
 
   useEffect(() => {
     return () => {
@@ -352,9 +418,10 @@ export function ScanPage() {
             </div>
           ) : (
             <>
+              {/* Keep decoding size; opacity 0 hides Android's giant Play overlay. */}
               <video
                 ref={videoRef}
-                className="camera-preview h-full w-full object-cover"
+                className="camera-preview pointer-events-none absolute inset-0 h-full w-full opacity-0"
                 autoPlay
                 muted
                 playsInline
@@ -362,10 +429,14 @@ export function ScanPage() {
                 disableRemotePlayback
                 controls={false}
                 controlsList="nodownload nofullscreen noremoteplayback"
-                // Legacy iOS/Android WebView inline playback (React camelCase misses this).
                 {...{ 'webkit-playsinline': 'true' }}
               />
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <canvas
+                ref={canvasRef}
+                className="absolute inset-0 z-[1] h-full w-full bg-black"
+                aria-hidden
+              />
+              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
                 <div className="relative h-48 w-64">
                   <span className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-white" />
                   <span className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-white" />

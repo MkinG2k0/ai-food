@@ -2,6 +2,9 @@ package com.aifood.app;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -10,6 +13,16 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         registerPlugin(KbjuWidgetPlugin.class);
         super.onCreate(savedInstanceState);
+        // Camera <video> preview must autoplay without a user gesture; otherwise
+        // Android WebView leaves a giant Play overlay on a paused element.
+        Bridge bridge = getBridge();
+        if (bridge != null) {
+            WebView webView = bridge.getWebView();
+            if (webView != null) {
+                WebSettings settings = webView.getSettings();
+                settings.setMediaPlaybackRequiresUserGesture(false);
+            }
+        }
         // Ensure Capacitor sees the launch VIEW URI (widget deep link).
         Intent intent = getIntent();
         if (intent != null) {
