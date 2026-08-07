@@ -29,3 +29,8 @@ export {
   type AddFoodDeepLinkAction,
   type AddFoodDeepLinkResult,
 } from './addFoodDeepLink';
+export {
+  computeTodayKbjuSnapshot,
+  type TodayKbjuMacros,
+  type TodayKbjuSnapshot,
+} from './computeTodayKbjuSnapshot';
