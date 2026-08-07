@@ -1,13 +1,10 @@
 package com.aifood.app;
 
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
-
-    private int lastNightMode = Configuration.UI_MODE_NIGHT_UNDEFINED;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,18 +15,13 @@ public class MainActivity extends BridgeActivity {
         if (intent != null) {
             setIntent(intent);
         }
-        lastNightMode = currentNightMode();
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
-        int nightMode = currentNightMode();
-        if (lastNightMode != Configuration.UI_MODE_NIGHT_UNDEFINED
-            && nightMode != lastNightMode) {
-            WidgetThemeRefresh.refreshAll(this);
-        }
-        lastNightMode = nightMode;
+        // Re-apply Material You / night colors after wallpaper or theme changes.
+        WidgetThemeRefresh.refreshAll(this);
     }
 
     @Override
@@ -38,10 +30,5 @@ public class MainActivity extends BridgeActivity {
         // singleTask: warm start from widget must refresh the Activity intent
         // so Capacitor App.getLaunchUrl / appUrlOpen receive the latest URI.
         setIntent(intent);
-    }
-
-    private int currentNightMode() {
-        return getResources().getConfiguration().uiMode
-            & Configuration.UI_MODE_NIGHT_MASK;
     }
 }
