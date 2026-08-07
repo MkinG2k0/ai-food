@@ -75,6 +75,49 @@
 }
 
 @layer utilities {
+  /* Rotating emerald highlight along the card perimeter while meal analyzes */
+  .meal-card-border-loader {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .meal-card-border-loader::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 200%;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg 220deg,
+      hsl(160 84% 39% / 0.15) 250deg,
+      hsl(160 84% 42%) 290deg,
+      hsl(160 72% 58%) 310deg,
+      hsl(160 84% 42%) 330deg,
+      transparent 360deg
+    );
+    animation: meal-card-border-spin 1.6s linear infinite;
+  }
+
+  .meal-card-border-loader::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--card));
+  }
+
+  @keyframes meal-card-border-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   .pt-safe-header {
     padding-top: max(3rem, env(safe-area-inset-top));
   }

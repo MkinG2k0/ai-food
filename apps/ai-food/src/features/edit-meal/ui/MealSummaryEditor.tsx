@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Minus, Plus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Minus, Pencil, Plus } from 'lucide-react';
 import type { Meal } from '@ai-food/shared-types';
 import {
   formatItemGrams,
@@ -14,7 +14,7 @@ import {
 } from '@/entities/meal';
 import { MicronutrientsBadges } from '@/entities/nutrition';
 import { useSettingsStore } from '@/features/settings';
-import { Button, Card, CardContent, CardHeader } from '@/shared/ui';
+import { BottomSheet, Button, Card, CardContent, CardHeader } from '@/shared/ui';
 import { cn, formatDate } from '@/shared/lib';
 
 const inputClassName = cn(
@@ -22,6 +22,13 @@ const inputClassName = cn(
   'ring-offset-background placeholder:text-muted-foreground',
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 );
+
+function toDatetimeLocalValue(iso: string): string {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 function parseNutrient(raw: string): number {
   const n = Number(raw);
@@ -65,15 +72,20 @@ export interface MealSummaryEditorProps {
 }
 
 export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
+  const updateMeal = useDiaryStore((s) => s.updateMeal);
   const updateMealNutrition = useDiaryStore((s) => s.updateMealNutrition);
   const setMealPortions = useDiaryStore((s) => s.setMealPortions);
   const redefineMealPortions = useDiaryStore((s) => s.redefineMealPortions);
   const setMealTotalGrams = useDiaryStore((s) => s.setMealTotalGrams);
+  const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);
   const featureHealthiness = useSettingsStore((s) => s.featureHealthiness);
   const featureVitamins = useSettingsStore((s) => s.featureVitamins);
   const [portionsDraft, setPortionsDraft] = useState<string | null>(null);
   const [gramsDraft, setGramsDraft] = useState<string | null>(null);
+  const [timestampPickerOpen, setTimestampPickerOpen] = useState(false);
+  const [timestampDraft, setTimestampDraft] = useState('');
   const portionsInputRef = useRef<HTMLInputElement>(null);
+  const datetimeInputRef = useRef<HTMLInputElement>(null);
 
   const dishName = mealDisplayName(meal);
   const portions = resolveMealPortions(meal);
@@ -111,14 +123,58 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
     setGramsDraft(null);
   }
 
+  function openTimestampPicker() {
+    setTimestampDraft(toDatetimeLocalValue(meal.timestamp));
+    setTimestampPickerOpen(true);
+  }
+
+  useEffect(() => {
+    if (!timestampPickerOpen) return;
+    const id = window.setTimeout(() => {
+      const el = datetimeInputRef.current;
+      if (!el) return;
+      el.focus();
+      if (typeof el.showPicker === 'function') {
+        try {
+          el.showPicker();
+        } catch {
+          /* WebView may reject showPicker; input remains usable */
+        }
+      }
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [timestampPickerOpen]);
+
+  function commitTimestamp() {
+    if (!timestampDraft) return;
+    const next = new Date(timestampDraft);
+    if (!Number.isFinite(next.getTime())) return;
+    updateMeal(meal.id, { timestamp: next.toISOString() });
+    setSelectedDate(next);
+    setTimestampPickerOpen(false);
+  }
+
   return (
     <Card>
       <CardHeader className="space-y-4 p-4 pb-2">
         <div className="space-y-1.5">
           <h2 className="text-base font-semibold text-foreground">{dishName}</h2>
-          <p className="text-sm text-muted-foreground">
-            {formatDate(meal.timestamp)} в {time}
-          </p>
+          <div className="flex items-center gap-1">
+            <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+              {formatDate(meal.timestamp)} в {time}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 text-muted-foreground"
+              aria-label="Изменить дату и время"
+              title="Изменить дату и время"
+              onClick={openTimestampPicker}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         {featureHealthiness && meal.healthiness !== undefined && (
           <div className="space-y-3">
@@ -291,6 +347,48 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
           ))}
         </div>
       </CardContent>
+
+      <BottomSheet
+        open={timestampPickerOpen}
+        onClose={() => setTimestampPickerOpen(false)}
+      >
+        <div className="w-full space-y-4 px-2 py-2">
+          <h2 className="text-lg font-semibold text-foreground">
+            Дата и время
+          </h2>
+          <label className="block space-y-1.5">
+            <span className="text-xs text-muted-foreground">
+              Когда был приём пищи
+            </span>
+            <input
+              ref={datetimeInputRef}
+              type="datetime-local"
+              aria-label="Дата и время приёма пищи"
+              className={cn(inputClassName, 'h-11')}
+              value={timestampDraft}
+              onChange={(e) => setTimestampDraft(e.target.value)}
+            />
+          </label>
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => setTimestampPickerOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              type="button"
+              className="flex-1"
+              disabled={!timestampDraft}
+              onClick={commitTimestamp}
+            >
+              Сохранить
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
     </Card>
   );
 }

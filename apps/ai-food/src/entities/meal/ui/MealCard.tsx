@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Utensils, Loader2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Meal } from '@ai-food/shared-types';
+import { cn } from '@/shared/lib';
 import { Button, Card, CardContent, Skeleton } from '@/shared/ui';
 import { useRetryAnalyzeMeal } from '@/features/save-meal';
 import { useAuthStore } from '@/features/auth';
@@ -55,11 +56,12 @@ export function MealCard({ meal }: MealCardProps) {
 
   const showRetry = isError || (isAnalyzing && analyzingStale);
   const canOpenDetail = !isAnalyzing && !isError;
+  const showBorderLoader = isAnalyzing && !analyzingStale;
   const hasPartialName =
     Boolean(meal.name?.trim() && meal.name !== 'Анализ…');
   const hasPartialMacros = meal.totalCalories > 0;
   const hasPartialPreview =
-    isAnalyzing && !analyzingStale && (hasPartialName || hasPartialMacros);
+    showBorderLoader && (hasPartialName || hasPartialMacros);
   const errorLabel =
     meal.analyzeErrorCode === 'NO_FOOD_DETECTED'
       ? 'На фото не обнаружена еда…'
@@ -114,14 +116,21 @@ export function MealCard({ meal }: MealCardProps) {
             ? `${errorLabel} приёма пищи в ${time}`
             : `${title} в ${time}`
       }
-      aria-busy={isAnalyzing && !analyzingStale}
-      className={canOpenDetail ? 'cursor-pointer ' : ''}
+      aria-busy={showBorderLoader}
+      className={cn(
+        'relative overflow-hidden',
+        canOpenDetail && 'cursor-pointer',
+        showBorderLoader && 'border-transparent',
+      )}
     >
-      <CardContent className="flex justify-between flex-auto gap-3 p-2 ">
+      {showBorderLoader ? (
+        <div className="meal-card-border-loader" aria-hidden />
+      ) : null}
+      <CardContent className="relative z-10 flex justify-between flex-auto gap-3 p-2 ">
         <div className="relative h-20 w-20 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
           {imageSrc ? (
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
-          ) : isAnalyzing && !analyzingStale ? (
+          ) : showBorderLoader ? (
             <Loader2 className="h-6 w-6 text-emerald-600 animate-spin" />
           ) : isError || analyzingStale ? (
             <AlertCircle className="h-6 w-6 text-destructive" />
@@ -136,12 +145,11 @@ export function MealCard({ meal }: MealCardProps) {
         </div>
 
         <div className="flex flex-col flex-1 min-w-0 space-y-1.5 justify-between">
-          {isAnalyzing && !analyzingStale ? (
+          {showBorderLoader ? (
             hasPartialPreview ? (
               <>
                 <div className="flex gap-2 justify-between text-sm font-medium min-w-0">
-                  <span className="truncate flex items-center gap-1.5">
-                    <Loader2 className="h-3.5 w-3.5 shrink-0 text-emerald-600 animate-spin" />
+                  <span className="truncate">
                     {hasPartialName ? title : 'Анализ еды…'}
                   </span>
                   <span className="ml-1.5 shrink-0 font-normal text-muted-foreground">
@@ -168,11 +176,9 @@ export function MealCard({ meal }: MealCardProps) {
               </>
             ) : (
               <>
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.3s]" />
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:-0.15s]" />
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-bounce" />
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-sm text-muted-foreground">Анализ еды…</span>
+                  <span className="shrink-0 text-sm text-muted-foreground">{time}</span>
                 </div>
                 <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
                   <Skeleton className="h-5 w-14 shrink-0" />
