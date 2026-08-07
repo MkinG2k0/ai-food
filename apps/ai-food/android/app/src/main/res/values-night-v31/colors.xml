@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Material You (API 31+): dark — tonal surfaces like the system Battery widget. -->
+<!-- API 31+ dark: Material You tinted chrome + vivid fills on dark cards. -->
 <resources>
-    <color name="widget_icon_emerald">@android:color/system_accent1_200</color>
+    <color name="widget_icon_emerald">#34D399</color>
     <color name="widget_button_bg">@android:color/system_accent2_800</color>
     <color name="widget_button_stroke">@android:color/system_neutral2_700</color>
     <color name="widget_label">@android:color/system_neutral1_50</color>
     <color name="widget_root_bg">@android:color/system_neutral1_900</color>
 
-    <color name="widget_kbju_kcal">@android:color/system_accent1_200</color>
-    <color name="widget_kbju_protein">@android:color/system_accent2_200</color>
-    <color name="widget_kbju_fat">@android:color/system_accent3_200</color>
-    <color name="widget_kbju_carbs">@android:color/system_accent1_100</color>
+    <!-- Saturated fills for rings / bars / icons -->
+    <color name="widget_kbju_kcal">#34D399</color>
+    <color name="widget_kbju_protein">#FB7185</color>
+    <color name="widget_kbju_fat">#FBBF24</color>
+    <color name="widget_kbju_carbs">#38BDF8</color>
     <color name="widget_kbju_over">#F87171</color>
     <color name="widget_kbju_track">@android:color/system_neutral2_700</color>
     <color name="widget_kbju_card">@android:color/system_accent2_800</color>
