@@ -75,7 +75,7 @@ export function SwipeableMealCard({ meal }: SwipeableMealCardProps) {
     <>
       <div className="relative overflow-hidden rounded-xl">
         <div
-          className="absolute inset-y-0 right-0 flex w-24 items-center justify-center bg-destructive"
+          className="absolute inset-y-0 right-0 flex w-24 items-center justify-center rounded-l-xl bg-destructive"
           aria-hidden
         >
           <Trash2 className="h-5 w-5 text-destructive-foreground" />
