@@ -31,6 +31,15 @@
                     android:host="add" />
             </intent-filter>
 
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="aifood"
+                    android:host="stats" />
+            </intent-filter>
+
         </activity>
 
         <receiver
@@ -127,6 +136,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_kbju_rings_info" />
+        </receiver>
+
+        <receiver
+            android:name=".WeeklyCaloriesWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_week_kcal_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_weekly_calories_info" />
         </receiver>
 
         <provider

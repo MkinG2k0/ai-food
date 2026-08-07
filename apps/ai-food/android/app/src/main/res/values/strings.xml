@@ -18,4 +18,8 @@
     <string name="widget_kbju_label_protein">Белки</string>
     <string name="widget_kbju_label_fat">Жиры</string>
     <string name="widget_kbju_label_carbs">Углеводы</string>
+    <string name="widget_week_kcal_description">Калории за неделю</string>
+    <string name="widget_week_kcal_legend_protein">Б</string>
+    <string name="widget_week_kcal_legend_fat">Ж</string>
+    <string name="widget_week_kcal_legend_carbs">У</string>
 </resources>
