@@ -2,12 +2,13 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { parseAddFoodDeepLink } from '@/shared/lib';
+import { parseAppDeepLink } from '@/shared/lib';
 
 const DEDUPE_MS = 1500;
 
 /**
- * Handles Android widget / custom-scheme launches (`aifood://add/<action>`).
+ * Handles Android widget / custom-scheme launches
+ * (`aifood://add/<action>`, `aifood://stats`).
  * Cold start: App.getLaunchUrl(); warm: appUrlOpen.
  */
 export function DeepLinkHandler() {
@@ -31,7 +32,7 @@ export function DeepLinkHandler() {
         return;
       }
 
-      const parsed = parseAddFoodDeepLink(url);
+      const parsed = parseAppDeepLink(url);
       if (!parsed) return;
 
       lastHandledRef.current = { url, at: now };

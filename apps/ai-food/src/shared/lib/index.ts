@@ -30,6 +30,10 @@ export {
   type AddFoodDeepLinkResult,
 } from './addFoodDeepLink';
 export {
+  parseAppDeepLink,
+  type AppDeepLinkResult,
+} from './parseAppDeepLink';
+export {
   computeTodayKbjuSnapshot,
   type TodayKbjuMacros,
   type TodayKbjuSnapshot,
