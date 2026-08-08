@@ -16,6 +16,16 @@ function parseDateInputValue(value: string): Date {
   return new Date(y, m - 1, d, 12, 0, 0, 0);
 }
 
+function parseKgDraft(raw: string): number | null {
+  const trimmed = raw.trim().replace(',', '.');
+  if (trimmed === '') return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n)) return null;
+  const rounded = Math.round(n * 10) / 10;
+  if (rounded < MIN || rounded > MAX) return null;
+  return rounded;
+}
+
 export interface LogWeightSheetProps {
   open: boolean;
   onClose: () => void;
@@ -30,19 +40,15 @@ export function LogWeightSheet({
   onSave,
 }: LogWeightSheetProps) {
   const today = toDateInputValue(new Date());
-  const [kg, setKg] = useState(initialKg);
+  const [kgText, setKgText] = useState(String(initialKg));
   const [dateValue, setDateValue] = useState(today);
+  const parsedKg = parseKgDraft(kgText);
 
   useEffect(() => {
     if (!open) return;
-    setKg(initialKg);
+    setKgText(String(initialKg));
     setDateValue(toDateInputValue(new Date()));
   }, [open, initialKg]);
-
-  function clamp(raw: number): number {
-    if (Number.isNaN(raw)) return MIN;
-    return Math.min(MAX, Math.max(MIN, Math.round(raw * 10) / 10));
-  }
 
   return (
     <BottomSheet open={open} onClose={onClose}>
@@ -74,8 +80,8 @@ export function LogWeightSheet({
               step="0.1"
               min={MIN}
               max={MAX}
-              value={kg}
-              onChange={(e) => setKg(clamp(Number(e.target.value)))}
+              value={kgText}
+              onChange={(e) => setKgText(e.target.value)}
               className="w-28 rounded-lg border border-border bg-background px-3 py-2 text-center text-2xl font-bold tabular-nums"
             />
             <span className="text-muted-foreground">кг</span>
@@ -88,8 +94,10 @@ export function LogWeightSheet({
           </Button>
           <Button
             className="flex-1"
+            disabled={parsedKg == null}
             onClick={() => {
-              onSave(kg, parseDateInputValue(dateValue));
+              if (parsedKg == null) return;
+              onSave(parsedKg, parseDateInputValue(dateValue));
               onClose();
             }}
           >

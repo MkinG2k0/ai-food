@@ -35,12 +35,14 @@ export function OnboardingPage() {
     let cancelled = false;
 
     async function restore() {
+      const { profile, suppressRemoteRestore } = useProfileStore.getState();
       const token = useAuthStore.getState().userToken;
-      if (!token || useProfileStore.getState().profile) return;
+      if (!token || profile || suppressRemoteRestore) return;
 
       try {
         const me = await fetchAuthMe();
         if (cancelled || !me.nutritionProfile) return;
+        if (useProfileStore.getState().suppressRemoteRestore) return;
         applyRemoteNutritionProfile(me.nutritionProfile);
       } catch {
         // The user can still log in again or complete onboarding manually.

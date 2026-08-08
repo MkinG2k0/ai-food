@@ -30,7 +30,12 @@ beforeEach(async () => {
   await act(async () => {
     await useProfileStore.persist.rehydrate();
   });
-  useProfileStore.setState({ profile: null, targets: null, micronutrientTargets: null });
+  useProfileStore.setState({
+    profile: null,
+    targets: null,
+    micronutrientTargets: null,
+    suppressRemoteRestore: false,
+  });
 });
 
 describe('useProfileStore', () => {
@@ -70,6 +75,7 @@ describe('useProfileStore', () => {
     expect(useProfileStore.getState().targets).toBeNull();
     expect(useProfileStore.getState().micronutrientTargets).toBeNull();
     expect(useProfileStore.getState().isComplete()).toBe(false);
+    expect(useProfileStore.getState().suppressRemoteRestore).toBe(true);
   });
 
   it('setProfile works after a prior reset', async () => {
@@ -81,6 +87,7 @@ describe('useProfileStore', () => {
     expect(useProfileStore.getState().profile).toEqual(mockProfile);
     expect(useProfileStore.getState().targets).toEqual(mockTargets);
     expect(useProfileStore.getState().isComplete()).toBe(true);
+    expect(useProfileStore.getState().suppressRemoteRestore).toBe(false);
   });
 
   it('updateTargets replaces daily targets', async () => {
@@ -105,6 +112,21 @@ describe('useProfileStore', () => {
   it('updateDietType is a no-op when profile is null', async () => {
     await act(async () => {
       useProfileStore.getState().updateDietType('vegan');
+    });
+    expect(useProfileStore.getState().profile).toBeNull();
+  });
+
+  it('updateTargetWeight patches profile.targetWeight when profile exists', async () => {
+    await act(async () => {
+      useProfileStore.getState().setProfile(mockProfile, mockTargets);
+      useProfileStore.getState().updateTargetWeight(82.35);
+    });
+    expect(useProfileStore.getState().profile?.targetWeight).toBe(82.4);
+  });
+
+  it('updateTargetWeight is a no-op when profile is null', async () => {
+    await act(async () => {
+      useProfileStore.getState().updateTargetWeight(90);
     });
     expect(useProfileStore.getState().profile).toBeNull();
   });

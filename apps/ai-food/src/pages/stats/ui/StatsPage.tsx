@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDiaryStore } from '@/entities/meal';
-import { useProfileStore } from '@/features/onboarding';
+import {
+  syncNutritionProfileToServer,
+  useProfileStore,
+} from '@/features/onboarding';
 import {
   WeeklyCaloriesChart,
   WeeklyMicronutrientsChart,
@@ -18,6 +21,7 @@ export function StatsPage() {
   const profile = useProfileStore((s) => s.profile);
   const targets = useProfileStore((s) => s.targets);
   const micronutrientTargets = useProfileStore((s) => s.micronutrientTargets);
+  const updateTargetWeight = useProfileStore((s) => s.updateTargetWeight);
   const featureVitamins = useSettingsStore((s) => s.featureVitamins);
   const [weekOffset, setWeekOffset] = useState(0);
   const goalKcal = targets?.kcal ?? FALLBACK_GOAL_KCAL;
@@ -27,12 +31,17 @@ export function StatsPage() {
       title="Статистика"
       onBack={() => navigate('/')}
       headerClassName="sticky top-0 z-10 bg-zinc-50/90 backdrop-blur-md"
-      mainClassName="space-y-5 pb-10"
+      mainClassName="space-y-3 pb-10"
     >
       {profile && (
         <WeightProgressCard
           profileWeight={profile.weight}
           profileGoal={profile.goal}
+          profileTargetWeight={profile.targetWeight}
+          onTargetWeightChange={(kg) => {
+            updateTargetWeight(kg);
+            syncNutritionProfileToServer();
+          }}
         />
       )}
 
@@ -42,10 +51,6 @@ export function StatsPage() {
         onWeekChange={(delta) => setWeekOffset((o) => o + delta)}
         goalKcal={goalKcal}
       />
-      <p className="text-center text-[11px] text-muted-foreground">
-        Свайп графика — соседняя неделя
-      </p>
-
       {featureVitamins && (
         <>
           <WeeklyMicronutrientsChart
@@ -54,9 +59,6 @@ export function StatsPage() {
             onWeekChange={(delta) => setWeekOffset((o) => o + delta)}
             micronutrientTargets={micronutrientTargets}
           />
-          <p className="text-center text-[11px] text-muted-foreground">
-            Свайп витаминов — та же неделя, что у калорий
-          </p>
         </>
       )}
     </SubpageShell>

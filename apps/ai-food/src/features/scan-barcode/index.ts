@@ -9,7 +9,12 @@ export type { OffProduct, OffNutritionPer100g } from './api/fetchProductByBarcod
 export { buildBarcodeMeal, scaleOffProductToItem } from './api/mapOffProductToMeal';
 export { useProductByBarcode } from './model/useProductByBarcode';
 export { useSaveBarcodeMeal } from './model/useSaveBarcodeMeal';
-export { BarcodeScanner } from './ui/BarcodeScanner';
-export type { BarcodeScannerProps } from './ui/BarcodeScanner';
+export {
+  detectBarcodeInFile,
+  detectBarcodeInVideo,
+  extractBarcodeValue,
+} from './lib/detectBarcode';
+export { LiveBarcodeScan } from './ui/LiveBarcodeScan';
+export type { LiveBarcodeScanProps } from './ui/LiveBarcodeScan';
 export { BarcodeProductConfirm } from './ui/BarcodeProductConfirm';
 export type { BarcodeProductConfirmProps } from './ui/BarcodeProductConfirm';

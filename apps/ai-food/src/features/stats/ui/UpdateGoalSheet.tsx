@@ -4,6 +4,16 @@ import { BottomSheet, Button } from '@/shared/ui';
 const MIN = 20;
 const MAX = 300;
 
+function parseKgDraft(raw: string): number | null {
+  const trimmed = raw.trim().replace(',', '.');
+  if (trimmed === '') return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n)) return null;
+  const rounded = Math.round(n * 10) / 10;
+  if (rounded < MIN || rounded > MAX) return null;
+  return rounded;
+}
+
 export interface UpdateGoalSheetProps {
   open: boolean;
   onClose: () => void;
@@ -19,17 +29,13 @@ export function UpdateGoalSheet({
   currentKg,
   onSave,
 }: UpdateGoalSheetProps) {
-  const [goal, setGoal] = useState(initialGoalKg);
+  const [goalText, setGoalText] = useState(String(initialGoalKg));
+  const parsedGoal = parseKgDraft(goalText);
 
   useEffect(() => {
     if (!open) return;
-    setGoal(initialGoalKg);
+    setGoalText(String(initialGoalKg));
   }, [open, initialGoalKg]);
-
-  function clamp(raw: number): number {
-    if (Number.isNaN(raw)) return MIN;
-    return Math.min(MAX, Math.max(MIN, Math.round(raw * 10) / 10));
-  }
 
   return (
     <BottomSheet open={open} onClose={onClose}>
@@ -52,8 +58,8 @@ export function UpdateGoalSheet({
               step="0.1"
               min={MIN}
               max={MAX}
-              value={goal}
-              onChange={(e) => setGoal(clamp(Number(e.target.value)))}
+              value={goalText}
+              onChange={(e) => setGoalText(e.target.value)}
               className="w-28 rounded-lg border border-border bg-background px-3 py-2 text-center text-2xl font-bold tabular-nums"
             />
             <span className="text-muted-foreground">кг</span>
@@ -66,8 +72,10 @@ export function UpdateGoalSheet({
           </Button>
           <Button
             className="flex-1"
+            disabled={parsedGoal == null}
             onClick={() => {
-              onSave(goal);
+              if (parsedGoal == null) return;
+              onSave(parsedGoal);
               onClose();
             }}
           >

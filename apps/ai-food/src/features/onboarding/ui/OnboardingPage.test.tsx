@@ -1,11 +1,12 @@
 import { render, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   applyRemoteNutritionProfile: vi.fn(),
   authHydrated: false,
   fetchAuthMe: vi.fn(),
+  suppressRemoteRestore: false,
 }));
 
 vi.mock('@/features/auth', () => ({
@@ -28,7 +29,12 @@ vi.mock('../model/useProfileStore', () => {
   const useProfileStore = Object.assign(
     (selector: (state: { isComplete: () => boolean }) => unknown) =>
       selector({ isComplete: () => false }),
-    { getState: () => ({ profile: null }) },
+    {
+      getState: () => ({
+        profile: null,
+        suppressRemoteRestore: mocks.suppressRemoteRestore,
+      }),
+    },
   );
   return { useProfileStore };
 });
@@ -49,6 +55,13 @@ vi.mock('./steps/StepGender', () => ({
 }));
 
 describe('OnboardingPage', () => {
+  beforeEach(() => {
+    mocks.applyRemoteNutritionProfile.mockReset();
+    mocks.fetchAuthMe.mockReset();
+    mocks.authHydrated = false;
+    mocks.suppressRemoteRestore = false;
+  });
+
   it('restores a remote profile after hydration on cold start', async () => {
     const nutritionProfile = {
       profile: {
@@ -93,5 +106,28 @@ describe('OnboardingPage', () => {
         nutritionProfile,
       );
     });
+  });
+
+  it('skips remote restore after explicit onboarding restart', async () => {
+    mocks.suppressRemoteRestore = true;
+    mocks.authHydrated = true;
+    mocks.fetchAuthMe.mockResolvedValue({
+      nutritionProfile: {
+        profile: { gender: 'male' },
+        targets: { kcal: 2000 },
+      },
+    });
+    const { OnboardingPage } = await import('./OnboardingPage');
+
+    render(
+      <MemoryRouter>
+        <OnboardingPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(mocks.fetchAuthMe).not.toHaveBeenCalled();
+    });
+    expect(mocks.applyRemoteNutritionProfile).not.toHaveBeenCalled();
   });
 });

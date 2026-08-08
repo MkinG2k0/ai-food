@@ -6,8 +6,10 @@ import { ImageIcon, X, Zap, ZapOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   BarcodeProductConfirm,
-  BarcodeScanner,
+  LiveBarcodeScan,
   OffProductError,
+  detectBarcodeInFile,
+  detectBarcodeInVideo,
   normalizeBarcode,
   useProductByBarcode,
   useSaveBarcodeMeal,
@@ -17,7 +19,8 @@ import { TextareaWithVoice, Button } from '@/shared/ui';
 import { AI_IMAGE_MAX_SIDE, cn } from '@/shared/lib';
 import { captureVideoFrame } from '../lib/captureVideoFrame';
 import { createCaptureLock } from '../lib/createCaptureLock';
-import { drawVideoCover } from '../lib/drawVideoCover';
+import { drawVideoContain } from '../lib/drawVideoContain';
+import { openRearCamera } from '../lib/openRearCamera';
 
 type ScanMode = 'food' | 'barcode';
 
@@ -37,7 +40,6 @@ export function ScanPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [lookupCode, setLookupCode] = useState<string | null>(null);
-  const [manualCode, setManualCode] = useState('');
   const [savingBarcode, setSavingBarcode] = useState(false);
   const [capturing, setCapturing] = useState(false);
 
@@ -52,6 +54,12 @@ export function ScanPage() {
   const { data, error, isFetching, isSuccess, isError } =
     useProductByBarcode(lookupCode);
 
+  const showBarcodeConfirm =
+    mode === 'barcode' && Boolean(lookupCode) && isSuccess && data && !isFetching;
+
+  /** Keep one stream for food↔barcode; stop only on photo pending / product confirm. */
+  const cameraActive = !pendingPhoto && !showBarcodeConfirm;
+
   const stopStream = useCallback(() => {
     const video = videoRef.current;
     if (video) {
@@ -63,10 +71,9 @@ export function ScanPage() {
     setTorchSupported(false);
   }, []);
 
-  // Live preview: getUserMedia → hidden <video> → canvas (Android WebView paints a
-  // giant Play overlay on <video>; CSS cannot reliably hide it).
+  // Shared live preview for food + barcode (hidden video → canvas; no WebView Play glyph).
   useEffect(() => {
-    if (mode !== 'food' || pendingPhoto) {
+    if (!cameraActive) {
       stopStream();
       return;
     }
@@ -86,10 +93,7 @@ export function ScanPage() {
           }
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: { facingMode: { ideal: 'environment' } },
-        });
+        const stream = await openRearCamera();
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -149,33 +153,36 @@ export function ScanPage() {
       cancelled = true;
       stopStream();
     };
-  }, [mode, pendingPhoto, stopStream]);
+  }, [cameraActive, stopStream]);
 
   // Mirror camera frames onto canvas so the WebView Play glyph never shows.
   useEffect(() => {
-    if (mode !== 'food' || pendingPhoto || cameraError) return;
+    if (!cameraActive || cameraError) return;
 
     let raf = 0;
     const tick = () => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       if (video && canvas && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        const w = canvas.clientWidth;
-        const h = canvas.clientHeight;
-        if (w > 0 && h > 0) {
+        const cssW = canvas.clientWidth;
+        const cssH = canvas.clientHeight;
+        if (cssW > 0 && cssH > 0) {
+          const dpr = Math.min(window.devicePixelRatio || 1, 3);
+          const w = Math.round(cssW * dpr);
+          const h = Math.round(cssH * dpr);
           if (canvas.width !== w || canvas.height !== h) {
             canvas.width = w;
             canvas.height = h;
           }
           const ctx = canvas.getContext('2d');
-          if (ctx) drawVideoCover(ctx, video, w, h);
+          if (ctx) drawVideoContain(ctx, video, w, h);
         }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [mode, pendingPhoto, cameraError]);
+  }, [cameraActive, cameraError]);
 
   useEffect(() => {
     return () => {
@@ -203,7 +210,6 @@ export function ScanPage() {
     captureLockRef.current.unlock();
     setCapturing(false);
     setLookupCode(null);
-    setManualCode('');
     setPendingPhoto(null);
     setDescription('');
     setPreviewUrl((prev) => {
@@ -242,8 +248,31 @@ export function ScanPage() {
     setDescription('');
   };
 
+  const acceptBarcodeCode = (code: string) => {
+    const normalized = normalizeBarcode(code);
+    if (normalized.length < 8) {
+      toast.message('Не удалось распознать код');
+      return;
+    }
+    setLookupCode(normalized);
+  };
+
   const handleShutter = async () => {
-    if (cameraError) return;
+    if (cameraError || capturing) return;
+
+    if (mode === 'barcode') {
+      const video = videoRef.current;
+      if (!video) return;
+      setCapturing(true);
+      try {
+        const code = await detectBarcodeInVideo(video);
+        if (code) acceptBarcodeCode(code);
+        else toast.message('Штрихкод не найден — наведите ближе');
+      } finally {
+        setCapturing(false);
+      }
+      return;
+    }
 
     await captureLockRef.current.run(async () => {
       setCapturing(true);
@@ -271,6 +300,18 @@ export function ScanPage() {
     const file = e.currentTarget.files?.[0];
     e.currentTarget.value = '';
     if (!file) return;
+
+    if (mode === 'barcode') {
+      setCapturing(true);
+      void detectBarcodeInFile(file)
+        .then((code) => {
+          if (code) acceptBarcodeCode(code);
+          else toast.message('На фото штрихкод не найден');
+        })
+        .finally(() => setCapturing(false));
+      return;
+    }
+
     setCapturing(true);
     acceptFoodFile(file);
   };
@@ -289,22 +330,7 @@ export function ScanPage() {
   };
 
   const handleScan = (code: string) => {
-    const normalized = normalizeBarcode(code);
-    if (normalized.length < 8) {
-      toast.message('Не удалось распознать код');
-      return;
-    }
-    setManualCode(normalized);
-    setLookupCode(normalized);
-  };
-
-  const handleManualSubmit = () => {
-    const normalized = normalizeBarcode(manualCode);
-    if (normalized.length < 8) {
-      toast.message('Введите штрихкод (минимум 8 цифр)');
-      return;
-    }
-    setLookupCode(normalized);
+    acceptBarcodeCode(code);
   };
 
   const handleConfirmBarcode = async (grams: number) => {
@@ -320,9 +346,6 @@ export function ScanPage() {
       setSavingBarcode(false);
     }
   };
-
-  const showBarcodeConfirm =
-    mode === 'barcode' && Boolean(lookupCode) && isSuccess && data && !isFetching;
 
   if (showBarcodeConfirm && data) {
     return (
@@ -411,81 +434,67 @@ export function ScanPage() {
       </button>
 
       <div className="absolute inset-0">
-        {mode === 'food' ? (
-          cameraError ? (
-            <div className="flex h-full items-center justify-center px-6 text-center text-sm text-white/80">
-              {cameraError}
-            </div>
-          ) : (
-            <>
-              {/* Keep decoding size; opacity 0 hides Android's giant Play overlay. */}
-              <video
-                ref={videoRef}
-                className="camera-preview pointer-events-none absolute inset-0 h-full w-full opacity-0"
-                autoPlay
-                muted
-                playsInline
-                disablePictureInPicture
-                disableRemotePlayback
-                controls={false}
-                controlsList="nodownload nofullscreen noremoteplayback"
-                {...{ 'webkit-playsinline': 'true' }}
-              />
-              <canvas
-                ref={canvasRef}
-                className="absolute inset-0 z-[1] h-full w-full bg-black"
-                aria-hidden
-              />
-              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-                <div className="relative h-48 w-64">
+        {cameraError ? (
+          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-white/80">
+            {cameraError}
+          </div>
+        ) : (
+          <>
+            <video
+              ref={videoRef}
+              className="camera-preview pointer-events-none absolute inset-0 h-full w-full opacity-0"
+              autoPlay
+              muted
+              playsInline
+              disablePictureInPicture
+              disableRemotePlayback
+              controls={false}
+              controlsList="nodownload nofullscreen noremoteplayback"
+              {...{ 'webkit-playsinline': 'true' }}
+            />
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 z-[1] h-full w-full bg-black"
+              aria-hidden
+            />
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+              {mode === 'barcode' ? (
+                <div className="relative h-36 w-72">
                   <span className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-white" />
                   <span className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-white" />
                   <span className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-white" />
                   <span className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-white" />
                 </div>
-              </div>
-            </>
-          )
-        ) : (
-          <div className="flex h-full flex-col justify-center gap-4 px-4 pb-40 pt-16">
-            <BarcodeScanner
-              onScan={handleScan}
-              paused={Boolean(lookupCode) && isFetching}
-            />
-            {isFetching ? (
-              <p className="text-center text-sm text-white/80">Поиск продукта…</p>
-            ) : null}
-            <div className="space-y-2 rounded-xl bg-black/50 p-3">
-              <label className="block space-y-1.5">
-                <span className="text-sm text-white/80">Или введите код</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="EAN / UPC"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleManualSubmit();
-                    }
-                  }}
-                  className="w-full rounded-md border border-white/20 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40"
-                />
-              </label>
-              <Button
-                className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
-                onClick={handleManualSubmit}
-                disabled={isFetching}
-              >
-                Найти
-              </Button>
+              ) : (
+                <div className="relative h-72 w-72">
+                  <span className="absolute left-0 top-0 h-10 w-10 rounded-tl-[1.75rem] border-l-2 border-t-2 border-white" />
+                  <span className="absolute right-0 top-0 h-10 w-10 rounded-tr-[1.75rem] border-r-2 border-t-2 border-white" />
+                  <span className="absolute bottom-0 left-0 h-10 w-10 rounded-bl-[1.75rem] border-b-2 border-l-2 border-white" />
+                  <span className="absolute bottom-0 right-0 h-10 w-10 rounded-br-[1.75rem] border-b-2 border-r-2 border-white" />
+                </div>
+              )}
             </div>
-          </div>
+            {mode === 'barcode' && isFetching ? (
+              <p className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-24 text-center text-sm text-white/90">
+                Поиск продукта…
+              </p>
+            ) : null}
+          </>
         )}
       </div>
 
+      <LiveBarcodeScan
+        videoRef={videoRef}
+        active={
+          mode === 'barcode' &&
+          !cameraError &&
+          !lookupCode &&
+          !capturing
+        }
+        onScan={handleScan}
+      />
+
+      {/* Fixed chrome: mode toggle + controls always same height (no jump on switch). */}
       <div
         className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-5 px-6"
         style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
@@ -513,57 +522,53 @@ export function ScanPage() {
           </button>
         </div>
 
-        {mode === 'food' ? (
-          <div className="flex w-full max-w-sm items-center justify-between">
-            <button
-              type="button"
-              onClick={() => void toggleTorch()}
-              disabled={!torchSupported}
+        <div className="flex w-full max-w-sm items-center justify-between">
+          <button
+            type="button"
+            onClick={() => void toggleTorch()}
+            disabled={!torchSupported}
+            className={cn(
+              'flex h-12 w-12 items-center justify-center rounded-full bg-black/45',
+              !torchSupported && 'opacity-40',
+            )}
+            aria-label={torchOn ? 'Выключить вспышку' : 'Включить вспышку'}
+          >
+            {torchOn ? (
+              <Zap className="h-5 w-5" />
+            ) : (
+              <ZapOff className="h-5 w-5" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void handleShutter()}
+            disabled={Boolean(cameraError) || capturing}
+            className="flex items-center justify-center rounded-full border-4 border-white/80 bg-white disabled:opacity-40"
+            style={{ height: '4.5rem', width: '4.5rem' }}
+            aria-label={
+              mode === 'barcode' ? 'Распознать штрихкод' : 'Сфотографировать'
+            }
+            aria-busy={capturing}
+          >
+            <span
               className={cn(
-                'flex h-12 w-12 items-center justify-center rounded-full bg-black/45',
-                !torchSupported && 'opacity-40',
+                'h-14 w-14 rounded-full bg-white transition-opacity',
+                capturing && 'opacity-50',
               )}
-              aria-label={torchOn ? 'Выключить вспышку' : 'Включить вспышку'}
-            >
-              {torchOn ? (
-                <Zap className="h-5 w-5" />
-              ) : (
-                <ZapOff className="h-5 w-5" />
-              )}
-            </button>
+            />
+          </button>
 
-            <button
-              type="button"
-              onClick={() => void handleShutter()}
-              disabled={Boolean(cameraError) || capturing}
-              className="flex h-18 w-18 items-center justify-center rounded-full border-4 border-white/80 bg-white disabled:opacity-40"
-              style={{ height: '4.5rem', width: '4.5rem' }}
-              aria-label="Сфотографировать"
-              aria-busy={capturing}
-            >
-              <span
-                className={cn(
-                  'h-14 w-14 rounded-full bg-white transition-opacity',
-                  capturing && 'opacity-50',
-                )}
-              />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => galleryInputRef.current?.click()}
-              disabled={capturing}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-black/45 disabled:opacity-40"
-              aria-label="Галерея"
-            >
-              <ImageIcon className="h-5 w-5" />
-            </button>
-          </div>
-        ) : (
-          <p className="pb-2 text-center text-sm text-white/70">
-            Наведите камеру на штрихкод
-          </p>
-        )}
+          <button
+            type="button"
+            onClick={() => galleryInputRef.current?.click()}
+            disabled={capturing}
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-black/45 disabled:opacity-40"
+            aria-label="Галерея"
+          >
+            <ImageIcon className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <input

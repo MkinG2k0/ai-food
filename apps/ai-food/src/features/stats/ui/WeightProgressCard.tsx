@@ -20,11 +20,17 @@ import { WeightTrendChart } from './WeightTrendChart';
 interface WeightProgressCardProps {
   profileWeight: number;
   profileGoal: Goal;
+  /** Target weight from onboarding / profile (source of truth until overridden). */
+  profileTargetWeight?: number | null;
+  /** Persist a new goal back to the nutrition profile. */
+  onTargetWeightChange?: (kg: number) => void;
 }
 
 export function WeightProgressCard({
   profileWeight,
   profileGoal,
+  profileTargetWeight = null,
+  onTargetWeightChange,
 }: WeightProgressCardProps) {
   const entries = useWeightStore((s) => s.entries);
   const goalKg = useWeightStore((s) => s.goalKg);
@@ -35,12 +41,27 @@ export function WeightProgressCard({
   const [goalOpen, setGoalOpen] = useState(false);
 
   const currentKg = latestWeightKg(entries, profileWeight) ?? profileWeight;
-  const effectiveGoal =
-    goalKg ?? defaultGoalKg(profileWeight, profileGoal);
+  const softDefault = defaultGoalKg(profileWeight, profileGoal);
+  const effectiveGoal = goalKg ?? profileTargetWeight ?? softDefault;
 
   useEffect(() => {
-    ensureGoalKg(defaultGoalKg(profileWeight, profileGoal));
-  }, [ensureGoalKg, profileWeight, profileGoal]);
+    if (profileTargetWeight != null) {
+      // Pull onboarding/profile goal — overrides stale soft-seed (±5 kg).
+      const clamped =
+        Math.min(300, Math.max(20, Math.round(profileTargetWeight * 10) / 10));
+      if (goalKg !== clamped) {
+        setGoalKg(clamped);
+      }
+      return;
+    }
+    ensureGoalKg(softDefault);
+  }, [
+    ensureGoalKg,
+    goalKg,
+    profileTargetWeight,
+    setGoalKg,
+    softDefault,
+  ]);
 
   const points = getWeightTrendPoints(entries);
   const title = goalTitle(profileGoal);
@@ -53,7 +74,7 @@ export function WeightProgressCard({
   const suggestedNextGoal = defaultGoalKg(currentKg, profileGoal);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <section
         className={`rounded-2xl border p-4 shadow-sm ${
           reached
@@ -141,7 +162,10 @@ export function WeightProgressCard({
         onClose={() => setGoalOpen(false)}
         initialGoalKg={suggestedNextGoal}
         currentKg={currentKg}
-        onSave={(nextGoal) => setGoalKg(nextGoal)}
+        onSave={(nextGoal) => {
+          onTargetWeightChange?.(nextGoal);
+          setGoalKg(nextGoal);
+        }}
       />
     </div>
   );

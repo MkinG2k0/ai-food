@@ -12,10 +12,13 @@ interface ProfileState {
   profile: UserProfile | null;
   targets: DailyTargets | null;
   micronutrientTargets: MicronutrientEstimate[] | null;
+  /** After "redo onboarding": skip auto-restore from server until setProfile. */
+  suppressRemoteRestore: boolean;
   setProfile: (profile: UserProfile, targets: DailyTargets) => void;
   setMicronutrientTargets: (targets: MicronutrientEstimate[]) => void;
   updateTargets: (targets: DailyTargets) => void;
   updateDietType: (dietType: DietType) => void;
+  updateTargetWeight: (targetWeight: number) => void;
   resetProfile: () => void;
   isComplete: () => boolean;
 }
@@ -26,7 +29,9 @@ export const useProfileStore = create<ProfileState>()(
       profile: null,
       targets: null,
       micronutrientTargets: null,
-      setProfile: (profile, targets) => set({ profile, targets }),
+      suppressRemoteRestore: false,
+      setProfile: (profile, targets) =>
+        set({ profile, targets, suppressRemoteRestore: false }),
       setMicronutrientTargets: (micronutrientTargets) => set({ micronutrientTargets }),
       updateTargets: (targets) => set({ targets }),
       updateDietType: (dietType) => {
@@ -34,8 +39,19 @@ export const useProfileStore = create<ProfileState>()(
         if (!profile) return;
         set({ profile: { ...profile, dietType } });
       },
+      updateTargetWeight: (targetWeight) => {
+        const { profile } = get();
+        if (!profile) return;
+        const kg = Math.min(300, Math.max(20, Math.round(targetWeight * 10) / 10));
+        set({ profile: { ...profile, targetWeight: kg } });
+      },
       resetProfile: () =>
-        set({ profile: null, targets: null, micronutrientTargets: null }),
+        set({
+          profile: null,
+          targets: null,
+          micronutrientTargets: null,
+          suppressRemoteRestore: true,
+        }),
       isComplete: () => get().profile !== null,
     }),
     {
