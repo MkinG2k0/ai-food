@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260807-kps — widget colors follow device theme
-last_updated: "2026-08-07T12:00:00.000Z"
-last_activity: 2026-08-07
-last_activity_desc: "Android widgets adapt to light/dark theme"
+stopped_at: Completed quick task 260809-pwe — barcode scanner camera lag fix
+last_updated: "2026-08-09T15:45:00.000Z"
+last_activity: 2026-08-09
+last_activity_desc: "Barcode live scan: rAF loop + live-safe detect"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-08-07 - Completed quick task 260807-kps: widget colors follow device theme
+Last activity: 2026-08-09 - Completed quick task 260809-pwe: barcode scanner camera lag fix
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -103,6 +103,7 @@ Recent decisions affecting current work:
 - 260807-k0v: Weekly calorie stacked-bar chart widget (Б/Ж/У) + aifood://stats deep link
 - 260807-kjb: Apple Fitness concentric KBJU activity rings widget (shared snapshot)
 - 260807-kps: Widget colors adapt to device light/dark theme (values-night)
+- 260809-pwe: Live barcode — rAF/idle loop + mode live (no JPEG/scanFile hot path); capture for shutter
 
 ### Pending Todos
 
@@ -174,6 +175,7 @@ None yet.
 | 260807-k0v | Android: weekly calorie chart widget with KBJU | 2026-08-07 | 26a6031, 56d7183 | [260807-k0v-android-home-widget-weekly-calorie-chart](./quick/260807-k0v-android-home-widget-weekly-calorie-chart/) |
 | 260807-kjb | Android: Apple Fitness concentric KBJU rings widget | 2026-08-07 | 22c33f7, 9d7292a | [260807-kjb-android-home-widget-apple-fitness-style-](./quick/260807-kjb-android-home-widget-apple-fitness-style-/) |
 | 260807-kps | Android widgets: adapt colors to device light/dark theme | 2026-08-07 | d377d3c | [260807-kps-android-widgets-adapt-colors-to-device-l](./quick/260807-kps-android-widgets-adapt-colors-to-device-l/) |
+| 260809-pwe | Optimize barcode scanner camera lag (rAF + live-safe detect) | 2026-08-09 | c88d9fc, 159b21a, a793488 | [260809-pwe-optimize-barcode-scanner-camera-lag-avoi](./quick/260809-pwe-optimize-barcode-scanner-camera-lag-avoi/) |
 
 ### Blockers/Concerns
 
@@ -182,7 +184,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-07T12:00:00Z
-Stopped at: Completed quick task 260807-kps
+Last session: 2026-08-09T15:45:00Z
+Stopped at: Completed quick task 260809-pwe
 Resume file: None
-Next: Device smoke-test dark theme widgets (`pnpm cap:build`) or /gsd-plan-phase for Phase 2
+Next: Smoke `/scan?mode=barcode` preview smoothness + shutter, or /gsd-plan-phase for Phase 2
