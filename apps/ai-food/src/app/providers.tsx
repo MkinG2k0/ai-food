@@ -24,7 +24,12 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <DiaryStaleAnalyzingRecovery />
       {children}
-      <Toaster position="top-center" richColors />
+      <Toaster
+        position="top-center"
+        richColors
+        offset={{ top: 'max(1rem, env(safe-area-inset-top))' }}
+        mobileOffset={{ top: 'max(1rem, env(safe-area-inset-top))' }}
+      />
     </QueryClientProvider>
   );
 }
