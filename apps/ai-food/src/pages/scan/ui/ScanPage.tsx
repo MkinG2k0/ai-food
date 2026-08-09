@@ -7,9 +7,11 @@ import { toast } from 'sonner';
 import {
   BarcodeProductConfirm,
   LiveBarcodeScan,
+  NativeMlKitBarcodeScan,
   OffProductError,
   detectBarcodeInFile,
   detectBarcodeInVideo,
+  isNativeMlKitBarcodeAvailable,
   normalizeBarcode,
   useProductByBarcode,
   useSaveBarcodeMeal,
@@ -42,6 +44,8 @@ export function ScanPage() {
   const [lookupCode, setLookupCode] = useState<string | null>(null);
   const [savingBarcode, setSavingBarcode] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  /** Native Android ML Kit path; false on web / unsupported. Resolved once. */
+  const [nativeMlKit, setNativeMlKit] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -57,8 +61,24 @@ export function ScanPage() {
   const showBarcodeConfirm =
     mode === 'barcode' && Boolean(lookupCode) && isSuccess && data && !isFetching;
 
-  /** Keep one stream for food↔barcode; stop only on photo pending / product confirm. */
-  const cameraActive = !pendingPhoto && !showBarcodeConfirm;
+  /**
+   * Shared getUserMedia for food + web barcode.
+   * Native ML Kit barcode takes camera ownership — release WebView stream.
+   */
+  const cameraActive =
+    !pendingPhoto &&
+    !showBarcodeConfirm &&
+    !(mode === 'barcode' && nativeMlKit);
+
+  useEffect(() => {
+    let cancelled = false;
+    void isNativeMlKitBarcodeAvailable().then((ok) => {
+      if (!cancelled) setNativeMlKit(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const stopStream = useCallback(() => {
     const video = videoRef.current;
@@ -261,6 +281,11 @@ export function ScanPage() {
     if (cameraError || capturing) return;
 
     if (mode === 'barcode') {
+      // Continuous ML Kit owns the camera — no web detect against empty video.
+      if (nativeMlKit) {
+        toast.message('Наведите на код');
+        return;
+      }
       const video = videoRef.current;
       if (!video) return;
       setCapturing(true);
@@ -421,8 +446,19 @@ export function ScanPage() {
     );
   }
 
+  const barcodeDecodeActive =
+    mode === 'barcode' && !cameraError && !lookupCode && !capturing;
+  const nativeBarcodeActive = nativeMlKit && barcodeDecodeActive;
+  const torchDisabled =
+    !torchSupported || (nativeMlKit && mode === 'barcode');
+
   return (
-    <div className="relative h-svh overflow-hidden bg-black text-white">
+    <div
+      className={cn(
+        'relative h-svh overflow-hidden bg-black text-white',
+        nativeBarcodeActive && 'mlkit-barcode-scan-surface',
+      )}
+    >
       <button
         type="button"
         onClick={handleClose}
@@ -440,23 +476,29 @@ export function ScanPage() {
           </div>
         ) : (
           <>
-            <video
-              ref={videoRef}
-              className="camera-preview pointer-events-none absolute inset-0 h-full w-full opacity-0"
-              autoPlay
-              muted
-              playsInline
-              disablePictureInPicture
-              disableRemotePlayback
-              controls={false}
-              controlsList="nodownload nofullscreen noremoteplayback"
-              {...{ 'webkit-playsinline': 'true' }}
-            />
-            <canvas
-              ref={canvasRef}
-              className="absolute inset-0 z-[1] h-full w-full bg-black"
-              aria-hidden
-            />
+            <div
+              className={cn(
+                nativeBarcodeActive && 'mlkit-barcode-scan-preview',
+              )}
+            >
+              <video
+                ref={videoRef}
+                className="camera-preview pointer-events-none absolute inset-0 h-full w-full opacity-0"
+                autoPlay
+                muted
+                playsInline
+                disablePictureInPicture
+                disableRemotePlayback
+                controls={false}
+                controlsList="nodownload nofullscreen noremoteplayback"
+                {...{ 'webkit-playsinline': 'true' }}
+              />
+              <canvas
+                ref={canvasRef}
+                className="absolute inset-0 z-[1] h-full w-full bg-black"
+                aria-hidden
+              />
+            </div>
             <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
               {mode === 'barcode' ? (
                 <div className="relative h-36 w-72">
@@ -483,16 +525,18 @@ export function ScanPage() {
         )}
       </div>
 
-      <LiveBarcodeScan
-        videoRef={videoRef}
-        active={
-          mode === 'barcode' &&
-          !cameraError &&
-          !lookupCode &&
-          !capturing
-        }
-        onScan={handleScan}
-      />
+      {nativeMlKit ? (
+        <NativeMlKitBarcodeScan
+          active={nativeBarcodeActive}
+          onScan={handleScan}
+        />
+      ) : (
+        <LiveBarcodeScan
+          videoRef={videoRef}
+          active={barcodeDecodeActive}
+          onScan={handleScan}
+        />
+      )}
 
       {/* Fixed chrome: mode toggle + controls always same height (no jump on switch). */}
       <div
@@ -526,10 +570,10 @@ export function ScanPage() {
           <button
             type="button"
             onClick={() => void toggleTorch()}
-            disabled={!torchSupported}
+            disabled={torchDisabled}
             className={cn(
               'flex h-12 w-12 items-center justify-center rounded-full bg-black/45',
-              !torchSupported && 'opacity-40',
+              torchDisabled && 'opacity-40',
             )}
             aria-label={torchOn ? 'Выключить вспышку' : 'Включить вспышку'}
           >
