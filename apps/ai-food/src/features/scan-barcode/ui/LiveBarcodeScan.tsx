@@ -90,7 +90,7 @@ export function LiveBarcodeScan({
       lastAttemptAt = now;
       busyRef.current = true;
       try {
-        const code = await detectBarcodeInVideo(video);
+        const code = await detectBarcodeInVideo(video, { mode: 'live' });
         if (
           !cancelled &&
           code &&
