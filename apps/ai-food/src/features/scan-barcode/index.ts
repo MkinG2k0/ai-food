@@ -16,5 +16,13 @@ export {
 } from './lib/detectBarcode';
 export { LiveBarcodeScan } from './ui/LiveBarcodeScan';
 export type { LiveBarcodeScanProps } from './ui/LiveBarcodeScan';
+export { NativeMlKitBarcodeScan } from './ui/NativeMlKitBarcodeScan';
+export type { NativeMlKitBarcodeScanProps } from './ui/NativeMlKitBarcodeScan';
+export {
+  isNativeMlKitBarcodeAvailable,
+  startNativeMlKitBarcodeScan,
+  stopNativeMlKitBarcodeScan,
+  MLKIT_BARCODE_SCAN_BODY_CLASS,
+} from './lib/nativeBarcodeScan';
 export { BarcodeProductConfirm } from './ui/BarcodeProductConfirm';
 export type { BarcodeProductConfirmProps } from './ui/BarcodeProductConfirm';
