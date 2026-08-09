@@ -20,7 +20,7 @@ export { NativeMlKitBarcodeScan } from './ui/NativeMlKitBarcodeScan';
 export type { NativeMlKitBarcodeScanProps } from './ui/NativeMlKitBarcodeScan';
 export {
   isNativeMlKitBarcodeAvailable,
-  startNativeMlKitBarcodeScan,
+  detectBarcodeInVideoWithMlKit,
   stopNativeMlKitBarcodeScan,
   MLKIT_BARCODE_SCAN_BODY_CLASS,
 } from './lib/nativeBarcodeScan';

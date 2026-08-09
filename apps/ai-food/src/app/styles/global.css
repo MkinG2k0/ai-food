@@ -148,23 +148,14 @@
   }
 
   /*
-   * Native continuous ML Kit barcode scan only (@capacitor-mlkit/barcode-scanning).
-   * Camera is drawn behind the WebView — keep chrome visible, clear opaque layers.
+   * Legacy: continuous ML Kit startScan made the WebView transparent.
+   * Preview is now shared getUserMedia + drawVideoContain (letterbox) for both modes;
+   * these rules only clear a leftover body class from older builds.
    */
   html.mlkit-barcode-scan-active,
-  body.mlkit-barcode-scan-active,
-  body.mlkit-barcode-scan-active #root {
-    background: transparent !important;
-  }
-
-  body.mlkit-barcode-scan-active .mlkit-barcode-scan-surface {
-    background: transparent !important;
-  }
-
-  body.mlkit-barcode-scan-active .mlkit-barcode-scan-preview {
-    visibility: hidden !important;
-    opacity: 0 !important;
-    background: transparent !important;
+  body.mlkit-barcode-scan-active {
+    visibility: visible;
+    background: inherit;
   }
 }
 

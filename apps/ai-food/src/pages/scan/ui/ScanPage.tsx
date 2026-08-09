@@ -11,6 +11,7 @@ import {
   OffProductError,
   detectBarcodeInFile,
   detectBarcodeInVideo,
+  detectBarcodeInVideoWithMlKit,
   isNativeMlKitBarcodeAvailable,
   normalizeBarcode,
   useProductByBarcode,
@@ -62,13 +63,10 @@ export function ScanPage() {
     mode === 'barcode' && Boolean(lookupCode) && isSuccess && data && !isFetching;
 
   /**
-   * Shared getUserMedia for food + web barcode.
-   * Native ML Kit barcode takes camera ownership — release WebView stream.
+   * Shared getUserMedia for food + barcode (letterboxed canvas preview).
+   * Native ML Kit decodes frames from the same stream — no fullscreen startScan.
    */
-  const cameraActive =
-    !pendingPhoto &&
-    !showBarcodeConfirm &&
-    !(mode === 'barcode' && nativeMlKit);
+  const cameraActive = !pendingPhoto && !showBarcodeConfirm;
 
   useEffect(() => {
     let cancelled = false;
@@ -281,16 +279,13 @@ export function ScanPage() {
     if (cameraError || capturing) return;
 
     if (mode === 'barcode') {
-      // Continuous ML Kit owns the camera — no web detect against empty video.
-      if (nativeMlKit) {
-        toast.message('Наведите на код');
-        return;
-      }
       const video = videoRef.current;
       if (!video) return;
       setCapturing(true);
       try {
-        const code = await detectBarcodeInVideo(video);
+        const code = nativeMlKit
+          ? await detectBarcodeInVideoWithMlKit(video)
+          : await detectBarcodeInVideo(video);
         if (code) acceptBarcodeCode(code);
         else toast.message('Штрихкод не найден — наведите ближе');
       } finally {
@@ -449,16 +444,10 @@ export function ScanPage() {
   const barcodeDecodeActive =
     mode === 'barcode' && !cameraError && !lookupCode && !capturing;
   const nativeBarcodeActive = nativeMlKit && barcodeDecodeActive;
-  const torchDisabled =
-    !torchSupported || (nativeMlKit && mode === 'barcode');
+  const torchDisabled = !torchSupported;
 
   return (
-    <div
-      className={cn(
-        'relative h-svh overflow-hidden bg-black text-white',
-        nativeBarcodeActive && 'mlkit-barcode-scan-surface',
-      )}
-    >
+    <div className="relative h-svh overflow-hidden bg-black text-white">
       <button
         type="button"
         onClick={handleClose}
@@ -476,11 +465,7 @@ export function ScanPage() {
           </div>
         ) : (
           <>
-            <div
-              className={cn(
-                nativeBarcodeActive && 'mlkit-barcode-scan-preview',
-              )}
-            >
+            <div>
               <video
                 ref={videoRef}
                 className="camera-preview pointer-events-none absolute inset-0 h-full w-full opacity-0"
@@ -527,6 +512,7 @@ export function ScanPage() {
 
       {nativeMlKit ? (
         <NativeMlKitBarcodeScan
+          videoRef={videoRef}
           active={nativeBarcodeActive}
           onScan={handleScan}
         />
