@@ -18,7 +18,7 @@ import {
   useSaveBarcodeMeal,
 } from '@/features/scan-barcode';
 import { useSaveMeal } from '@/features/save-meal';
-import { TextareaWithVoice, Button } from '@/shared/ui';
+import { TextareaWithVoice, Button, SubpageShell } from '@/shared/ui';
 import { AI_IMAGE_MAX_SIDE, cn } from '@/shared/lib';
 import { captureVideoFrame } from '../lib/captureVideoFrame';
 import { createCaptureLock } from '../lib/createCaptureLock';
@@ -369,75 +369,57 @@ export function ScanPage() {
 
   if (showBarcodeConfirm && data) {
     return (
-      <div className="flex h-svh flex-col bg-background">
-        <header className="flex items-center gap-3 px-4 py-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setLookupCode(null)}
-            aria-label="Назад"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-semibold">Штрихкод</h1>
-        </header>
-        <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
-          <BarcodeProductConfirm
-            product={data}
-            onConfirm={handleConfirmBarcode}
-            onCancel={() => setLookupCode(null)}
-            saving={savingBarcode}
-          />
-        </main>
-      </div>
+      <SubpageShell
+        title="Штрихкод"
+        onBack={() => setLookupCode(null)}
+        mainClassName="flex flex-col pb-safe"
+      >
+        <BarcodeProductConfirm
+          product={data}
+          onConfirm={handleConfirmBarcode}
+          onCancel={() => setLookupCode(null)}
+          saving={savingBarcode}
+        />
+      </SubpageShell>
     );
   }
 
   if (pendingPhoto && previewUrl) {
     return (
-      <div className="flex h-svh flex-col bg-background">
-        <header className="flex items-center gap-3 px-4 py-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              captureLockRef.current.unlock();
-              setCapturing(false);
-              setPendingPhoto(null);
-              setDescription('');
-              setPreviewUrl((prev) => {
-                if (prev) URL.revokeObjectURL(prev);
-                return null;
-              });
-            }}
-            aria-label="Назад"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-semibold">Камера + Описание</h1>
-        </header>
-        <main className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-6">
-          <img
-            src={previewUrl}
-            alt="Снимок блюда"
-            className="h-48 w-full rounded-xl object-cover"
-          />
-          <TextareaWithVoice
-            placeholder="Напр.: куриный салат с рисом, без соуса"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="min-h-28 resize-none"
-            autoFocus
-          />
-          <Button
-            className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
-            onClick={handleSubmitFood}
-            disabled={!description.trim()}
-          >
-            Отправить
-          </Button>
-        </main>
-      </div>
+      <SubpageShell
+        title="Камера + Описание"
+        onBack={() => {
+          captureLockRef.current.unlock();
+          setCapturing(false);
+          setPendingPhoto(null);
+          setDescription('');
+          setPreviewUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+          });
+        }}
+        mainClassName="space-y-4 pb-safe"
+      >
+        <img
+          src={previewUrl}
+          alt="Снимок блюда"
+          className="h-48 w-full rounded-xl object-cover"
+        />
+        <TextareaWithVoice
+          placeholder="Напр.: куриный салат с рисом, без соуса"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="min-h-28 resize-none"
+          autoFocus
+        />
+        <Button
+          className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
+          onClick={handleSubmitFood}
+          disabled={!description.trim()}
+        >
+          Отправить
+        </Button>
+      </SubpageShell>
     );
   }
 

@@ -36,14 +36,19 @@ export function BarcodeProductConfirm({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="flex min-h-full flex-1 flex-col gap-5">
       {product.imageUrl ? (
         <img
           src={product.imageUrl}
           alt={product.name}
-          className="mx-auto h-32 w-32 rounded-xl object-contain bg-muted"
+          className="mx-auto h-32 w-32 rounded-xl bg-muted object-contain"
         />
-      ) : null}
+      ) : (
+        <div
+          className="mx-auto h-32 w-32 rounded-xl bg-muted"
+          aria-hidden
+        />
+      )}
 
       <div className="space-y-1 text-center">
         <h2 className="text-lg font-semibold text-foreground">{product.name}</h2>
@@ -74,28 +79,41 @@ export function BarcodeProductConfirm({
       </label>
 
       {preview ? (
-        <div className="grid grid-cols-2 gap-2 rounded-xl border border-border p-3 text-sm">
-          <div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-border px-4 py-3.5 text-sm">
+          <div className="min-w-0">
             <span className="text-muted-foreground">Ккал</span>
-            <p className="font-medium">{formatCalories(preview.calories)}</p>
+            <p className="font-medium tabular-nums">
+              {formatCalories(preview.calories)}
+            </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <span className="text-muted-foreground">Белки</span>
-            <p className="font-medium">{formatMacro(preview.protein)}</p>
+            <p className="font-medium tabular-nums">
+              {formatMacro(preview.protein)}
+            </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <span className="text-muted-foreground">Жиры</span>
-            <p className="font-medium">{formatMacro(preview.fat)}</p>
+            <p className="font-medium tabular-nums">
+              {formatMacro(preview.fat)}
+            </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <span className="text-muted-foreground">Углеводы</span>
-            <p className="font-medium">{formatMacro(preview.carbs)}</p>
+            <p className="font-medium tabular-nums">
+              {formatMacro(preview.carbs)}
+            </p>
           </div>
         </div>
       ) : null}
 
-      <div className="flex gap-3">
-        <Button variant="outline" className="flex-1" onClick={onCancel} disabled={saving}>
+      <div className="mt-auto flex gap-3 pt-4">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={onCancel}
+          disabled={saving}
+        >
           Назад
         </Button>
         <Button
