@@ -16,6 +16,7 @@
     "cap:open:ios": "cap open ios"
   },
   "dependencies": {
+    "@capacitor-mlkit/barcode-scanning": "^8.1.0",
     "@capacitor/android": "^8.4.2",
     "@capacitor/app": "^8",
     "@capacitor/camera": "^8",
