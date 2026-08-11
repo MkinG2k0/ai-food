@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   defaultGoalKg,
+  formatWeightDeadlineCopy,
   getWeightTrendPoints,
   goalTitle,
   isGoalReached,
@@ -50,5 +51,35 @@ describe('weightProgress helpers', () => {
     expect(points).toHaveLength(2);
     expect(points[0].kg).toBe(70);
     expect(points[1].kg).toBe(69.5);
+  });
+});
+
+describe('formatWeightDeadlineCopy', () => {
+  it('appends deadline when not reached and date present', () => {
+    const formatted = new Date('2026-11-15T12:00:00').toLocaleDateString(
+      'ru-RU',
+      { day: 'numeric', month: 'long', year: 'numeric' },
+    );
+    expect(
+      formatWeightDeadlineCopy('3.5 кг от цели', '2026-11-15', false),
+    ).toBe(`3.5 кг от цели · до ${formatted}`);
+  });
+
+  it('returns remaining only when reached', () => {
+    expect(
+      formatWeightDeadlineCopy('Цель достигнута', '2026-11-15', true),
+    ).toBe('Цель достигнута');
+  });
+
+  it('returns remaining only when date missing', () => {
+    expect(formatWeightDeadlineCopy('8.0 кг осталось', null, false)).toBe(
+      '8.0 кг осталось',
+    );
+    expect(formatWeightDeadlineCopy('8.0 кг осталось', '', false)).toBe(
+      '8.0 кг осталось',
+    );
+    expect(
+      formatWeightDeadlineCopy('8.0 кг осталось', undefined, false),
+    ).toBe('8.0 кг осталось');
   });
 });

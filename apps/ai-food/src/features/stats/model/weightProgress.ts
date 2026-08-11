@@ -58,6 +58,23 @@ export function remainingCopy(
   return `${left.toFixed(1)} кг осталось`;
 }
 
+/** Append « · до <ru date>» when deadline exists and goal not yet reached. */
+export function formatWeightDeadlineCopy(
+  remaining: string,
+  targetWeightDate: string | null | undefined,
+  reached: boolean,
+): string {
+  if (reached) return remaining;
+  const ymd = targetWeightDate?.trim();
+  if (!ymd) return remaining;
+  const formatted = new Date(`${ymd}T12:00:00`).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  return `${remaining} · до ${formatted}`;
+}
+
 export interface WeightChartPoint {
   date: Date;
   kg: number;
