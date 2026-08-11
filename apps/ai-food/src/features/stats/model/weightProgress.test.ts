@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  computeWeightRange,
   defaultGoalKg,
   formatWeightDeadlineCopy,
+  getIdealSegmentInWindow,
   getWeightTrendPoints,
   goalTitle,
+  idealWeightAtDate,
   isGoalReached,
   remainingCopy,
+  viewStartFromEnd,
 } from './weightProgress';
 
 describe('weightProgress helpers', () => {
@@ -81,5 +85,65 @@ describe('formatWeightDeadlineCopy', () => {
     expect(
       formatWeightDeadlineCopy('8.0 кг осталось', undefined, false),
     ).toBe('8.0 кг осталось');
+  });
+});
+
+describe('ideal weight trajectory', () => {
+  it('interpolates midpoint weight halfway through plan days', () => {
+    expect(
+      idealWeightAtDate({
+        planStartDate: '2026-08-01',
+        planStartWeight: 70,
+        targetWeightDate: '2026-08-11',
+        goalKg: 80,
+        atYmd: '2026-08-06',
+      }),
+    ).toBe(75);
+  });
+
+  it('clips ideal segment to the visible window', () => {
+    const seg = getIdealSegmentInWindow({
+      planStartDate: '2026-07-01',
+      planStartWeight: 70,
+      targetWeightDate: '2026-09-01',
+      goalKg: 80,
+      viewStartYmd: '2026-08-01',
+      viewEndYmd: '2026-08-30',
+    });
+    expect(seg).toHaveLength(2);
+    expect(seg[0].date.getFullYear()).toBe(2026);
+    expect(seg[0].date.getMonth()).toBe(7);
+    expect(seg[0].date.getDate()).toBe(1);
+    expect(seg[1].date.getMonth()).toBe(7);
+    expect(seg[1].date.getDate()).toBe(30);
+    expect(seg[0].kg).toBeLessThan(seg[1].kg);
+  });
+
+  it('returns empty segment when window misses the plan', () => {
+    expect(
+      getIdealSegmentInWindow({
+        planStartDate: '2026-01-01',
+        planStartWeight: 70,
+        targetWeightDate: '2026-02-01',
+        goalKg: 75,
+        viewStartYmd: '2026-08-01',
+        viewEndYmd: '2026-08-30',
+      }),
+    ).toEqual([]);
+  });
+
+  it('computes 30-day view start from end', () => {
+    expect(viewStartFromEnd('2026-08-12')).toBe('2026-07-14');
+  });
+
+  it('computes range spanning plan and today', () => {
+    expect(
+      computeWeightRange({
+        planStartDate: '2026-07-01',
+        targetWeightDate: '2026-10-01',
+        entryDates: ['2026-08-05'],
+        todayYmd: '2026-08-12',
+      }),
+    ).toEqual({ startYmd: '2026-07-01', endYmd: '2026-10-01' });
   });
 });
