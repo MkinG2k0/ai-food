@@ -17,9 +17,37 @@ const valid = {
 };
 
 describe('parseNutritionProfile (client)', () => {
-  it('accepts valid payload', () => {
-    expect(parseNutritionProfile(valid)).toEqual(valid);
+  it('accepts valid payload without plan start fields (legacy)', () => {
+    const parsed = parseNutritionProfile(valid);
+    expect(parsed).toEqual(valid);
+    expect(parsed?.profile.planStartDate).toBeUndefined();
+    expect(parsed?.profile.planStartWeight).toBeUndefined();
   });
+
+  it('round-trips plan start fields when present and valid', () => {
+    const withPlanStart = {
+      ...valid,
+      profile: {
+        ...valid.profile,
+        planStartDate: '2026-08-12',
+        planStartWeight: 70,
+      },
+    };
+    expect(parseNutritionProfile(withPlanStart)).toEqual(withPlanStart);
+  });
+
+  it('omits invalid plan start fields without failing parse', () => {
+    const invalidPlanStart = {
+      ...valid,
+      profile: {
+        ...valid.profile,
+        planStartDate: 'not-a-date',
+        planStartWeight: -1,
+      },
+    };
+    expect(parseNutritionProfile(invalidPlanStart)).toEqual(valid);
+  });
+
   it('rejects corrupt', () => {
     expect(parseNutritionProfile({ targets: valid.targets })).toBeNull();
   });

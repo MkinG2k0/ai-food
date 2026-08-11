@@ -10,6 +10,11 @@ const profileSchema = z.object({
   activity: z.enum(['low', 'medium', 'high']),
   goal: z.enum(['lose', 'maintain', 'gain']),
   dietType: z.enum(['none', 'halal', 'vegan', 'vegetarian']),
+  planStartDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  planStartWeight: z.number().positive().optional(),
 });
 
 const targetsSchema = z.object({

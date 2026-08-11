@@ -8,6 +8,10 @@ export type UserProfile = {
   activity: 'low' | 'medium' | 'high';
   goal: 'lose' | 'maintain' | 'gain';
   dietType: 'none' | 'halal' | 'vegan' | 'vegetarian';
+  /** Onboarding plan start day (YYYY-MM-DD); snapshot at finish */
+  planStartDate?: string;
+  /** Weight (kg) at onboarding finish — ideal trajectory start */
+  planStartWeight?: number;
 };
 
 export type DailyTargets = {
@@ -61,7 +65,7 @@ function parseUserProfile(value: unknown): UserProfile | null {
   ) {
     return null;
   }
-  return {
+  const base: UserProfile = {
     gender: v.gender as UserProfile['gender'],
     age: v.age,
     height: v.height,
@@ -72,6 +76,16 @@ function parseUserProfile(value: unknown): UserProfile | null {
     goal: v.goal as UserProfile['goal'],
     dietType: v.dietType as UserProfile['dietType'],
   };
+  if (
+    isNonEmptyString(v.planStartDate) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(v.planStartDate)
+  ) {
+    base.planStartDate = v.planStartDate;
+  }
+  if (isPositiveNumber(v.planStartWeight)) {
+    base.planStartWeight = v.planStartWeight;
+  }
+  return base;
 }
 
 function parseDailyTargets(value: unknown): DailyTargets | null {
