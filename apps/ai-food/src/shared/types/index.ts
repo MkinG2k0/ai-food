@@ -191,6 +191,10 @@ export interface UserProfile {
   targetWeight: number;
   /** Deadline to reach targetWeight (YYYY-MM-DD) */
   targetWeightDate: string;
+  /** Onboarding plan start day (YYYY-MM-DD); snapshot at finish */
+  planStartDate?: string;
+  /** Weight (kg) at onboarding finish — ideal trajectory start */
+  planStartWeight?: number;
   activity: ActivityLevel;
   goal: Goal;
   dietType: DietType;

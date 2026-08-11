@@ -4,7 +4,7 @@ import type { UserProfile } from '@ai-food/shared-types';
 import { useSettingsStore } from '@/features/settings';
 import { useProfileStore } from './useProfileStore';
 import { calculateTargets } from './calculateTargets';
-import { createDefaultProfile } from './defaultProfile';
+import { createDefaultProfile, todayLocalYmd } from './defaultProfile';
 import { syncNutritionProfileToServer } from './syncNutritionProfileToServer';
 import { micronutrientTargetsApi } from '../api/micronutrientTargetsApi';
 
@@ -25,10 +25,15 @@ export function useOnboarding() {
   }
 
   async function completeWithProfile(profile: UserProfile) {
-    const { targets } = calculateTargets(profile);
-    setProfile(profile, targets);
+    const withPlanStart: UserProfile = {
+      ...profile,
+      planStartDate: profile.planStartDate ?? todayLocalYmd(),
+      planStartWeight: profile.planStartWeight ?? profile.weight,
+    };
+    const { targets } = calculateTargets(withPlanStart);
+    setProfile(withPlanStart, targets);
     syncNutritionProfileToServer();
-    const micronutrientTargets = await micronutrientTargetsApi(profile, {
+    const micronutrientTargets = await micronutrientTargetsApi(withPlanStart, {
       model: useSettingsStore.getState().aiModel,
     });
     setMicronutrientTargets(micronutrientTargets);

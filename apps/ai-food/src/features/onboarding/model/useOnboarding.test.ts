@@ -76,7 +76,9 @@ describe('useOnboarding', () => {
       dietType: 'none',
       targetWeight: 75,
       targetWeightDate: '2026-10-16',
+      planStartWeight: 75,
     });
+    expect(setProfileSpy.mock.calls[0][0].planStartDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(setMicronutrientTargetsSpy).toHaveBeenCalledOnce();
     expect(setMicronutrientTargetsSpy.mock.calls[0][0]).toHaveLength(8);
     expect(mockNavigate).toHaveBeenCalledWith('/');
@@ -193,6 +195,8 @@ describe('useOnboarding', () => {
       dietType: 'none',
     });
     expect(setProfileSpy.mock.calls[0][0].targetWeightDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(setProfileSpy.mock.calls[0][0].planStartDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(setProfileSpy.mock.calls[0][0].planStartWeight).toBe(70);
     expect(setMicronutrientTargetsSpy).toHaveBeenCalledOnce();
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
