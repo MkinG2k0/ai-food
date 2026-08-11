@@ -193,6 +193,7 @@ describe('POST /v1/food/*', () => {
           ok: true,
           type: 'food_refine',
           stream: false,
+          deviceId: undefined,
         }),
       ]),
     );

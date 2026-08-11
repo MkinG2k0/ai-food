@@ -150,7 +150,7 @@ chatRouter.post(
                 type: 'chat_completions',
                 stream: true,
                 userId: req.quota?.userId,
-                deviceId: req.quota?.devicePropId,
+                deviceId: req.quota?.deviceRowId,
               });
             }
           }
@@ -177,7 +177,7 @@ chatRouter.post(
           type: 'chat_completions',
           stream: false,
           userId: req.quota?.userId,
-          deviceId: req.quota?.devicePropId,
+          deviceId: req.quota?.deviceRowId,
         });
       }
     } catch (error) {

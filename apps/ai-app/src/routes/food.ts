@@ -192,7 +192,7 @@ async function streamCompletion(
           type: 'food_analyze',
           stream: true,
           userId: req.quota?.userId,
-          deviceId: req.quota?.devicePropId,
+          deviceId: req.quota?.deviceRowId,
         });
       }
     }
@@ -296,7 +296,7 @@ foodRouter.post(
         type: 'food_refine',
         stream: false,
         userId: req.quota?.userId,
-        deviceId: req.quota?.devicePropId,
+        deviceId: req.quota?.deviceRowId,
       });
     }
   }),
@@ -357,7 +357,7 @@ foodRouter.post(
         type: 'food_ask',
         stream: false,
         userId: req.quota?.userId,
-        deviceId: req.quota?.devicePropId,
+        deviceId: req.quota?.deviceRowId,
       });
     }
   }),

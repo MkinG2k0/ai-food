@@ -26,7 +26,7 @@ modelsRouter.get(
         type: 'models',
         stream: false,
         userId: req.quota?.userId,
-        deviceId: req.quota?.devicePropId,
+        deviceId: req.quota?.deviceRowId,
       });
     }
   }),

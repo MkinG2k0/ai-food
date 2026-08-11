@@ -48,7 +48,7 @@ embeddingsRouter.post(
         type: 'embeddings',
         stream: false,
         userId: req.quota?.userId,
-        deviceId: req.quota?.devicePropId,
+        deviceId: req.quota?.deviceRowId,
       });
     }
   }),
