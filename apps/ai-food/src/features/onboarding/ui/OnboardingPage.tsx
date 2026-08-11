@@ -59,7 +59,9 @@ export function OnboardingPage() {
   if (isComplete) return <Navigate to="/" replace />;
 
   const isResult = step > TOTAL_STEPS;
-  const targets = isResult ? calculateTargets(draft as UserProfile) : null;
+  const targets = isResult
+    ? calculateTargets(draft as UserProfile).targets
+    : null;
 
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-background px-6 py-8">

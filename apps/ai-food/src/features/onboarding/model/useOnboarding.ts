@@ -25,7 +25,7 @@ export function useOnboarding() {
   }
 
   async function completeWithProfile(profile: UserProfile) {
-    const targets = calculateTargets(profile);
+    const { targets } = calculateTargets(profile);
     setProfile(profile, targets);
     syncNutritionProfileToServer();
     const micronutrientTargets = await micronutrientTargetsApi(profile, {
