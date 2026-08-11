@@ -511,10 +511,10 @@ cd apps/ai-app && pnpm exec vitest run src/routes/food.test.ts
 - [ ] **Step 4: Run food + chat + embeddings/models tests**
 
 ```bash
-cd apps/ai-app && pnpm exec vitest run src/routes/food.test.ts src/routes/chat.ts src/app.test.ts
+cd apps/ai-app && pnpm exec vitest run src/routes/food.test.ts src/app.test.ts
 ```
 
-(If embeddings/models lack tests, add a minimal createApp POST/GET smoke that mocks OpenAI and asserts finish — only if cheap; otherwise rely on food/chat coverage + manual type-check.)
+Rely on food + app chat coverage for instrumentation; embeddings/models follow the same timer pattern without dedicated route tests in v1.
 
 - [ ] **Step 5: Commit**
 
