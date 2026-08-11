@@ -4,6 +4,19 @@ import OpenAI from 'openai';
 
 vi.mock('openai');
 
+vi.mock('../lib/recordGatewayRequest.js', () => ({
+  startGatewayRequestTimer: () => {
+    const calls: unknown[] = [];
+    (globalThis as { __gwFinishes?: unknown[] }).__gwFinishes = calls;
+    return {
+      markTtfb: vi.fn(),
+      finish: vi.fn(async (opts) => {
+        calls.push(opts);
+      }),
+    };
+  },
+}));
+
 import { createApp } from '../app.js';
 import { DEFAULT_OPENROUTER_MODEL, FOOD_TEMPERATURE } from '../food/modelConfig.js';
 
@@ -172,6 +185,17 @@ describe('POST /v1/food/*', () => {
     expect(args.response_format).toEqual({ type: 'json_object' });
     expect(args.messages[0].role).toBe('system');
     expect(args.messages[0].content).toMatch(/NutritionResult|foodName/i);
+
+    const finishes = (globalThis as { __gwFinishes?: unknown[] }).__gwFinishes;
+    expect(finishes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ok: true,
+          type: 'food_refine',
+          stream: false,
+        }),
+      ]),
+    );
   });
 
   it('refine rejects empty correction', async () => {

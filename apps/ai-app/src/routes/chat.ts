@@ -5,6 +5,7 @@ import { asyncHandler } from '../middleware/error.js';
 import { ApiError, mapOpenAIError } from '../../lib/errors.js';
 import { runOpenAI, runOpenAIHeld } from '../../lib/openai.js';
 import { finalizeQuotaUsage } from '../middleware/quota.js';
+import { startGatewayRequestTimer } from '../lib/recordGatewayRequest.js';
 
 const STREAM_TIMEOUT_MS = 120_000;
 
@@ -66,6 +67,10 @@ chatRouter.post(
 
     try {
       if (body.stream === true) {
+        const timer = startGatewayRequestTimer();
+        let ok = false;
+        let startedUpstream = false;
+
         await runOpenAIHeld(async (client, release) => {
           const createAbort = new AbortController();
           let stream:
@@ -102,8 +107,10 @@ chatRouter.post(
                 { ...baseParams, stream: true },
                 { timeout: STREAM_TIMEOUT_MS, signal: createAbort.signal },
               );
+              startedUpstream = true;
             } catch (error) {
               if (isDisconnected()) return;
+              startedUpstream = true;
               throw error;
             }
 
@@ -123,30 +130,56 @@ chatRouter.post(
 
             for await (const chunk of stream) {
               if (isDisconnected()) break;
+              timer.markTtfb();
               res.write(`data: ${JSON.stringify(chunk)}\n\n`);
             }
             if (!isDisconnected()) {
+              timer.markTtfb();
               res.write('data: [DONE]\n\n');
               completed = true;
+              ok = true;
               res.end();
             }
           } finally {
             req.off('aborted', onDisconnect);
             res.off('close', onDisconnect);
             release();
+            if (startedUpstream) {
+              void timer.finish({
+                ok,
+                type: 'chat_completions',
+                stream: true,
+                userId: req.quota?.userId,
+                deviceId: req.quota?.devicePropId,
+              });
+            }
           }
         });
         return;
       }
 
-      const completion = await runOpenAI((client) =>
-        client.chat.completions.create({
-          ...baseParams,
+      const timer = startGatewayRequestTimer();
+      let ok = false;
+      try {
+        const completion = await runOpenAI((client) =>
+          client.chat.completions.create({
+            ...baseParams,
+            stream: false,
+          }),
+        );
+        await finalizeQuotaUsage(req);
+        timer.markTtfb();
+        ok = true;
+        res.json(completion);
+      } finally {
+        void timer.finish({
+          ok,
+          type: 'chat_completions',
           stream: false,
-        }),
-      );
-      await finalizeQuotaUsage(req);
-      res.json(completion);
+          userId: req.quota?.userId,
+          deviceId: req.quota?.devicePropId,
+        });
+      }
     } catch (error) {
       console.error('OpenRouter chat.completions error:', error);
       if (!res.headersSent) {

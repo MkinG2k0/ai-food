@@ -5,6 +5,7 @@ import { asyncHandler } from '../middleware/error.js';
 import { ApiError, mapOpenAIError } from '../../lib/errors.js';
 import { runOpenAI, runOpenAIHeld } from '../../lib/openai.js';
 import { finalizeQuotaUsage } from '../middleware/quota.js';
+import { startGatewayRequestTimer } from '../lib/recordGatewayRequest.js';
 import {
   DEFAULT_ANALYZE_FEATURES,
   type AnalyzeFeatures,
@@ -108,6 +109,10 @@ async function streamCompletion(
     temperature: FOOD_TEMPERATURE,
   };
 
+  const timer = startGatewayRequestTimer();
+  let ok = false;
+  let startedUpstream = false;
+
   await runOpenAIHeld(async (client, release) => {
     const createAbort = new AbortController();
     let stream:
@@ -144,8 +149,10 @@ async function streamCompletion(
           { ...baseParams, stream: true },
           { timeout: STREAM_TIMEOUT_MS, signal: createAbort.signal },
         );
+        startedUpstream = true;
       } catch (error) {
         if (isDisconnected()) return;
+        startedUpstream = true;
         throw error;
       }
 
@@ -165,17 +172,29 @@ async function streamCompletion(
 
       for await (const chunk of stream) {
         if (isDisconnected()) break;
+        timer.markTtfb();
         res.write(`data: ${JSON.stringify(chunk)}\n\n`);
       }
       if (!isDisconnected()) {
+        timer.markTtfb();
         res.write('data: [DONE]\n\n');
         completed = true;
+        ok = true;
         res.end();
       }
     } finally {
       req.off('aborted', onDisconnect);
       res.off('close', onDisconnect);
       release();
+      if (startedUpstream) {
+        void timer.finish({
+          ok,
+          type: 'food_analyze',
+          stream: true,
+          userId: req.quota?.userId,
+          deviceId: req.quota?.devicePropId,
+        });
+      }
     }
   });
 }
@@ -251,6 +270,8 @@ foodRouter.post(
       features: resolveFeatures(body.features),
     });
 
+    const timer = startGatewayRequestTimer();
+    let ok = false;
     try {
       const completion = await runOpenAI((client) =>
         client.chat.completions.create({
@@ -262,11 +283,21 @@ foodRouter.post(
         }),
       );
       await finalizeQuotaUsage(req);
+      timer.markTtfb();
+      ok = true;
       res.json(completion);
     } catch (error) {
       console.error('OpenRouter food/refine error:', error);
       const mapped = mapOpenAIError(error);
       throw new ApiError(mapped.status, mapped.code, mapped.message);
+    } finally {
+      void timer.finish({
+        ok,
+        type: 'food_refine',
+        stream: false,
+        userId: req.quota?.userId,
+        deviceId: req.quota?.devicePropId,
+      });
     }
   }),
 );
@@ -301,6 +332,8 @@ foodRouter.post(
       question: body.question,
     });
 
+    const timer = startGatewayRequestTimer();
+    let ok = false;
     try {
       const completion = await runOpenAI((client) =>
         client.chat.completions.create({
@@ -311,11 +344,21 @@ foodRouter.post(
         }),
       );
       await finalizeQuotaUsage(req);
+      timer.markTtfb();
+      ok = true;
       res.json(completion);
     } catch (error) {
       console.error('OpenRouter food/ask error:', error);
       const mapped = mapOpenAIError(error);
       throw new ApiError(mapped.status, mapped.code, mapped.message);
+    } finally {
+      void timer.finish({
+        ok,
+        type: 'food_ask',
+        stream: false,
+        userId: req.quota?.userId,
+        deviceId: req.quota?.devicePropId,
+      });
     }
   }),
 );
