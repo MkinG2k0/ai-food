@@ -4,6 +4,11 @@ import {
   clampSeriesDays,
   utcDayKey,
 } from './adminStatsSeries.js';
+import { GATEWAY_REQUEST_TYPES } from './gatewayRequestTypes.js';
+
+function emptyRequestByType(): Record<string, number> {
+  return Object.fromEntries(GATEWAY_REQUEST_TYPES.map((t) => [t, 0]));
+}
 
 describe('clampSeriesDays', () => {
   it('defaults to 30', () => {
@@ -33,6 +38,7 @@ describe('buildAdminStatsSeries', () => {
       userCreatedAts: [],
       payments: [],
       usageEvents: [],
+      gatewayRequests: [],
     });
     expect(result.days).toBe(7);
     expect(result.series.users).toHaveLength(7);
@@ -55,6 +61,7 @@ describe('buildAdminStatsSeries', () => {
       ],
       payments: [],
       usageEvents: [],
+      gatewayRequests: [],
     });
     // days: 08-05, 08-06, 08-07
     expect(result.series.users).toEqual([
@@ -75,6 +82,7 @@ describe('buildAdminStatsSeries', () => {
         { amount: 200, at: new Date('2026-08-07T12:00:00.000Z') },
       ],
       usageEvents: [],
+      gatewayRequests: [],
     });
     expect(result.series.payments).toEqual([
       { date: '2026-08-05', sumKopecks: 0, totalKopecks: 1000 },
@@ -95,10 +103,39 @@ describe('buildAdminStatsSeries', () => {
         { kind: 'refine', at: new Date('2026-08-07T02:00:00.000Z') },
         { kind: 'manual', at: new Date('2026-08-07T03:00:00.000Z') },
       ],
+      gatewayRequests: [],
     });
     expect(result.series.usage).toEqual([
       { date: '2026-08-06', analyze: 1, refine: 0 },
       { date: '2026-08-07', analyze: 1, refine: 1 },
+    ]);
+  });
+
+  it('buckets gateway request types per day into series.requests', () => {
+    const result = buildAdminStatsSeries({
+      days: 2,
+      now,
+      userCreatedAts: [],
+      payments: [],
+      usageEvents: [],
+      gatewayRequests: [
+        { type: 'food_analyze', at: new Date('2026-08-06T01:00:00.000Z') },
+        { type: 'food_ask', at: new Date('2026-08-07T01:00:00.000Z') },
+        { type: 'food_ask', at: new Date('2026-08-07T02:00:00.000Z') },
+        { type: 'unknown_type', at: new Date('2026-08-07T03:00:00.000Z') },
+      ],
+    });
+    expect(result.series.requests).toEqual([
+      {
+        date: '2026-08-06',
+        total: 1,
+        byType: { ...emptyRequestByType(), food_analyze: 1 },
+      },
+      {
+        date: '2026-08-07',
+        total: 2,
+        byType: { ...emptyRequestByType(), food_ask: 2 },
+      },
     ]);
   });
 });

@@ -1,9 +1,12 @@
+import { GATEWAY_REQUEST_TYPES } from './gatewayRequestTypes.js';
+
 export type AdminStatsSeriesResponse = {
   days: number;
   series: {
     users: Array<{ date: string; new: number; total: number }>;
     payments: Array<{ date: string; sumKopecks: number; totalKopecks: number }>;
     usage: Array<{ date: string; analyze: number; refine: number }>;
+    requests: Array<{ date: string; total: number; byType: Record<string, number> }>;
   };
 };
 
@@ -13,7 +16,12 @@ export type BuildAdminStatsSeriesInput = {
   userCreatedAts: Date[];
   payments: Array<{ amount: number; at: Date }>;
   usageEvents: Array<{ kind: string; at: Date }>;
+  gatewayRequests?: Array<{ type: string; at: Date }>;
 };
+
+function emptyRequestByType(): Record<string, number> {
+  return Object.fromEntries(GATEWAY_REQUEST_TYPES.map((t) => [t, 0]));
+}
 
 export function clampSeriesDays(raw: unknown): number {
   const n =
@@ -92,6 +100,20 @@ export function buildAdminStatsSeries(
     }
   }
 
+  const requestsByDay = new Map<string, Record<string, number>>();
+  const knownTypes = new Set<string>(GATEWAY_REQUEST_TYPES);
+  for (const req of input.gatewayRequests ?? []) {
+    if (!knownTypes.has(req.type)) continue;
+    const key = utcDayKey(req.at);
+    if (!keys.includes(key)) continue;
+    let byType = requestsByDay.get(key);
+    if (!byType) {
+      byType = emptyRequestByType();
+      requestsByDay.set(key, byType);
+    }
+    byType[req.type] = (byType[req.type] ?? 0) + 1;
+  }
+
   let runningUsers = totalBefore;
   let runningPay = payBefore;
   const users = keys.map((date) => {
@@ -109,6 +131,11 @@ export function buildAdminStatsSeries(
     analyze: analyzeByDay.get(date) ?? 0,
     refine: refineByDay.get(date) ?? 0,
   }));
+  const requests = keys.map((date) => {
+    const byType = requestsByDay.get(date) ?? emptyRequestByType();
+    const total = GATEWAY_REQUEST_TYPES.reduce((sum, type) => sum + byType[type]!, 0);
+    return { date, total, byType };
+  });
 
-  return { days, series: { users, payments, usage } };
+  return { days, series: { users, payments, usage, requests } };
 }
