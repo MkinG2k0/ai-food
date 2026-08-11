@@ -20,7 +20,7 @@ export function createDefaultProfile(): UserProfile {
     weight: 70,
     activity: 'medium',
     goal: 'maintain',
-    targetWeight: 80.5, // 70 × 1.15 — matches StepTargetWeight default
+    targetWeight: 73.5, // 70 × 1.05 — matches StepTargetWeight default
     targetWeightDate: defaultDeadlineDate(),
     dietType: 'none',
   };

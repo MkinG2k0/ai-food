@@ -11,8 +11,9 @@ import { OnboardingStepHeader } from '../OnboardingStepHeader';
 const MIN = 1;
 const MAX = 500;
 const DEFAULT_DEADLINE_DAYS = 90;
-/** Suggest target ~15% above current so the slider isn't stuck on the same number. */
-const DEFAULT_TARGET_WEIGHT_FACTOR = 1.15;
+/** Suggest target ~5% above current so the slider isn't stuck on the same number
+ *  and a default ~90-day deadline stays inside the safe pace clamp for typical weights. */
+const DEFAULT_TARGET_WEIGHT_FACTOR = 1.05;
 
 function defaultTargetWeight(currentWeight: number): number {
   const suggested =
