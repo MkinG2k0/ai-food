@@ -4,6 +4,7 @@ import {
   buildAdminStatsSeries,
   clampSeriesDays,
 } from '../lib/adminStatsSeries.js';
+import { countWindow, statsByType } from '../lib/gatewayRequestStats.js';
 import { normalizePromoCode } from '../lib/promos.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import { getQuotaLimits } from '../lib/quota.js';
@@ -442,6 +443,7 @@ adminRouter.get(
       usageRefineLast7Days,
       usageAnalyzeLast30Days,
       usageRefineLast30Days,
+      gatewayRows,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({
@@ -473,7 +475,19 @@ adminRouter.get(
       prisma.usageEvent.count({
         where: { kind: 'refine', createdAt: { gte: last30Days } },
       }),
+      prisma.gatewayRequest.findMany({
+        where: { createdAt: { gte: last30Days } },
+        select: {
+          type: true,
+          ok: true,
+          ttfbMs: true,
+          durationMs: true,
+          createdAt: true,
+        },
+      }),
     ]);
+
+    const last7 = gatewayRows.filter((r) => r.createdAt >= last7Days);
 
     res.json({
       usersTotal,
@@ -484,6 +498,11 @@ adminRouter.get(
       usageRefineLast7Days,
       usageAnalyzeLast30Days,
       usageRefineLast30Days,
+      requests: {
+        last7Days: countWindow(last7),
+        last30Days: countWindow(gatewayRows),
+        byType: statsByType(gatewayRows),
+      },
     });
   }),
 );
@@ -496,7 +515,7 @@ adminRouter.get(
     const now = new Date();
     const windowStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
-    const [userRows, paymentRows, usageRows] = await Promise.all([
+    const [userRows, paymentRows, usageRows, gatewayRows] = await Promise.all([
       prisma.user.findMany({ select: { createdAt: true } }),
       prisma.payment.findMany({
         where: { status: 'confirmed' },
@@ -505,6 +524,10 @@ adminRouter.get(
       prisma.usageEvent.findMany({
         where: { createdAt: { gte: windowStart } },
         select: { kind: true, createdAt: true },
+      }),
+      prisma.gatewayRequest.findMany({
+        where: { createdAt: { gte: windowStart } },
+        select: { type: true, createdAt: true },
       }),
     ]);
 
@@ -520,6 +543,10 @@ adminRouter.get(
         usageEvents: usageRows.map((event) => ({
           kind: event.kind,
           at: event.createdAt,
+        })),
+        gatewayRequests: gatewayRows.map((row) => ({
+          type: row.type,
+          at: row.createdAt,
         })),
       }),
     );

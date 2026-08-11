@@ -306,6 +306,9 @@ describe('admin routes', () => {
           },
         ),
       },
+      gatewayRequest: {
+        findMany: vi.fn(async () => []),
+      },
       usageEvent: {
         count: vi.fn(
           async ({
@@ -591,6 +594,24 @@ describe('admin routes', () => {
       usageRefineLast7Days: 4,
       usageAnalyzeLast30Days: 21,
       usageRefineLast30Days: 12,
+      requests: {
+        last7Days: { count: 0, okCount: 0, errorCount: 0 },
+        last30Days: { count: 0, okCount: 0, errorCount: 0 },
+        byType: [],
+      },
+    });
+    expect(response.body.requests).toMatchObject({
+      last7Days: {
+        count: expect.any(Number),
+        okCount: expect.any(Number),
+        errorCount: expect.any(Number),
+      },
+      last30Days: {
+        count: expect.any(Number),
+        okCount: expect.any(Number),
+        errorCount: expect.any(Number),
+      },
+      byType: expect.any(Array),
     });
   });
 
@@ -624,6 +645,7 @@ describe('admin routes', () => {
     expect(response.body.series.users).toHaveLength(7);
     expect(response.body.series.payments).toHaveLength(7);
     expect(response.body.series.usage).toHaveLength(7);
+    expect(response.body.series.requests).toHaveLength(7);
     expect(response.body.series.users[0]).toEqual(
       expect.objectContaining({
         date: expect.any(String),
@@ -631,6 +653,11 @@ describe('admin routes', () => {
         total: expect.any(Number),
       }),
     );
+    expect(response.body.series.requests[0]).toMatchObject({
+      date: expect.any(String),
+      total: expect.any(Number),
+      byType: expect.any(Object),
+    });
   });
 
   it('GET /admin/stats/series requires admin key', async () => {
