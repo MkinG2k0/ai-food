@@ -8,6 +8,7 @@ import {
 } from '../model/useWeightStore';
 import {
   defaultGoalKg,
+  formatWeightDeadlineCopy,
   getWeightTrendPoints,
   goalTitle,
   isGoalReached,
@@ -22,6 +23,8 @@ interface WeightProgressCardProps {
   profileGoal: Goal;
   /** Target weight from onboarding / profile (source of truth until overridden). */
   profileTargetWeight?: number | null;
+  /** Deadline YYYY-MM-DD from profile; shown next to remaining copy. */
+  profileTargetWeightDate?: string | null;
   /** Persist a new goal back to the nutrition profile. */
   onTargetWeightChange?: (kg: number) => void;
 }
@@ -30,6 +33,7 @@ export function WeightProgressCard({
   profileWeight,
   profileGoal,
   profileTargetWeight = null,
+  profileTargetWeightDate = null,
   onTargetWeightChange,
 }: WeightProgressCardProps) {
   const entries = useWeightStore((s) => s.entries);
@@ -72,6 +76,17 @@ export function WeightProgressCard({
     entries,
   );
   const suggestedNextGoal = defaultGoalKg(currentKg, profileGoal);
+  const remaining = remainingCopy(
+    currentKg,
+    effectiveGoal,
+    profileGoal,
+    entries,
+  );
+  const progressLine = formatWeightDeadlineCopy(
+    remaining,
+    profileTargetWeightDate,
+    reached,
+  );
 
   return (
     <div className="space-y-3">
@@ -135,7 +150,7 @@ export function WeightProgressCard({
             reached ? 'font-medium text-primary' : 'text-muted-foreground'
           }`}
         >
-          {remainingCopy(currentKg, effectiveGoal, profileGoal, entries)}
+          {progressLine}
         </p>
 
         {reached && (
