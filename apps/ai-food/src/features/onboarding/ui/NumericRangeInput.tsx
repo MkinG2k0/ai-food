@@ -20,7 +20,7 @@ export function NumericRangeInput({
   onSliderChange,
 }: NumericRangeInputProps) {
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-2.5">
       <div className="flex items-baseline gap-1">
         <input
           type="text"
@@ -33,9 +33,9 @@ export function NumericRangeInput({
           aria-valuemin={min}
           aria-valuemax={max}
           aria-valuenow={value}
-          className="w-24 rounded-lg border border-border bg-background px-3 py-2 text-center text-2xl font-bold tabular-nums"
+          className="w-20 rounded-lg border border-border bg-background px-2 py-1.5 text-center text-xl font-bold tabular-nums"
         />
-        {unit && <span className="text-muted-foreground">{unit}</span>}
+        {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
       <input
         type="range"

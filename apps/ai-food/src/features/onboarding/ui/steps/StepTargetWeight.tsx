@@ -6,7 +6,6 @@ import { evaluateWeightPace } from '../../model/evaluateWeightPace';
 import { PACE_WARNING_STEP } from '../../model/paceWarningCopy';
 import { useNumericRangeInput } from '../../model/useNumericRangeInput';
 import { NumericRangeInput } from '../NumericRangeInput';
-import { OnboardingStepHeader } from '../OnboardingStepHeader';
 import { PaceDeadlineCalendar } from '../PaceDeadlineCalendar';
 
 const MIN = 1;
@@ -82,8 +81,13 @@ export function StepTargetWeight({
       : null;
 
   return (
-    <div className="flex flex-col gap-6">
-      <OnboardingStepHeader emoji="🎯" title="Желаемый вес" />
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-center gap-2 text-center">
+        <span className="text-2xl leading-none" aria-hidden="true">
+          🎯
+        </span>
+        <h2 className="text-lg font-semibold">Желаемый вес</h2>
+      </div>
       <NumericRangeInput
         min={MIN}
         max={MAX}
@@ -94,11 +98,13 @@ export function StepTargetWeight({
         onTextBlur={handleTextBlur}
         onSliderChange={handleSliderChange}
       />
-      <div className="space-y-2">
-        <span className="text-sm font-medium">До какого числа</span>
-        <p className="text-xs text-muted-foreground">
-          Цвет дня — насколько реально успеть к этой дате
-        </p>
+      <div className="space-y-1.5">
+        <div>
+          <span className="text-sm font-medium">До какого числа</span>
+          <p className="text-[11px] text-muted-foreground">
+            Цвет дня — насколько реально успеть
+          </p>
+        </div>
         <PaceDeadlineCalendar
           weight={currentWeight}
           targetWeight={value}
@@ -106,28 +112,29 @@ export function StepTargetWeight({
           onChange={setTargetWeightDate}
         />
       </div>
-      <div className="min-h-[4.5rem]">
+      <div className="sticky bottom-0 z-10 space-y-2 bg-background pb-1 pt-1">
         {pace?.clamped && (
           <p
             role="status"
-            className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-left text-sm text-foreground"
+            className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-left text-xs text-foreground " 
           >
             {PACE_WARNING_STEP}
           </p>
         )}
+        <Button
+          disabled={!dateValid}
+          onClick={() => {
+            if (!dateValid) return;
+            onNext({
+              targetWeight: getCommittedValue(),
+              targetWeightDate,
+            });
+          }}
+          className="w-full"
+        >
+          Далее
+        </Button>
       </div>
-      <Button
-        disabled={!dateValid}
-        onClick={() => {
-          if (!dateValid) return;
-          onNext({
-            targetWeight: getCommittedValue(),
-            targetWeightDate,
-          });
-        }}
-      >
-        Далее
-      </Button>
     </div>
   );
 }

@@ -130,37 +130,37 @@ export function PaceDeadlineCalendar({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => shiftMonth(-1)}
-          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label="Предыдущий месяц"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
         <span className="text-sm font-semibold tabular-nums">{title}</span>
         <button
           type="button"
           onClick={() => shiftMonth(1)}
-          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           aria-label="Следующий месяц"
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-muted-foreground">
+      <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] text-muted-foreground">
         {WEEKDAYS.map((d) => (
-          <div key={d} className="py-1 font-medium">
+          <div key={d} className="py-0.5 font-medium">
             {d}
           </div>
         ))}
       </div>
 
       <div
-        className="grid grid-cols-7 gap-1"
+        className="grid grid-cols-7 gap-0.5"
         role="grid"
         aria-label="Календарь цели"
       >
@@ -186,7 +186,7 @@ export function PaceDeadlineCalendar({
               }
               aria-pressed={isSelected}
               className={[
-                'relative flex h-10 items-center justify-center rounded-lg text-sm tabular-nums transition-shadow',
+                'relative flex h-8 items-center justify-center rounded-md text-xs tabular-nums transition-shadow',
                 cell.inMonth ? 'opacity-100' : 'opacity-35',
                 disabled
                   ? 'cursor-not-allowed text-muted-foreground/50'
@@ -205,16 +205,16 @@ export function PaceDeadlineCalendar({
         })}
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <div
-          className="h-2 w-full rounded-full"
+          className="h-1.5 w-full rounded-full"
           style={{
             background:
               'linear-gradient(90deg, hsl(130 72% 70%), hsl(65 72% 70%), hsl(0 72% 70%))',
           }}
           aria-hidden
         />
-        <div className="flex justify-between text-[11px] text-muted-foreground">
+        <div className="flex justify-between text-[10px] text-muted-foreground">
           <span>Спокойно</span>
           <span>Сложно</span>
           <span>Нереально</span>
