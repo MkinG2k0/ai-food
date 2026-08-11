@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   computeWeightRange,
   defaultGoalKg,
+  evaluateWeightPaceStatus,
   formatWeightDeadlineCopy,
   getIdealSegmentInWindow,
   getWeightTrendPoints,
@@ -145,5 +146,92 @@ describe('ideal weight trajectory', () => {
         todayYmd: '2026-08-12',
       }),
     ).toEqual({ startYmd: '2026-07-01', endYmd: '2026-10-01' });
+  });
+});
+
+describe('evaluateWeightPaceStatus', () => {
+  const base = {
+    planStartDate: '2026-08-01',
+    planStartWeight: 70,
+    targetWeightDate: '2026-08-31',
+    goalKg: 80,
+    todayYmd: '2026-08-16', // midpoint → ideal 75
+    reached: false,
+  };
+
+  it('returns behind for gain when current is ≥0.5 below ideal', () => {
+    const s = evaluateWeightPaceStatus({
+      ...base,
+      goal: 'gain',
+      currentKg: 74.4,
+    });
+    expect(s).toEqual({
+      kind: 'behind',
+      lagKg: 0.6,
+      label: 'Отстаём на 0.6 кг',
+    });
+  });
+
+  it('returns ahead for gain when current is ≥0.5 above ideal', () => {
+    const s = evaluateWeightPaceStatus({
+      ...base,
+      goal: 'gain',
+      currentKg: 75.7,
+    });
+    expect(s).toEqual({
+      kind: 'ahead',
+      lagKg: 0.7,
+      label: 'Впереди плана на 0.7 кг',
+    });
+  });
+
+  it('returns null when within 0.5 kg', () => {
+    expect(
+      evaluateWeightPaceStatus({ ...base, goal: 'gain', currentKg: 75.2 }),
+    ).toBeNull();
+  });
+
+  it('returns behind for lose when current above ideal', () => {
+    const s = evaluateWeightPaceStatus({
+      planStartDate: '2026-08-01',
+      planStartWeight: 80,
+      targetWeightDate: '2026-08-31',
+      goalKg: 70,
+      todayYmd: '2026-08-16', // ideal 75
+      goal: 'lose',
+      currentKg: 75.8,
+      reached: false,
+    });
+    expect(s?.kind).toBe('behind');
+    expect(s?.lagKg).toBe(0.8);
+  });
+
+  it('returns null for maintain, reached, or missing plan', () => {
+    expect(
+      evaluateWeightPaceStatus({
+        ...base,
+        goal: 'maintain',
+        currentKg: 70,
+      }),
+    ).toBeNull();
+    expect(
+      evaluateWeightPaceStatus({
+        ...base,
+        goal: 'gain',
+        currentKg: 74,
+        reached: true,
+      }),
+    ).toBeNull();
+    expect(
+      evaluateWeightPaceStatus({
+        goal: 'gain',
+        currentKg: 70,
+        goalKg: 80,
+        reached: false,
+        planStartDate: null,
+        planStartWeight: 70,
+        targetWeightDate: '2026-08-31',
+      }),
+    ).toBeNull();
   });
 });

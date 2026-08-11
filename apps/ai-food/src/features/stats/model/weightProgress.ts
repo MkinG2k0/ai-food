@@ -137,6 +137,64 @@ export function calendarDaysBetween(aYmd: string, bYmd: string): number {
   return Math.round((b.getTime() - a.getTime()) / (24 * 60 * 60 * 1000));
 }
 
+export const PACE_STATUS_EPS_KG = 0.5;
+
+export type WeightPaceStatus = {
+  kind: 'behind' | 'ahead';
+  lagKg: number;
+  label: string;
+};
+
+/** Compare current kg to ideal trajectory today; null if on track / N/A. */
+export function evaluateWeightPaceStatus(input: {
+  goal: Goal;
+  currentKg: number;
+  planStartDate?: string | null;
+  planStartWeight?: number | null;
+  targetWeightDate?: string | null;
+  goalKg: number;
+  todayYmd?: string;
+  reached: boolean;
+}): WeightPaceStatus | null {
+  if (input.reached) return null;
+  if (input.goal !== 'lose' && input.goal !== 'gain') return null;
+  if (
+    !input.planStartDate ||
+    input.planStartWeight == null ||
+    !input.targetWeightDate
+  ) {
+    return null;
+  }
+  const todayYmd = input.todayYmd ?? toLocalYmd(new Date());
+  const idealKg = idealWeightAtDate({
+    planStartDate: input.planStartDate,
+    planStartWeight: input.planStartWeight,
+    targetWeightDate: input.targetWeightDate,
+    goalKg: input.goalKg,
+    atYmd: todayYmd,
+  });
+  if (idealKg == null) return null;
+
+  const signed =
+    input.goal === 'gain'
+      ? idealKg - input.currentKg
+      : input.currentKg - idealKg;
+  const abs = Math.round(Math.abs(signed) * 10) / 10;
+  if (abs < PACE_STATUS_EPS_KG) return null;
+  if (signed > 0) {
+    return {
+      kind: 'behind',
+      lagKg: abs,
+      label: `Отстаём на ${abs.toFixed(1)} кг`,
+    };
+  }
+  return {
+    kind: 'ahead',
+    lagKg: abs,
+    label: `Впереди плана на ${abs.toFixed(1)} кг`,
+  };
+}
+
 export function idealWeightAtDate(input: {
   planStartDate: string;
   planStartWeight: number;
