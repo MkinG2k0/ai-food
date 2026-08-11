@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
 import type { Goal } from '@ai-food/shared-types';
 import { Button } from '@/shared/ui';
@@ -7,12 +7,19 @@ import {
   useWeightStore,
 } from '../model/useWeightStore';
 import {
+  addLocalDays,
+  clampViewEndYmd,
+  computeWeightRange,
   defaultGoalKg,
+  defaultViewEndYmd,
   formatWeightDeadlineCopy,
-  getWeightTrendPoints,
+  getIdealSegmentInWindow,
   goalTitle,
   isGoalReached,
+  parseLocalYmd,
   remainingCopy,
+  toLocalYmd,
+  viewStartFromEnd,
 } from '../model/weightProgress';
 import { LogWeightSheet } from './LogWeightSheet';
 import { UpdateGoalSheet } from './UpdateGoalSheet';
@@ -25,6 +32,10 @@ interface WeightProgressCardProps {
   profileTargetWeight?: number | null;
   /** Deadline YYYY-MM-DD from profile; shown next to remaining copy. */
   profileTargetWeightDate?: string | null;
+  /** Onboarding plan start day (YYYY-MM-DD). */
+  profilePlanStartDate?: string | null;
+  /** Weight snapshot at onboarding finish. */
+  profilePlanStartWeight?: number | null;
   /** Persist a new goal back to the nutrition profile. */
   onTargetWeightChange?: (kg: number) => void;
 }
@@ -34,6 +45,8 @@ export function WeightProgressCard({
   profileGoal,
   profileTargetWeight = null,
   profileTargetWeightDate = null,
+  profilePlanStartDate = null,
+  profilePlanStartWeight = null,
   onTargetWeightChange,
 }: WeightProgressCardProps) {
   const entries = useWeightStore((s) => s.entries);
@@ -67,7 +80,86 @@ export function WeightProgressCard({
     softDefault,
   ]);
 
-  const points = getWeightTrendPoints(entries);
+  const todayYmd = toLocalYmd(new Date());
+  const range = useMemo(
+    () =>
+      computeWeightRange({
+        planStartDate: profilePlanStartDate ?? undefined,
+        targetWeightDate: profileTargetWeightDate ?? undefined,
+        entryDates: entries.map((e) => e.date),
+        todayYmd,
+      }),
+    [
+      profilePlanStartDate,
+      profileTargetWeightDate,
+      entries,
+      todayYmd,
+    ],
+  );
+
+  const [viewEndYmd, setViewEndYmd] = useState(() =>
+    defaultViewEndYmd(range.endYmd, todayYmd),
+  );
+
+  useEffect(() => {
+    setViewEndYmd((prev) =>
+      clampViewEndYmd(prev, range.startYmd, range.endYmd),
+    );
+  }, [range.startYmd, range.endYmd]);
+
+  const clampedViewEnd = clampViewEndYmd(
+    viewEndYmd,
+    range.startYmd,
+    range.endYmd,
+  );
+  const viewStartYmd = viewStartFromEnd(clampedViewEnd);
+  // If range shorter than 30d, start at range.start
+  const effectiveViewStartYmd =
+    viewStartYmd < range.startYmd ? range.startYmd : viewStartYmd;
+
+  const viewStart =
+    parseLocalYmd(effectiveViewStartYmd) ?? new Date();
+  const viewEnd = parseLocalYmd(clampedViewEnd) ?? new Date();
+
+  const windowPoints = useMemo(
+    () =>
+      entries
+        .filter(
+          (e) =>
+            e.date >= effectiveViewStartYmd && e.date <= clampedViewEnd,
+        )
+        .map((e) => ({
+          date: parseLocalYmd(e.date) ?? new Date(),
+          kg: e.kg,
+        })),
+    [entries, effectiveViewStartYmd, clampedViewEnd],
+  );
+
+  const idealPoints = useMemo(() => {
+    if (
+      !profilePlanStartDate ||
+      profilePlanStartWeight == null ||
+      !profileTargetWeightDate
+    ) {
+      return [];
+    }
+    return getIdealSegmentInWindow({
+      planStartDate: profilePlanStartDate,
+      planStartWeight: profilePlanStartWeight,
+      targetWeightDate: profileTargetWeightDate,
+      goalKg: effectiveGoal,
+      viewStartYmd: effectiveViewStartYmd,
+      viewEndYmd: clampedViewEnd,
+    });
+  }, [
+    profilePlanStartDate,
+    profilePlanStartWeight,
+    profileTargetWeightDate,
+    effectiveGoal,
+    effectiveViewStartYmd,
+    clampedViewEnd,
+  ]);
+
   const title = goalTitle(profileGoal);
   const reached = isGoalReached(
     currentKg,
@@ -163,7 +255,21 @@ export function WeightProgressCard({
         )}
       </section>
 
-      <WeightTrendChart points={points} goalKg={effectiveGoal} />
+      <WeightTrendChart
+        points={windowPoints}
+        idealPoints={idealPoints}
+        goalKg={effectiveGoal}
+        viewStart={viewStart}
+        viewEnd={viewEnd}
+        onPanDays={(deltaDays) => {
+          const next = toLocalYmd(
+            addLocalDays(parseLocalYmd(clampedViewEnd) ?? new Date(), deltaDays),
+          );
+          setViewEndYmd(
+            clampViewEndYmd(next, range.startYmd, range.endYmd),
+          );
+        }}
+      />
 
       <LogWeightSheet
         open={logOpen}

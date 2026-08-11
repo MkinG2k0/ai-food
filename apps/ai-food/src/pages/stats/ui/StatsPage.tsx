@@ -39,6 +39,8 @@ export function StatsPage() {
           profileGoal={profile.goal}
           profileTargetWeight={profile.targetWeight}
           profileTargetWeightDate={profile.targetWeightDate}
+          profilePlanStartDate={profile.planStartDate}
+          profilePlanStartWeight={profile.planStartWeight}
           onTargetWeightChange={(kg) => {
             updateTargetWeight(kg);
             syncNutritionProfileToServer();
