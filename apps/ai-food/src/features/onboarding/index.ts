@@ -4,3 +4,7 @@ export { useProfileHydrated } from './model/useProfileHydrated';
 export { defaultMicronutrientTargets } from './model/defaultMicronutrientTargets';
 export { applyRemoteNutritionProfile } from './model/applyRemoteNutritionProfile';
 export { syncNutritionProfileToServer } from './model/syncNutritionProfileToServer';
+export {
+  reconcileNutritionProfileAfterLogin,
+  type NutritionProfileLoginSource,
+} from './model/reconcileNutritionProfileAfterLogin';

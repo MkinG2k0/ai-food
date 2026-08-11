@@ -8,7 +8,7 @@ import {
 } from '@/features/auth';
 import { Button } from '@/shared/ui';
 import { cn } from '@/shared/lib';
-import { applyRemoteNutritionProfile } from '../../model/applyRemoteNutritionProfile';
+import { reconcileNutritionProfileAfterLogin } from '../../model/reconcileNutritionProfileAfterLogin';
 import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
 interface StepGenderProps {
@@ -64,9 +64,11 @@ export function StepGender({ onNext }: StepGenderProps) {
           </div>
           <TelegramBotLoginButton
             onSuccess={(result) => {
-              if (result.nutritionProfile) {
-                applyRemoteNutritionProfile(result.nutritionProfile);
-                toast.success('С возвращением');
+              const source = reconcileNutritionProfileAfterLogin(result);
+              if (source === 'remote' || source === 'local-uploaded') {
+                toast.success(
+                  source === 'remote' ? 'С возвращением' : 'Вход выполнен',
+                );
                 navigate('/', { replace: true });
                 return;
               }

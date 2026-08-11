@@ -9,10 +9,7 @@ import {
   useAuthStore,
   useUsage,
 } from '@/features/auth';
-import {
-  applyRemoteNutritionProfile,
-  useProfileStore,
-} from '@/features/onboarding';
+import { reconcileNutritionProfileAfterLogin } from '@/features/onboarding';
 import { Button, SubpageShell } from '@/shared/ui';
 
 export function LoginPage() {
@@ -25,15 +22,16 @@ export function LoginPage() {
   const totalAfterLogin = freeLimit + loginBonus;
 
   const handleLoginSuccess = (result: AuthLoginResult) => {
-    if (result.nutritionProfile) {
-      applyRemoteNutritionProfile(result.nutritionProfile);
+    const source = reconcileNutritionProfileAfterLogin(result);
+    if (source === 'remote') {
       toast.success('С возвращением');
       navigate('/', { replace: true });
       return;
     }
     toast.success('Вход выполнен');
-    const hasLocal = useProfileStore.getState().profile !== null;
-    navigate(hasLocal ? '/' : '/onboarding', { replace: true });
+    navigate(source === 'local-uploaded' ? '/' : '/onboarding', {
+      replace: true,
+    });
   };
 
   const handleDemoSignIn = async () => {
