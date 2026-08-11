@@ -10,8 +10,10 @@ export type WeightPaceResult = PaceWarning & {
 };
 
 const KCAL_PER_KG = 7000;
-const DELTA_MIN = -500;
-const DELTA_MAX = 300;
+/** Safe daily deficit clamp (kcal). */
+export const PACE_DELTA_MIN = -500;
+/** Safe daily surplus clamp (kcal). */
+export const PACE_DELTA_MAX = 500;
 const NEAR_ZERO_KG = 0.5;
 
 function parseLocalDateYmd(value: string): Date | null {
@@ -62,7 +64,7 @@ export function evaluateWeightPace(input: {
       ? 0
       : Math.round((deltaKg * KCAL_PER_KG) / days);
 
-  const clampedDeltaKcal = clamp(rawDeltaKcal, DELTA_MIN, DELTA_MAX);
+  const clampedDeltaKcal = clamp(rawDeltaKcal, PACE_DELTA_MIN, PACE_DELTA_MAX);
 
   return {
     deltaKg,

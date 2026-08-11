@@ -51,7 +51,7 @@ describe('calculateTargets', () => {
     expect(targets.kcal).toBe(1345);
   });
 
-  it('clamps +10kg tomorrow to +300 and sets pace.clamped', () => {
+  it('clamps +10kg tomorrow to +500 and sets pace.clamped', () => {
     const { targets, pace } = calculateTargets(
       baseMale({
         weight: 70,
@@ -67,9 +67,9 @@ describe('calculateTargets', () => {
     // BMR male 25/180/70: 10*70+6.25*180-5*25+5 = 700+1125-125+5 = 1705
     // TDEE low 1705*1.2 = 2046
     expect(pace.rawDeltaKcal).toBe(70000);
-    expect(pace.clampedDeltaKcal).toBe(300);
+    expect(pace.clampedDeltaKcal).toBe(500);
     expect(pace.clamped).toBe(true);
-    expect(targets.kcal).toBe(2046 + 300);
+    expect(targets.kcal).toBe(2046 + 500);
   });
 
   it('never goes below round(BMR)', () => {

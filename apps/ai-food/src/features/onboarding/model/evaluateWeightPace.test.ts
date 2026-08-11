@@ -31,7 +31,7 @@ describe('evaluateWeightPace', () => {
     expect(r.clamped).toBe(false);
   });
 
-  it('clamps +10 kg in 1 day to +300', () => {
+  it('clamps +10 kg in 1 day to +500', () => {
     const r = evaluateWeightPace({
       weight: 70,
       targetWeight: 80,
@@ -40,8 +40,22 @@ describe('evaluateWeightPace', () => {
     });
     expect(r.days).toBe(1);
     expect(r.rawDeltaKcal).toBe(70000);
-    expect(r.clampedDeltaKcal).toBe(300);
+    expect(r.clampedDeltaKcal).toBe(500);
     expect(r.clamped).toBe(true);
+  });
+
+  it('allows +5 kg over ~4 months without clamp', () => {
+    // 2026-08-12 → 2026-12-01 = 111 days; +5kg → round(35000/111)=315 < 500
+    const r = evaluateWeightPace({
+      weight: 70,
+      targetWeight: 75,
+      targetWeightDate: '2026-12-01',
+      now,
+    });
+    expect(r.days).toBe(111);
+    expect(r.rawDeltaKcal).toBe(315);
+    expect(r.clampedDeltaKcal).toBe(315);
+    expect(r.clamped).toBe(false);
   });
 
   it('clamps aggressive loss to -500', () => {
