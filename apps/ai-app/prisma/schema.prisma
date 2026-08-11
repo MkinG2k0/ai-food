@@ -96,3 +96,18 @@ model PromoCode {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+model GatewayRequest {
+  id         String   @id @default(cuid())
+  type       String
+  stream     Boolean  @default(false)
+  ok         Boolean
+  ttfbMs     Int?
+  durationMs Int?
+  userId     String?
+  deviceId   String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt, type])
+  @@index([type, createdAt])
+}
