@@ -12,6 +12,7 @@ import {
   computeWeightRange,
   defaultGoalKg,
   defaultViewEndYmd,
+  evaluateWeightPaceStatus,
   formatWeightDeadlineCopy,
   getIdealSegmentInWindow,
   goalTitle,
@@ -214,6 +215,16 @@ export function WeightProgressCard({
     profileTargetWeightDate,
     reached,
   );
+  const paceStatus = evaluateWeightPaceStatus({
+    goal: profileGoal,
+    currentKg,
+    planStartDate: profilePlanStartDate,
+    planStartWeight: profilePlanStartWeight,
+    targetWeightDate: profileTargetWeightDate,
+    goalKg: effectiveGoal,
+    todayYmd,
+    reached,
+  });
 
   return (
     <div className="space-y-3">
@@ -231,6 +242,17 @@ export function WeightProgressCard({
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
                 <Check className="h-3.5 w-3.5" aria-hidden />
                 Цель достигнута
+              </span>
+            )}
+            {!reached && paceStatus && (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                  paceStatus.kind === 'behind'
+                    ? 'bg-amber-500/15 text-amber-800'
+                    : 'bg-primary/15 text-primary'
+                }`}
+              >
+                {paceStatus.label}
               </span>
             )}
           </div>
@@ -274,7 +296,11 @@ export function WeightProgressCard({
 
         <p
           className={`mt-3 text-sm ${
-            reached ? 'font-medium text-primary' : 'text-muted-foreground'
+            reached
+              ? 'font-medium text-primary'
+              : paceStatus?.kind === 'behind'
+                ? 'text-amber-800'
+                : 'text-muted-foreground'
           }`}
         >
           {progressLine}
