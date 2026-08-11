@@ -59,9 +59,7 @@ export function OnboardingPage() {
   if (isComplete) return <Navigate to="/" replace />;
 
   const isResult = step > TOTAL_STEPS;
-  const targets = isResult
-    ? calculateTargets(draft as UserProfile).targets
-    : null;
+  const result = isResult ? calculateTargets(draft as UserProfile) : null;
 
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-background px-6 py-8">
@@ -116,9 +114,14 @@ export function OnboardingPage() {
           />
         )}
         {step === 8 && <StepDiet onNext={next} />}
-        {isResult && targets && (
-          <OnboardingResult targets={targets} onStart={finish} />
+        {isResult && result && (
+          <OnboardingResult
+            targets={result.targets}
+            paceClamped={result.pace.clamped}
+            onStart={finish}
+          />
         )}
+
       </div>
     </div>
   );

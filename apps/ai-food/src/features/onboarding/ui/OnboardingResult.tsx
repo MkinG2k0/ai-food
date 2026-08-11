@@ -1,9 +1,11 @@
 import type { DailyTargets } from '@ai-food/shared-types';
 import { Button } from '@/shared/ui';
+import { PACE_WARNING_RESULT } from '../model/paceWarningCopy';
 import { OnboardingStepHeader } from './OnboardingStepHeader';
 
 interface OnboardingResultProps {
   targets: DailyTargets;
+  paceClamped?: boolean;
   onStart: () => void;
 }
 
@@ -37,7 +39,11 @@ const PHOTO_TIPS = [
   },
 ] as const;
 
-export function OnboardingResult({ targets, onStart }: OnboardingResultProps) {
+export function OnboardingResult({
+  targets,
+  paceClamped,
+  onStart,
+}: OnboardingResultProps) {
   const rows = [
     { label: 'Белки', value: `${targets.protein} г` },
     { label: 'Жиры', value: `${targets.fat} г` },
@@ -54,6 +60,11 @@ export function OnboardingResult({ targets, onStart }: OnboardingResultProps) {
         </span>
         <span className="text-5xl font-bold text-primary">{targets.kcal}</span>
         <span className="text-muted-foreground">ккал в день</span>
+        {paceClamped && (
+          <p role="status" className="mt-2 max-w-sm text-sm text-muted-foreground">
+            {PACE_WARNING_RESULT}
+          </p>
+        )}
       </div>
       <ul className="flex flex-col gap-2 rounded-xl border border-border bg-background p-4 text-left">
         {rows.map((row) => (

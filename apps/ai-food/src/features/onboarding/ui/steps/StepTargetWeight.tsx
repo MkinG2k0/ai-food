@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { UserProfile } from '@ai-food/shared-types';
 import { isFutureDay } from '@/shared/lib';
 import { Button } from '@/shared/ui';
+import { evaluateWeightPace } from '../../model/evaluateWeightPace';
+import { PACE_WARNING_STEP } from '../../model/paceWarningCopy';
 import { useNumericRangeInput } from '../../model/useNumericRangeInput';
 import { NumericRangeInput } from '../NumericRangeInput';
 import { OnboardingStepHeader } from '../OnboardingStepHeader';
@@ -75,6 +77,14 @@ export function StepTargetWeight({
   const minDate = tomorrowDateInputValue();
   const parsedDate = parseDateInputValue(targetWeightDate);
   const dateValid = parsedDate !== null && isFutureDay(parsedDate);
+  const pace =
+    dateValid && parsedDate
+      ? evaluateWeightPace({
+          weight: currentWeight,
+          targetWeight: value,
+          targetWeightDate,
+        })
+      : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -99,6 +109,14 @@ export function StepTargetWeight({
           className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base tabular-nums"
         />
       </label>
+      {pace?.clamped && (
+        <p
+          role="status"
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-left text-sm text-foreground"
+        >
+          {PACE_WARNING_STEP}
+        </p>
+      )}
       <Button
         disabled={!dateValid}
         onClick={() => {
