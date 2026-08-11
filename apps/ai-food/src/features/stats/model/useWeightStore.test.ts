@@ -32,6 +32,18 @@ describe('useWeightStore', () => {
     useWeightStore.getState().ensureGoalKg(80);
     expect(useWeightStore.getState().goalKg).toBe(65);
   });
+
+  it('seedFromOnboarding upserts plan-start day and sets goal', () => {
+    useWeightStore.getState().addEntry(74, new Date(2026, 7, 12, 12));
+    useWeightStore
+      .getState()
+      .seedFromOnboarding(70, '2026-08-12', 78);
+
+    const { entries, goalKg } = useWeightStore.getState();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ date: '2026-08-12', kg: 70 });
+    expect(goalKg).toBe(78);
+  });
 });
 
 describe('latestWeightKg', () => {

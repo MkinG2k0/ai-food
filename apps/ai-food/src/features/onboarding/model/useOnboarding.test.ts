@@ -3,6 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useOnboarding } from './useOnboarding';
 import { useProfileStore } from './useProfileStore';
 import { defaultMicronutrientTargets } from './defaultMicronutrientTargets';
+import { useWeightStore } from '@/features/stats';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
@@ -20,6 +21,7 @@ beforeEach(() => {
     targets: null,
     micronutrientTargets: null,
   });
+  useWeightStore.setState({ entries: [], goalKg: null });
 });
 
 describe('useOnboarding', () => {
@@ -82,6 +84,10 @@ describe('useOnboarding', () => {
     expect(setMicronutrientTargetsSpy).toHaveBeenCalledOnce();
     expect(setMicronutrientTargetsSpy.mock.calls[0][0]).toHaveLength(8);
     expect(mockNavigate).toHaveBeenCalledWith('/');
+    const { entries, goalKg } = useWeightStore.getState();
+    expect(entries).toHaveLength(1);
+    expect(entries[0].kg).toBe(75);
+    expect(goalKg).toBe(75);
   });
 
   it('finish() does not call setProfile without dietType', async () => {

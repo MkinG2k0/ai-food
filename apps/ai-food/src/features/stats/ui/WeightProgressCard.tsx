@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import type { Goal } from '@ai-food/shared-types';
 import { Button } from '@/shared/ui';
@@ -54,12 +54,49 @@ export function WeightProgressCard({
   const addEntry = useWeightStore((s) => s.addEntry);
   const setGoalKg = useWeightStore((s) => s.setGoalKg);
   const ensureGoalKg = useWeightStore((s) => s.ensureGoalKg);
+  const seedFromOnboarding = useWeightStore((s) => s.seedFromOnboarding);
   const [logOpen, setLogOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
+  const healedPlanStartKey = useRef<string | null>(null);
 
   const currentKg = latestWeightKg(entries, profileWeight) ?? profileWeight;
   const softDefault = defaultGoalKg(profileWeight, profileGoal);
   const effectiveGoal = goalKg ?? profileTargetWeight ?? softDefault;
+  const todayYmd = toLocalYmd(new Date());
+
+  useEffect(() => {
+    if (
+      profilePlanStartDate == null ||
+      profilePlanStartWeight == null ||
+      profileTargetWeight == null
+    ) {
+      return;
+    }
+    const key = `${profilePlanStartDate}:${profilePlanStartWeight}`;
+    const onStartDay = entries.find((e) => e.date === profilePlanStartDate);
+    const missing = !onStartDay;
+    const staleToday =
+      profilePlanStartDate === todayYmd &&
+      onStartDay != null &&
+      onStartDay.kg !== profilePlanStartWeight &&
+      healedPlanStartKey.current !== key;
+
+    if (missing || staleToday) {
+      seedFromOnboarding(
+        profilePlanStartWeight,
+        profilePlanStartDate,
+        profileTargetWeight,
+      );
+      healedPlanStartKey.current = key;
+    }
+  }, [
+    entries,
+    profilePlanStartDate,
+    profilePlanStartWeight,
+    profileTargetWeight,
+    seedFromOnboarding,
+    todayYmd,
+  ]);
 
   useEffect(() => {
     if (profileTargetWeight != null) {
@@ -80,7 +117,6 @@ export function WeightProgressCard({
     softDefault,
   ]);
 
-  const todayYmd = toLocalYmd(new Date());
   const range = useMemo(
     () =>
       computeWeightRange({
@@ -113,7 +149,6 @@ export function WeightProgressCard({
     range.endYmd,
   );
   const viewStartYmd = viewStartFromEnd(clampedViewEnd);
-  // If range shorter than 30d, start at range.start
   const effectiveViewStartYmd =
     viewStartYmd < range.startYmd ? range.startYmd : viewStartYmd;
 

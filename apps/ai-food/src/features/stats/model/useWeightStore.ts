@@ -16,6 +16,8 @@ interface WeightState {
   addEntry: (kg: number, date?: Date) => void;
   setGoalKg: (kg: number) => void;
   ensureGoalKg: (seed: number) => void;
+  /** Write onboarding weight into the log for planStartDate and set goal. */
+  seedFromOnboarding: (kg: number, dateYmd: string, goalKg: number) => void;
 }
 
 function toLocalDateKey(date: Date): string {
@@ -55,6 +57,12 @@ export const useWeightStore = create<WeightState>()(
       ensureGoalKg: (seed) => {
         if (get().goalKg != null) return;
         set({ goalKg: clampKg(seed) });
+      },
+      /** Upsert onboarding weight for a calendar day and align goalKg. */
+      seedFromOnboarding: (kg, dateYmd, goalKg) => {
+        const day = new Date(`${dateYmd}T12:00:00`);
+        get().addEntry(kg, day);
+        get().setGoalKg(goalKg);
       },
     }),
     {
