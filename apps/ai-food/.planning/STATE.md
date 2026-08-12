@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260809-qs6 — Cap ML Kit barcode dual-path
-last_updated: "2026-08-09T16:30:00.000Z"
-last_activity: 2026-08-09
-last_activity_desc: "Native ML Kit barcode on Android + web LiveBarcodeScan fallback"
+stopped_at: Completed quick task 260813-1bg — calendar KBJU rings + month swipe
+last_updated: "2026-08-13T00:10:00.000Z"
+last_activity: 2026-08-13
+last_activity_desc: "Calendar KBJU rings on week/month + Settings К/КБ/КБЖУ + swipe expand"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-08-09 - Completed quick task 260809-qs6: Cap ML Kit barcode dual-path
+Last activity: 2026-08-13 - Completed quick task 260813-1bg: calendar KBJU rings + month swipe
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -105,6 +105,7 @@ Recent decisions affecting current work:
 - 260807-kps: Widget colors adapt to device light/dark theme (values-night)
 - 260809-pwe: Live barcode — rAF/idle loop + mode live (no JPEG/scanFile hot path); capture for shutter
 - 260809-qs6: Android Cap ML Kit continuous startScan + web LiveBarcodeScan fallback
+- 260813-1bg: calendarRingMode К/КБ/КБЖУ (default КБ); DayCellRings on week/month; swipe/handle month expand
 
 ### Pending Todos
 
@@ -178,6 +179,7 @@ None yet.
 | 260807-kps | Android widgets: adapt colors to device light/dark theme | 2026-08-07 | d377d3c | [260807-kps-android-widgets-adapt-colors-to-device-l](./quick/260807-kps-android-widgets-adapt-colors-to-device-l/) |
 | 260809-pwe | Optimize barcode scanner camera lag (rAF + live-safe detect) | 2026-08-09 | c88d9fc, 159b21a, a793488 | [260809-pwe-optimize-barcode-scanner-camera-lag-avoi](./quick/260809-pwe-optimize-barcode-scanner-camera-lag-avoi/) |
 | 260809-qs6 | Cap ML Kit barcode on Android + web LiveBarcodeScan fallback | 2026-08-09 | 0d18be2, 5c3b075, fb24778 | [260809-qs6-add-capacitor-mlkit-barcode-scanning-on-](./quick/260809-qs6-add-capacitor-mlkit-barcode-scanning-on-/) |
+| 260813-1bg | Calendar KBJU rings + month swipe expand | 2026-08-13 | faec5f2, 9b58566, 81500db | [260813-1bg-calendar-kbju-rings-month-swipe](./quick/260813-1bg-calendar-kbju-rings-month-swipe/) |
 
 ### Blockers/Concerns
 
@@ -186,7 +188,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-09T16:30:00Z
-Stopped at: Completed quick task 260809-qs6
+Last session: 2026-08-13T00:10:00Z
+Stopped at: Completed quick task 260813-1bg
 Resume file: None
-Next: Smoke Android APK `/scan` barcode (ML Kit) + food camera; localhost web path unchanged. Or /gsd-plan-phase for Phase 2
+Next: Smoke home calendar rings + month expand; or /gsd-plan-phase for Phase 2
