@@ -5,6 +5,7 @@ export {
   getWeekStart,
   getWeekDays,
   getMonthGridDays,
+  weekOffsetForDate,
   isSameDay,
   isFutureDay,
   formatDayLabel,

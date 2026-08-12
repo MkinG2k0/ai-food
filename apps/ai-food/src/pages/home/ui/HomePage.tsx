@@ -6,7 +6,7 @@ import { useDiaryStore } from '@/entities/meal';
 import { DailyHeader } from '@/widgets/daily-header';
 import { MealList } from '@/widgets/meal-list';
 import { Button } from '@/shared/ui';
-import { getWeekDays, isSameDay } from '@/shared/lib';
+import { getWeekDays, isSameDay, weekOffsetForDate } from '@/shared/lib';
 
 function parseHomeAddParam(
   value: string | null,
@@ -43,12 +43,17 @@ export function HomePage() {
     if (!stillInWeek) setSelectedDate(newWeekDays[0]);
   }
 
+  function handleDaySelect(date: Date) {
+    setSelectedDate(date);
+    setWeekOffset(weekOffsetForDate(date));
+  }
+
   return (
     <div className="relative flex h-svh min-h-0 flex-col overflow-hidden bg-zinc-50">
       <DailyHeader
         selectedDate={selectedDate}
         weekOffset={weekOffset}
-        onDaySelect={setSelectedDate}
+        onDaySelect={handleDaySelect}
         onWeekChange={handleWeekChange}
       />
       <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-24">

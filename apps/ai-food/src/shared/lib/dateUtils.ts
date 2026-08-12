@@ -77,6 +77,15 @@ export function getMonthGridDays(year: number, month: number): MonthGridDay[] {
   return days;
 }
 
+/** Week offset of `date` relative to the week containing `today` (Mon-start). */
+export function weekOffsetForDate(date: Date, today: Date = new Date()): number {
+  const selectedMonday = getWeekStart(date).getTime();
+  const thisMonday = getWeekStart(today).getTime();
+  return Math.round(
+    (selectedMonday - thisMonday) / (7 * 24 * 60 * 60 * 1000),
+  );
+}
+
 /** Calendar Y/M/D from selectedDate, clock time from now → ISO string. */
 export function timestampForSelectedDate(selectedDate: Date, now: Date = new Date()): string {
   const result = new Date(now);

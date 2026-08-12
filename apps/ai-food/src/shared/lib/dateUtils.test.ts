@@ -8,6 +8,7 @@ import {
   formatDayLabel,
   formatHeaderDate,
   timestampForSelectedDate,
+  weekOffsetForDate,
 } from './dateUtils';
 
 describe('getWeekStart', () => {
@@ -163,6 +164,20 @@ describe('getMonthGridDays', () => {
     expect(inMonth[0].date.getDate()).toBe(1);
     expect(inMonth[30].date.getDate()).toBe(31);
     expect(days[0].inMonth).toBe(false); // Jul 27 padding
+  });
+});
+
+describe('weekOffsetForDate', () => {
+  it('returns 0 for a day in the current week', () => {
+    const today = new Date(2026, 7, 12); // Wed
+    const mon = new Date(2026, 7, 10);
+    expect(weekOffsetForDate(mon, today)).toBe(0);
+  });
+
+  it('returns 1 for next week', () => {
+    const today = new Date(2026, 7, 12);
+    const nextMon = new Date(2026, 7, 17);
+    expect(weekOffsetForDate(nextMon, today)).toBe(1);
   });
 });
 
