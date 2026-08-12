@@ -307,7 +307,18 @@ describe('admin routes', () => {
         ),
       },
       gatewayRequest: {
-        findMany: vi.fn(async () => []),
+        findMany: vi.fn(async (args?: {
+          where?: { type?: string; createdAt?: { gte: Date } };
+          orderBy?: { createdAt: 'desc' | 'asc' };
+          skip?: number;
+          take?: number;
+          select?: Record<string, boolean>;
+        }) => {
+          // Existing /stats and /stats/series callers pass createdAt gte — return [].
+          if (args?.where?.createdAt) return [];
+          return [];
+        }),
+        count: vi.fn(async () => 0),
       },
       usageEvent: {
         count: vi.fn(
@@ -663,6 +674,73 @@ describe('admin routes', () => {
   it('GET /admin/stats/series requires admin key', async () => {
     const response = await request(createApp()).get('/admin/stats/series');
     expect(response.status).toBe(401);
+  });
+
+  it('GET /admin/gateway-requests requires admin key', async () => {
+    const response = await request(createApp()).get(
+      '/admin/gateway-requests?type=food_analyze',
+    );
+    expect(response.status).toBe(401);
+  });
+
+  it('GET /admin/gateway-requests rejects missing type', async () => {
+    const response = await request(createApp())
+      .get('/admin/gateway-requests')
+      .set('X-Admin-Key', 'test-admin');
+    expect(response.status).toBe(400);
+  });
+
+  it('GET /admin/gateway-requests returns paginated items', async () => {
+    const createdAt = new Date('2026-08-01T12:00:00.000Z');
+    prisma.gatewayRequest.findMany.mockResolvedValueOnce([
+      {
+        id: 'req_1',
+        type: 'food_analyze',
+        stream: true,
+        ok: true,
+        ttfbMs: 100,
+        durationMs: 500,
+        userId: 'u1',
+        deviceId: 'd1',
+        createdAt,
+      },
+    ]);
+    prisma.gatewayRequest.count.mockResolvedValueOnce(1);
+
+    const response = await request(createApp())
+      .get('/admin/gateway-requests?type=food_analyze&page=1&pageSize=50')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      items: [
+        {
+          id: 'req_1',
+          type: 'food_analyze',
+          stream: true,
+          ok: true,
+          ttfbMs: 100,
+          durationMs: 500,
+          userId: 'u1',
+          deviceId: 'd1',
+          createdAt: createdAt.toISOString(),
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 50,
+    });
+    expect(prisma.gatewayRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { type: 'food_analyze' },
+        orderBy: { createdAt: 'desc' },
+        skip: 0,
+        take: 50,
+      }),
+    );
+    expect(prisma.gatewayRequest.count).toHaveBeenCalledWith({
+      where: { type: 'food_analyze' },
+    });
   });
 
   it('GET /admin/users searches by id, telegram id, or username', async () => {

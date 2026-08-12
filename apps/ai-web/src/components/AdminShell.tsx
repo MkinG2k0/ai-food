@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  ApiOutlined,
   BarChartOutlined,
   CreditCardOutlined,
   LogoutOutlined,
@@ -16,6 +17,7 @@ const { Content, Header, Sider } = Layout;
 
 const menuItems = [
   { icon: <BarChartOutlined />, key: '/admin', label: 'Обзор' },
+  { icon: <ApiOutlined />, key: '/admin/requests', label: 'Запросы' },
   { icon: <TagsOutlined />, key: '/admin/pricing', label: 'Цены и лимиты' },
   {
     icon: <UserOutlined />,
@@ -32,6 +34,7 @@ const menuItems = [
 
 const pageTitles: Record<string, string> = {
   '/admin': 'Обзор',
+  '/admin/requests': 'Запросы',
   '/admin/pricing': 'Цены и лимиты',
   '/admin/users': 'Пользователи',
   '/admin/payments': 'Платежи',

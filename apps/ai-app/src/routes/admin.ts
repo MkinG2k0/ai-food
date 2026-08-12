@@ -5,6 +5,7 @@ import {
   clampSeriesDays,
 } from '../lib/adminStatsSeries.js';
 import { countWindow, statsByType } from '../lib/gatewayRequestStats.js';
+import { parseGatewayRequestListQuery } from '../lib/parseGatewayRequestListQuery.js';
 import { normalizePromoCode } from '../lib/promos.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import { getQuotaLimits } from '../lib/quota.js';
@@ -550,6 +551,49 @@ adminRouter.get(
         })),
       }),
     );
+  }),
+);
+
+adminRouter.get(
+  '/gateway-requests',
+  asyncHandler(async (req, res) => {
+    const prisma = requireDb();
+    const { type, page, pageSize } = parseGatewayRequestListQuery(
+      req.query as Record<string, unknown>,
+    );
+    const where = { type };
+    const skip = (page - 1) * pageSize;
+
+    const [rows, total] = await Promise.all([
+      prisma.gatewayRequest.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        select: {
+          id: true,
+          type: true,
+          stream: true,
+          ok: true,
+          ttfbMs: true,
+          durationMs: true,
+          userId: true,
+          deviceId: true,
+          createdAt: true,
+        },
+      }),
+      prisma.gatewayRequest.count({ where }),
+    ]);
+
+    res.json({
+      items: rows.map((row) => ({
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+      })),
+      total,
+      page,
+      pageSize,
+    });
   }),
 );
 

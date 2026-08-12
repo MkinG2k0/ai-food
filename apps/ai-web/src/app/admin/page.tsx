@@ -1,35 +1,17 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import type { ColumnsType } from 'antd/es/table';
-import { Alert, Card, Col, Row, Statistic, Table, Typography } from 'antd';
+import { Alert, Card, Col, Row, Statistic, Typography } from 'antd';
 
 import { PageHeader } from '@/components/PageHeader';
 import { SparklineCard } from '@/components/SparklineCard';
 import { adminApi } from '@/lib/adminApi';
-
-type RequestWindow = { count: number; okCount: number; errorCount: number };
-
-type RequestTypeStats = RequestWindow & {
-  type: string;
-  avgTtfbMs: number | null;
-  p50TtfbMs: number | null;
-  p95TtfbMs: number | null;
-  avgDurationMs: number | null;
-  p50DurationMs: number | null;
-  p95DurationMs: number | null;
-};
 
 type Stats = {
   usersTotal: number;
   activeSubscriptions: number;
   paymentsConfirmedCount: number;
   paymentsConfirmedSumKopecks: number;
-  requests?: {
-    last7Days: RequestWindow;
-    last30Days: RequestWindow;
-    byType: RequestTypeStats[];
-  };
 };
 
 type StatsSeries = {
@@ -42,21 +24,7 @@ type StatsSeries = {
       totalKopecks: number;
     }>;
     usage: Array<{ date: string; analyze: number; refine: number }>;
-    requests?: Array<{
-      date: string;
-      total: number;
-      byType: Record<string, number>;
-    }>;
   };
-};
-
-const REQUEST_TYPE_LABELS: Record<string, string> = {
-  food_analyze: 'Анализ',
-  food_refine: 'Уточнение',
-  food_ask: 'Вопрос',
-  chat_completions: 'Chat',
-  embeddings: 'Embeddings',
-  models: 'Models',
 };
 
 const formatRubles = (kopecks: number) =>
@@ -65,69 +33,6 @@ const formatRubles = (kopecks: number) =>
     maximumFractionDigits: 2,
     style: 'currency',
   }).format(kopecks / 100);
-
-const formatMs = (value: number | null) =>
-  value == null ? '—' : String(Math.round(value));
-
-const requestTypeColumns: ColumnsType<RequestTypeStats> = [
-  {
-    dataIndex: 'type',
-    key: 'type',
-    render: (type: string) => REQUEST_TYPE_LABELS[type] ?? type,
-    title: 'Тип',
-  },
-  {
-    dataIndex: 'count',
-    key: 'count',
-    title: 'Всего',
-  },
-  {
-    dataIndex: 'okCount',
-    key: 'okCount',
-    title: 'OK',
-  },
-  {
-    dataIndex: 'errorCount',
-    key: 'errorCount',
-    title: 'Ошибки',
-  },
-  {
-    dataIndex: 'avgTtfbMs',
-    key: 'avgTtfbMs',
-    render: formatMs,
-    title: 'TTFB avg',
-  },
-  {
-    dataIndex: 'p50TtfbMs',
-    key: 'p50TtfbMs',
-    render: formatMs,
-    title: 'TTFB p50',
-  },
-  {
-    dataIndex: 'p95TtfbMs',
-    key: 'p95TtfbMs',
-    render: formatMs,
-    title: 'TTFB p95',
-  },
-  {
-    dataIndex: 'avgDurationMs',
-    key: 'avgDurationMs',
-    render: formatMs,
-    title: 'Duration avg',
-  },
-  {
-    dataIndex: 'p50DurationMs',
-    key: 'p50DurationMs',
-    render: formatMs,
-    title: 'Duration p50',
-  },
-  {
-    dataIndex: 'p95DurationMs',
-    key: 'p95DurationMs',
-    render: formatMs,
-    title: 'Duration p95',
-  },
-];
 
 export default function AdminPage() {
   const statsQuery = useQuery({
@@ -153,21 +58,11 @@ export default function AdminPage() {
     series?.usage.reduce((acc, point) => acc + point.analyze, 0) ?? 0;
   const usageRefineSum =
     series?.usage.reduce((acc, point) => acc + point.refine, 0) ?? 0;
-  const requestSpark =
-    series?.requests?.map((row) => ({
-      date: row.date,
-      total: row.total,
-      food_analyze: row.byType.food_analyze ?? 0,
-      food_refine: row.byType.food_refine ?? 0,
-      chat_completions: row.byType.chat_completions ?? 0,
-    })) ?? [];
-  const requestSparkTotal =
-    requestSpark.reduce((acc, point) => acc + point.total, 0);
 
   return (
     <>
       <PageHeader
-        subtitle="Сводка по пользователям, платежам, запросам и usage"
+        subtitle="Сводка по пользователям, платежам и usage"
         title="Обзор"
       />
       {statsQuery.error ? (
@@ -244,56 +139,6 @@ export default function AdminPage() {
         </Row>
       </div>
 
-      <div>
-        <Typography.Title className="admin-section-title" level={4}>
-          Запросы
-        </Typography.Title>
-        <Row className="admin-stat-row" gutter={[16, 16]}>
-          <Col lg={8} md={8} sm={12} xs={24}>
-            <Card className="admin-stat-card" size="small">
-              <Statistic
-                loading={statsQuery.isLoading}
-                title="Запросы за 7 дней"
-                value={data?.requests?.last7Days.count ?? 0}
-              />
-            </Card>
-          </Col>
-          <Col lg={8} md={8} sm={12} xs={24}>
-            <Card className="admin-stat-card" size="small">
-              <Statistic
-                loading={statsQuery.isLoading}
-                title="Запросы за 30 дней"
-                value={data?.requests?.last30Days.count ?? 0}
-              />
-            </Card>
-          </Col>
-          <Col lg={8} md={8} sm={12} xs={24}>
-            <Card className="admin-stat-card" size="small">
-              <Statistic
-                loading={statsQuery.isLoading}
-                title="Ошибки за 7 дней"
-                value={data?.requests?.last7Days.errorCount ?? 0}
-                valueStyle={
-                  (data?.requests?.last7Days.errorCount ?? 0) > 0
-                    ? { color: '#cf1322' }
-                    : undefined
-                }
-              />
-            </Card>
-          </Col>
-        </Row>
-        <Table<RequestTypeStats>
-          columns={requestTypeColumns}
-          dataSource={data?.requests?.byType ?? []}
-          loading={statsQuery.isLoading}
-          pagination={false}
-          rowKey="type"
-          scroll={{ x: true }}
-          size="small"
-          style={{ marginTop: 16 }}
-        />
-      </div>
-
       {!seriesQuery.error ? (
         <div>
           <Typography.Title className="admin-section-title" level={4}>
@@ -351,25 +196,6 @@ export default function AdminPage() {
                 yFields={[
                   { key: 'analyze', label: 'Анализы' },
                   { key: 'refine', label: 'Уточнения' },
-                ]}
-              />
-            </Col>
-            <Col lg={8} md={8} sm={24} xs={24}>
-              <SparklineCard
-                data={requestSpark}
-                height={120}
-                loading={seriesQuery.isLoading}
-                summary={
-                  <Typography.Text type="secondary">
-                    За 7 дней: всего {requestSparkTotal}
-                  </Typography.Text>
-                }
-                title="Запросы"
-                yFields={[
-                  { key: 'total', label: 'Всего' },
-                  { key: 'food_analyze', label: 'Анализ' },
-                  { key: 'food_refine', label: 'Уточнение' },
-                  { key: 'chat_completions', label: 'Chat' },
                 ]}
               />
             </Col>
