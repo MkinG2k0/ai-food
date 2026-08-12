@@ -5,6 +5,7 @@ import {
   utcDayKey,
 } from './adminStatsSeries.js';
 import { GATEWAY_REQUEST_TYPES } from './gatewayRequestTypes.js';
+import { p50, p95 } from './percentile.js';
 
 function emptyRequestByType(): Record<string, number> {
   return Object.fromEntries(GATEWAY_REQUEST_TYPES.map((t) => [t, 0]));
@@ -137,5 +138,193 @@ describe('buildAdminStatsSeries', () => {
         byType: { ...emptyRequestByType(), food_ask: 2 },
       },
     ]);
+  });
+
+  it('returns zeroed reliability series matching days when gateway input empty', () => {
+    const result = buildAdminStatsSeries({
+      days: 3,
+      now,
+      userCreatedAts: [],
+      payments: [],
+      usageEvents: [],
+      gatewayRequests: [],
+    });
+    expect(result.series.reliability).toHaveLength(3);
+    expect(result.series.reliability).toEqual([
+      {
+        date: '2026-08-05',
+        total: 0,
+        errorCount: 0,
+        errorRate: 0,
+        p50DurationMs: null,
+        p95DurationMs: null,
+        p50TtfbMs: null,
+        p95TtfbMs: null,
+      },
+      {
+        date: '2026-08-06',
+        total: 0,
+        errorCount: 0,
+        errorRate: 0,
+        p50DurationMs: null,
+        p95DurationMs: null,
+        p50TtfbMs: null,
+        p95TtfbMs: null,
+      },
+      {
+        date: '2026-08-07',
+        total: 0,
+        errorCount: 0,
+        errorRate: 0,
+        p50DurationMs: null,
+        p95DurationMs: null,
+        p50TtfbMs: null,
+        p95TtfbMs: null,
+      },
+    ]);
+  });
+
+  it('aggregates daily total, errorCount, and errorRate for mixed ok/error', () => {
+    const result = buildAdminStatsSeries({
+      days: 2,
+      now,
+      userCreatedAts: [],
+      payments: [],
+      usageEvents: [],
+      gatewayRequests: [
+        {
+          type: 'food_ask',
+          at: new Date('2026-08-07T01:00:00.000Z'),
+          ok: true,
+          durationMs: 100,
+          ttfbMs: 10,
+        },
+        {
+          type: 'food_ask',
+          at: new Date('2026-08-07T02:00:00.000Z'),
+          ok: false,
+          durationMs: null,
+          ttfbMs: null,
+        },
+        {
+          type: 'food_ask',
+          at: new Date('2026-08-07T03:00:00.000Z'),
+          ok: false,
+          durationMs: 50,
+          ttfbMs: 5,
+        },
+        {
+          type: 'food_analyze',
+          at: new Date('2026-08-06T01:00:00.000Z'),
+          ok: true,
+          durationMs: 200,
+          ttfbMs: 20,
+        },
+      ],
+    });
+    expect(result.series.reliability[0]).toMatchObject({
+      date: '2026-08-06',
+      total: 1,
+      errorCount: 0,
+      errorRate: 0,
+    });
+    expect(result.series.reliability[1]).toMatchObject({
+      date: '2026-08-07',
+      total: 3,
+      errorCount: 2,
+      errorRate: 2 / 3,
+    });
+  });
+
+  it('computes latency percentiles over ok rows with non-null values only', () => {
+    const durations = [100, 200, 300, 400];
+    const ttfbs = [10, 20, 30, 40];
+    const result = buildAdminStatsSeries({
+      days: 1,
+      now,
+      userCreatedAts: [],
+      payments: [],
+      usageEvents: [],
+      gatewayRequests: [
+        {
+          type: 'food_ask',
+          at: new Date('2026-08-07T01:00:00.000Z'),
+          ok: true,
+          durationMs: 100,
+          ttfbMs: 10,
+        },
+        {
+          type: 'food_ask',
+          at: new Date('2026-08-07T02:00:00.000Z'),
+          ok: true,
+          durationMs: 200,
+          ttfbMs: 20,
+        },
+        {
+          type: 'food_ask',
+          at: new Date('2026-08-07T03:00:00.000Z'),
+          ok: true,
+          durationMs: 300,
+          ttfbMs: 30,
+        },
+        {
+          type: 'food_ask',
+          at: new Date('2026-08-07T04:00:00.000Z'),
+          ok: true,
+          durationMs: 400,
+          ttfbMs: 40,
+        },
+        {
+          type: 'food_ask',
+          at: new Date('2026-08-07T05:00:00.000Z'),
+          ok: false,
+          durationMs: 9999,
+          ttfbMs: 9999,
+        },
+        {
+          type: 'food_ask',
+          at: new Date('2026-08-07T06:00:00.000Z'),
+          ok: true,
+          durationMs: null,
+          ttfbMs: null,
+        },
+      ],
+    });
+    const point = result.series.reliability[0]!;
+    expect(point.p50DurationMs).toBe(p50(durations));
+    expect(point.p95DurationMs).toBe(p95(durations));
+    expect(point.p50TtfbMs).toBe(p50(ttfbs));
+    expect(point.p95TtfbMs).toBe(p95(ttfbs));
+  });
+
+  it('keeps existing series keys backward compatible', () => {
+    const result = buildAdminStatsSeries({
+      days: 2,
+      now,
+      userCreatedAts: [],
+      payments: [],
+      usageEvents: [],
+      gatewayRequests: [
+        {
+          type: 'food_ask',
+          at: new Date('2026-08-07T01:00:00.000Z'),
+          ok: true,
+          durationMs: 100,
+          ttfbMs: 10,
+        },
+      ],
+    });
+    expect(result.series).toMatchObject({
+      users: expect.any(Array),
+      payments: expect.any(Array),
+      usage: expect.any(Array),
+      requests: expect.any(Array),
+      reliability: expect.any(Array),
+    });
+    expect(result.series.users).toHaveLength(2);
+    expect(result.series.payments).toHaveLength(2);
+    expect(result.series.usage).toHaveLength(2);
+    expect(result.series.requests).toHaveLength(2);
+    expect(result.series.reliability).toHaveLength(2);
   });
 });

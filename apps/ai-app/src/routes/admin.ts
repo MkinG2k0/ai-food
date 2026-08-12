@@ -528,7 +528,13 @@ adminRouter.get(
       }),
       prisma.gatewayRequest.findMany({
         where: { createdAt: { gte: windowStart } },
-        select: { type: true, createdAt: true },
+        select: {
+          type: true,
+          createdAt: true,
+          ok: true,
+          ttfbMs: true,
+          durationMs: true,
+        },
       }),
     ]);
 
@@ -548,6 +554,9 @@ adminRouter.get(
         gatewayRequests: gatewayRows.map((row) => ({
           type: row.type,
           at: row.createdAt,
+          ok: row.ok,
+          ttfbMs: row.ttfbMs,
+          durationMs: row.durationMs,
         })),
       }),
     );

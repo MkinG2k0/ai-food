@@ -1,4 +1,16 @@
 import { GATEWAY_REQUEST_TYPES } from './gatewayRequestTypes.js';
+import { p50, p95 } from './percentile.js';
+
+export type AdminStatsReliabilityPoint = {
+  date: string;
+  total: number;
+  errorCount: number;
+  errorRate: number;
+  p50DurationMs: number | null;
+  p95DurationMs: number | null;
+  p50TtfbMs: number | null;
+  p95TtfbMs: number | null;
+};
 
 export type AdminStatsSeriesResponse = {
   days: number;
@@ -7,7 +19,16 @@ export type AdminStatsSeriesResponse = {
     payments: Array<{ date: string; sumKopecks: number; totalKopecks: number }>;
     usage: Array<{ date: string; analyze: number; refine: number }>;
     requests: Array<{ date: string; total: number; byType: Record<string, number> }>;
+    reliability: AdminStatsReliabilityPoint[];
   };
+};
+
+export type BuildAdminStatsSeriesGatewayRequest = {
+  type: string;
+  at: Date;
+  ok?: boolean;
+  ttfbMs?: number | null;
+  durationMs?: number | null;
 };
 
 export type BuildAdminStatsSeriesInput = {
@@ -16,7 +37,7 @@ export type BuildAdminStatsSeriesInput = {
   userCreatedAts: Date[];
   payments: Array<{ amount: number; at: Date }>;
   usageEvents: Array<{ kind: string; at: Date }>;
-  gatewayRequests?: Array<{ type: string; at: Date }>;
+  gatewayRequests?: BuildAdminStatsSeriesGatewayRequest[];
 };
 
 function emptyRequestByType(): Record<string, number> {
@@ -101,6 +122,15 @@ export function buildAdminStatsSeries(
   }
 
   const requestsByDay = new Map<string, Record<string, number>>();
+  const reliabilityByDay = new Map<
+    string,
+    {
+      total: number;
+      errorCount: number;
+      durationMs: number[];
+      ttfbMs: number[];
+    }
+  >();
   const knownTypes = new Set<string>(GATEWAY_REQUEST_TYPES);
   for (const req of input.gatewayRequests ?? []) {
     if (!knownTypes.has(req.type)) continue;
@@ -112,6 +142,24 @@ export function buildAdminStatsSeries(
       requestsByDay.set(key, byType);
     }
     byType[req.type] = (byType[req.type] ?? 0) + 1;
+
+    let reliability = reliabilityByDay.get(key);
+    if (!reliability) {
+      reliability = { total: 0, errorCount: 0, durationMs: [], ttfbMs: [] };
+      reliabilityByDay.set(key, reliability);
+    }
+    reliability.total += 1;
+    if (req.ok === false) {
+      reliability.errorCount += 1;
+    }
+    if (req.ok === true) {
+      if (typeof req.durationMs === 'number') {
+        reliability.durationMs.push(req.durationMs);
+      }
+      if (typeof req.ttfbMs === 'number') {
+        reliability.ttfbMs.push(req.ttfbMs);
+      }
+    }
   }
 
   let runningUsers = totalBefore;
@@ -136,6 +184,21 @@ export function buildAdminStatsSeries(
     const total = GATEWAY_REQUEST_TYPES.reduce((sum, type) => sum + byType[type]!, 0);
     return { date, total, byType };
   });
+  const reliability: AdminStatsReliabilityPoint[] = keys.map((date) => {
+    const day = reliabilityByDay.get(date);
+    const total = day?.total ?? 0;
+    const errorCount = day?.errorCount ?? 0;
+    return {
+      date,
+      total,
+      errorCount,
+      errorRate: total === 0 ? 0 : errorCount / total,
+      p50DurationMs: p50(day?.durationMs ?? []),
+      p95DurationMs: p95(day?.durationMs ?? []),
+      p50TtfbMs: p50(day?.ttfbMs ?? []),
+      p95TtfbMs: p95(day?.ttfbMs ?? []),
+    };
+  });
 
-  return { days, series: { users, payments, usage, requests } };
+  return { days, series: { users, payments, usage, requests, reliability } };
 }
