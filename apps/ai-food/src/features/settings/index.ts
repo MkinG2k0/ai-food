@@ -1,17 +1,20 @@
 export {
   AI_MODEL_OPTIONS,
   DEFAULT_AI_MODEL,
-  DEFAULT_CALENDAR_RING_MODE,
+  DEFAULT_CALENDAR_RINGS,
+  CALENDAR_RING_ORDER,
   AI_TEMPERATURE,
   aiModelLabel,
+  enabledCalendarRings,
   getActiveCustomInstructions,
   getAnalyzeFeaturesFromSettings,
   isGeminiModel,
   normalizeAiModel,
-  normalizeCalendarRingMode,
+  normalizeCalendarRings,
   temperatureForModel,
   useSettingsStore,
-  type CalendarRingMode,
+  type CalendarRingKey,
+  type CalendarRingsSelection,
 } from './model/useSettingsStore';
 export {
   APP_DATA_EXPORT_VERSION,

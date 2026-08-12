@@ -33,7 +33,7 @@ export function DailyHeader({
   const navigate = useNavigate();
   const meals = useDiaryStore((s) => s.meals);
   const targets = useProfileStore((s) => s.targets);
-  const calendarRingMode = useSettingsStore((s) => s.calendarRingMode);
+  const calendarRings = useSettingsStore((s) => s.calendarRings);
   const [budgetOpen, setBudgetOpen] = useState(false);
 
   const goalKcal = targets?.kcal ?? FALLBACK_TARGETS.kcal;
@@ -93,7 +93,7 @@ export function DailyHeader({
         selectedDate={selectedDate}
         meals={meals}
         targets={targets}
-        calendarRingMode={calendarRingMode}
+        calendarRings={calendarRings}
         onDaySelect={onDaySelect}
         onWeekChange={onWeekChange}
       />

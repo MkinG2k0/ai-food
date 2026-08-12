@@ -4,17 +4,39 @@ import { DayCellRings, RING_COLORS } from './DayCellRings';
 
 const fullProgress = { kcal: 0.5, protein: 0.4, fat: 0.3, carbs: 0.2 };
 
+const onlyKcal = {
+  kcal: true,
+  protein: false,
+  fat: false,
+  carbs: false,
+};
+
+const kcalProtein = {
+  kcal: true,
+  protein: true,
+  fat: false,
+  carbs: false,
+};
+
+const fullRings = {
+  kcal: true,
+  protein: true,
+  fat: true,
+  carbs: true,
+};
+
 describe('DayCellRings', () => {
-  it('renders no SVG when hasReadyMeals is false', () => {
+  it('renders SVG digit without ring arcs when hasReadyMeals is false', () => {
     render(
       <DayCellRings
         dayNumber={12}
-        mode="kcal_protein"
+        rings={kcalProtein}
         progress={fullProgress}
         hasReadyMeals={false}
       />,
     );
-    expect(screen.queryByTestId('day-cell-rings-svg')).toBeNull();
+    const svg = screen.getByTestId('day-cell-rings-svg');
+    expect(svg.querySelectorAll('[data-ring]')).toHaveLength(0);
     expect(screen.getByTestId('day-cell-rings')).toHaveAttribute(
       'data-has-rings',
       'false',
@@ -22,11 +44,11 @@ describe('DayCellRings', () => {
     expect(screen.getByText('12')).toBeInTheDocument();
   });
 
-  it('renders one kcal arc for mode kcal', () => {
+  it('renders one kcal arc when only kcal enabled', () => {
     render(
       <DayCellRings
         dayNumber={5}
-        mode="kcal"
+        rings={onlyKcal}
         progress={fullProgress}
         hasReadyMeals
       />,
@@ -39,11 +61,11 @@ describe('DayCellRings', () => {
     );
   });
 
-  it('renders kcal + protein arcs for mode kcal_protein', () => {
+  it('renders kcal + protein arcs', () => {
     render(
       <DayCellRings
         dayNumber={5}
-        mode="kcal_protein"
+        rings={kcalProtein}
         progress={fullProgress}
         hasReadyMeals
       />,
@@ -56,17 +78,17 @@ describe('DayCellRings', () => {
     );
   });
 
-  it('renders four arcs with locked colors for mode full', () => {
+  it('renders custom combo fat + carbs only', () => {
     render(
       <DayCellRings
         dayNumber={5}
-        mode="full"
+        rings={{ kcal: false, protein: false, fat: true, carbs: true }}
         progress={fullProgress}
         hasReadyMeals
       />,
     );
     const svg = screen.getByTestId('day-cell-rings-svg');
-    expect(svg.querySelectorAll('[data-ring]')).toHaveLength(4);
+    expect(svg.querySelectorAll('[data-ring]')).toHaveLength(2);
     expect(svg.querySelector('[data-ring="fat"]')).toHaveAttribute(
       'stroke',
       RING_COLORS.fat,
@@ -77,11 +99,24 @@ describe('DayCellRings', () => {
     );
   });
 
+  it('renders four arcs with locked colors when all enabled', () => {
+    render(
+      <DayCellRings
+        dayNumber={5}
+        rings={fullRings}
+        progress={fullProgress}
+        hasReadyMeals
+      />,
+    );
+    const svg = screen.getByTestId('day-cell-rings-svg');
+    expect(svg.querySelectorAll('[data-ring]')).toHaveLength(4);
+  });
+
   it('clamps progress above 1 via dash offset not negative infinity', () => {
     render(
       <DayCellRings
         dayNumber={1}
-        mode="kcal"
+        rings={onlyKcal}
         progress={{ kcal: 2, protein: 0, fat: 0, carbs: 0 }}
         hasReadyMeals
       />,

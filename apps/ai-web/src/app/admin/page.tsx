@@ -148,7 +148,7 @@ export default function AdminPage() {
             <Col lg={8} md={8} sm={24} xs={24}>
               <SparklineCard
                 data={series?.users ?? []}
-                height={120}
+                height={160}
                 loading={seriesQuery.isLoading}
                 summary={
                   <Typography.Text type="secondary">
@@ -165,7 +165,7 @@ export default function AdminPage() {
             <Col lg={8} md={8} sm={24} xs={24}>
               <SparklineCard
                 data={series?.payments ?? []}
-                height={120}
+                height={160}
                 loading={seriesQuery.isLoading}
                 summary={
                   <Typography.Text type="secondary">
@@ -184,7 +184,7 @@ export default function AdminPage() {
             <Col lg={8} md={8} sm={24} xs={24}>
               <SparklineCard
                 data={series?.usage ?? []}
-                height={120}
+                height={160}
                 loading={seriesQuery.isLoading}
                 summary={
                   <Typography.Text type="secondary">

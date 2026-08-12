@@ -57,7 +57,12 @@ function sampleSnapshot(overrides: Partial<AppDataSnapshot> = {}): AppDataSnapsh
       featureVitamins: true,
       featureHealthiness: false,
       featureComposition: true,
-      calendarRingMode: 'kcal_protein',
+      calendarRings: {
+        kcal: true,
+        protein: true,
+        fat: false,
+        carbs: false,
+      },
     },
     favorites: [],
     weightEntries: [{ id: 'w1', date: '2026-07-20', kg: 79.5 }],
@@ -114,7 +119,7 @@ describe('appDataBackup', () => {
     expect(parsed.settings.aiModel).toBe(DEFAULT_AI_MODEL);
   });
 
-  it('buildAppDataExport includes calendarRingMode', () => {
+  it('buildAppDataExport includes calendarRings', () => {
     const data = buildAppDataExport(
       sampleSnapshot({
         settings: {
@@ -124,14 +129,24 @@ describe('appDataBackup', () => {
           featureVitamins: true,
           featureHealthiness: true,
           featureComposition: true,
-          calendarRingMode: 'full',
+          calendarRings: {
+            kcal: true,
+            protein: true,
+            fat: true,
+            carbs: true,
+          },
         },
       }),
     );
-    expect(data.settings.calendarRingMode).toBe('full');
+    expect(data.settings.calendarRings).toEqual({
+      kcal: true,
+      protein: true,
+      fat: true,
+      carbs: true,
+    });
   });
 
-  it('parseAppDataExport round-trips calendarRingMode', () => {
+  it('parseAppDataExport round-trips calendarRings', () => {
     const built = buildAppDataExport(
       sampleSnapshot({
         settings: {
@@ -141,14 +156,24 @@ describe('appDataBackup', () => {
           featureVitamins: true,
           featureHealthiness: true,
           featureComposition: true,
-          calendarRingMode: 'kcal',
+          calendarRings: {
+            kcal: true,
+            protein: false,
+            fat: false,
+            carbs: false,
+          },
         },
       }),
     );
-    expect(parseAppDataExport(built).settings.calendarRingMode).toBe('kcal');
+    expect(parseAppDataExport(built).settings.calendarRings).toEqual({
+      kcal: true,
+      protein: false,
+      fat: false,
+      carbs: false,
+    });
   });
 
-  it('parseAppDataExport defaults missing calendarRingMode to kcal_protein', () => {
+  it('parseAppDataExport defaults missing calendarRings to КБ', () => {
     const built = buildAppDataExport(sampleSnapshot());
     const legacy = {
       ...built,
@@ -162,15 +187,32 @@ describe('appDataBackup', () => {
       },
     };
     const parsed = parseAppDataExport(legacy);
-    expect(parsed.settings.calendarRingMode).toBe('kcal_protein');
+    expect(parsed.settings.calendarRings).toEqual({
+      kcal: true,
+      protein: true,
+      fat: false,
+      carbs: false,
+    });
   });
 
-  it('parseAppDataExport normalizes invalid calendarRingMode', () => {
+  it('parseAppDataExport migrates legacy calendarRingMode string', () => {
     const built = buildAppDataExport(sampleSnapshot());
-    built.settings.calendarRingMode = 'bogus' as typeof built.settings.calendarRingMode;
-    expect(parseAppDataExport(built).settings.calendarRingMode).toBe(
-      'kcal_protein',
-    );
+    const legacy = {
+      ...built,
+      settings: {
+        ...built.settings,
+        calendarRingMode: 'full',
+        calendarRings: undefined,
+      },
+    };
+    expect(
+      parseAppDataExport(legacy).settings.calendarRings,
+    ).toEqual({
+      kcal: true,
+      protein: true,
+      fat: true,
+      carbs: true,
+    });
   });
 
   it('backupFileName uses local calendar date', () => {

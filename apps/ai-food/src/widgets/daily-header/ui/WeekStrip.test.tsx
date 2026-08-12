@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { Meal } from '@ai-food/shared-types';
 import { getWeekDays, isSameDay } from '@/shared/lib';
 import { WeekStrip } from './WeekStrip';
@@ -29,7 +29,12 @@ function renderWeekStrip(onDaySelect = vi.fn(), onWeekChange = vi.fn()) {
       weekOffset={0}
       selectedDate={currentWeekDays[0]}
       meals={[fixtureMeal]}
-      calendarRingMode="kcal_protein"
+      calendarRings={{
+        kcal: true,
+        protein: true,
+        fat: false,
+        carbs: false,
+      }}
       onDaySelect={onDaySelect}
       onWeekChange={onWeekChange}
     />,
@@ -62,14 +67,14 @@ describe('WeekStrip', () => {
     expect(isSameDay(calledWithDate, currentWeekDays[3])).toBe(true);
   });
 
-  it('shows rings SVG for a ready-meal day and none for empty days', () => {
+  it('shows ring arcs for a ready-meal day and none for empty days', () => {
     renderWeekStrip();
     const buttons = screen.getAllByRole('button');
     const mealDay = buttons[9];
     const emptyDay = buttons[10];
 
-    expect(mealDay.querySelector('[data-testid="day-cell-rings-svg"]')).not.toBeNull();
-    expect(emptyDay.querySelector('[data-testid="day-cell-rings-svg"]')).toBeNull();
+    expect(mealDay.querySelectorAll('[data-ring]').length).toBeGreaterThan(0);
+    expect(emptyDay.querySelectorAll('[data-ring]')).toHaveLength(0);
   });
 
   it('renders calendar expand handle', () => {
@@ -78,29 +83,34 @@ describe('WeekStrip', () => {
     expect(screen.getByLabelText('Календарь на месяц')).toBeInTheDocument();
   });
 
-  it('expands month grid on handle click and selects day', () => {
+  it('expands month grid on handle click and selects day', async () => {
     const { onDaySelect } = renderWeekStrip();
     fireEvent.click(screen.getByTestId('calendar-expand-handle'));
 
-    expect(screen.getByTestId('month-calendar-grid')).toBeInTheDocument();
-    expect(screen.queryByTestId('week-strip-viewport')).toBeNull();
+    expect(await screen.findByTestId('month-calendar-grid')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByTestId('week-strip-viewport')).toBeNull();
+    });
 
     const monthDays = screen.getAllByTestId('month-day-cell');
     expect(monthDays.length).toBeGreaterThanOrEqual(28);
     fireEvent.click(monthDays[10]);
 
     expect(onDaySelect).toHaveBeenCalledTimes(1);
-    // collapsed after select
-    expect(screen.queryByTestId('month-calendar-grid')).toBeNull();
-    expect(screen.getByTestId('week-strip-viewport')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByTestId('month-calendar-grid')).toBeNull();
+    });
+    expect(await screen.findByTestId('week-strip-viewport')).toBeInTheDocument();
   });
 
-  it('toggles month closed when handle clicked again', () => {
+  it('toggles month closed when handle clicked again', async () => {
     renderWeekStrip();
     const handle = screen.getByTestId('calendar-expand-handle');
     fireEvent.click(handle);
-    expect(screen.getByTestId('month-calendar-grid')).toBeInTheDocument();
+    expect(await screen.findByTestId('month-calendar-grid')).toBeInTheDocument();
     fireEvent.click(handle);
-    expect(screen.queryByTestId('month-calendar-grid')).toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByTestId('month-calendar-grid')).toBeNull();
+    });
   });
 });

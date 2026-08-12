@@ -20,16 +20,17 @@ import {
   readJsonFile,
   snapshotFromExport,
   useSettingsStore,
-  type CalendarRingMode,
+  type CalendarRingKey,
 } from '@/features/settings';
 import { useWeightStore } from '@/features/stats';
 import { cn, getLegalUrl } from '@/shared/lib';
 import { BottomSheet, Button, SubpageShell, TextareaWithVoice } from '@/shared/ui';
 
-const CALENDAR_RING_OPTIONS: { value: CalendarRingMode; label: string }[] = [
-  { value: 'kcal', label: 'К' },
-  { value: 'kcal_protein', label: 'КБ' },
-  { value: 'full', label: 'КБЖУ' },
+const CALENDAR_RING_TOGGLES: { key: CalendarRingKey; label: string }[] = [
+  { key: 'kcal', label: 'К' },
+  { key: 'protein', label: 'Б' },
+  { key: 'fat', label: 'Ж' },
+  { key: 'carbs', label: 'У' },
 ];
 
 const GENDER_LABELS: Record<UserProfile['gender'], string> = {
@@ -117,8 +118,8 @@ export function SettingsPage() {
   const setFeatureHealthiness = useSettingsStore((s) => s.setFeatureHealthiness);
   const featureComposition = useSettingsStore((s) => s.featureComposition);
   const setFeatureComposition = useSettingsStore((s) => s.setFeatureComposition);
-  const calendarRingMode = useSettingsStore((s) => s.calendarRingMode);
-  const setCalendarRingMode = useSettingsStore((s) => s.setCalendarRingMode);
+  const calendarRings = useSettingsStore((s) => s.calendarRings);
+  const setCalendarRing = useSettingsStore((s) => s.setCalendarRing);
 
   const profile = useProfileStore((s) => s.profile);
   const targets = useProfileStore((s) => s.targets);
@@ -188,7 +189,7 @@ export function SettingsPage() {
           featureVitamins: settings.featureVitamins,
           featureHealthiness: settings.featureHealthiness,
           featureComposition: settings.featureComposition,
-          calendarRingMode: settings.calendarRingMode,
+          calendarRings: settings.calendarRings,
         },
         favorites: useFavoritesStore.getState().favorites,
         weightEntries: useWeightStore.getState().entries,
@@ -252,7 +253,7 @@ export function SettingsPage() {
       featureVitamins: snapshot.settings.featureVitamins,
       featureHealthiness: snapshot.settings.featureHealthiness,
       featureComposition: snapshot.settings.featureComposition,
-      calendarRingMode: snapshot.settings.calendarRingMode,
+      calendarRings: snapshot.settings.calendarRings,
     });
 
     useFavoritesStore.setState({ favorites: snapshot.favorites });
@@ -509,29 +510,28 @@ export function SettingsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-medium leading-none">Кольца календаря</h2>
           <p className="text-sm text-muted-foreground">
-            Сколько прогресс-колец показывать вокруг даты на главной: калории,
-            белки или полный КБЖУ.
+            Выберите, какие прогресс-кольца показывать вокруг даты на главной —
+            любая комбинация КБЖУ.
           </p>
           <div
             className="flex rounded-lg border border-input p-1"
-            role="radiogroup"
+            role="group"
             aria-label="Кольца календаря"
           >
-            {CALENDAR_RING_OPTIONS.map((option) => {
-              const selected = calendarRingMode === option.value;
+            {CALENDAR_RING_TOGGLES.map((option) => {
+              const selected = calendarRings[option.key];
               return (
                 <button
-                  key={option.value}
+                  key={option.key}
                   type="button"
-                  role="radio"
-                  aria-checked={selected}
+                  aria-pressed={selected}
                   className={cn(
                     'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                     selected
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground',
                   )}
-                  onClick={() => setCalendarRingMode(option.value)}
+                  onClick={() => setCalendarRing(option.key, !selected)}
                 >
                   {option.label}
                 </button>

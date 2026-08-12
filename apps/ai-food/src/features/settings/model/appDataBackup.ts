@@ -10,8 +10,8 @@ import type { FavoriteFood } from '@/features/favorites';
 import type { WeightEntry } from '@/features/stats';
 import {
   normalizeAiModel,
-  normalizeCalendarRingMode,
-  type CalendarRingMode,
+  normalizeCalendarRings,
+  type CalendarRingsSelection,
 } from './useSettingsStore';
 
 export const APP_DATA_EXPORT_VERSION = 1 as const;
@@ -23,7 +23,7 @@ export interface AppDataExportSettings {
   featureVitamins: boolean;
   featureHealthiness: boolean;
   featureComposition: boolean;
-  calendarRingMode: CalendarRingMode;
+  calendarRings: CalendarRingsSelection;
 }
 
 export interface AppDataExport {
@@ -86,9 +86,7 @@ export function buildAppDataExport(snapshot: AppDataSnapshot): AppDataExport {
     settings: {
       ...snapshot.settings,
       aiModel: normalizeAiModel(snapshot.settings.aiModel),
-      calendarRingMode: normalizeCalendarRingMode(
-        snapshot.settings.calendarRingMode,
-      ),
+      calendarRings: normalizeCalendarRings(snapshot.settings.calendarRings),
     },
     favorites: { favorites: snapshot.favorites },
     weight: {
@@ -166,7 +164,9 @@ export function parseAppDataExport(raw: unknown): AppDataExport {
       featureVitamins: s.featureVitamins,
       featureHealthiness: s.featureHealthiness,
       featureComposition: s.featureComposition,
-      calendarRingMode: normalizeCalendarRingMode(s.calendarRingMode),
+      calendarRings: normalizeCalendarRings(
+        s.calendarRings ?? (s as Record<string, unknown>).calendarRingMode,
+      ),
     },
     favorites: { favorites: raw.favorites.favorites as FavoriteFood[] },
     weight: {

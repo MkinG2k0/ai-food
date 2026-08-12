@@ -27,7 +27,7 @@ export function SparklineCard({
   yFields,
   loading,
   valueFormatter,
-  height = 96,
+  height = 140,
 }: SparklineCardProps) {
   const [open, setOpen] = useState(false);
   const plotData = data.flatMap((row) =>
@@ -49,9 +49,10 @@ export function SparklineCard({
       >
         <div
           aria-label={`Открыть график: ${title}`}
+          className="admin-chart-plot"
           role="button"
           tabIndex={0}
-          style={{ cursor: 'pointer', height }}
+          style={{ cursor: 'pointer', height, minHeight: height }}
           onClick={() => setOpen(true)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -64,8 +65,11 @@ export function SparklineCard({
             autoFit
             data={plotData}
             height={height}
+            inset={4}
             legend={false}
             axis={false}
+            margin={0}
+            padding={0}
             colorField="category"
             seriesField="category"
             theme="classicDark"
@@ -74,7 +78,9 @@ export function SparklineCard({
             yField="value"
           />
         </div>
-        {summary ? <div style={{ marginTop: 8 }}>{summary}</div> : null}
+        {summary ? (
+          <div className="admin-chart-summary">{summary}</div>
+        ) : null}
       </Card>
       <ChartModal
         data={data}

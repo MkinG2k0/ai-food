@@ -31,6 +31,12 @@ beforeEach(async () => {
     featureVitamins: true,
     featureHealthiness: true,
     featureComposition: true,
+    calendarRings: {
+      kcal: true,
+      protein: true,
+      fat: false,
+      carbs: false,
+    },
   });
 });
 

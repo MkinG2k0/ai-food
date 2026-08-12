@@ -1,4 +1,8 @@
-import type { CalendarRingMode } from '@/features/settings';
+import {
+  enabledCalendarRings,
+  type CalendarRingKey,
+  type CalendarRingsSelection,
+} from '@/features/settings';
 
 export const RING_COLORS = {
   kcal: '#10B981',
@@ -16,35 +20,17 @@ export interface DayCellRingProgress {
 
 interface DayCellRingsProps {
   dayNumber: number;
-  mode: CalendarRingMode;
+  /** Which rings to draw (any subset of КБЖУ). */
+  rings: CalendarRingsSelection;
   progress: DayCellRingProgress;
   hasReadyMeals: boolean;
   selected?: boolean;
   future?: boolean;
+  /** Outer box size in px (even recommended for crisp SVG). */
   size?: number;
 }
 
 const TRACK = 'rgba(0,0,0,0.08)';
-
-function ringsForMode(
-  mode: CalendarRingMode,
-): { key: keyof typeof RING_COLORS; color: string }[] {
-  if (mode === 'kcal') {
-    return [{ key: 'kcal', color: RING_COLORS.kcal }];
-  }
-  if (mode === 'kcal_protein') {
-    return [
-      { key: 'kcal', color: RING_COLORS.kcal },
-      { key: 'protein', color: RING_COLORS.protein },
-    ];
-  }
-  return [
-    { key: 'kcal', color: RING_COLORS.kcal },
-    { key: 'protein', color: RING_COLORS.protein },
-    { key: 'fat', color: RING_COLORS.fat },
-    { key: 'carbs', color: RING_COLORS.carbs },
-  ];
-}
 
 function clamp01(n: number): number {
   if (!Number.isFinite(n) || n <= 0) return 0;
@@ -52,51 +38,73 @@ function clamp01(n: number): number {
   return n;
 }
 
+/** Default cell size so outer rings fit without clipping. */
+export function dayCellSizeForRingCount(count: number): number {
+  return count >= 4 ? 44 : 40;
+}
+
 /**
- * Concentric progress arcs around a day number (Apple Activity style).
- * Rings only when the day has ready meals (D-04).
+ * Concentric progress arcs around a day number.
+ * Digit + disc + rings share one SVG origin (no CSS/HTML centering drift).
+ * Ring order outer→inner among enabled: kcal → protein → fat → carbs.
  */
 export function DayCellRings({
   dayNumber,
-  mode,
+  rings: ringsSelection,
   progress,
   hasReadyMeals,
   selected = false,
   future = false,
-  size = 36,
+  size,
 }: DayCellRingsProps) {
-  const rings = ringsForMode(mode);
-  const stroke = mode === 'full' ? 1.75 : 2.25;
-  const gap = 1.25;
-  const center = size / 2;
-  // Selected: solid disc leaves room for outer rings
-  const numberRadius = selected ? size * 0.28 : size * 0.22;
-  const innermost =
-    numberRadius + (selected ? stroke + gap + 1 : stroke / 2 + 1);
+  const keys = enabledCalendarRings(ringsSelection);
+  const rings = keys.map((key) => ({ key, color: RING_COLORS[key] }));
+  const n = rings.length;
+  const box = size ?? dayCellSizeForRingCount(n);
+  const stroke = n >= 4 ? 1.75 : n >= 3 ? 2 : 2.25;
+  const gap = n >= 4 ? 1.25 : n >= 3 ? 1.5 : 1.75;
+  const center = box / 2;
+
+  // Selected day disc — slightly larger so the date reads stronger vs rings
+  const discR = n >= 4 ? 11 : 12;
+  const clear = n >= 4 ? 1.5 : 1.75;
+  const innermost = discR + clear + stroke / 2;
+  const ringRadii =
+    n === 0
+      ? []
+      : rings.map((_, index) => innermost + (n - 1 - index) * (stroke + gap));
+
+  const labelFill = selected
+    ? 'hsl(var(--background))'
+    : future
+      ? 'hsl(var(--muted-foreground) / 0.65)'
+      : 'hsl(var(--foreground))';
+
+  const showArcs = hasReadyMeals && n > 0;
 
   return (
     <span
-      className="relative inline-flex items-center justify-center"
-      style={{ width: size, height: size }}
+      className="relative inline-block shrink-0"
+      style={{ width: box, height: box }}
       data-testid="day-cell-rings"
-      data-has-rings={hasReadyMeals ? 'true' : 'false'}
-      data-mode={mode}
+      data-has-rings={showArcs ? 'true' : 'false'}
+      data-ring-count={n}
     >
-      {hasReadyMeals && (
-        <svg
-          width={size}
-          height={size}
-          viewBox={`0 0 ${size} ${size}`}
-          className="absolute inset-0 -rotate-90"
-          aria-hidden
-          data-testid="day-cell-rings-svg"
-        >
-          {rings.map((ring, index) => {
-            const r = innermost + index * (stroke + gap);
+      <svg
+        width={box}
+        height={box}
+        viewBox={`0 0 ${box} ${box}`}
+        className="block"
+        aria-hidden
+        data-testid="day-cell-rings-svg"
+      >
+        {showArcs &&
+          rings.map((ring, index) => {
+            const r = ringRadii[index]!;
             const c = 2 * Math.PI * r;
             const ratio = clamp01(progress[ring.key]);
             return (
-              <g key={ring.key}>
+              <g key={ring.key} transform={`rotate(-90 ${center} ${center})`}>
                 <circle
                   cx={center}
                   cy={center}
@@ -115,29 +123,28 @@ export function DayCellRings({
                   strokeLinecap="round"
                   strokeDasharray={c}
                   strokeDashoffset={c * (1 - ratio)}
-                  data-ring={ring.key}
+                  data-ring={ring.key as CalendarRingKey}
                 />
               </g>
             );
           })}
-        </svg>
-      )}
-      <span
-        className={`relative z-[1] flex items-center justify-center rounded-full text-sm font-semibold tabular-nums transition-colors ${
-          selected
-            ? 'bg-foreground text-background'
-            : future
-              ? 'text-muted-foreground'
-              : 'text-foreground'
-        }`}
-        style={
-          selected
-            ? { width: numberRadius * 2, height: numberRadius * 2 }
-            : undefined
-        }
-      >
-        {dayNumber}
-      </span>
+
+        {selected && (
+          <circle cx={center} cy={center} r={discR} className="fill-foreground" />
+        )}
+
+        <text
+          x={center}
+          y={center}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={13}
+          fontWeight={600}
+          style={{ fill: labelFill }}
+        >
+          {dayNumber}
+        </text>
+      </svg>
     </span>
   );
 }

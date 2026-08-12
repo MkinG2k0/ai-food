@@ -30,22 +30,71 @@ export function normalizeAiModel(value: string): string {
   return ALLOWED_MODELS.has(value) ? value : DEFAULT_AI_MODEL;
 }
 
-/** Calendar day-cell ring density: К / КБ / КБЖУ. */
-export type CalendarRingMode = 'kcal' | 'kcal_protein' | 'full';
+/** Individual calendar ring metrics (К / Б / Ж / У). */
+export type CalendarRingKey = 'kcal' | 'protein' | 'fat' | 'carbs';
 
-export const DEFAULT_CALENDAR_RING_MODE: CalendarRingMode = 'kcal_protein';
-
-const ALLOWED_CALENDAR_RING_MODES = new Set<string>([
+export const CALENDAR_RING_ORDER: CalendarRingKey[] = [
   'kcal',
-  'kcal_protein',
-  'full',
-]);
+  'protein',
+  'fat',
+  'carbs',
+];
 
-export function normalizeCalendarRingMode(value: unknown): CalendarRingMode {
-  if (typeof value === 'string' && ALLOWED_CALENDAR_RING_MODES.has(value)) {
-    return value as CalendarRingMode;
+export interface CalendarRingsSelection {
+  kcal: boolean;
+  protein: boolean;
+  fat: boolean;
+  carbs: boolean;
+}
+
+/** Default КБ — calories + protein. */
+export const DEFAULT_CALENDAR_RINGS: CalendarRingsSelection = {
+  kcal: true,
+  protein: true,
+  fat: false,
+  carbs: false,
+};
+
+function isCalendarRingsRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Migrate legacy presets К / КБ / КБЖУ → boolean selection. */
+function ringsFromLegacyMode(value: string): CalendarRingsSelection | null {
+  if (value === 'kcal') {
+    return { kcal: true, protein: false, fat: false, carbs: false };
   }
-  return DEFAULT_CALENDAR_RING_MODE;
+  if (value === 'kcal_protein') {
+    return { ...DEFAULT_CALENDAR_RINGS };
+  }
+  if (value === 'full') {
+    return { kcal: true, protein: true, fat: true, carbs: true };
+  }
+  return null;
+}
+
+export function normalizeCalendarRings(value: unknown): CalendarRingsSelection {
+  if (typeof value === 'string') {
+    return ringsFromLegacyMode(value) ?? { ...DEFAULT_CALENDAR_RINGS };
+  }
+  if (isCalendarRingsRecord(value)) {
+    return {
+      kcal: Boolean(value.kcal),
+      protein: Boolean(value.protein),
+      fat: Boolean(value.fat),
+      carbs: Boolean(value.carbs),
+    };
+  }
+  return { ...DEFAULT_CALENDAR_RINGS };
+}
+
+/** Enabled keys in fixed outer→inner order. */
+export function enabledCalendarRings(
+  selection: CalendarRingsSelection,
+): CalendarRingKey[] {
+  return CALENDAR_RING_ORDER.filter((key) => selection[key]);
 }
 
 export function aiModelLabel(value: string | undefined): string | undefined {
@@ -104,9 +153,10 @@ interface SettingsState {
   /** Show dish composition (items) in UI and ask AI to break down ingredients */
   featureComposition: boolean;
   setFeatureComposition: (value: boolean) => void;
-  /** Concentric calendar rings: kcal / kcal+protein / full KBJU */
-  calendarRingMode: CalendarRingMode;
-  setCalendarRingMode: (value: CalendarRingMode) => void;
+  /** Which КБЖУ rings to show on the calendar (any combination). */
+  calendarRings: CalendarRingsSelection;
+  setCalendarRing: (key: CalendarRingKey, enabled: boolean) => void;
+  setCalendarRings: (value: CalendarRingsSelection) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -128,13 +178,33 @@ export const useSettingsStore = create<SettingsState>()(
       setFeatureHealthiness: (value) => set({ featureHealthiness: value }),
       featureComposition: true,
       setFeatureComposition: (value) => set({ featureComposition: value }),
-      calendarRingMode: DEFAULT_CALENDAR_RING_MODE,
-      setCalendarRingMode: (value) =>
-        set({ calendarRingMode: normalizeCalendarRingMode(value) }),
+      calendarRings: { ...DEFAULT_CALENDAR_RINGS },
+      setCalendarRing: (key, enabled) =>
+        set((s) => ({
+          calendarRings: { ...s.calendarRings, [key]: enabled },
+        })),
+      setCalendarRings: (value) =>
+        set({ calendarRings: normalizeCalendarRings(value) }),
     }),
     {
       name: 'ai-food-settings',
+      version: 2,
       storage: createJSONStorage(() => capacitorStorage),
+      migrate: (persisted, version) => {
+        if (!isCalendarRingsRecord(persisted)) {
+          return persisted as unknown as SettingsState;
+        }
+        const next: Record<string, unknown> = { ...persisted };
+        if (version < 2) {
+          next.calendarRings = normalizeCalendarRings(
+            next.calendarRings ?? next.calendarRingMode,
+          );
+          delete next.calendarRingMode;
+        } else {
+          next.calendarRings = normalizeCalendarRings(next.calendarRings);
+        }
+        return next as unknown as SettingsState;
+      },
     }
   )
 );
