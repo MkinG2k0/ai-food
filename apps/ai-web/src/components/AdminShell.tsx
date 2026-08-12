@@ -6,6 +6,7 @@ import {
   ApiOutlined,
   BarChartOutlined,
   CreditCardOutlined,
+  HeartOutlined,
   LogoutOutlined,
   TagsOutlined,
   UserOutlined,
@@ -18,6 +19,7 @@ const { Content, Header, Sider } = Layout;
 const menuItems = [
   { icon: <BarChartOutlined />, key: '/admin', label: 'Обзор' },
   { icon: <ApiOutlined />, key: '/admin/requests', label: 'Запросы' },
+  { icon: <HeartOutlined />, key: '/admin/health', label: 'Стабильность' },
   { icon: <TagsOutlined />, key: '/admin/pricing', label: 'Цены и лимиты' },
   {
     icon: <UserOutlined />,
@@ -35,6 +37,7 @@ const menuItems = [
 const pageTitles: Record<string, string> = {
   '/admin': 'Обзор',
   '/admin/requests': 'Запросы',
+  '/admin/health': 'Стабильность',
   '/admin/pricing': 'Цены и лимиты',
   '/admin/users': 'Пользователи',
   '/admin/payments': 'Платежи',
