@@ -2,11 +2,13 @@ import { Outlet } from 'react-router-dom';
 import { KbjuWidgetSync } from '@/features/kbju-widget';
 import { BackButtonHandler } from './BackButtonHandler';
 import { DeepLinkHandler } from './DeepLinkHandler';
+import { StatusBarBootstrap } from './StatusBarBootstrap';
 
 /** Centers a phone-width column on desktop; full-bleed on small screens. */
 export function AppShell() {
   return (
     <div className="min-h-dvh bg-zinc-200/90">
+      <StatusBarBootstrap />
       <BackButtonHandler />
       <DeepLinkHandler />
       <KbjuWidgetSync />

@@ -20,5 +20,8 @@ project(':capacitor-filesystem').projectDir = new File('../../../node_modules/.p
 include ':capacitor-preferences'
 project(':capacitor-preferences').projectDir = new File('../../../node_modules/.pnpm/@capacitor+preferences@8.0.1_@capacitor+core@8.5.0/node_modules/@capacitor/preferences/android')
 
+include ':capacitor-status-bar'
+project(':capacitor-status-bar').projectDir = new File('../../../node_modules/.pnpm/@capacitor+status-bar@8.0.3_@capacitor+core@8.5.0/node_modules/@capacitor/status-bar/android')
+
 include ':capgo-capacitor-speech-recognition'
 project(':capgo-capacitor-speech-recognition').projectDir = new File('../../../node_modules/.pnpm/@capgo+capacitor-speech-recognition@8.1.10_@capacitor+core@8.5.0/node_modules/@capgo/capacitor-speech-recognition/android')

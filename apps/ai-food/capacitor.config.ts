@@ -13,6 +13,12 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: true, // needed when server.url is http
   },
+  plugins: {
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#ffffffff',
+    },
+  },
 };
 
 export default config;

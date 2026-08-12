@@ -24,6 +24,7 @@
     "@capacitor/device": "^8",
     "@capacitor/filesystem": "^8",
     "@capacitor/preferences": "^8.0.0",
+    "@capacitor/status-bar": "^8",
     "@capgo/capacitor-speech-recognition": "^8.1.10",
     "@ionic/pwa-elements": "^3.4.0",
     "@radix-ui/react-slot": "^1.1.0",
