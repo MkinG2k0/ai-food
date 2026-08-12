@@ -57,6 +57,7 @@ function sampleSnapshot(overrides: Partial<AppDataSnapshot> = {}): AppDataSnapsh
       featureVitamins: true,
       featureHealthiness: false,
       featureComposition: true,
+      calendarRingMode: 'kcal_protein',
     },
     favorites: [],
     weightEntries: [{ id: 'w1', date: '2026-07-20', kg: 79.5 }],
@@ -111,6 +112,65 @@ describe('appDataBackup', () => {
     built.settings.aiModel = 'unknown/model';
     const parsed = parseAppDataExport(built);
     expect(parsed.settings.aiModel).toBe(DEFAULT_AI_MODEL);
+  });
+
+  it('buildAppDataExport includes calendarRingMode', () => {
+    const data = buildAppDataExport(
+      sampleSnapshot({
+        settings: {
+          customInstructions: '',
+          customInstructionsEnabled: true,
+          aiModel: DEFAULT_AI_MODEL,
+          featureVitamins: true,
+          featureHealthiness: true,
+          featureComposition: true,
+          calendarRingMode: 'full',
+        },
+      }),
+    );
+    expect(data.settings.calendarRingMode).toBe('full');
+  });
+
+  it('parseAppDataExport round-trips calendarRingMode', () => {
+    const built = buildAppDataExport(
+      sampleSnapshot({
+        settings: {
+          customInstructions: '',
+          customInstructionsEnabled: true,
+          aiModel: DEFAULT_AI_MODEL,
+          featureVitamins: true,
+          featureHealthiness: true,
+          featureComposition: true,
+          calendarRingMode: 'kcal',
+        },
+      }),
+    );
+    expect(parseAppDataExport(built).settings.calendarRingMode).toBe('kcal');
+  });
+
+  it('parseAppDataExport defaults missing calendarRingMode to kcal_protein', () => {
+    const built = buildAppDataExport(sampleSnapshot());
+    const legacy = {
+      ...built,
+      settings: {
+        customInstructions: built.settings.customInstructions,
+        customInstructionsEnabled: built.settings.customInstructionsEnabled,
+        aiModel: built.settings.aiModel,
+        featureVitamins: built.settings.featureVitamins,
+        featureHealthiness: built.settings.featureHealthiness,
+        featureComposition: built.settings.featureComposition,
+      },
+    };
+    const parsed = parseAppDataExport(legacy);
+    expect(parsed.settings.calendarRingMode).toBe('kcal_protein');
+  });
+
+  it('parseAppDataExport normalizes invalid calendarRingMode', () => {
+    const built = buildAppDataExport(sampleSnapshot());
+    built.settings.calendarRingMode = 'bogus' as typeof built.settings.calendarRingMode;
+    expect(parseAppDataExport(built).settings.calendarRingMode).toBe(
+      'kcal_protein',
+    );
   });
 
   it('backupFileName uses local calendar date', () => {

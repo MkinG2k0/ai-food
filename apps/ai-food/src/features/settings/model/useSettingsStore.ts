@@ -30,6 +30,24 @@ export function normalizeAiModel(value: string): string {
   return ALLOWED_MODELS.has(value) ? value : DEFAULT_AI_MODEL;
 }
 
+/** Calendar day-cell ring density: К / КБ / КБЖУ. */
+export type CalendarRingMode = 'kcal' | 'kcal_protein' | 'full';
+
+export const DEFAULT_CALENDAR_RING_MODE: CalendarRingMode = 'kcal_protein';
+
+const ALLOWED_CALENDAR_RING_MODES = new Set<string>([
+  'kcal',
+  'kcal_protein',
+  'full',
+]);
+
+export function normalizeCalendarRingMode(value: unknown): CalendarRingMode {
+  if (typeof value === 'string' && ALLOWED_CALENDAR_RING_MODES.has(value)) {
+    return value as CalendarRingMode;
+  }
+  return DEFAULT_CALENDAR_RING_MODE;
+}
+
 export function aiModelLabel(value: string | undefined): string | undefined {
   if (!value) return undefined;
   const option = AI_MODEL_OPTIONS.find((o) => o.value === value);
@@ -86,6 +104,9 @@ interface SettingsState {
   /** Show dish composition (items) in UI and ask AI to break down ingredients */
   featureComposition: boolean;
   setFeatureComposition: (value: boolean) => void;
+  /** Concentric calendar rings: kcal / kcal+protein / full KBJU */
+  calendarRingMode: CalendarRingMode;
+  setCalendarRingMode: (value: CalendarRingMode) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -107,6 +128,9 @@ export const useSettingsStore = create<SettingsState>()(
       setFeatureHealthiness: (value) => set({ featureHealthiness: value }),
       featureComposition: true,
       setFeatureComposition: (value) => set({ featureComposition: value }),
+      calendarRingMode: DEFAULT_CALENDAR_RING_MODE,
+      setCalendarRingMode: (value) =>
+        set({ calendarRingMode: normalizeCalendarRingMode(value) }),
     }),
     {
       name: 'ai-food-settings',
