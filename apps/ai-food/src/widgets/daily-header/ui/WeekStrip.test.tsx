@@ -9,7 +9,17 @@ const currentWeekDays = getWeekDays(0);
 const fixtureMeal: Meal = {
   id: 'meal-1',
   timestamp: currentWeekDays[2].toISOString(),
-  items: [],
+  status: 'ready',
+  items: [
+    {
+      name: 'oats',
+      grams: 100,
+      calories: 500,
+      protein: 20,
+      fat: 10,
+      carbs: 60,
+    },
+  ],
   totalCalories: 500,
 };
 
@@ -19,6 +29,7 @@ function renderWeekStrip(onDaySelect = vi.fn(), onWeekChange = vi.fn()) {
       weekOffset={0}
       selectedDate={currentWeekDays[0]}
       meals={[fixtureMeal]}
+      calendarRingMode="kcal_protein"
       onDaySelect={onDaySelect}
       onWeekChange={onWeekChange}
     />,
@@ -50,15 +61,15 @@ describe('WeekStrip', () => {
     expect(isSameDay(calledWithDate, currentWeekDays[3])).toBe(true);
   });
 
-  it('renders a meal-dot indicator for a day with a matching meal', () => {
+  it('shows rings SVG for a ready-meal day and none for empty days', () => {
     renderWeekStrip();
     const buttons = screen.getAllByRole('button');
     // current week day index 2 is at overall index 9 (7 + 2).
-    const dayButton = buttons[9];
-    const dot = dayButton.querySelector('span:last-child');
+    const mealDay = buttons[9];
+    const emptyDay = buttons[10];
 
-    expect(dot).not.toBeNull();
-    expect(dot?.className).toMatch(/bg-primary/);
-    expect(dot?.className).not.toMatch(/bg-transparent/);
+    expect(mealDay.querySelector('[data-testid="day-cell-rings-svg"]')).not.toBeNull();
+    expect(emptyDay.querySelector('[data-testid="day-cell-rings-svg"]')).toBeNull();
+    expect(mealDay.querySelector('span.bg-primary')).toBeNull();
   });
 });

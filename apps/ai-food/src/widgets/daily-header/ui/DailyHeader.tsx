@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { BarChart2, User } from 'lucide-react';
 import { useDiaryStore } from '@/entities/meal';
 import { useProfileStore } from '@/features/onboarding';
+import { useSettingsStore } from '@/features/settings';
 import { isSameDay } from '@/shared/lib';
 import { WeekStrip } from './WeekStrip';
 import { NutritionSummaryCard } from './NutritionSummaryCard';
@@ -32,6 +33,7 @@ export function DailyHeader({
   const navigate = useNavigate();
   const meals = useDiaryStore((s) => s.meals);
   const targets = useProfileStore((s) => s.targets);
+  const calendarRingMode = useSettingsStore((s) => s.calendarRingMode);
   const [budgetOpen, setBudgetOpen] = useState(false);
 
   const goalKcal = targets?.kcal ?? FALLBACK_TARGETS.kcal;
@@ -90,6 +92,8 @@ export function DailyHeader({
         weekOffset={weekOffset}
         selectedDate={selectedDate}
         meals={meals}
+        targets={targets}
+        calendarRingMode={calendarRingMode}
         onDaySelect={onDaySelect}
         onWeekChange={onWeekChange}
       />

@@ -4,12 +4,14 @@ export { queryClient } from './queryClient';
 export {
   getWeekStart,
   getWeekDays,
+  getMonthGridDays,
   isSameDay,
   isFutureDay,
   formatDayLabel,
   formatHeaderDate,
   timestampForSelectedDate,
 } from './dateUtils';
+export type { MonthGridDay } from './dateUtils';
 export { saveMealImage, saveMealImageFromUrl, getMealImageSrc, loadMealImageAsFile } from './mealImage';
 export {
   compressImageForAi,
@@ -38,3 +40,8 @@ export {
   type TodayKbjuMacros,
   type TodayKbjuSnapshot,
 } from './computeTodayKbjuSnapshot';
+export {
+  computeDayKbju,
+  type DayKbjuMacros,
+  type DayKbjuResult,
+} from './computeDayKbju';

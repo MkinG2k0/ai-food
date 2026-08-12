@@ -44,6 +44,39 @@ export function formatHeaderDate(date: Date): string {
   });
 }
 
+export interface MonthGridDay {
+  date: Date;
+  /** True when date is in the requested calendar month. */
+  inMonth: boolean;
+}
+
+/**
+ * Mon–Sun month grid with leading/trailing padding days from adjacent months.
+ * `month` is 0-based (Date.getMonth()).
+ */
+export function getMonthGridDays(year: number, month: number): MonthGridDay[] {
+  const first = new Date(year, month, 1);
+  first.setHours(0, 0, 0, 0);
+  const gridStart = getWeekStart(first);
+  const last = new Date(year, month + 1, 0);
+  last.setHours(0, 0, 0, 0);
+  const lastWeekStart = getWeekStart(last);
+  const gridEnd = new Date(lastWeekStart);
+  gridEnd.setDate(gridEnd.getDate() + 6);
+
+  const days: MonthGridDay[] = [];
+  const cursor = new Date(gridStart);
+  while (cursor.getTime() <= gridEnd.getTime()) {
+    const d = new Date(cursor);
+    days.push({
+      date: d,
+      inMonth: d.getMonth() === month && d.getFullYear() === year,
+    });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
+}
+
 /** Calendar Y/M/D from selectedDate, clock time from now → ISO string. */
 export function timestampForSelectedDate(selectedDate: Date, now: Date = new Date()): string {
   const result = new Date(now);

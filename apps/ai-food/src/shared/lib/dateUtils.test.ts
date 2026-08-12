@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   getWeekStart,
   getWeekDays,
+  getMonthGridDays,
   isSameDay,
   isFutureDay,
   formatDayLabel,
@@ -143,6 +144,25 @@ describe('formatHeaderDate', () => {
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
     expect(result).not.toBe('Сегодня');
+  });
+});
+
+describe('getMonthGridDays', () => {
+  it('starts on Monday and ends on Sunday', () => {
+    // August 2026: Sat 1 … Mon 31
+    const days = getMonthGridDays(2026, 7);
+    expect(days[0].date.getDay()).toBe(1);
+    expect(days[days.length - 1].date.getDay()).toBe(0);
+    expect(days.length % 7).toBe(0);
+  });
+
+  it('marks in-month days correctly for August 2026', () => {
+    const days = getMonthGridDays(2026, 7);
+    const inMonth = days.filter((d) => d.inMonth);
+    expect(inMonth).toHaveLength(31);
+    expect(inMonth[0].date.getDate()).toBe(1);
+    expect(inMonth[30].date.getDate()).toBe(31);
+    expect(days[0].inMonth).toBe(false); // Jul 27 padding
   });
 });
 

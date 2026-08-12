@@ -1,12 +1,22 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, useMotionValue, animate, type PanInfo } from 'framer-motion';
-import type { Meal } from '@ai-food/shared-types';
-import { getWeekDays, isSameDay, isFutureDay, formatDayLabel } from '@/shared/lib';
+import type { DailyTargets, Meal } from '@ai-food/shared-types';
+import type { CalendarRingMode } from '@/features/settings';
+import {
+  computeDayKbju,
+  getWeekDays,
+  isSameDay,
+  isFutureDay,
+  formatDayLabel,
+} from '@/shared/lib';
+import { DayCellRings } from './DayCellRings';
 
 interface WeekStripProps {
   weekOffset: number;
   selectedDate: Date;
   meals: Meal[];
+  targets?: DailyTargets | null;
+  calendarRingMode?: CalendarRingMode;
   onDaySelect: (date: Date) => void;
   onWeekChange: (delta: 1 | -1) => void;
 }
@@ -18,15 +28,13 @@ export function WeekStrip({
   weekOffset,
   selectedDate,
   meals,
+  targets = null,
+  calendarRingMode = 'kcal_protein',
   onDaySelect,
   onWeekChange,
 }: WeekStripProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
-
-  function hasMeals(date: Date): boolean {
-    return meals.some((m) => isSameDay(new Date(m.timestamp), date));
-  }
 
   function recenter() {
     const slotWidth = viewportRef.current?.getBoundingClientRect().width ?? 0;
@@ -52,14 +60,26 @@ export function WeekStrip({
     const slotWidth = viewportRef.current?.getBoundingClientRect().width ?? 0;
     if (!slotWidth) return;
 
-    if (info.offset.x < -SWIPE_OFFSET_THRESHOLD || info.velocity.x < -SWIPE_VELOCITY_THRESHOLD) {
-      animate(x, -2 * slotWidth, { type: 'tween', duration: 0.2, ease: 'easeOut' }).then(() => {
+    if (
+      info.offset.x < -SWIPE_OFFSET_THRESHOLD ||
+      info.velocity.x < -SWIPE_VELOCITY_THRESHOLD
+    ) {
+      animate(x, -2 * slotWidth, {
+        type: 'tween',
+        duration: 0.2,
+        ease: 'easeOut',
+      }).then(() => {
         onWeekChange(1);
       });
-    } else if (info.offset.x > SWIPE_OFFSET_THRESHOLD || info.velocity.x > SWIPE_VELOCITY_THRESHOLD) {
-      animate(x, 0, { type: 'tween', duration: 0.2, ease: 'easeOut' }).then(() => {
-        onWeekChange(-1);
-      });
+    } else if (
+      info.offset.x > SWIPE_OFFSET_THRESHOLD ||
+      info.velocity.x > SWIPE_VELOCITY_THRESHOLD
+    ) {
+      animate(x, 0, { type: 'tween', duration: 0.2, ease: 'easeOut' }).then(
+        () => {
+          onWeekChange(-1);
+        },
+      );
     } else {
       animate(x, -slotWidth, { type: 'spring', stiffness: 400, damping: 30 });
     }
@@ -94,38 +114,32 @@ export function WeekStrip({
               {days.map((date) => {
                 const isSelected = isSameDay(date, selectedDate);
                 const isFuture = isFutureDay(date);
-                const hasFood = hasMeals(date);
                 const label = formatDayLabel(date);
-                const dayNum = date.getDate();
+                const dayKbju = computeDayKbju(meals, targets, date);
 
                 return (
                   <button
                     key={date.toDateString()}
+                    type="button"
                     onClick={() => onDaySelect(date)}
                     className="flex flex-col items-center gap-1 min-w-[36px]"
                   >
                     <span
                       className={`text-xs font-medium ${
-                        isFuture ? 'text-muted-foreground/60' : 'text-muted-foreground'
+                        isFuture
+                          ? 'text-muted-foreground/60'
+                          : 'text-muted-foreground'
                       }`}
                     >
                       {label}
                     </span>
-                    <span
-                      className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${
-                        isSelected
-                          ? 'bg-foreground text-background'
-                          : isFuture
-                            ? 'text-muted-foreground hover:bg-muted'
-                            : 'text-foreground hover:bg-muted'
-                      }`}
-                    >
-                      {dayNum}
-                    </span>
-                    <span
-                      className={`w-1 h-1 rounded-full transition-colors ${
-                        hasFood ? 'bg-primary' : 'bg-transparent'
-                      }`}
+                    <DayCellRings
+                      dayNumber={date.getDate()}
+                      mode={calendarRingMode}
+                      progress={dayKbju.progress}
+                      hasReadyMeals={dayKbju.hasReadyMeals}
+                      selected={isSelected}
+                      future={isFuture}
                     />
                   </button>
                 );
