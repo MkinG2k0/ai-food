@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ApiError } from '../../lib/errors.js';
+import { collectAdminRuntimeHealth } from '../lib/adminRuntimeHealth.js';
 import {
   buildAdminStatsSeries,
   clampSeriesDays,
@@ -224,6 +225,25 @@ function daysAgo(now: Date, days: number): Date {
 export const adminRouter = Router();
 
 adminRouter.use(requireAdminKey);
+
+adminRouter.get(
+  '/health',
+  asyncHandler(async (_req, res) => {
+    const health = await collectAdminRuntimeHealth({
+      pingDb: async () => {
+        if (!isDatabaseConfigured()) {
+          throw new Error('DATABASE_URL is not configured');
+        }
+        const prisma = getPrisma();
+        if (!prisma) {
+          throw new Error('Database client is not available');
+        }
+        await prisma.$queryRaw`SELECT 1`;
+      },
+    });
+    res.json(health);
+  }),
+);
 
 adminRouter.get(
   '/pricing',
