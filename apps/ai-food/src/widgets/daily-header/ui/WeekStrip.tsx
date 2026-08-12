@@ -1,11 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import {
-  AnimatePresence,
-  motion,
-  useMotionValue,
-  animate,
-  type PanInfo,
-} from 'framer-motion';
+import { motion, useMotionValue, animate, type PanInfo } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { DailyTargets, Meal } from '@ai-food/shared-types';
 import type { CalendarRingsSelection } from '@/features/settings';
@@ -38,14 +32,14 @@ const SWIPE_VELOCITY_THRESHOLD = 500;
 const VERTICAL_EXPAND_THRESHOLD = 48;
 const WEEKDAY_HEADERS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const;
 
-/** Expand a bit slower; collapse smoother (exit was previously instant → jerky). */
-const CALENDAR_EXPAND = {
-  height: { duration: 0.38, ease: [0.22, 1, 0.36, 1] as const },
-  opacity: { duration: 0.28, ease: 'easeOut' as const },
+/** Coordinated crossfade: week and month swap without an empty gap. */
+const EXPAND_TRANSITION = {
+  height: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as const },
+  opacity: { duration: 0.22, ease: 'easeOut' as const },
 };
-const CALENDAR_COLLAPSE = {
-  height: { duration: 0.42, ease: [0.32, 0.72, 0, 1] as const },
-  opacity: { duration: 0.24, ease: 'easeIn' as const },
+const COLLAPSE_TRANSITION = {
+  height: { duration: 0.34, ease: [0.32, 0.72, 0, 1] as const },
+  opacity: { duration: 0.2, ease: 'easeIn' as const },
 };
 
 function CalendarHandle({
@@ -179,178 +173,177 @@ export function WeekStrip({
     'ru-RU',
     { month: 'long', year: 'numeric' },
   );
+  const transition = expanded ? EXPAND_TRANSITION : COLLAPSE_TRANSITION;
 
   return (
-    <div className="mt-4">
-      <AnimatePresence mode="wait" initial={false}>
-        {expanded ? (
+    <div
+      className="relative z-10 mt-4 rounded-2xl border border-border/60 bg-card px-2 pb-1 pt-3 shadow-sm"
+      data-testid="calendar-panel"
+    >
+      {/* Both views stay mounted and crossfade heights — no empty frame */}
+      <motion.div
+        initial={false}
+        animate={
+          expanded
+            ? { height: 0, opacity: 0 }
+            : { height: 'auto', opacity: 1 }
+        }
+        transition={transition}
+        drag={!expanded ? 'y' : false}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.15}
+        onDragEnd={handleVerticalDragEnd}
+        className="overflow-hidden bg-card"
+        style={{ pointerEvents: expanded ? 'none' : 'auto' }}
+        aria-hidden={expanded}
+      >
+        <div
+          ref={viewportRef}
+          data-testid="week-strip-viewport"
+          className="overflow-x-hidden overflow-y-visible touch-pan-y overscroll-x-contain bg-card"
+        >
           <motion.div
-            key="month"
-            data-testid="month-calendar-grid"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{
-              opacity: 1,
-              height: 'auto',
-              transition: CALENDAR_EXPAND,
-            }}
-            exit={{
-              opacity: 0,
-              height: 0,
-              transition: CALENDAR_COLLAPSE,
-            }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={0.2}
-            onDragEnd={handleVerticalDragEnd}
-            className="select-none overflow-hidden"
-          >
-            <div>
-              <div className="mb-2 flex items-center justify-between gap-2 px-1">
-                <button
-                  type="button"
-                  aria-label="Предыдущий месяц"
-                  className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
-                  onClick={() => shiftMonth(-1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <p className="text-sm font-medium capitalize">{monthLabel}</p>
-                <button
-                  type="button"
-                  aria-label="Следующий месяц"
-                  className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
-                  onClick={() => shiftMonth(1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="mb-1 grid grid-cols-7 gap-y-1">
-                {WEEKDAY_HEADERS.map((label) => (
-                  <span
-                    key={label}
-                    className="text-center text-[10px] font-medium text-muted-foreground"
-                  >
-                    {label}
-                  </span>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-y-1">
-                {monthDays.map(({ date, inMonth }) => {
-                  const isSelected = isSameDay(date, selectedDate);
-                  const isFuture = isFutureDay(date);
-                  const dayKbju = computeDayKbju(meals, targets, date);
-                  return (
-                    <button
-                      key={date.toISOString()}
-                      type="button"
-                      data-testid="month-day-cell"
-                      data-in-month={inMonth ? 'true' : 'false'}
-                      onClick={() => handleMonthDaySelect(date)}
-                      className={`flex flex-col items-center justify-center py-0.5 ${
-                        inMonth ? '' : 'opacity-40'
-                      }`}
-                    >
-                      <DayCellRings
-                        dayNumber={date.getDate()}
-                        rings={calendarRings}
-                        progress={dayKbju.progress}
-                        hasReadyMeals={dayKbju.hasReadyMeals}
-                        selected={isSelected}
-                        future={isFuture}
-                        size={ringCellSize}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="week"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{
-              opacity: 1,
-              height: 'auto',
-              transition: CALENDAR_EXPAND,
-            }}
-            exit={{
-              opacity: 0,
-              height: 0,
-              // Fast exit when opening month so expand doesn't feel delayed
-              transition: { duration: 0.14, ease: 'easeIn' },
-            }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
+            drag={!expanded ? 'x' : false}
+            style={{ x, width: '300%' }}
+            dragConstraints={viewportRef}
             dragElastic={0.15}
-            onDragEnd={handleVerticalDragEnd}
-            className="overflow-hidden"
+            dragMomentum={false}
+            onDragEnd={handleDragEnd}
+            className="flex cursor-grab active:cursor-grabbing select-none"
           >
-            <div
-              ref={viewportRef}
-              data-testid="week-strip-viewport"
-              className="overflow-hidden touch-pan-y overscroll-x-contain"
-            >
-              <motion.div
-                drag="x"
-                style={{ x, width: '300%' }}
-                dragConstraints={viewportRef}
-                dragElastic={0.15}
-                dragMomentum={false}
-                onDragEnd={handleDragEnd}
-                className="flex cursor-grab active:cursor-grabbing select-none"
-              >
-                {weekOffsets.map((offset, i) => {
-                  const days = getWeekDays(offset);
+            {weekOffsets.map((offset, i) => {
+              const days = getWeekDays(offset);
 
-                  return (
-                    <div
-                      key={['prev', 'current', 'next'][i]}
-                      className="grid grid-cols-7"
-                      style={{ width: '33.3333%' }}
-                    >
-                      {days.map((date) => {
-                        const isSelected = isSameDay(date, selectedDate);
-                        const isFuture = isFutureDay(date);
-                        const label = formatDayLabel(date);
-                        const dayKbju = computeDayKbju(meals, targets, date);
+              return (
+                <div
+                  key={['prev', 'current', 'next'][i]}
+                  className="grid grid-cols-7"
+                  style={{ width: '33.3333%' }}
+                >
+                  {days.map((date) => {
+                    const isSelected = isSameDay(date, selectedDate);
+                    const isFuture = isFutureDay(date);
+                    const label = formatDayLabel(date);
+                    const dayKbju = computeDayKbju(meals, targets, date);
 
-                        return (
-                          <button
-                            key={date.toDateString()}
-                            type="button"
-                            onClick={() => onDaySelect(date)}
-                            className="flex flex-col items-center gap-1.5 py-0.5"
-                          >
-                            <span
-                              className={`text-[11px] font-medium leading-none ${
-                                isFuture
-                                  ? 'text-muted-foreground/60'
-                                  : 'text-muted-foreground'
-                              }`}
-                            >
-                              {label}
-                            </span>
-                            <DayCellRings
-                              dayNumber={date.getDate()}
-                              rings={calendarRings}
-                              progress={dayKbju.progress}
-                              hasReadyMeals={dayKbju.hasReadyMeals}
-                              selected={isSelected}
-                              future={isFuture}
-                              size={ringCellSize}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </motion.div>
-            </div>
+                    return (
+                      <button
+                        key={date.toDateString()}
+                        type="button"
+                        tabIndex={expanded ? -1 : 0}
+                        onClick={() => onDaySelect(date)}
+                        className="flex flex-col items-center gap-1.5 overflow-visible py-1"
+                      >
+                        <span
+                          className={`text-[11px] font-medium leading-none ${
+                            isFuture
+                              ? 'text-muted-foreground/60'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          {label}
+                        </span>
+                        <DayCellRings
+                          dayNumber={date.getDate()}
+                          rings={calendarRings}
+                          progress={dayKbju.progress}
+                          hasReadyMeals={dayKbju.hasReadyMeals}
+                          selected={isSelected}
+                          future={isFuture}
+                          size={ringCellSize}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      </motion.div>
+
+      <motion.div
+        data-testid="month-calendar-grid"
+        data-expanded={expanded ? 'true' : 'false'}
+        initial={false}
+        animate={
+          expanded
+            ? { height: 'auto', opacity: 1 }
+            : { height: 0, opacity: 0 }
+        }
+        transition={transition}
+        drag={expanded ? 'y' : false}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.2}
+        onDragEnd={handleVerticalDragEnd}
+        className="overflow-hidden bg-card"
+        style={{ pointerEvents: expanded ? 'auto' : 'none' }}
+        aria-hidden={!expanded}
+      >
+        <div className="bg-card px-1">
+          <div className="mb-2 flex items-center justify-between gap-2 px-1">
+            <button
+              type="button"
+              tabIndex={expanded ? 0 : -1}
+              aria-label="Предыдущий месяц"
+              className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
+              onClick={() => shiftMonth(-1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <p className="text-sm font-medium capitalize">{monthLabel}</p>
+            <button
+              type="button"
+              tabIndex={expanded ? 0 : -1}
+              aria-label="Следующий месяц"
+              className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
+              onClick={() => shiftMonth(1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="mb-1 grid grid-cols-7 gap-y-1">
+            {WEEKDAY_HEADERS.map((label) => (
+              <span
+                key={label}
+                className="text-center text-[10px] font-medium text-muted-foreground"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-y-1">
+            {monthDays.map(({ date, inMonth }) => {
+              const isSelected = isSameDay(date, selectedDate);
+              const isFuture = isFutureDay(date);
+              const dayKbju = computeDayKbju(meals, targets, date);
+              return (
+                <button
+                  key={date.toISOString()}
+                  type="button"
+                  tabIndex={expanded ? 0 : -1}
+                  data-testid="month-day-cell"
+                  data-in-month={inMonth ? 'true' : 'false'}
+                  onClick={() => handleMonthDaySelect(date)}
+                  className={`flex flex-col items-center justify-center py-0.5 ${
+                    inMonth ? '' : 'opacity-40'
+                  }`}
+                >
+                  <DayCellRings
+                    dayNumber={date.getDate()}
+                    rings={calendarRings}
+                    progress={dayKbju.progress}
+                    hasReadyMeals={dayKbju.hasReadyMeals}
+                    selected={isSelected}
+                    future={isFuture}
+                    size={ringCellSize}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </motion.div>
 
       <CalendarHandle
         expanded={expanded}

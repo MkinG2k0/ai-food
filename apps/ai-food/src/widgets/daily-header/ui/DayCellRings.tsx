@@ -38,9 +38,26 @@ function clamp01(n: number): number {
   return n;
 }
 
+function ringGeometry(count: number) {
+  const n = Math.max(0, count);
+  const stroke = n >= 4 ? 1.75 : n >= 3 ? 2 : 2.25;
+  const gap = n >= 4 ? 1.25 : n >= 3 ? 1.5 : 1.75;
+  const discR = n >= 4 ? 11 : 12;
+  const clear = n >= 4 ? 1.5 : 1.75;
+  const innermost = discR + clear + stroke / 2;
+  const outer =
+    n <= 1 ? innermost : innermost + (n - 1) * (stroke + gap);
+  // Room for stroke + round caps so the outer ring isn't clipped
+  let box = Math.ceil((outer + stroke / 2 + 2) * 2);
+  if (box % 2 !== 0) box += 1;
+  // Floor so empty / single-digit days stay readable
+  box = Math.max(box, n === 0 ? 40 : 42);
+  return { stroke, gap, discR, clear, innermost, box };
+}
+
 /** Default cell size so outer rings fit without clipping. */
 export function dayCellSizeForRingCount(count: number): number {
-  return count >= 4 ? 44 : 40;
+  return ringGeometry(count).box;
 }
 
 /**
@@ -60,15 +77,9 @@ export function DayCellRings({
   const keys = enabledCalendarRings(ringsSelection);
   const rings = keys.map((key) => ({ key, color: RING_COLORS[key] }));
   const n = rings.length;
-  const box = size ?? dayCellSizeForRingCount(n);
-  const stroke = n >= 4 ? 1.75 : n >= 3 ? 2 : 2.25;
-  const gap = n >= 4 ? 1.25 : n >= 3 ? 1.5 : 1.75;
+  const { stroke, gap, discR, innermost, box: fitted } = ringGeometry(n);
+  const box = size ?? fitted;
   const center = box / 2;
-
-  // Selected day disc — slightly larger so the date reads stronger vs rings
-  const discR = n >= 4 ? 11 : 12;
-  const clear = n >= 4 ? 1.5 : 1.75;
-  const innermost = discR + clear + stroke / 2;
   const ringRadii =
     n === 0
       ? []
@@ -84,7 +95,7 @@ export function DayCellRings({
 
   return (
     <span
-      className="relative inline-block shrink-0"
+      className="relative inline-block shrink-0 overflow-visible"
       style={{ width: box, height: box }}
       data-testid="day-cell-rings"
       data-has-rings={showArcs ? 'true' : 'false'}
@@ -94,7 +105,7 @@ export function DayCellRings({
         width={box}
         height={box}
         viewBox={`0 0 ${box} ${box}`}
-        className="block"
+        className="block overflow-visible"
         aria-hidden
         data-testid="day-cell-rings-svg"
       >

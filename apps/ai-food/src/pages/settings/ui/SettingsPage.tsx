@@ -514,7 +514,7 @@ export function SettingsPage() {
             любая комбинация КБЖУ.
           </p>
           <div
-            className="flex rounded-lg border border-input p-1"
+            className="flex rounded-lg border border-input p-1 gap-1"
             role="group"
             aria-label="Кольца календаря"
           >
