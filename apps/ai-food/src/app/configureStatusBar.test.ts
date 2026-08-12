@@ -40,11 +40,12 @@ describe('configureStatusBar', () => {
     expect(setBackgroundColor).not.toHaveBeenCalled();
   });
 
-  it('sets Dark style and white background on native', async () => {
+  it('sets Light style (dark icons) and white background on native', async () => {
     isNativePlatform.mockReturnValue(true);
     const { configureStatusBar } = await import('./configureStatusBar');
     await configureStatusBar();
-    expect(setStyle).toHaveBeenCalledWith({ style: 'DARK' });
+    // Capacitor: Style.Light = dark text/icons for light backgrounds
+    expect(setStyle).toHaveBeenCalledWith({ style: 'LIGHT' });
     expect(setBackgroundColor).toHaveBeenCalledWith({ color: '#ffffff' });
   });
 

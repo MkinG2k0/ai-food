@@ -91,7 +91,7 @@ export function useSaveMeal() {
       aiModel,
     };
 
-    beginMealAnalyze(mealId);
+    const signal = beginMealAnalyze(mealId);
     addMeal(pendingMeal);
 
     try {
@@ -102,8 +102,11 @@ export function useSaveMeal() {
         customInstructions,
         dietType,
         features,
-        onPartial: (partial: PartialNutritionXml) =>
-          applyPartialAnalyzeResultToMeal(mealId, partial, itemId),
+        signal,
+        onPartial: (partial: PartialNutritionXml) => {
+          if (signal.aborted) return;
+          applyPartialAnalyzeResultToMeal(mealId, partial, itemId);
+        },
       };
       const response = await queryClient.fetchQuery({
         queryKey:
@@ -144,9 +147,11 @@ export function useSaveMeal() {
                 analyzeOptions,
               ),
       });
+      if (signal.aborted) return;
       applyAnalyzeResultToMeal(mealId, response.result, itemId);
       void queryClient.invalidateQueries({ queryKey: usageQueryKey });
     } catch (error) {
+      if (signal.aborted) return;
       updateMeal(mealId, analyzeErrorPatch(error));
     } finally {
       endMealAnalyze(mealId);

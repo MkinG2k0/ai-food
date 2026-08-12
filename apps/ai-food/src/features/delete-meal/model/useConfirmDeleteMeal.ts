@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useDiaryStore } from '@/entities/meal';
+import { abortMealAnalyze, useDiaryStore } from '@/entities/meal';
 
 export function useConfirmDeleteMeal() {
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -15,6 +15,7 @@ export function useConfirmDeleteMeal() {
   function confirmDelete(): string | null {
     if (!pendingId) return null;
     const id = pendingId;
+    abortMealAnalyze(id);
     useDiaryStore.getState().removeMeal(id);
     setPendingId(null);
     return id;

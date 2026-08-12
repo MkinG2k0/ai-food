@@ -22,12 +22,6 @@ export function SwipeableMealCard({ meal }: SwipeableMealCardProps) {
   const { isOpen, openConfirm, closeConfirm, confirmDelete } =
     useConfirmDeleteMeal();
 
-  const isAnalyzing = meal.status === 'analyzing';
-
-  if (isAnalyzing) {
-    return <MealCard meal={meal} />;
-  }
-
   function handleDragStart() {
     didDrag.current = false;
   }

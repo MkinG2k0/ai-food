@@ -12,6 +12,7 @@ export {
   recoverStaleAnalyzingMeals,
 } from './model/useDiaryStore';
 export {
+  abortMealAnalyze,
   beginMealAnalyze,
   endMealAnalyze,
   isMealAnalyzeInFlight,

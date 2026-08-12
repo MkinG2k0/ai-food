@@ -15,7 +15,8 @@ const config: CapacitorConfig = {
   },
   plugins: {
     StatusBar: {
-      style: 'DARK',
+      // Capacitor: LIGHT = dark icons for light backgrounds (not Style.Dark)
+      style: 'LIGHT',
       backgroundColor: '#ffffffff',
     },
   },

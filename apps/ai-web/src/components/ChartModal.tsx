@@ -38,7 +38,7 @@ export function ChartModal({
   return (
     <Modal
       centered
-      destroyOnClose
+      destroyOnHidden
       footer={null}
       open={open}
       title={title}

@@ -6,7 +6,7 @@ import {
   resolveMealImageUris,
   useDiaryStore,
 } from '@/entities/meal';
-import { analyzeFoodApi } from '@/features/analyze-food';
+import { analyzeFoodApi, type PartialNutritionXml } from '@/features/analyze-food';
 import { usageQueryKey } from '@/features/auth';
 import { useProfileStore } from '@/features/onboarding';
 import { getActiveCustomInstructions, getAnalyzeFeaturesFromSettings, useSettingsStore } from '@/features/settings';
@@ -50,7 +50,7 @@ export function useRetryAnalyzeMeal() {
     const dietType = useProfileStore.getState().profile?.dietType ?? 'none';
     const features = getAnalyzeFeaturesFromSettings();
 
-    beginMealAnalyze(mealId);
+    const signal = beginMealAnalyze(mealId);
     updateMeal(mealId, {
       status: 'analyzing',
       analyzeErrorCode: undefined,
@@ -58,6 +58,20 @@ export function useRetryAnalyzeMeal() {
     });
 
     try {
+      const analyzeOptions = {
+        customInstructions,
+        dietType,
+        features,
+        signal,
+        onPartial: (partial: PartialNutritionXml) => {
+          if (signal.aborted) return;
+          applyPartialAnalyzeResultToMeal(
+            mealId,
+            partial,
+            meal.items[0]?.id,
+          );
+        },
+      };
       const response = await queryClient.fetchQuery({
         queryKey:
           images.length > 0
@@ -89,36 +103,18 @@ export function useRetryAnalyzeMeal() {
                     : { images }),
                   ...(description ? { description } : {}),
                 },
-                {
-                  customInstructions,
-                  dietType,
-                  features,
-                  onPartial: (partial) =>
-                    applyPartialAnalyzeResultToMeal(
-                      mealId,
-                      partial,
-                      meal.items[0]?.id,
-                    ),
-                },
+                analyzeOptions,
               )
             : analyzeFoodApi(
                 { description: description! },
-                {
-                  customInstructions,
-                  dietType,
-                  features,
-                  onPartial: (partial) =>
-                    applyPartialAnalyzeResultToMeal(
-                      mealId,
-                      partial,
-                      meal.items[0]?.id,
-                    ),
-                },
+                analyzeOptions,
               ),
       });
+      if (signal.aborted) return;
       applyAnalyzeResultToMeal(mealId, response.result, meal.items[0]?.id);
       void queryClient.invalidateQueries({ queryKey: usageQueryKey });
     } catch (error) {
+      if (signal.aborted) return;
       updateMeal(mealId, analyzeErrorPatch(error));
     } finally {
       endMealAnalyze(mealId);

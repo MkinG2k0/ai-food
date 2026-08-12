@@ -18,7 +18,7 @@ Root cause: no `@capacitor/status-bar` usage; Android theme does not set light-s
 
 ## Decision
 
-Use **`@capacitor/status-bar`** with **`Style.Dark`** (Capacitor naming: dark *icons* for light backgrounds), plus a white status bar background on Android where the platform still paints a bar color.
+Use **`@capacitor/status-bar`** with **`Style.Light`** (Capacitor naming: **dark** text/icons for light backgrounds — `Style.Dark` is the opposite: light icons). Plus a white status bar background on Android where the platform still paints a bar color (no effect on Android 16+ / targetSdk 36).
 
 Optional native safety net: `android:windowLightStatusBar=true` in the NoActionBar theme so icons are dark before JS runs.
 
