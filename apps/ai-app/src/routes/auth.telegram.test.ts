@@ -62,6 +62,7 @@ const user = {
   subscriptionExpiresAt: null,
   dataConsentAt: null,
   dataConsentVersion: null,
+  nutritionProfile: null,
 };
 
 describe('Telegram bot auth routes', () => {
