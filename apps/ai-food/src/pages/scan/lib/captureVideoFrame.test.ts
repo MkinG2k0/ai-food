@@ -47,4 +47,32 @@ describe('captureVideoFrame', () => {
       576,
     );
   });
+
+  it('encodes a paused video when dimensions are set', async () => {
+    const drawImage = vi.fn();
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ({ drawImage }),
+      toBlob: vi.fn((cb: BlobCallback) => {
+        cb(new Blob(['paused'], { type: 'image/jpeg' }));
+      }),
+    };
+
+    vi.spyOn(document, 'createElement').mockReturnValue(
+      canvas as unknown as HTMLCanvasElement,
+    );
+
+    const pausedVideo = {
+      videoWidth: 640,
+      videoHeight: 480,
+      paused: true,
+    } as HTMLVideoElement;
+
+    const file = await captureVideoFrame(pausedVideo);
+
+    expect(file).toBeInstanceOf(File);
+    expect(file?.type).toBe('image/jpeg');
+    expect(drawImage).toHaveBeenCalledWith(pausedVideo, 0, 0, 640, 480);
+  });
 });
