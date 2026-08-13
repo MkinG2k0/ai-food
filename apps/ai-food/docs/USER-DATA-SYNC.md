@@ -22,6 +22,7 @@ Auth-паттерн для будущих user-data роутов: `X-User-Token`
 | `ai-food-favorites` | `favorites[]` (max 50, включая image refs) |
 | `ai-food-weight` | weight `entries[]` + `goalKg` |
 | `ai-food-settings` | `customInstructions`, feature flags, `aiModel`, `calendarRingMode` |
+| `ai-food-profile` | `profile`, `targets` (DailyTargets), **`micronutrientTargets`** — часть синкается (см. ниже) |
 | `ai-food-auth` | session token локально (на сервере — `User`) |
 | `ai-food-model-test` | UI state model-test (dev) |
 | `deviceId` | заголовок `X-Device-Id` |
@@ -59,7 +60,7 @@ Auth-паттерн для будущих user-data роутов: `X-User-Token`
 | **P1** | Weight history + favorites | Статы / быстрый add; меньше объём, чем diary |
 | **P2** | Settings (`customInstructions`, UI prefs, model override) | Удобство; не блокирует restore дневника |
 | **P3** | Meal photos (blob upload) | Размер, consent, storage; до P3 — URL/null stubs |
-| **Note** | `micronutrientTargets` на локальном profile store | `NutritionProfilePayload` = `{ profile, targets }` only — уточняется spot-check (Task 2); если targets микронутриентов живут отдельно от `nutritionProfile` Json — отдельный gap vs уже синкаемый `{ profile, targets }` |
+| **P2-adjacent** | `useProfileStore.micronutrientTargets` (`MicronutrientEstimate[] \| null`) | **Подтверждено:** живёт только в persist `ai-food-profile`. `NutritionProfilePayload` / `User.nutritionProfile` = `{ profile: UserProfile, targets: DailyTargets }` (ккал/БЖУ/клетчатка) — **без** `micronutrientTargets`. `syncNutritionProfileToServer` шлёт только `{ profile, targets }`. После login на новом устройстве нормы микронутриентов для Stats chart не восстанавливаются с сервера (нужен re-onboarding AI или будущий sync). |
 
 Sync diary/manual/barcode/stats/settings **не** должен требовать `hasActiveSubscription`.
 

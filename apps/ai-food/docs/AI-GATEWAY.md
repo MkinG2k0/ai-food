@@ -144,6 +144,11 @@ apps/ai-app/
 2. **Food prompts SoT на сервере** (`src/food/*`); клиент сжимает фото и парсит ответ. Settings `aiModel` UI может оставаться, но food-вызовы его не отправляют.
 3. **Monorepo** — gateway + фронт в одном репо (`apps/ai-app`, `apps/ai-food`). Onboarding micronutrients ещё на `/v1/chat/completions`.
 
+## См. также
+
+- [SUBSCRIPTION.md](./SUBSCRIPTION.md) — годовая лицензия / квоты
+- [USER-DATA-SYNC.md](./USER-DATA-SYNC.md) — inventory local vs server и design будущего diary/user-data sync (**не реализовано**; docs only)
+
 ## Команды (бэк)
 
 ```bash
