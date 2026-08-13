@@ -107,6 +107,8 @@ export interface Meal {
    * Navigate with arrows; never replaces prior answers.
    */
   customContentEntries?: MealCustomContentEntry[];
+  /** ISO clock for LWW diary sync; omitted on legacy local meals */
+  clientUpdatedAt?: string;
 }
 
 export interface NutritionItem {
