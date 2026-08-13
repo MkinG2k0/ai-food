@@ -23,6 +23,7 @@ import { AI_IMAGE_MAX_SIDE, cn } from '@/shared/lib';
 import { captureVideoFrame } from '../lib/captureVideoFrame';
 import { createCaptureLock } from '../lib/createCaptureLock';
 import { drawVideoContain } from '../lib/drawVideoContain';
+import { isLivePreviewPainting } from '../lib/isLivePreviewPainting';
 import { openRearCamera } from '../lib/openRearCamera';
 
 type ScanMode = 'food' | 'barcode';
@@ -175,7 +176,15 @@ export function ScanPage() {
 
   // Mirror camera frames onto canvas so the WebView Play glyph never shows.
   useEffect(() => {
-    if (!cameraActive || cameraError) return;
+    if (
+      !isLivePreviewPainting({
+        cameraActive,
+        hasCameraError: Boolean(cameraError),
+        capturing,
+      })
+    ) {
+      return;
+    }
 
     let raf = 0;
     const tick = () => {
@@ -200,7 +209,7 @@ export function ScanPage() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [cameraActive, cameraError]);
+  }, [cameraActive, cameraError, capturing]);
 
   useEffect(() => {
     return () => {
@@ -295,13 +304,14 @@ export function ScanPage() {
     }
 
     await captureLockRef.current.run(async () => {
-      setCapturing(true);
       const video = videoRef.current;
       if (!video) {
         captureLockRef.current.unlock();
         setCapturing(false);
         return;
       }
+      video.pause();
+      setCapturing(true);
       const file = await captureVideoFrame(video, {
         maxSide: AI_IMAGE_MAX_SIDE,
       });
@@ -309,6 +319,7 @@ export function ScanPage() {
         captureLockRef.current.unlock();
         setCapturing(false);
         toast.error('Не удалось сделать снимок');
+        void video.play().catch(() => undefined);
         return;
       }
       acceptFoodFile(file);
