@@ -87,7 +87,7 @@ export const enforceChatQuota: RequestHandler = async (req, _res, next) => {
         next();
         return;
       }
-      // Auth without active license → fall through to guest device quota
+      // Auth without active license → profile quota (shared across devices)
     }
 
     const deviceId = req.header('x-device-id')?.trim();
@@ -97,6 +97,7 @@ export const enforceChatQuota: RequestHandler = async (req, _res, next) => {
 
     const { deviceRowId } = await assertGuestQuotaOrThrow(prisma, deviceId, {
       authenticated: Boolean(userId),
+      userId,
     });
     req.quota = {
       usageKind: kind,

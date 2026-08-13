@@ -117,14 +117,23 @@ export async function ensureDevice(
   clientDeviceId: string,
   userId?: string,
 ) {
-  return prisma.device.upsert({
+  const device = await prisma.device.upsert({
     where: { deviceId: clientDeviceId },
     create: { deviceId: clientDeviceId, userId: userId ?? null },
     update: userId ? { userId } : {},
   });
+  // Attach prior guest events on this device to the profile so login does not
+  // wipe used count, while auth quota stays shared across devices.
+  if (userId) {
+    await prisma.usageEvent.updateMany({
+      where: { deviceId: device.id, userId: null },
+      data: { userId },
+    });
+  }
+  return device;
 }
 
-/** Device free-tier usage: all analyze/refine on the device (login alone does not reset). */
+/** Guest free-tier usage: billable events on the device. */
 export async function countGuestBillableUsage(
   prisma: PrismaClient,
   deviceRowId: string,
@@ -137,9 +146,24 @@ export async function countGuestBillableUsage(
   });
 }
 
+/** Authenticated free-tier usage: billable events on the user profile (all devices). */
+export async function countUserBillableUsage(
+  prisma: PrismaClient,
+  userId: string,
+): Promise<number> {
+  return prisma.usageEvent.count({
+    where: {
+      userId,
+      ...billableUsageWhere(),
+    },
+  });
+}
+
 export type UsageSnapshotOpts = {
   authenticated: boolean;
   hasActiveSubscription?: boolean;
+  /** Required for accurate auth (no-sub) remaining across devices. */
+  userId?: string;
 };
 
 export async function getUsageSnapshot(
@@ -178,10 +202,17 @@ export async function getUsageSnapshot(
     };
   }
 
-  const device = await prisma.device.findUnique({
-    where: { deviceId: clientDeviceId },
-  });
-  const used = device ? await countGuestBillableUsage(prisma, device.id) : 0;
+  let used = 0;
+  if (options.authenticated && options.userId) {
+    await ensureDevice(prisma, clientDeviceId, options.userId);
+    used = await countUserBillableUsage(prisma, options.userId);
+  } else {
+    const device = await prisma.device.findUnique({
+      where: { deviceId: clientDeviceId },
+    });
+    used = device ? await countGuestBillableUsage(prisma, device.id) : 0;
+  }
+
   return {
     used,
     limit,
@@ -195,14 +226,21 @@ export async function getUsageSnapshot(
 export async function assertGuestQuotaOrThrow(
   prisma: PrismaClient,
   clientDeviceId: string,
-  opts?: { authenticated?: boolean },
+  opts?: { authenticated?: boolean; userId?: string },
 ): Promise<{ deviceRowId: string; used: number; limit: number }> {
   if (!clientDeviceId.trim()) {
     throw new ApiError(400, 'DEVICE_ID_REQUIRED', 'X-Device-Id header is required.');
   }
-  const authenticated = Boolean(opts?.authenticated);
-  const device = await ensureDevice(prisma, clientDeviceId.trim());
-  const used = await countGuestBillableUsage(prisma, device.id);
+  const userId = opts?.userId?.trim();
+  const authenticated = Boolean(opts?.authenticated && userId);
+  const device = await ensureDevice(
+    prisma,
+    clientDeviceId.trim(),
+    userId || undefined,
+  );
+  const used = authenticated
+    ? await countUserBillableUsage(prisma, userId!)
+    : await countGuestBillableUsage(prisma, device.id);
   const limit = await getEffectiveLimit(authenticated, prisma);
   if (used >= limit) {
     const message = authenticated

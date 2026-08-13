@@ -51,11 +51,13 @@ usageRouter.get(
 
     let authenticated = false;
     let activeSub = false;
+    let userId: string | undefined;
     const userToken = req.header('x-user-token')?.trim();
     if (userToken) {
       try {
         const payload = await verifyUserToken(userToken);
         authenticated = true;
+        userId = payload.sub;
         const user = await prisma.user.findUnique({ where: { id: payload.sub } });
         if (user) {
           activeSub = hasActiveSubscription(user);
@@ -75,12 +77,14 @@ usageRouter.get(
       } catch {
         authenticated = false;
         activeSub = false;
+        userId = undefined;
       }
     }
 
     const snapshot = await getUsageSnapshot(prisma, deviceId, {
       authenticated,
       hasActiveSubscription: activeSub,
+      userId,
     });
     res.json(snapshot);
   }),

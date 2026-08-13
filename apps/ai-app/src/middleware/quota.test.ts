@@ -106,7 +106,7 @@ describe('enforceChatQuota', () => {
     expect(mockAssertGuest).not.toHaveBeenCalled();
   });
 
-  it('applies guest device quota when auth user has no subscription', async () => {
+  it('applies profile quota when auth user has no subscription', async () => {
     mockVerifyUserToken.mockResolvedValue({ sub: 'u1', telegramId: '42' });
     mockFindUnique.mockResolvedValue({
       id: 'u1',
@@ -117,7 +117,7 @@ describe('enforceChatQuota', () => {
     mockAssertGuest.mockResolvedValue({
       deviceRowId: 'd1',
       used: 1,
-      limit: 50,
+      limit: 150,
     });
     const { err, req } = await run({
       'x-usage-kind': 'analyze',
@@ -125,7 +125,11 @@ describe('enforceChatQuota', () => {
       'x-device-id': 'dev-1',
     });
     expect(err).toBeUndefined();
-    expect(mockAssertGuest).toHaveBeenCalled();
+    expect(mockAssertGuest).toHaveBeenCalledWith(
+      expect.anything(),
+      'dev-1',
+      { authenticated: true, userId: 'u1' },
+    );
     expect(req.quota).toMatchObject({
       usageKind: 'analyze',
       userId: 'u1',

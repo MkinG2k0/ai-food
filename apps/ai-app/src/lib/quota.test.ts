@@ -106,19 +106,22 @@ describe('quota helpers', () => {
     });
   });
 
-  it('getUsageSnapshot: auth without subscription → free + login bonus', async () => {
+  it('getUsageSnapshot: auth without subscription → free + login bonus (by userId)', async () => {
+    const updateMany = vi.fn().mockResolvedValue({ count: 0 });
     const prisma = {
       appSettings: { findUnique: vi.fn().mockResolvedValue(null) },
       device: {
-        findUnique: vi.fn().mockResolvedValue({ id: 'drow' }),
+        upsert: vi.fn().mockResolvedValue({ id: 'drow' }),
       },
       usageEvent: {
         count: vi.fn().mockResolvedValue(10),
+        updateMany,
       },
     } as never;
     const snap = await getUsageSnapshot(prisma, 'dev-1', {
       authenticated: true,
       hasActiveSubscription: false,
+      userId: 'user-1',
     });
     expect(snap).toEqual({
       used: 10,
@@ -129,6 +132,37 @@ describe('quota helpers', () => {
       freeGenerationLimit: 50,
       authLoginGenerationBonus: 100,
     });
+    expect(prisma.usageEvent.count).toHaveBeenCalledWith({
+      where: {
+        userId: 'user-1',
+        OR: [{ kind: 'refine' }, { kind: { startsWith: 'analyze' } }],
+      },
+    });
+  });
+
+  it('getUsageSnapshot: auth user shares quota across devices', async () => {
+    const prisma = {
+      appSettings: { findUnique: vi.fn().mockResolvedValue(null) },
+      device: {
+        upsert: vi.fn().mockResolvedValue({ id: 'drow-b' }),
+      },
+      usageEvent: {
+        count: vi.fn().mockResolvedValue(150),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    } as never;
+    const snap = await getUsageSnapshot(prisma, 'dev-other', {
+      authenticated: true,
+      hasActiveSubscription: false,
+      userId: 'user-1',
+    });
+    expect(snap.used).toBe(150);
+    expect(snap.remaining).toBe(0);
+    expect(prisma.usageEvent.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: 'user-1' }),
+      }),
+    );
   });
 
   it('getUsageSnapshot: guest → free limit only', async () => {
@@ -153,6 +187,12 @@ describe('quota helpers', () => {
       hasActiveSubscription: false,
       freeGenerationLimit: 50,
       authLoginGenerationBonus: 100,
+    });
+    expect(prisma.usageEvent.count).toHaveBeenCalledWith({
+      where: {
+        deviceId: 'drow',
+        OR: [{ kind: 'refine' }, { kind: { startsWith: 'analyze' } }],
+      },
     });
   });
 });
