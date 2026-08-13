@@ -1,5 +1,6 @@
 import { useDiaryStore } from '@/entities/meal';
 import { recordUsageEvent } from '@/features/auth';
+import { queueDiarySync } from '@/features/diary-sync';
 import { saveMealImage, timestampForSelectedDate } from '@/shared/lib';
 import {
   buildManualMeal,
@@ -40,6 +41,7 @@ export function useSaveManualMeal() {
     if (!meal) return null;
 
     addMeal(meal);
+    queueDiarySync({ mode: 'upsert', mealIds: [meal.id] });
     void recordUsageEvent('manual');
     return meal.id;
   };

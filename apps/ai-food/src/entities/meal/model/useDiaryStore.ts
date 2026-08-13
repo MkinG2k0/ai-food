@@ -29,12 +29,26 @@ export interface MealNutritionPatch {
   fiber?: number;
 }
 
+export type DiaryPendingDelete = { id: string; clientUpdatedAt: string };
+
+function nowClientUpdatedAt(): string {
+  return new Date().toISOString();
+}
+
+function withClientClock(meal: Meal, clock = nowClientUpdatedAt()): Meal {
+  return { ...meal, clientUpdatedAt: clock };
+}
+
 interface DiaryState {
   meals: Meal[];
+  /** Soft-delete clocks awaiting server sync (D-03). */
+  pendingDeletes: DiaryPendingDelete[];
   selectedDate: Date;
   addMeal: (meal: Meal) => void;
   updateMeal: (id: string, patch: Partial<Meal>) => void;
   removeMeal: (id: string) => void;
+  /** Record tombstone clock then remove locally (confirm-delete). */
+  recordPendingDelete: (id: string, clientUpdatedAt?: string) => void;
   updateMealItem: (
     mealId: string,
     itemId: string,
@@ -82,16 +96,34 @@ export const useDiaryStore = create<DiaryState>()(
   persist(
     (set) => ({
       meals: [],
+      pendingDeletes: [],
       selectedDate: new Date(),
-      addMeal: (meal) => set((state) => ({ meals: [meal, ...state.meals] })),
+      addMeal: (meal) =>
+        set((state) => ({
+          meals: [withClientClock(meal), ...state.meals],
+        })),
       updateMeal: (id, patch) =>
         set((state) => ({
           meals: state.meals.map((meal) =>
-            meal.id === id ? { ...meal, ...patch } : meal
+            meal.id === id
+              ? withClientClock({ ...meal, ...patch })
+              : meal
           ),
         })),
       removeMeal: (id) =>
         set((state) => ({ meals: state.meals.filter((meal) => meal.id !== id) })),
+      recordPendingDelete: (id, clientUpdatedAt) =>
+        set((state) => {
+          const clock = clientUpdatedAt ?? nowClientUpdatedAt();
+          const pendingDeletes = [
+            ...state.pendingDeletes.filter((d) => d.id !== id),
+            { id, clientUpdatedAt: clock },
+          ];
+          return {
+            pendingDeletes,
+            meals: state.meals.filter((meal) => meal.id !== id),
+          };
+        }),
       updateMealItem: (mealId, itemId, patch) =>
         set((state) => {
           const mealIndex = state.meals.findIndex((m) => m.id === mealId);
@@ -107,7 +139,7 @@ export const useDiaryStore = create<DiaryState>()(
           );
 
           const meals = [...state.meals];
-          meals[mealIndex] = {
+          meals[mealIndex] = withClientClock({
             ...meal,
             items,
             totalCalories: sumItemCalories(items),
@@ -115,7 +147,7 @@ export const useDiaryStore = create<DiaryState>()(
             ...(safePatch.grams !== undefined
               ? { totalGrams: sumItemGrams(items) }
               : {}),
-          };
+          });
           return { meals };
         }),
       removeMealItem: (mealId, itemId) =>
@@ -128,14 +160,14 @@ export const useDiaryStore = create<DiaryState>()(
 
           const items = meal.items.filter((i) => i.id !== itemId);
           const meals = [...state.meals];
-          meals[mealIndex] = {
+          meals[mealIndex] = withClientClock({
             ...meal,
             items,
             totalCalories: sumItemCalories(items),
             ...(meal.totalGrams !== undefined
               ? { totalGrams: sumItemGrams(items) }
               : {}),
-          };
+          });
           return { meals };
         }),
       updateMealNutrition: (mealId, nutrition) =>
@@ -154,11 +186,11 @@ export const useDiaryStore = create<DiaryState>()(
           }
 
           const meals = [...state.meals];
-          meals[mealIndex] = {
+          meals[mealIndex] = withClientClock({
             ...meal,
             items,
             totalCalories: sumItemCalories(items),
-          };
+          });
           return { meals };
         }),
       setMealPortions: (mealId, portions) =>
@@ -178,7 +210,7 @@ export const useDiaryStore = create<DiaryState>()(
           );
 
           const meals = [...state.meals];
-          meals[mealIndex] = {
+          meals[mealIndex] = withClientClock({
             ...meal,
             portions: next,
             items,
@@ -192,7 +224,7 @@ export const useDiaryStore = create<DiaryState>()(
               : sumItemGrams(items) > 0
                 ? { totalGrams: sumItemGrams(items) }
                 : {}),
-          };
+          });
           return { meals };
         }),
       redefineMealPortions: (mealId, portions) =>
@@ -205,10 +237,10 @@ export const useDiaryStore = create<DiaryState>()(
           if (next === resolveMealPortions(meal)) return state;
 
           const meals = [...state.meals];
-          meals[mealIndex] = {
+          meals[mealIndex] = withClientClock({
             ...meal,
             portions: next,
-          };
+          });
           return { meals };
         }),
       setMealTotalGrams: (mealId, totalGrams) =>
@@ -221,7 +253,7 @@ export const useDiaryStore = create<DiaryState>()(
             const next = sanitizeGrams(totalGrams);
             if (next === resolveMealTotalGrams(meal)) return state;
             const meals = [...state.meals];
-            meals[mealIndex] = { ...meal, totalGrams: next };
+            meals[mealIndex] = withClientClock({ ...meal, totalGrams: next });
             return { meals };
           }
 
@@ -241,20 +273,23 @@ export const useDiaryStore = create<DiaryState>()(
           );
 
           const meals = [...state.meals];
-          meals[mealIndex] = {
+          meals[mealIndex] = withClientClock({
             ...meal,
             items,
             totalGrams: scaledTotal,
-          };
+          });
           return { meals };
         }),
-      clearDiary: () => set({ meals: [] }),
+      clearDiary: () => set({ meals: [], pendingDeletes: [] }),
       setSelectedDate: (date) => set({ selectedDate: date }),
     }),
     {
       name: 'ai-food-diary',
       storage: createJSONStorage(() => capacitorStorage),
-      partialize: (state) => ({ meals: state.meals }),
+      partialize: (state) => ({
+        meals: state.meals,
+        pendingDeletes: state.pendingDeletes,
+      }),
       onRehydrateStorage: () => () => {
         queueMicrotask(() => {
           recoverStaleAnalyzingMeals();

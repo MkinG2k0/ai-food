@@ -1,5 +1,6 @@
 import { useDiaryStore } from '@/entities/meal';
 import { recordUsageEvent } from '@/features/auth';
+import { queueDiarySync } from '@/features/diary-sync';
 import { saveMealImageFromUrl, timestampForSelectedDate } from '@/shared/lib';
 import type { OffProduct } from '../api/fetchProductByBarcode';
 import { buildBarcodeMeal } from '../api/mapOffProductToMeal';
@@ -18,6 +19,7 @@ export function useSaveBarcodeMeal() {
       imageUri,
     });
     addMeal(meal);
+    queueDiarySync({ mode: 'upsert', mealIds: [meal.id] });
     void recordUsageEvent('barcode');
     return meal.id;
   };

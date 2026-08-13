@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { abortMealAnalyze, useDiaryStore } from '@/entities/meal';
+import { queueDiarySync } from '@/features/diary-sync';
 
 export function useConfirmDeleteMeal() {
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -16,8 +17,9 @@ export function useConfirmDeleteMeal() {
     if (!pendingId) return null;
     const id = pendingId;
     abortMealAnalyze(id);
-    useDiaryStore.getState().removeMeal(id);
+    useDiaryStore.getState().recordPendingDelete(id);
     setPendingId(null);
+    queueDiarySync({ mode: 'delete', mealIds: [id] });
     return id;
   }
 

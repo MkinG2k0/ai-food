@@ -9,6 +9,7 @@ import {
 import { Button } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 import { reconcileNutritionProfileAfterLogin } from '../../model/reconcileNutritionProfileAfterLogin';
+import { syncDiaryMeals } from '@/features/diary-sync';
 import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
 interface StepGenderProps {
@@ -65,6 +66,9 @@ export function StepGender({ onNext }: StepGenderProps) {
           <TelegramBotLoginButton
             onSuccess={(result) => {
               const source = reconcileNutritionProfileAfterLogin(result);
+              void syncDiaryMeals({ mode: 'full' }).catch((err) => {
+                console.warn('[diary-sync] post-login sync failed', err);
+              });
               if (source === 'remote' || source === 'local-uploaded') {
                 toast.success(
                   source === 'remote' ? 'С возвращением' : 'Вход выполнен',

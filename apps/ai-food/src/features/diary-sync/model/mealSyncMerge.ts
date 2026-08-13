@@ -4,6 +4,7 @@ export type PendingDelete = { id: string; clientUpdatedAt: string };
 
 export type SyncResponse = {
   meals: Meal[];
+  /** Tombstone ids from server (delete clock already applied server-side). */
   tombstones: string[];
 };
 
@@ -12,27 +13,98 @@ export type SyncPayload = {
   deletes: PendingDelete[];
 };
 
-/** Stub — RED phase; real LWW in GREEN. */
-export function mergeMealsLww(
-  _local: Meal[],
-  _remote: Meal[],
-  _tombstones: PendingDelete[],
-): Meal[] {
-  return [];
+function clockMs(iso: string | undefined): number {
+  if (!iso) return 0;
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? t : 0;
 }
 
-export function buildSyncPayload(_args: {
+function newerOrEqual(a: string | undefined, b: string | undefined): boolean {
+  return clockMs(a) >= clockMs(b);
+}
+
+/**
+ * Merge local meals with remote active meals + optional tombstones that carry clocks.
+ * Server tombstone ids alone are handled by applySyncResponse (server already LWW'd).
+ */
+export function mergeMealsLww(
+  local: Meal[],
+  remote: Meal[],
+  tombstones: PendingDelete[],
+): Meal[] {
+  const byId = new Map<string, Meal>();
+  for (const m of local) byId.set(m.id, m);
+  for (const m of remote) {
+    const cur = byId.get(m.id);
+    if (!cur || newerOrEqual(m.clientUpdatedAt, cur.clientUpdatedAt)) {
+      byId.set(m.id, m);
+    }
+  }
+  for (const t of tombstones) {
+    const cur = byId.get(t.id);
+    if (!cur || newerOrEqual(t.clientUpdatedAt, cur.clientUpdatedAt)) {
+      byId.delete(t.id);
+    }
+  }
+  return Array.from(byId.values());
+}
+
+/** Ensure meal has a clientUpdatedAt for wire payload (legacy → epoch). */
+export function ensureClientUpdatedAt(meal: Meal): string {
+  return meal.clientUpdatedAt ?? '1970-01-01T00:00:00.000Z';
+}
+
+export function mealToSyncPayload(meal: Meal): Meal {
+  const clientUpdatedAt = ensureClientUpdatedAt(meal);
+  return {
+    ...meal,
+    clientUpdatedAt,
+    // P0: URI stubs only — no blob upload
+    imageUri: meal.imageUri,
+    imageUris: meal.imageUris,
+  };
+}
+
+export function buildSyncPayload(args: {
   mode: 'full' | 'upsert' | 'delete';
   meals: Meal[];
   pendingDeletes: PendingDelete[];
   mealIds?: string[];
 }): SyncPayload {
-  return { upserts: [], deletes: [] };
+  const { mode, meals, pendingDeletes, mealIds } = args;
+
+  if (mode === 'full') {
+    return {
+      upserts: meals.map(mealToSyncPayload),
+      deletes: [...pendingDeletes],
+    };
+  }
+
+  if (mode === 'upsert') {
+    const ids = new Set(mealIds ?? []);
+    return {
+      upserts: meals.filter((m) => ids.has(m.id)).map(mealToSyncPayload),
+      deletes: [],
+    };
+  }
+
+  // delete
+  const ids = new Set(mealIds ?? pendingDeletes.map((d) => d.id));
+  return {
+    upserts: [],
+    deletes: pendingDeletes.filter((d) => ids.has(d.id)),
+  };
 }
 
+/**
+ * Apply server sync response: LWW remote meals into local; remove tombstone ids
+ * (server already decided delete wins).
+ */
 export function applySyncResponse(
   local: Meal[],
-  _response: SyncResponse,
+  response: SyncResponse,
 ): Meal[] {
-  return local;
+  const tombstoneSet = new Set(response.tombstones);
+  const withoutTombs = local.filter((m) => !tombstoneSet.has(m.id));
+  return mergeMealsLww(withoutTombs, response.meals, []);
 }

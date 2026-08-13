@@ -113,7 +113,8 @@ describe('useDiaryStore', () => {
       result.current.addMeal(mockMeal);
     });
     expect(result.current.meals).toHaveLength(1);
-    expect(result.current.meals[0]).toEqual(mockMeal);
+    expect(result.current.meals[0]).toMatchObject(mockMeal);
+    expect(result.current.meals[0].clientUpdatedAt).toBeTruthy();
   });
 
   it('prepends newer meals (newest first)', async () => {
@@ -207,7 +208,7 @@ describe('useDiaryStore', () => {
       result.current.updateMealItem('missing', 'a', { calories: 1 });
       result.current.updateMealItem('m1', 'missing', { calories: 1 });
     });
-    expect(result.current.meals[0]).toEqual(multiItemMeal);
+    expect(result.current.meals[0]).toMatchObject(multiItemMeal);
   });
 
   it('updateMealItem clamps negative and NaN nutrient values to >= 0 finite', async () => {
@@ -320,7 +321,7 @@ describe('useDiaryStore', () => {
       result.current.addMeal(emptyMeal);
       result.current.updateMealNutrition('e1', { calories: 500, protein: 30 });
     });
-    expect(result.current.meals[0]).toEqual(emptyMeal);
+    expect(result.current.meals[0]).toMatchObject(emptyMeal);
   });
 
   it('setMealPortions scales items, grams and totalCalories by 0.5 steps', async () => {

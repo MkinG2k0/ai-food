@@ -10,6 +10,7 @@ import {
   useUsage,
 } from '@/features/auth';
 import { reconcileNutritionProfileAfterLogin } from '@/features/onboarding';
+import { syncDiaryMeals } from '@/features/diary-sync';
 import { Button, SubpageShell } from '@/shared/ui';
 
 export function LoginPage() {
@@ -23,6 +24,9 @@ export function LoginPage() {
 
   const handleLoginSuccess = (result: AuthLoginResult) => {
     const source = reconcileNutritionProfileAfterLogin(result);
+    void syncDiaryMeals({ mode: 'full' }).catch((err) => {
+      console.warn('[diary-sync] post-login sync failed', err);
+    });
     if (source === 'remote') {
       toast.success('С возвращением');
       navigate('/', { replace: true });

@@ -1,5 +1,6 @@
 import type { FoodItem, Meal } from '@ai-food/shared-types';
 import { useDiaryStore } from '@/entities/meal';
+import { queueDiarySync } from '@/features/diary-sync';
 import { timestampForSelectedDate } from '@/shared/lib';
 import { useFavoritesStore } from './useFavoritesStore';
 
@@ -35,6 +36,7 @@ export function useQuickAddFavorite() {
     };
 
     addMeal(meal);
+    queueDiarySync({ mode: 'upsert', mealIds: [mealId] });
     return mealId;
   };
 }

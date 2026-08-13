@@ -13,6 +13,7 @@ import type { Meal, FoodItem } from '@ai-food/shared-types';
 import { applyAnalyzeResultToMeal } from './applyAnalyzeResultToMeal';
 import { applyPartialAnalyzeResultToMeal } from './applyPartialAnalyzeResultToMeal';
 import { analyzeErrorPatch } from './analyzeErrorPatch';
+import { queueDiarySync } from '@/features/diary-sync';
 
 export interface SubmitFoodInput {
   image?: File | null;
@@ -68,6 +69,7 @@ export function useSaveMeal() {
         portions: 1,
         status: 'ready',
       });
+      queueDiarySync({ mode: 'upsert', mealIds: [mealId] });
       return;
     }
 
@@ -93,6 +95,7 @@ export function useSaveMeal() {
 
     const signal = beginMealAnalyze(mealId);
     addMeal(pendingMeal);
+    queueDiarySync({ mode: 'upsert', mealIds: [mealId] });
 
     try {
       const customInstructions = getActiveCustomInstructions();
