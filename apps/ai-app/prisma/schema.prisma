@@ -38,6 +38,41 @@ model User {
   devices                Device[]
   usageEvents            UsageEvent[]
   payments               Payment[]
+  meals                  Meal[]
+}
+
+model Meal {
+  id                   String    @id
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestamp            DateTime
+  name                 String?
+  items                Json
+  totalCalories        Float
+  portions             Float?
+  totalGrams           Float?
+  status               String?
+  healthiness          Float?
+  confidence           Float?
+  analyzeErrorCode     String?
+  micronutrients       Json?
+  aiModel              String?
+  portionReference     String?
+  addedSugar           Float?
+  confidenceReason     String?
+  healthinessReason    String?
+  disclaimers          Json?
+  customContent        String?
+  customContentEntries Json?
+  imageUri             String?
+  imageUris            Json?
+  clientUpdatedAt      DateTime
+  deletedAt            DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([userId, timestamp])
+  @@index([userId, clientUpdatedAt])
 }
 
 model Payment {
