@@ -1,3 +1,6 @@
+import type { MicronutrientEstimate } from '@ai-food/shared-types';
+import { MICRONUTRIENT_IDS } from '@ai-food/shared-types';
+
 export type UserProfile = {
   gender: 'male' | 'female';
   age: number;
@@ -25,6 +28,7 @@ export type DailyTargets = {
 export type NutritionProfilePayload = {
   profile: UserProfile;
   targets: DailyTargets;
+  micronutrientTargets?: MicronutrientEstimate[] | null;
 };
 
 const GENDERS = new Set<UserProfile['gender']>(['male', 'female']);
@@ -36,6 +40,7 @@ const DIET_TYPES = new Set<UserProfile['dietType']>([
   'vegan',
   'vegetarian',
 ]);
+const MICRONUTRIENT_ID_SET = new Set<string>(MICRONUTRIENT_IDS);
 
 function isPositiveNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0;
@@ -109,6 +114,27 @@ function parseDailyTargets(value: unknown): DailyTargets | null {
   };
 }
 
+/** Loose parse: keep items with string id, finite amount, unit mg|µg. */
+function parseMicronutrientTargets(
+  value: unknown,
+): MicronutrientEstimate[] | null {
+  if (!Array.isArray(value)) return null;
+  const out: MicronutrientEstimate[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue;
+    const r = item as Record<string, unknown>;
+    if (typeof r.id !== 'string' || !MICRONUTRIENT_ID_SET.has(r.id)) continue;
+    if (typeof r.amount !== 'number' || !Number.isFinite(r.amount)) continue;
+    if (r.unit !== 'mg' && r.unit !== 'µg') continue;
+    out.push({
+      id: r.id as MicronutrientEstimate['id'],
+      amount: r.amount,
+      unit: r.unit,
+    });
+  }
+  return out;
+}
+
 export function parseNutritionProfile(
   value: unknown,
 ): NutritionProfilePayload | null {
@@ -117,5 +143,15 @@ export function parseNutritionProfile(
   const profile = parseUserProfile(v.profile);
   const targets = parseDailyTargets(v.targets);
   if (!profile || !targets) return null;
-  return { profile, targets };
+
+  const result: NutritionProfilePayload = { profile, targets };
+  if ('micronutrientTargets' in v) {
+    if (v.micronutrientTargets === null) {
+      result.micronutrientTargets = null;
+    } else {
+      const micro = parseMicronutrientTargets(v.micronutrientTargets);
+      if (micro) result.micronutrientTargets = micro;
+    }
+  }
+  return result;
 }

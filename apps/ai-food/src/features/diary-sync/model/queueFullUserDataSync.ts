@@ -1,8 +1,9 @@
 import { syncDiaryMeals } from './syncDiaryMeals';
 import { syncFavorites } from '@/features/favorites-sync';
+import { syncSettings } from '@/features/settings-sync';
 import { syncWeightHistory } from '@/features/weight-sync';
 
-/** Fire-and-forget full sync for diary + weight + favorites (auth required). */
+/** Fire-and-forget full sync for diary + weight + favorites + settings (auth required). */
 export function queueFullUserDataSync(reason: string): void {
   void syncDiaryMeals({ mode: 'full' }).catch((err) => {
     console.warn(`[user-data-sync] diary (${reason})`, err);
@@ -12,5 +13,8 @@ export function queueFullUserDataSync(reason: string): void {
   });
   void syncFavorites({ mode: 'full' }).catch((err) => {
     console.warn(`[user-data-sync] favorites (${reason})`, err);
+  });
+  void syncSettings().catch((err) => {
+    console.warn(`[user-data-sync] settings (${reason})`, err);
   });
 }

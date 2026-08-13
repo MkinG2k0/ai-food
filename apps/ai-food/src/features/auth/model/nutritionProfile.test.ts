@@ -51,4 +51,40 @@ describe('parseNutritionProfile (client)', () => {
   it('rejects corrupt', () => {
     expect(parseNutritionProfile({ targets: valid.targets })).toBeNull();
   });
+
+  it('omits micronutrientTargets when absent', () => {
+    const parsed = parseNutritionProfile(valid);
+    expect(parsed).toEqual(valid);
+    expect(parsed).not.toHaveProperty('micronutrientTargets');
+  });
+
+  it('includes micronutrientTargets array when present', () => {
+    const withMicro = {
+      ...valid,
+      micronutrientTargets: [
+        { id: 'vitaminC', amount: 90, unit: 'mg' as const },
+        { id: 'vitaminA', amount: 900, unit: 'µg' as const },
+      ],
+    };
+    expect(parseNutritionProfile(withMicro)).toEqual(withMicro);
+  });
+
+  it('includes micronutrientTargets null', () => {
+    const withNull = { ...valid, micronutrientTargets: null };
+    expect(parseNutritionProfile(withNull)).toEqual(withNull);
+  });
+
+  it('filters invalid micronutrient items loosely', () => {
+    const mixed = {
+      ...valid,
+      micronutrientTargets: [
+        { id: 'iron', amount: 8, unit: 'mg' },
+        { id: 'zinc', amount: 1, unit: 'mg' },
+        { id: 'calcium', amount: 'x', unit: 'mg' },
+      ],
+    };
+    expect(parseNutritionProfile(mixed)?.micronutrientTargets).toEqual([
+      { id: 'iron', amount: 8, unit: 'mg' },
+    ]);
+  });
 });

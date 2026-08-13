@@ -13,6 +13,7 @@ import {
   AI_MODEL_OPTIONS,
   DEFAULT_AI_MODEL,
   AI_TEMPERATURE,
+  SETTINGS_EPOCH_ISO,
   aiModelLabel,
   getActiveCustomInstructions,
   isGeminiModel,
@@ -37,10 +38,37 @@ beforeEach(async () => {
       fat: false,
       carbs: false,
     },
+    clientUpdatedAt: SETTINGS_EPOCH_ISO,
   });
 });
 
 describe('useSettingsStore', () => {
+  it('defaults clientUpdatedAt to epoch', () => {
+    expect(useSettingsStore.getState().clientUpdatedAt).toBe(SETTINGS_EPOCH_ISO);
+  });
+
+  it('setters bump clientUpdatedAt', async () => {
+    const before = useSettingsStore.getState().clientUpdatedAt;
+    await act(async () => {
+      useSettingsStore.getState().setCustomInstructions('x');
+    });
+    const afterInstructions = useSettingsStore.getState().clientUpdatedAt;
+    expect(Date.parse(afterInstructions)).toBeGreaterThanOrEqual(
+      Date.parse(before),
+    );
+    expect(afterInstructions).not.toBe(SETTINGS_EPOCH_ISO);
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 2));
+      useSettingsStore.getState().setFeatureVitamins(false);
+      useSettingsStore.getState().setCalendarRing('fat', true);
+      useSettingsStore.getState().setAiModel('anthropic/claude-sonnet-4.6');
+    });
+    expect(
+      Date.parse(useSettingsStore.getState().clientUpdatedAt),
+    ).toBeGreaterThanOrEqual(Date.parse(afterInstructions));
+  });
+
   it('defaults customInstructions to empty string', () => {
     expect(useSettingsStore.getState().customInstructions).toBe('');
   });

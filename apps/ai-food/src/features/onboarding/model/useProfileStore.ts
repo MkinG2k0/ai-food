@@ -15,7 +15,7 @@ interface ProfileState {
   /** After "redo onboarding": skip auto-restore from server until setProfile. */
   suppressRemoteRestore: boolean;
   setProfile: (profile: UserProfile, targets: DailyTargets) => void;
-  setMicronutrientTargets: (targets: MicronutrientEstimate[]) => void;
+  setMicronutrientTargets: (targets: MicronutrientEstimate[] | null) => void;
   updateTargets: (targets: DailyTargets) => void;
   updateDietType: (dietType: DietType) => void;
   updateTargetWeight: (targetWeight: number) => void;

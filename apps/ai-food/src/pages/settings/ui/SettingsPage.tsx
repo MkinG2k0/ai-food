@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -22,6 +22,11 @@ import {
   useSettingsStore,
   type CalendarRingKey,
 } from '@/features/settings';
+import {
+  flushSettingsSync,
+  queueSettingsSync,
+  SETTINGS_SYNC_DEBOUNCE_MS,
+} from '@/features/settings-sync';
 import { useWeightStore } from '@/features/stats';
 import { cn, getLegalUrl } from '@/shared/lib';
 import { BottomSheet, Button, SubpageShell, TextareaWithVoice } from '@/shared/ui';
@@ -120,6 +125,16 @@ export function SettingsPage() {
   const setFeatureComposition = useSettingsStore((s) => s.setFeatureComposition);
   const calendarRings = useSettingsStore((s) => s.calendarRings);
   const setCalendarRing = useSettingsStore((s) => s.setCalendarRing);
+
+  useEffect(() => {
+    return () => {
+      flushSettingsSync();
+    };
+  }, []);
+
+  const queueSettingsSoon = () => {
+    queueSettingsSync({ debounceMs: SETTINGS_SYNC_DEBOUNCE_MS });
+  };
 
   const profile = useProfileStore((s) => s.profile);
   const targets = useProfileStore((s) => s.targets);
@@ -255,7 +270,9 @@ export function SettingsPage() {
       featureHealthiness: snapshot.settings.featureHealthiness,
       featureComposition: snapshot.settings.featureComposition,
       calendarRings: snapshot.settings.calendarRings,
+      clientUpdatedAt: new Date().toISOString(),
     });
+    queueSettingsSync();
 
     useFavoritesStore.setState({ favorites: snapshot.favorites });
     useWeightStore.setState({
@@ -532,7 +549,10 @@ export function SettingsPage() {
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground',
                   )}
-                  onClick={() => setCalendarRing(option.key, !selected)}
+                  onClick={() => {
+                    setCalendarRing(option.key, !selected);
+                    queueSettingsSoon();
+                  }}
                 >
                   {option.label}
                 </button>
@@ -566,7 +586,10 @@ export function SettingsPage() {
                   type="checkbox"
                   className="mt-1 h-4 w-4 rounded border-input"
                   checked={featureVitamins}
-                  onChange={(e) => setFeatureVitamins(e.target.checked)}
+                  onChange={(e) => {
+                    setFeatureVitamins(e.target.checked);
+                    queueSettingsSoon();
+                  }}
                 />
                 <span className="space-y-0.5">
                   <span className="block text-sm font-medium">
@@ -582,7 +605,10 @@ export function SettingsPage() {
                   type="checkbox"
                   className="mt-1 h-4 w-4 rounded border-input"
                   checked={featureHealthiness}
-                  onChange={(e) => setFeatureHealthiness(e.target.checked)}
+                  onChange={(e) => {
+                    setFeatureHealthiness(e.target.checked);
+                    queueSettingsSoon();
+                  }}
                 />
                 <span className="space-y-0.5">
                   <span className="block text-sm font-medium">Полезность</span>
@@ -596,7 +622,10 @@ export function SettingsPage() {
                   type="checkbox"
                   className="mt-1 h-4 w-4 rounded border-input"
                   checked={featureComposition}
-                  onChange={(e) => setFeatureComposition(e.target.checked)}
+                  onChange={(e) => {
+                    setFeatureComposition(e.target.checked);
+                    queueSettingsSoon();
+                  }}
                 />
                 <span className="space-y-0.5">
                   <span className="block text-sm font-medium">Состав</span>
@@ -611,9 +640,10 @@ export function SettingsPage() {
                     type="checkbox"
                     className="mt-1 h-4 w-4 rounded border-input"
                     checked={customInstructionsEnabled}
-                    onChange={(e) =>
-                      setCustomInstructionsEnabled(e.target.checked)
-                    }
+                    onChange={(e) => {
+                      setCustomInstructionsEnabled(e.target.checked);
+                      queueSettingsSoon();
+                    }}
                     aria-controls="custom-instructions"
                   />
                   <span className="space-y-0.5">
@@ -636,7 +666,10 @@ export function SettingsPage() {
                       value={customInstructions}
                       maxLength={2000}
                       placeholder="Например: я веган; дай краткий рецепт"
-                      onChange={(e) => setCustomInstructions(e.target.value)}
+                      onChange={(e) => {
+                        setCustomInstructions(e.target.value);
+                        queueSettingsSoon();
+                      }}
                       className="min-h-32"
                     />
                     <p className="text-xs text-muted-foreground text-right">
@@ -666,8 +699,11 @@ export function SettingsPage() {
           {dataOpen && (
             <>
               <p className="text-sm text-muted-foreground">
-                Экспорт дневника, профиля, настроек, избранного и веса в JSON.
-                Импорт полностью заменит текущие данные на устройстве.
+                После входа дневник, профиль, настройки, вес и избранное
+                синхронизируются между устройствами. Фото приёмов намеренно
+                остаются только на этом устройстве и в облако не уходят.
+                Экспорт JSON — ручной бэкап (включая локальные ссылки на
+                фото). Импорт полностью заменит текущие данные на устройстве.
               </p>
               <input
                 ref={importInputRef}

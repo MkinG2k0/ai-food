@@ -45,6 +45,7 @@ export function useOnboarding() {
       model: useSettingsStore.getState().aiModel,
     });
     setMicronutrientTargets(micronutrientTargets);
+    syncNutritionProfileToServer();
     navigate('/');
   }
 

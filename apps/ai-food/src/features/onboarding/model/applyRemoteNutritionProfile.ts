@@ -7,7 +7,14 @@ export function applyRemoteNutritionProfile(
 ): void {
   const { setProfile, setMicronutrientTargets } = useProfileStore.getState();
   setProfile(payload.profile, payload.targets);
-  setMicronutrientTargets(
-    defaultMicronutrientTargets(payload.profile.gender),
-  );
+
+  if (Array.isArray(payload.micronutrientTargets)) {
+    setMicronutrientTargets(payload.micronutrientTargets);
+  } else if (payload.micronutrientTargets === null) {
+    setMicronutrientTargets(null);
+  } else {
+    setMicronutrientTargets(
+      defaultMicronutrientTargets(payload.profile.gender),
+    );
+  }
 }

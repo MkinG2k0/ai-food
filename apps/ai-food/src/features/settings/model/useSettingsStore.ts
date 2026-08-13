@@ -136,6 +136,44 @@ export function getActiveCustomInstructions(): string {
   return s.customInstructions.trim();
 }
 
+/** Epoch clock — loses LWW to any real server/client edit. */
+export const SETTINGS_EPOCH_ISO = '1970-01-01T00:00:00.000Z';
+
+function bumpClock(): string {
+  return new Date().toISOString();
+}
+
+/** Fields synced via POST /user/settings/sync (no clientUpdatedAt). */
+export type SettingsSyncPayload = {
+  customInstructions: string;
+  customInstructionsEnabled: boolean;
+  aiModel: string;
+  featureVitamins: boolean;
+  featureHealthiness: boolean;
+  featureComposition: boolean;
+  calendarRings: CalendarRingsSelection;
+};
+
+export function settingsSyncPayloadFromState(s: {
+  customInstructions: string;
+  customInstructionsEnabled: boolean;
+  aiModel: string;
+  featureVitamins: boolean;
+  featureHealthiness: boolean;
+  featureComposition: boolean;
+  calendarRings: CalendarRingsSelection;
+}): SettingsSyncPayload {
+  return {
+    customInstructions: s.customInstructions,
+    customInstructionsEnabled: s.customInstructionsEnabled,
+    aiModel: s.aiModel,
+    featureVitamins: s.featureVitamins,
+    featureHealthiness: s.featureHealthiness,
+    featureComposition: s.featureComposition,
+    calendarRings: { ...s.calendarRings },
+  };
+}
+
 interface SettingsState {
   customInstructions: string;
   setCustomInstructions: (value: string) => void;
@@ -157,6 +195,8 @@ interface SettingsState {
   calendarRings: CalendarRingsSelection;
   setCalendarRing: (key: CalendarRingKey, enabled: boolean) => void;
   setCalendarRings: (value: CalendarRingsSelection) => void;
+  /** LWW clock for settings sync */
+  clientUpdatedAt: string;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -166,29 +206,45 @@ export const useSettingsStore = create<SettingsState>()(
       setCustomInstructions: (value) =>
         set({
           customInstructions: value.slice(0, MAX_CUSTOM_INSTRUCTIONS_LENGTH),
+          clientUpdatedAt: bumpClock(),
         }),
       customInstructionsEnabled: true,
       setCustomInstructionsEnabled: (value) =>
-        set({ customInstructionsEnabled: value }),
+        set({
+          customInstructionsEnabled: value,
+          clientUpdatedAt: bumpClock(),
+        }),
       aiModel: DEFAULT_AI_MODEL,
-      setAiModel: (value) => set({ aiModel: normalizeAiModel(value) }),
+      setAiModel: (value) =>
+        set({
+          aiModel: normalizeAiModel(value),
+          clientUpdatedAt: bumpClock(),
+        }),
       featureVitamins: true,
-      setFeatureVitamins: (value) => set({ featureVitamins: value }),
+      setFeatureVitamins: (value) =>
+        set({ featureVitamins: value, clientUpdatedAt: bumpClock() }),
       featureHealthiness: true,
-      setFeatureHealthiness: (value) => set({ featureHealthiness: value }),
+      setFeatureHealthiness: (value) =>
+        set({ featureHealthiness: value, clientUpdatedAt: bumpClock() }),
       featureComposition: true,
-      setFeatureComposition: (value) => set({ featureComposition: value }),
+      setFeatureComposition: (value) =>
+        set({ featureComposition: value, clientUpdatedAt: bumpClock() }),
       calendarRings: { ...DEFAULT_CALENDAR_RINGS },
       setCalendarRing: (key, enabled) =>
         set((s) => ({
           calendarRings: { ...s.calendarRings, [key]: enabled },
+          clientUpdatedAt: bumpClock(),
         })),
       setCalendarRings: (value) =>
-        set({ calendarRings: normalizeCalendarRings(value) }),
+        set({
+          calendarRings: normalizeCalendarRings(value),
+          clientUpdatedAt: bumpClock(),
+        }),
+      clientUpdatedAt: SETTINGS_EPOCH_ISO,
     }),
     {
       name: 'ai-food-settings',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => capacitorStorage),
       migrate: (persisted, version) => {
         if (!isCalendarRingsRecord(persisted)) {
@@ -202,6 +258,9 @@ export const useSettingsStore = create<SettingsState>()(
           delete next.calendarRingMode;
         } else {
           next.calendarRings = normalizeCalendarRings(next.calendarRings);
+        }
+        if (typeof next.clientUpdatedAt !== 'string') {
+          next.clientUpdatedAt = SETTINGS_EPOCH_ISO;
         }
         return next as unknown as SettingsState;
       },

@@ -4,6 +4,7 @@ export {
   DEFAULT_CALENDAR_RINGS,
   CALENDAR_RING_ORDER,
   AI_TEMPERATURE,
+  SETTINGS_EPOCH_ISO,
   aiModelLabel,
   enabledCalendarRings,
   getActiveCustomInstructions,
@@ -11,10 +12,12 @@ export {
   isGeminiModel,
   normalizeAiModel,
   normalizeCalendarRings,
+  settingsSyncPayloadFromState,
   temperatureForModel,
   useSettingsStore,
   type CalendarRingKey,
   type CalendarRingsSelection,
+  type SettingsSyncPayload,
 } from './model/useSettingsStore';
 export {
   APP_DATA_EXPORT_VERSION,

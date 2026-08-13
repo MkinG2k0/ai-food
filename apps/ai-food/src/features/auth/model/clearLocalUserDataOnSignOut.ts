@@ -12,6 +12,7 @@ import { useProfileStore } from '@/features/onboarding';
 import {
   DEFAULT_AI_MODEL,
   DEFAULT_CALENDAR_RINGS,
+  SETTINGS_EPOCH_ISO,
   useSettingsStore,
 } from '@/features/settings';
 import { useWeightStore } from '@/features/stats';
@@ -41,6 +42,7 @@ export function clearLocalUserDataOnSignOut(): void {
     featureHealthiness: true,
     featureComposition: true,
     calendarRings: { ...DEFAULT_CALENDAR_RINGS },
+    clientUpdatedAt: SETTINGS_EPOCH_ISO,
   });
 
   useModelTestStore.getState().clearResults();

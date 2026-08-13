@@ -44,12 +44,23 @@ describe('applyRemoteNutritionProfile', () => {
     vi.clearAllMocks();
   });
 
-  it('applies profile, targets, and gender-aware micronutrient defaults', () => {
+  it('applies gender-aware micronutrient defaults when field absent', () => {
     applyRemoteNutritionProfile(payload);
 
     expect(mocks.setProfile).toHaveBeenCalledWith(payload.profile, payload.targets);
     expect(mocks.setMicronutrientTargets).toHaveBeenCalledWith(
       defaultMicronutrientTargets('female'),
     );
+  });
+
+  it('uses remote micronutrientTargets array when present', () => {
+    const micro = defaultMicronutrientTargets('male');
+    applyRemoteNutritionProfile({ ...payload, micronutrientTargets: micro });
+    expect(mocks.setMicronutrientTargets).toHaveBeenCalledWith(micro);
+  });
+
+  it('sets null when remote micronutrientTargets is null', () => {
+    applyRemoteNutritionProfile({ ...payload, micronutrientTargets: null });
+    expect(mocks.setMicronutrientTargets).toHaveBeenCalledWith(null);
   });
 });
