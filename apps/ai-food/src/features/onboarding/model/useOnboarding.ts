@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { UserProfile } from '@ai-food/shared-types';
 import { useSettingsStore } from '@/features/settings';
 import { useWeightStore } from '@/features/stats';
+import { queueWeightSync } from '@/features/weight-sync';
 import { useProfileStore } from './useProfileStore';
 import { calculateTargets } from './calculateTargets';
 import { createDefaultProfile, todayLocalYmd } from './defaultProfile';
@@ -38,6 +39,7 @@ export function useOnboarding() {
       withPlanStart.planStartDate!,
       withPlanStart.targetWeight,
     );
+    queueWeightSync({ mode: 'full' });
     syncNutritionProfileToServer();
     const micronutrientTargets = await micronutrientTargetsApi(withPlanStart, {
       model: useSettingsStore.getState().aiModel,

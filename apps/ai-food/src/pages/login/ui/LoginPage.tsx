@@ -10,7 +10,7 @@ import {
   useUsage,
 } from '@/features/auth';
 import { reconcileNutritionProfileAfterLogin } from '@/features/onboarding';
-import { syncDiaryMeals } from '@/features/diary-sync';
+import { queueFullUserDataSync } from '@/features/diary-sync';
 import { Button, SubpageShell } from '@/shared/ui';
 
 export function LoginPage() {
@@ -24,9 +24,7 @@ export function LoginPage() {
 
   const handleLoginSuccess = (result: AuthLoginResult) => {
     const source = reconcileNutritionProfileAfterLogin(result);
-    void syncDiaryMeals({ mode: 'full' }).catch((err) => {
-      console.warn('[diary-sync] post-login sync failed', err);
-    });
+    queueFullUserDataSync('login');
     if (source === 'remote') {
       toast.success('С возвращением');
       navigate('/', { replace: true });
@@ -54,6 +52,7 @@ export function LoginPage() {
   const handleSignOut = () => {
     signOut();
     toast.success('Вы вышли');
+    navigate('/onboarding', { replace: true });
   };
 
   return (

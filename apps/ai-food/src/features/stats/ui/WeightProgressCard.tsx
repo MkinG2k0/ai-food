@@ -25,6 +25,7 @@ import {
 import { LogWeightSheet } from './LogWeightSheet';
 import { UpdateGoalSheet } from './UpdateGoalSheet';
 import { WeightTrendChart } from './WeightTrendChart';
+import { queueWeightSync } from '@/features/weight-sync';
 
 interface WeightProgressCardProps {
   profileWeight: number;
@@ -336,7 +337,10 @@ export function WeightProgressCard({
         open={logOpen}
         onClose={() => setLogOpen(false)}
         initialKg={currentKg}
-        onSave={(kg, date) => addEntry(kg, date)}
+        onSave={(kg, date) => {
+          addEntry(kg, date);
+          queueWeightSync({ mode: 'full' });
+        }}
       />
 
       <UpdateGoalSheet
@@ -347,6 +351,7 @@ export function WeightProgressCard({
         onSave={(nextGoal) => {
           onTargetWeightChange?.(nextGoal);
           setGoalKg(nextGoal);
+          queueWeightSync({ mode: 'full' });
         }}
       />
     </div>

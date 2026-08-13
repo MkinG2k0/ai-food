@@ -50,7 +50,7 @@ beforeEach(async () => {
   await act(async () => {
     await useFavoritesStore.persist.rehydrate();
   });
-  useFavoritesStore.setState({ favorites: [] });
+  useFavoritesStore.setState({ favorites: [], pendingDeletes: [] });
 });
 
 describe('useFavoritesStore', () => {

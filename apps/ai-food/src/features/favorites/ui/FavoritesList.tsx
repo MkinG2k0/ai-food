@@ -11,6 +11,7 @@ import { BottomSheet, Button, Card, CardContent } from '@/shared/ui';
 import type { FavoriteFood } from '../model/favoriteFood';
 import { useFavoritesStore } from '../model/useFavoritesStore';
 import { useQuickAddFavorite } from '../model/useQuickAddFavorite';
+import { queueFavoritesSync } from '@/features/favorites-sync';
 
 const SWIPE_OFFSET_THRESHOLD = 80;
 const SWIPE_VELOCITY_THRESHOLD = 500;
@@ -140,6 +141,7 @@ function SwipeableFavoriteCard({
 
   function handleConfirmDelete() {
     removeFavorite(favorite.id);
+    queueFavoritesSync({ mode: 'delete', favoriteIds: [favorite.id] });
     setConfirmOpen(false);
     toast.success('Удалено из избранного');
   }

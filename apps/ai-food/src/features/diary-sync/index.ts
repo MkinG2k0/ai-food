@@ -9,4 +9,5 @@ export {
 } from './model/mealSyncMerge';
 export { syncDiaryMeals } from './model/syncDiaryMeals';
 export { queueDiarySync } from './model/queueDiarySync';
+export { queueFullUserDataSync } from './model/queueFullUserDataSync';
 export { useSyncMealOnLeave } from './model/useSyncMealOnLeave';

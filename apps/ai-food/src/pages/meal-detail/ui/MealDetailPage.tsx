@@ -21,6 +21,7 @@ import {
   MealSummaryEditor,
 } from '@/features/edit-meal';
 import { useFavoritesStore } from '@/features/favorites';
+import { queueFavoritesSync } from '@/features/favorites-sync';
 import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
 import { handleQuotaExceeded } from '@/features/billing';
 import { useSettingsStore } from '@/features/settings';
@@ -105,10 +106,22 @@ export function MealDetailPage() {
   const canFavorite = currentMeal.status !== 'error';
 
   function handleToggleFavorite() {
+    const before = useFavoritesStore
+      .getState()
+      .favorites.find((f) => f.sourceMealId === currentMeal.id);
     const result = toggleFavorite(currentMeal);
     if (result === 'added') {
+      const added = useFavoritesStore
+        .getState()
+        .favorites.find((f) => f.sourceMealId === currentMeal.id);
+      if (added) {
+        queueFavoritesSync({ mode: 'upsert', favoriteIds: [added.id] });
+      }
       toast.success('Добавлено в избранное');
     } else if (result === 'removed') {
+      if (before) {
+        queueFavoritesSync({ mode: 'delete', favoriteIds: [before.id] });
+      }
       toast.success('Удалено из избранного');
     } else if (result === 'limit') {
       toast.error('Достигнут лимит избранного (50)');

@@ -7,6 +7,7 @@ export interface WeightEntry {
   /** Local calendar day as YYYY-MM-DD */
   date: string;
   kg: number;
+  clientUpdatedAt?: string;
 }
 
 interface WeightState {
@@ -18,6 +19,10 @@ interface WeightState {
   ensureGoalKg: (seed: number) => void;
   /** Write onboarding weight into the log for planStartDate and set goal. */
   seedFromOnboarding: (kg: number, dateYmd: string, goalKg: number) => void;
+}
+
+function nowClock(): string {
+  return new Date().toISOString();
 }
 
 function toLocalDateKey(date: Date): string {
@@ -43,12 +48,13 @@ export const useWeightStore = create<WeightState>()(
           typeof crypto !== 'undefined' && 'randomUUID' in crypto
             ? crypto.randomUUID()
             : `w-${Date.now()}`;
+        const clientUpdatedAt = nowClock();
 
         set((state) => {
           const withoutSameDay = state.entries.filter((e) => e.date !== dayKey);
           const next = [
             ...withoutSameDay,
-            { id, date: dayKey, kg: value },
+            { id, date: dayKey, kg: value, clientUpdatedAt },
           ].sort((a, b) => a.date.localeCompare(b.date));
           return { entries: next };
         });
@@ -58,7 +64,6 @@ export const useWeightStore = create<WeightState>()(
         if (get().goalKg != null) return;
         set({ goalKg: clampKg(seed) });
       },
-      /** Upsert onboarding weight for a calendar day and align goalKg. */
       seedFromOnboarding: (kg, dateYmd, goalKg) => {
         const day = new Date(`${dateYmd}T12:00:00`);
         get().addEntry(kg, day);
@@ -68,8 +73,8 @@ export const useWeightStore = create<WeightState>()(
     {
       name: 'ai-food-weight',
       storage: createJSONStorage(() => capacitorStorage),
-    }
-  )
+    },
+  ),
 );
 
 export function latestWeightKg(

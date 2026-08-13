@@ -18,4 +18,6 @@ export interface FavoriteFood {
   confidence?: number;
   micronutrients?: MicronutrientEstimate[];
   createdAt: string;
+  /** LWW clock for server sync */
+  clientUpdatedAt?: string;
 }

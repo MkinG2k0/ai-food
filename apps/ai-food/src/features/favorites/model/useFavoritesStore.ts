@@ -9,12 +9,19 @@ export const MAX_FAVORITES = 50;
 
 export type ToggleFavoriteResult = 'added' | 'removed' | 'limit' | false;
 
+export type FavoritePendingDelete = { id: string; clientUpdatedAt: string };
+
 interface FavoritesState {
   favorites: FavoriteFood[];
+  pendingDeletes: FavoritePendingDelete[];
   addFavorite: (meal: Meal) => boolean;
   removeFavorite: (favoriteId: string) => void;
   toggleFavorite: (meal: Meal) => ToggleFavoriteResult;
   isFavorite: (mealId: string) => boolean;
+}
+
+function nowClock(): string {
+  return new Date().toISOString();
 }
 
 function isMealFavoritable(meal: Meal): boolean {
@@ -26,6 +33,7 @@ function deepCopyItems(items: FoodItem[]): FoodItem[] {
 }
 
 function mealToFavorite(meal: Meal): FavoriteFood {
+  const clientUpdatedAt = nowClock();
   return {
     id: crypto.randomUUID(),
     sourceMealId: meal.id,
@@ -40,7 +48,8 @@ function mealToFavorite(meal: Meal): FavoriteFood {
     micronutrients: meal.micronutrients
       ? meal.micronutrients.map((m) => ({ ...m }))
       : undefined,
-    createdAt: new Date().toISOString(),
+    createdAt: clientUpdatedAt,
+    clientUpdatedAt,
   };
 }
 
@@ -48,6 +57,7 @@ export const useFavoritesStore = create<FavoritesState>()(
   persist(
     (set, get) => ({
       favorites: [],
+      pendingDeletes: [],
       addFavorite: (meal) => {
         if (!isMealFavoritable(meal)) return false;
 
@@ -60,9 +70,17 @@ export const useFavoritesStore = create<FavoritesState>()(
         return true;
       },
       removeFavorite: (favoriteId) =>
-        set((state) => ({
-          favorites: state.favorites.filter((f) => f.id !== favoriteId),
-        })),
+        set((state) => {
+          const existing = state.favorites.find((f) => f.id === favoriteId);
+          const clock = existing?.clientUpdatedAt ?? nowClock();
+          return {
+            favorites: state.favorites.filter((f) => f.id !== favoriteId),
+            pendingDeletes: [
+              ...state.pendingDeletes.filter((d) => d.id !== favoriteId),
+              { id: favoriteId, clientUpdatedAt: clock },
+            ],
+          };
+        }),
       toggleFavorite: (meal) => {
         if (!isMealFavoritable(meal)) return false;
 
@@ -83,6 +101,10 @@ export const useFavoritesStore = create<FavoritesState>()(
     {
       name: 'ai-food-favorites',
       storage: createJSONStorage(() => capacitorStorage),
+      partialize: (state) => ({
+        favorites: state.favorites,
+        pendingDeletes: state.pendingDeletes,
+      }),
     },
   ),
 );
