@@ -33,12 +33,16 @@ model User {
   nutritionProfile       Json?
   subscriptionStatus     SubscriptionStatus @default(none)
   subscriptionExpiresAt  DateTime?
+  /** Latest weight goal (kg); synced via POST /user/weights/sync */
+  goalKg                 Float?
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
   devices                Device[]
   usageEvents            UsageEvent[]
   payments               Payment[]
   meals                  Meal[]
+  weightEntries          WeightEntry[]
+  favorites              Favorite[]
 }
 
 model Meal {
@@ -72,6 +76,46 @@ model Meal {
   updatedAt            DateTime  @updatedAt
 
   @@index([userId, timestamp])
+  @@index([userId, clientUpdatedAt])
+}
+
+model WeightEntry {
+  id              String    @id
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /** Local calendar day YYYY-MM-DD */
+  date            String
+  kg              Float
+  clientUpdatedAt DateTime
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId, date])
+  @@index([userId, clientUpdatedAt])
+}
+
+model Favorite {
+  id               String    @id
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceMealId     String
+  name             String
+  items            Json
+  totalCalories    Float
+  portions         Float?
+  imageUri         String?
+  imageUris        Json?
+  healthiness      Float?
+  confidence       Float?
+  micronutrients   Json?
+  /** Client FavoriteFood.createdAt */
+  createdAtClient  DateTime?
+  clientUpdatedAt  DateTime
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
   @@index([userId, clientUpdatedAt])
 }
 

@@ -15,6 +15,8 @@ import { billingRouter } from './routes/billing.js';
 import { adminRouter } from './routes/admin.js';
 import { telegramWebhookRouter } from './routes/telegramWebhook.js';
 import { userMealsRouter } from './routes/userMeals.js';
+import { userWeightsRouter } from './routes/userWeights.js';
+import { userFavoritesRouter } from './routes/userFavorites.js';
 
 export function createApp() {
   const app = express();
@@ -43,6 +45,8 @@ export function createApp() {
   app.use('/admin', adminRouter);
   app.use('/telegram/webhook', telegramWebhookRouter);
   app.use('/user/meals', userMealsRouter);
+  app.use('/user/weights', userWeightsRouter);
+  app.use('/user/favorites', userFavoritesRouter);
 
   const v1 = express.Router();
   v1.use(requireApiKey);
