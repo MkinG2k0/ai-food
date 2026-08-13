@@ -5,11 +5,18 @@ export {
   type DailyCaloriePoint,
 } from './model/getWeeklyCalorieSeries';
 export {
+  getMonthlyCalorieSeries,
+  calorieBarRangeLabel,
+  type MonthlyCalorieSeries,
+} from './model/getMonthlyCalorieSeries';
+export {
   getWeeklyMicronutrientSeries,
   micronutrientWeekTotal,
   weekHasMicronutrientData,
   type MicronutrientWeekPoint,
 } from './model/getWeeklyMicronutrientSeries';
+export { getMonthlyMicronutrientSeries } from './model/getMonthlyMicronutrientSeries';
+export { type StatsPeriod } from './model/monthPeriod';
 export {
   useWeightStore,
   latestWeightKg,

@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   averageLoggedCalories,
   chartTicks,
+  formatCompactDayRange,
   formatDateRangeLabel,
+  formatMonthLabel,
   niceChartMax,
 } from './chartScale';
 
@@ -47,5 +49,20 @@ describe('formatDateRangeLabel', () => {
     expect(label).toContain('·');
     expect(label).toMatch(/10/);
     expect(label).toMatch(/16/);
+  });
+});
+
+describe('formatMonthLabel', () => {
+  it('prints month and year', () => {
+    expect(formatMonthLabel(new Date(2026, 7, 1))).toMatch(/август/i);
+    expect(formatMonthLabel(new Date(2026, 7, 1))).toMatch(/2026/);
+  });
+});
+
+describe('formatCompactDayRange', () => {
+  it('joins day numbers with a short month', () => {
+    expect(formatCompactDayRange(new Date(2026, 7, 8), new Date(2026, 7, 13))).toMatch(
+      /8–13/,
+    );
   });
 });

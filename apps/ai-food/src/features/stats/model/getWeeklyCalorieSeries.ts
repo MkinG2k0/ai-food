@@ -1,9 +1,12 @@
 import type { Meal } from '@ai-food/shared-types';
 import { getWeekStart, isSameDay } from '@/shared/lib';
+import { isReadyMeal, sumMealMacros } from './readyMeals';
 
 export interface DailyCaloriePoint {
   date: Date;
-  /** Sum of meal.totalCalories for the day */
+  /** Inclusive end when this point is a multi-day bucket (month weeks). */
+  endDate?: Date;
+  /** Sum of meal.totalCalories for the day, or daily average for a bucket. */
   calories: number;
   protein: number;
   carbs: number;
@@ -40,29 +43,11 @@ function weekDaysFor(referenceDate: Date, weekOffset: number): Date[] {
   });
 }
 
-function sumMealMacros(meal: Meal): { protein: number; carbs: number; fat: number } {
-  return meal.items.reduce(
-    (acc, item) => ({
-      protein: acc.protein + item.protein,
-      carbs: acc.carbs + item.carbs,
-      fat: acc.fat + item.fat,
-    }),
-    { protein: 0, carbs: 0, fat: 0 },
-  );
-}
-
-/**
- * Calendar week Mon→Sun for `weekOffset` relative to `referenceDate`
- * (`0` = week containing referenceDate). Same offset model as home WeekStrip.
- * Only ready meals (status omitted or 'ready') contribute calories/macros.
- */
-export function getWeeklyCalorieSeries(
+export function getCaloriePointsForDays(
   meals: Meal[],
-  weekOffset: number = 0,
-  referenceDate: Date = new Date(),
+  days: Date[],
 ): DailyCaloriePoint[] {
-  const days = weekDaysFor(referenceDate, weekOffset);
-  const readyMeals = meals.filter((m) => (m.status ?? 'ready') === 'ready');
+  const readyMeals = meals.filter(isReadyMeal);
 
   return days.map((day) => {
     let calories = 0;
@@ -81,4 +66,17 @@ export function getWeeklyCalorieSeries(
 
     return { date: day, calories, protein, carbs, fat };
   });
+}
+
+/**
+ * Calendar week Mon→Sun for `weekOffset` relative to `referenceDate`
+ * (`0` = week containing referenceDate). Same offset model as home WeekStrip.
+ * Only ready meals (status omitted or 'ready') contribute calories/macros.
+ */
+export function getWeeklyCalorieSeries(
+  meals: Meal[],
+  weekOffset: number = 0,
+  referenceDate: Date = new Date(),
+): DailyCaloriePoint[] {
+  return getCaloriePointsForDays(meals, weekDaysFor(referenceDate, weekOffset));
 }

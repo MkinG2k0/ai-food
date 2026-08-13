@@ -12,17 +12,20 @@ import {
   MICRONUTRIENT_LABELS,
 } from '@/entities/nutrition';
 import { defaultMicronutrientTargets } from '@/features/onboarding';
-import { formatDateRangeLabel } from '../model/chartScale';
+import { formatDateRangeLabel, formatMonthLabel } from '../model/chartScale';
 import { getWeeklyCalorieSeries } from '../model/getWeeklyCalorieSeries';
 import {
   getWeeklyMicronutrientSeries,
   weekHasMicronutrientData,
 } from '../model/getWeeklyMicronutrientSeries';
+import { getMonthlyMicronutrientSeries } from '../model/getMonthlyMicronutrientSeries';
+import { monthStartFor, type StatsPeriod } from '../model/monthPeriod';
 
 interface WeeklyMicronutrientsChartProps {
   meals: Meal[];
-  weekOffset: number;
-  onWeekChange: (delta: 1 | -1) => void;
+  period: StatsPeriod;
+  offset: number;
+  onOffsetChange: (delta: 1 | -1) => void;
   micronutrientTargets?: MicronutrientEstimate[] | null;
 }
 
@@ -56,7 +59,8 @@ function progressWidthPct(dailyAvg: number, normAmount: number): number {
 
 interface MicronutrientWeekPanelProps {
   meals: Meal[];
-  weekOffset: number;
+  period: StatsPeriod;
+  offset: number;
   interactive: boolean;
   reduceMotion: boolean | null;
   micronutrientTargets?: MicronutrientEstimate[] | null;
@@ -64,19 +68,34 @@ interface MicronutrientWeekPanelProps {
 
 function MicronutrientWeekPanel({
   meals,
-  weekOffset,
+  period,
+  offset,
   interactive,
   reduceMotion,
   micronutrientTargets,
 }: MicronutrientWeekPanelProps) {
-  const series = getWeeklyMicronutrientSeries(meals, weekOffset);
-  const calorieDays = getWeeklyCalorieSeries(meals, weekOffset);
+  const series =
+    period === 'month'
+      ? getMonthlyMicronutrientSeries(meals, offset)
+      : getWeeklyMicronutrientSeries(meals, offset);
   const hasData = weekHasMicronutrientData(series);
   const norms = resolveNorms(micronutrientTargets);
   const rangeLabel =
-    calorieDays.length >= 2
-      ? formatDateRangeLabel(calorieDays[0].date, calorieDays[calorieDays.length - 1].date)
-      : '';
+    period === 'month'
+      ? formatMonthLabel(monthStartFor(new Date(), offset))
+      : (() => {
+          const calorieDays = getWeeklyCalorieSeries(meals, offset);
+          return calorieDays.length >= 2
+            ? formatDateRangeLabel(
+                calorieDays[0].date,
+                calorieDays[calorieDays.length - 1].date,
+              )
+            : '';
+        })();
+  const emptyCopy =
+    period === 'month'
+      ? 'Нет данных за месяц — появятся после анализа фото'
+      : 'Нет данных за неделю — появятся после анализа фото';
 
   return (
     <div className="flex h-full flex-col px-4 py-4">
@@ -93,7 +112,7 @@ function MicronutrientWeekPanel({
         <p className="text-sm text-foreground/90">
           {hasData
             ? 'Среднесуточное потребление относительно дневной нормы'
-            : 'Нет данных за неделю — появятся после анализа фото'}
+            : emptyCopy}
         </p>
       </header>
 
@@ -155,8 +174,9 @@ function MicronutrientWeekPanel({
 
 export function WeeklyMicronutrientsChart({
   meals,
-  weekOffset,
-  onWeekChange,
+  period,
+  offset,
+  onOffsetChange,
   micronutrientTargets,
 }: WeeklyMicronutrientsChartProps) {
   const reduceMotion = useReducedMotion();
@@ -172,7 +192,7 @@ export function WeeklyMicronutrientsChart({
   useLayoutEffect(() => {
     recenter();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekOffset]);
+  }, [offset, period]);
 
   useEffect(() => {
     window.addEventListener('resize', recenter);
@@ -196,7 +216,7 @@ export function WeeklyMicronutrientsChart({
         duration: 0.2,
         ease: 'easeOut',
       }).then(() => {
-        onWeekChange(1);
+        onOffsetChange(1);
       });
     } else if (
       info.offset.x > SWIPE_OFFSET_THRESHOLD ||
@@ -207,19 +227,23 @@ export function WeeklyMicronutrientsChart({
         duration: 0.2,
         ease: 'easeOut',
       }).then(() => {
-        onWeekChange(-1);
+        onOffsetChange(-1);
       });
     } else {
       animate(x, -slotWidth, { type: 'spring', stiffness: 400, damping: 30 });
     }
   }
 
-  const weekOffsets = [weekOffset - 1, weekOffset, weekOffset + 1];
+  const offsets = [offset - 1, offset, offset + 1];
+  const swipeLabel =
+    period === 'month'
+      ? 'Витамины по месяцам, свайп для смены месяца'
+      : 'Витамины по неделям, свайп для смены недели';
 
   return (
     <section
       className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm"
-      aria-label="Витамины по неделям, свайп для смены недели"
+      aria-label={swipeLabel}
     >
       <div
         ref={viewportRef}
@@ -235,19 +259,20 @@ export function WeeklyMicronutrientsChart({
           onDragEnd={handleDragEnd}
           className="flex cursor-grab select-none active:cursor-grabbing"
         >
-          {weekOffsets.map((offset, i) => {
+          {offsets.map((panelOffset, i) => {
             const isCurrent = i === 1;
 
             return (
               <div
-                key={['prev', 'current', 'next'][i]}
+                key={`${period}-${['prev', 'current', 'next'][i]}`}
                 className="shrink-0"
                 style={{ width: '33.3333%' }}
                 aria-hidden={!isCurrent}
               >
                 <MicronutrientWeekPanel
                   meals={meals}
-                  weekOffset={offset}
+                  period={period}
+                  offset={panelOffset}
                   interactive={isCurrent}
                   reduceMotion={reduceMotion}
                   micronutrientTargets={micronutrientTargets}

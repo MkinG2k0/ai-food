@@ -9,9 +9,10 @@ import {
   WeeklyCaloriesChart,
   WeeklyMicronutrientsChart,
   WeightProgressCard,
+  type StatsPeriod,
 } from '@/features/stats';
 import { useSettingsStore } from '@/features/settings';
-import { SubpageShell } from '@/shared/ui';
+import { Button, SubpageShell } from '@/shared/ui';
 
 const FALLBACK_GOAL_KCAL = 2000;
 
@@ -23,8 +24,14 @@ export function StatsPage() {
   const micronutrientTargets = useProfileStore((s) => s.micronutrientTargets);
   const updateTargetWeight = useProfileStore((s) => s.updateTargetWeight);
   const featureVitamins = useSettingsStore((s) => s.featureVitamins);
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [period, setPeriod] = useState<StatsPeriod>('week');
+  const [offset, setOffset] = useState(0);
   const goalKcal = targets?.kcal ?? FALLBACK_GOAL_KCAL;
+
+  function togglePeriod() {
+    setPeriod((current) => (current === 'week' ? 'month' : 'week'));
+    setOffset(0);
+  }
 
   return (
     <SubpageShell
@@ -32,6 +39,21 @@ export function StatsPage() {
       onBack={() => navigate('/')}
       headerClassName="sticky top-0 z-10 bg-zinc-50/90 backdrop-blur-md"
       mainClassName="space-y-3 pb-10"
+      actions={
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={togglePeriod}
+          aria-label={
+            period === 'week'
+              ? 'Показать статистику за месяц'
+              : 'Показать статистику за неделю'
+          }
+        >
+          {period === 'week' ? 'Месяц' : 'Неделя'}
+        </Button>
+      }
     >
       {profile && (
         <WeightProgressCard
@@ -50,16 +72,18 @@ export function StatsPage() {
 
       <WeeklyCaloriesChart
         meals={meals}
-        weekOffset={weekOffset}
-        onWeekChange={(delta) => setWeekOffset((o) => o + delta)}
+        period={period}
+        offset={offset}
+        onOffsetChange={(delta) => setOffset((o) => o + delta)}
         goalKcal={goalKcal}
       />
       {featureVitamins && (
         <>
           <WeeklyMicronutrientsChart
             meals={meals}
-            weekOffset={weekOffset}
-            onWeekChange={(delta) => setWeekOffset((o) => o + delta)}
+            period={period}
+            offset={offset}
+            onOffsetChange={(delta) => setOffset((o) => o + delta)}
             micronutrientTargets={micronutrientTargets}
           />
         </>

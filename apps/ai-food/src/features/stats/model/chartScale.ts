@@ -32,12 +32,32 @@ export function averageLoggedCalories(
   return sum / logged.length;
 }
 
+function shortMonth(date: Date): string {
+  return date
+    .toLocaleDateString('ru-RU', { month: 'short' })
+    .replace(/\./g, '')
+    .trim();
+}
+
 /** e.g. "10 июл · 16 июл" */
 export function formatDateRangeLabel(start: Date, end: Date): string {
-  const fmt = (d: Date) =>
-    d
-      .toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-      .replace(/\./g, '')
-      .trim();
+  const fmt = (d: Date) => `${d.getDate()} ${shortMonth(d)}`;
   return `${fmt(start)} · ${fmt(end)}`;
+}
+
+/** e.g. "август 2026" */
+export function formatMonthLabel(date: Date): string {
+  return date
+    .toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
+    .replace(/\s*г\.?$/i, '')
+    .trim();
+}
+
+/** e.g. "8–13 авг" */
+export function formatCompactDayRange(start: Date, end: Date): string {
+  const month = shortMonth(start);
+  if (start.getDate() === end.getDate()) {
+    return `${start.getDate()} ${month}`;
+  }
+  return `${start.getDate()}–${end.getDate()} ${month}`;
 }
