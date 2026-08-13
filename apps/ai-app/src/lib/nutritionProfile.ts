@@ -25,9 +25,30 @@ const targetsSchema = z.object({
   fiber: z.number().nonnegative(),
 });
 
+const micronutrientIdSchema = z.enum([
+  'vitaminA',
+  'vitaminC',
+  'vitaminD',
+  'vitaminB12',
+  'iron',
+  'calcium',
+  'folate',
+  'magnesium',
+]);
+
+const micronutrientTargetSchema = z.object({
+  id: micronutrientIdSchema,
+  amount: z.number(),
+  unit: z.enum(['mg', 'µg']),
+});
+
 export const nutritionProfileBodySchema = z.object({
   profile: profileSchema,
   targets: targetsSchema,
+  micronutrientTargets: z
+    .array(micronutrientTargetSchema)
+    .nullable()
+    .optional(),
 });
 
 export type NutritionProfilePayload = z.infer<typeof nutritionProfileBodySchema>;
@@ -36,7 +57,13 @@ export function parseNutritionProfile(
   value: unknown,
 ): NutritionProfilePayload | null {
   const parsed = nutritionProfileBodySchema.safeParse(value);
-  return parsed.success ? parsed.data : null;
+  if (!parsed.success) return null;
+  const data = parsed.data;
+  if (data.micronutrientTargets === undefined) {
+    const { micronutrientTargets: _omit, ...rest } = data;
+    return rest;
+  }
+  return data;
 }
 
 export function serializeNutritionProfile(

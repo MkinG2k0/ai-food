@@ -40,4 +40,42 @@ describe('nutritionProfileBodySchema', () => {
     };
     expect(nutritionProfileBodySchema.safeParse(bad).success).toBe(false);
   });
+
+  it('accepts micronutrientTargets array', () => {
+    const withMicro = {
+      ...valid,
+      micronutrientTargets: [
+        { id: 'vitaminC', amount: 90, unit: 'mg' },
+        { id: 'vitaminA', amount: 900, unit: 'µg' },
+      ],
+    };
+    expect(nutritionProfileBodySchema.safeParse(withMicro).success).toBe(true);
+    expect(parseNutritionProfile(withMicro)).toEqual(withMicro);
+  });
+
+  it('accepts micronutrientTargets null', () => {
+    const withNull = { ...valid, micronutrientTargets: null };
+    expect(parseNutritionProfile(withNull)).toEqual(withNull);
+  });
+
+  it('omits micronutrientTargets when absent', () => {
+    const parsed = parseNutritionProfile(valid);
+    expect(parsed).toEqual(valid);
+    expect(parsed).not.toHaveProperty('micronutrientTargets');
+  });
+
+  it('rejects invalid micronutrient id or unit', () => {
+    expect(
+      nutritionProfileBodySchema.safeParse({
+        ...valid,
+        micronutrientTargets: [{ id: 'zinc', amount: 1, unit: 'mg' }],
+      }).success,
+    ).toBe(false);
+    expect(
+      nutritionProfileBodySchema.safeParse({
+        ...valid,
+        micronutrientTargets: [{ id: 'iron', amount: 8, unit: 'g' }],
+      }).success,
+    ).toBe(false);
+  });
 });

@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # openrouter-gateway
 
-HTTP-прокси к [OpenRouter](https://openrouter.ai) на Express: ключ OpenRouter остаётся на сервере, клиентские приложения ходят по REST через OpenAI-совместимый API.
+HTTP-прокси к [OpenRouter](https://openrouter.ai) на Express для **ai-food**: ключ OpenRouter на сервере, food-роуты, auth/quota/billing, sync дневника/веса/избранного. **Blob-фото приёмов не хранятся** — только metadata/URI stubs. Канон sync: `apps/ai-food/docs/USER-DATA-SYNC.md`.
 
 ## Installation
 
