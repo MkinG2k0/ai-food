@@ -99,10 +99,10 @@
 - Recommendations: Client-side max size, optional resize/compress before POST.
 
 **Diary persisted in localStorage unencrypted:**
-- Risk: Meal history readable/clearable by any script on the origin; no user isolation.
+- Risk: Meal history readable/clearable by any script on the origin.
 - Files: `src/entities/meal/model/useDiaryStore.ts` (Zustand `persist` middleware, key `ai-food-diary`)
-- Current mitigation: Acceptable for single-user MVP with no auth.
-- Recommendations: When auth arrives, move to server-side storage; add `version`/`migrate` to persist config for schema changes.
+- Current mitigation: After login meals also sync to Postgres; local Preferences are offline cache. **Photos stay in Filesystem only (not synced).**
+- Recommendations: Keep LWW sync; encrypt local cache if threat model requires it; `version`/`migrate` on persist schema changes.
 
 **Default API URL hardcoded to localhost:**
 - Risk: Production builds fall back to `http://localhost:3001` if `VITE_API_URL` is unset.
@@ -204,8 +204,8 @@
 - Blocks: Swapping local storage for API without touching every consumer (`DailyHeader`, `MealList`, `DiaryPage`).
 
 **Backend persistence and auth:**
-- Problem: No database, no user accounts, no meal sync (explicit non-goals in spec but required for production).
-- Blocks: Multi-device use, data recovery, GDPR-compliant deletion.
+- Status (2026-08-13): Telegram/demo auth + Postgres sync for diary / weight / favorites / profile(+микро) / settings. **Meal photo blobs intentionally never stored on server.**
+- Remaining gaps: GDPR export/delete polish.
 
 **CI/CD pipeline:**
 - Problem: No `.github/workflows`, no automated test/build on PR.

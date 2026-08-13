@@ -5,7 +5,9 @@ Turborepo monorepo: фронт дневника питания + AI Gateway.
 | Package | Path | Role |
 |---------|------|------|
 | `ai-food` | `apps/ai-food` | Vite + React + Capacitor |
-| `openrouter-gateway` | `apps/ai-app` | Express → OpenRouter, auth, quota, billing |
+| `openrouter-gateway` | `apps/ai-app` | Express → OpenRouter, auth, quota, billing, user-data sync |
+
+После входа данные аккаунта (дневник, профиль, вес, избранное) синхронизируются между устройствами. **Фото приёмов не синкаются** — остаются в Filesystem на устройстве. Подробнее: [`apps/ai-food/docs/USER-DATA-SYNC.md`](./apps/ai-food/docs/USER-DATA-SYNC.md).
 
 ## Setup
 

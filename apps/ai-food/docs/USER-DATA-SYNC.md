@@ -2,17 +2,31 @@
 
 **Последнее обновление:** 2026-08-13
 
-P0 diary + **P1 weight/favorites** sync реализованы (`POST /user/meals|weights|favorites/sync`). Документ — контракт + inventory.
+## Статус (кратко)
 
-**Monorepo:** design в `apps/ai-food/docs`; реализация — `apps/ai-app` (Prisma + Express) + клиентские sync hooks в `apps/ai-food`.
+После **входа** (`X-User-Token`) данные аккаунта **синхронизируются** между устройствами через gateway (`apps/ai-app` + Postgres).
 
-Мотивация: restore дневника/веса/избранного после Telegram login на другом устройстве. Дневник, ручной ввод, штрихкод, статистика, онбординг, настройки — **бесплатно всегда** ([SUBSCRIPTION.md](./SUBSCRIPTION.md)); sync **не** гейтить подпиской.
+| Синхронизируется | Не синхронизируется |
+|------------------|---------------------|
+| Профиль питания `{ profile, targets, micronutrientTargets? }` | **Фото приёмов** (blobs) — только Capacitor Filesystem на устройстве; в sync уходят лишь URI-stubs |
+| Дневник `meals[]` | Гостевой режим без логина (только Preferences на устройстве) |
+| Избранное | `selectedDate`, model-test, deviceId generation |
+| Вес + `goalKg` | |
+| Настройки UI / `customInstructions` / `aiModel` / feature flags / `calendarRings` | |
+| Auth / квоты / подписка | |
 
-Auth-паттерн для user-data роутов: `X-User-Token` (как `PUT /auth/profile` / `putNutritionProfile`).
+**Главное для продукта:** после входа восстанавливаются профиль (вкл. микро), дневник, избранное, вес, настройки. **Фото еды намеренно никогда не хранятся на сервере** — только локальный Filesystem + URI stubs в sync.
+
+Детали триггеров и API — ниже. Sync **не** гейтится подпиской ([SUBSCRIPTION.md](./SUBSCRIPTION.md)).
+
+**Monorepo:** контракт в `apps/ai-food/docs`; реализация — `apps/ai-app` (Prisma + Express) + клиентские hooks в `apps/ai-food`.
+
+Auth-паттерн: `X-User-Token` (как `PUT /auth/profile`).
 
 ---
 
 ## Sync triggers (P0 diary — locked)
+
 
 | Trigger | Behavior |
 |---------|----------|
@@ -27,8 +41,8 @@ Auth-паттерн для user-data роутов: `X-User-Token` (как `PUT /
 - LWW по `clientUpdatedAt` на уровне целого meal
 - Soft-delete tombstones (`deletedAt` + тот же clock)
 - Sync **не** требует подписки
-- Photo blobs **не** загружаются (только URI stubs)
-- Favorites / weight / settings / `micronutrientTargets` — **вне scope** P0 (weight+favorites → P1 ниже)
+- Photo blobs **не** загружаются (только URI stubs) — **фото не синкаются**
+- Settings / `micronutrientTargets` — **Done** (P2)
 
 ---
 
@@ -42,6 +56,19 @@ Auth-паттерн для user-data роутов: `X-User-Token` (как `PUT /
 | **Guests** | Local Preferences only — no weight/favorites API |
 
 Endpoints: `POST /user/weights/sync` (body includes `goalKg`), `POST /user/favorites/sync`. LWW `clientUpdatedAt`, soft-delete, image stubs, no subscription gate.
+
+---
+
+## Sync triggers (P2 settings + micronutrientTargets — locked)
+
+| Trigger | Behavior |
+|---------|----------|
+| **Settings change** | Debounced (~400ms) `POST /user/settings/sync` + flush on leave Settings |
+| **Login / auth hydrate** | `syncSettings` в `queueFullUserDataSync` |
+| **Profile / targets / micronutrientTargets** | `PUT /auth/profile` с `{ profile, targets, micronutrientTargets? }` |
+| **Guests** | Local only |
+
+Endpoint settings: `POST /user/settings/sync` — single-doc LWW на `User.clientSettings` + `settingsClientUpdatedAt`.
 
 ---
 
@@ -66,7 +93,7 @@ Endpoints: `POST /user/weights/sync` (body includes `goalKg`), `POST /user/favor
 
 | Model | Релевантные поля |
 |-------|------------------|
-| `User` | `telegramId`, names, `photoUrl`, consent, **`nutritionProfile` Json**, **`goalKg`**, subscription* |
+| `User` | `telegramId`, names, `photoUrl`, consent, **`nutritionProfile` Json** (profile+targets+micronutrientTargets?), **`clientSettings` Json**, **`settingsClientUpdatedAt`**, **`goalKg`**, subscription* |
 | `Meal` | client-cuid id, items Json, KBJU fields, `clientUpdatedAt`, soft-delete `deletedAt` |
 | `WeightEntry` | id, date (YYYY-MM-DD), kg, `clientUpdatedAt`, soft-delete |
 | `Favorite` | id, sourceMealId, name, items Json, macros, image stubs, `clientUpdatedAt`, soft-delete |
@@ -75,17 +102,18 @@ Endpoints: `POST /user/weights/sync` (body includes `goalKg`), `POST /user/favor
 | `Payment` / `PromoCode` / `AppSettings` | billing |
 | `GatewayRequest` | observability |
 
-**Нет** (ещё) модели `UserSettings`.
+**Нет** blob-хранилища фото приёмов — **намеренно навсегда** (только URI stubs).
 
 ### Already synced
 
 | Данные | Как |
 |--------|-----|
 | Auth → `User` | Telegram / demo login → JWT |
-| Nutrition profile | `PUT /auth/profile` + `GET /auth/me` (`X-User-Token`); payload `{ profile, targets }` |
-| Diary meals (P0) | `POST /user/meals/sync` (`X-User-Token`); LWW + soft-delete |
+| Nutrition profile | `PUT /auth/profile` + `GET /auth/me` — `{ profile, targets, micronutrientTargets? }` |
+| Diary meals (P0) | `POST /user/meals/sync`; LWW + soft-delete |
 | Weight + goalKg (P1) | `POST /user/weights/sync` |
 | Favorites (P1) | `POST /user/favorites/sync` |
+| Settings (P2) | `POST /user/settings/sync` |
 | Usage / quota + billing | `/usage`, `/billing/*` |
 | Guest → user device linking | при логине |
 
@@ -96,10 +124,9 @@ Endpoints: `POST /user/weights/sync` (body includes `goalKg`), `POST /user/favor
 | Priority | Gap | Почему |
 |----------|-----|--------|
 | **P0** | Diary `meals[]` | **Done** |
-| **P1** | Weight history + favorites | **Done** — bulk sync + client features |
-| **P2** | Settings (`customInstructions`, UI prefs, model override) | Удобство; не блокирует restore дневника |
-| **P3** | Meal photos (blob upload) | Размер, consent, storage; до P3 — URL/null stubs |
-| **P2-adjacent** | `useProfileStore.micronutrientTargets` (`MicronutrientEstimate[] \| null`) | **Подтверждено:** живёт только в persist `ai-food-profile`. `NutritionProfilePayload` / `User.nutritionProfile` = `{ profile: UserProfile, targets: DailyTargets }` (ккал/БЖУ/клетчатка) — **без** `micronutrientTargets`. `syncNutritionProfileToServer` шлёт только `{ profile, targets }`. После login на новом устройстве нормы микронутриентов для Stats chart не восстанавливаются с сервера (нужен re-onboarding AI или будущий sync). |
+| **P1** | Weight history + favorites | **Done** |
+| **P2** | Settings + `micronutrientTargets` | **Done** |
+| — | Meal photo blobs | **Won't do** — устройство only; URI stubs forever |
 
 Sync diary/manual/barcode/stats/settings **не** должен требовать `hasActiveSubscription`.
 
@@ -131,7 +158,7 @@ Sync diary/manual/barcode/stats/settings **не** должен требоват�
 | `disclaimers` Json? | `string[]` |
 | `customContent` String? | |
 | `customContentEntries` Json? | |
-| `imageUri` / `imageUris` String? / Json? | **stubs** — local path или null; blob upload = P3 |
+| `imageUri` / `imageUris` String? / Json? | **stubs only** — local path или null; **blob upload не планируется** |
 | `clientUpdatedAt` DateTime | для LWW |
 | `deletedAt` DateTime? | soft-delete |
 | `createdAt` / `updatedAt` | server timestamps |
@@ -153,7 +180,8 @@ Sync diary/manual/barcode/stats/settings **не** должен требоват�
 
 Опционально позже: `GET/PUT/DELETE /user/meals/:id` для точечных UI-операций — не блокер P0.
 
-Images в P0: передавать `imageUri`/`imageUris` как optional string/null stubs (локальные пути на другом девайсе бесполезны); полный upload — Phase E / P3 + explicit consent.
+Images: передавать `imageUri`/`imageUris` как optional string/null stubs (на другом девайсе локальные пути бесполезны). **Загрузка blob-фото на сервер не делается и не планируется.**
+
 
 Threat mitigations: user scoping via token; monotonic `clientUpdatedAt`; no guest diary sync.
 
@@ -178,13 +206,12 @@ Multi-device: последний записавший meal целиком поб
 
 | Что | Почему |
 |-----|--------|
-| `selectedDate` (diary UI) | ephemeral navigation, не данные пользователя |
+| Meal photo **blobs** | **Намеренно никогда на сервере** — только Filesystem + URI stubs в meal/favorite sync |
+| `selectedDate` (diary UI) | ephemeral navigation |
 | `ai-food-model-test` | dev UI |
-| `deviceId` generation | локальный id устройства; на сервере — `Device` row |
+| `deviceId` generation | локальный id; на сервере — `Device` row |
 | `ai-food-usage` snapshot | кэш квоты; SoT — `/usage` |
 | Session token (`ai-food-auth`) | JWT локально; SoT user — Postgres `User` |
-| Meal photo **blobs** (до P3) | Filesystem; sync metadata only until Phase E |
-| `aiModel` override (Settings) | **пока client-only / discretionary.** Food routes уже берут `OPENROUTER_MODEL` на сервере; клиентский override — UX/debug. Синк на сервер возможен в Phase D, но не обязателен; paid AI всё равно gated quota/subscription |
 
 ---
 
@@ -192,18 +219,17 @@ Multi-device: последний записавший meal целиком поб
 
 | Phase | Scope | Outcome (one line) |
 |-------|--------|-------------------|
-| **A** | Profile | Done: `{ profile, targets }` ↔ `User.nutritionProfile` via `PUT /auth/profile` |
-| **B** | Diary P0 | Done: Meals bulk sync + Prisma `Meal`; cross-device diary restore |
-| **C** | Weight + favorites | **Done:** `POST /user/weights/sync` + `/user/favorites/sync` + client features |
-| **D** | Settings | `customInstructions` / UI prefs (и опционально `aiModel`) |
-| **E** | Images P3 | Blob storage + consent; замена URI stubs |
+| **A** | Profile | Done: `{ profile, targets, micronutrientTargets? }` |
+| **B** | Diary P0 | Done |
+| **C** | Weight + favorites | Done |
+| **D** | Settings P2 | Done: `POST /user/settings/sync` |
+| — | Images | **Cancelled** — photos stay on device forever |
 
 ---
 
 ## 7. Remaining out of scope
 
-- Settings / `micronutrientTargets` sync (P2)
-- Meal photo blob upload (P3)
+- Meal photo blob upload (**permanent product decision** — не P3)
 - Per-field live sync while editing meal UI
 - Subscription gate on user-data sync
 

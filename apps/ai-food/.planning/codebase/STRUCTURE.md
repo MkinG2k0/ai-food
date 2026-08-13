@@ -77,7 +77,9 @@ ai-food/
 | Need | Location |
 |------|----------|
 | Routes | `src/app/router.tsx` |
-| Diary persistence | `src/entities/meal/model/useDiaryStore.ts` |
+| Diary persistence (local cache) | `src/entities/meal/model/useDiaryStore.ts` |
+| Diary / weight / favorites sync | `src/features/diary-sync`, `weight-sync`, `favorites-sync` |
+| User-data sync contract | `docs/USER-DATA-SYNC.md` (**photos not synced**) |
 | AI analyze API | `src/features/analyze-food/api/` |
 | Domain types | `src/shared/types/index.ts` |
 | Product context for agents | `docs/AI-APP-FEATURES.md` |

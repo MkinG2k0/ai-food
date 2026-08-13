@@ -4,53 +4,56 @@
 
 ## Sibling backend (AI Gateway)
 
-**Repo:** `d:\Project\Main\ai-app` (package `openrouter-gateway`)  
-**Role:** Express OpenAI-compatible proxy to OpenRouter — not an in-repo backend and not food-domain API.  
+**Path:** `apps/ai-app` (package `openrouter-gateway`)  
+**Role:** Express → OpenRouter + food domain (`/v1/food/*`) + auth/quota/billing + **user-data sync**  
 **Canonical agent doc:** `docs/AI-GATEWAY.md`
 
 ```
-ai-food → VITE_AI_GATEWAY_* → ai-app /v1/* → OpenRouter
+ai-food → VITE_AI_GATEWAY_* → ai-app /v1/* + /auth/* + /user/*/sync + /billing/* → OpenRouter / Postgres
 ```
 
 ### AI chat (primary)
 
-- **Upstream:** OpenRouter via sibling gateway (`OPENROUTER_API_KEY` server-side only)
-- **Client env:** `VITE_AI_GATEWAY_URL`, `VITE_AI_GATEWAY_API_KEY` (maps to gateway `API_KEY`)
-- **Contract:** `POST /v1/chat/completions` (JSON + SSE `stream: true`); also `GET /v1/models`, `POST /v1/embeddings`, `GET /health`
-- **Auth:** `Authorization: Bearer` or `X-API-Key` when gateway `API_KEY` is set
-- **Call sites:**
-  - `src/features/analyze-food/api/analyzeFoodApi.ts` (+ `streamChatCompletions.ts`)
-  - `src/features/analyze-food/api/refineMealApi.ts`
-  - `src/features/analyze-food/api/fetchMealCustomContentApi.ts`
-  - `src/features/onboarding/api/micronutrientTargetsApi.ts`
-- **Domain logic on client:** prompts, image compress, XML/JSON nutrition parse — not on gateway
-- **Error codes from gateway:** `RATE_LIMITED`, `UPSTREAM_TIMEOUT`, `BAD_REQUEST`, `UPSTREAM_ERROR`, `UNAUTHORIZED`, `VALIDATION_ERROR` — mapped in client APIs
+- **Upstream:** OpenRouter (`OPENROUTER_API_KEY` server-side only)
+- **Client env:** `VITE_AI_GATEWAY_URL`, `VITE_AI_GATEWAY_API_KEY`
+- **Food routes:** `POST /v1/food/analyze|refine|ask` — prompts/model on server; client compress + parse
+- **Generic:** `POST /v1/chat/completions` (e.g. onboarding micronutrients)
+- **Auth headers:** Bearer / `X-API-Key`; usage: `X-Device-Id`, `X-Usage-Kind`, optional `X-User-Token`
+
+### User data sync
+
+- `PUT/GET` nutrition profile via auth (incl. optional `micronutrientTargets`)
+- `POST /user/meals/sync`, `/user/weights/sync`, `/user/favorites/sync`, `/user/settings/sync` — LWW
+- **Meal photo blobs are never uploaded** (permanent); only URI stubs on the wire
+- Guests: Preferences only until login
+- Details: `docs/USER-DATA-SYNC.md`
 
 ### Legacy / unused AI path
 
-- `src/shared/api/client.ts` axios `VITE_API_URL` (default `http://localhost:3001`) — not the main AI Gateway path
-- Old in-repo Express mock `/analyze-food` — **removed**; do not restore from stale planning notes
+- `src/shared/api/client.ts` axios `VITE_API_URL` — not the main Gateway path
+- Old in-repo Express mock `/analyze-food` — **removed**
 
 ## Data Storage
 
-**Databases:**
-- None in ai-food or required by ai-app gateway (stateless proxy)
+**Databases (ai-app / Postgres via Prisma):**
+- `User` (incl. nutritionProfile, goalKg), `Meal`, `WeightEntry`, `Favorite`, usage/billing tables
 
-**Client-side persistence:**
-- Capacitor Preferences / localStorage via Zustand `persist` (diary, profile, settings, favorites)
-- Image selection store is ephemeral unless saved into a meal
+**Client-side cache:**
+- Capacitor Preferences via Zustand `persist` (diary, profile, settings, favorites, weight, auth)
+- After login these stores are merged with server (except settings / micronutrientTargets — still local)
 
 **File Storage:**
-- Meal images via Capacitor Filesystem where configured; AI uploads are base64 data URLs in chat messages (body limit on gateway: 10 MB)
+- Meal images: Capacitor Filesystem `meal-images/` — **device-local only, not synced**
+- AI analyze uploads: base64 data URLs in request body (not persisted as account photos)
 
 **Caching:**
-- TanStack Query for async AI calls
-- OpenRouter prompt cache via block-level `cache_control` in analyze messages (gateway Zod must allow nested message content fields)
+- TanStack Query for async AI / usage calls
 
 ## Authentication & Identity
 
-**User auth:** none in MVP (single device user)  
-**Gateway auth:** shared secret `VITE_AI_GATEWAY_API_KEY` ↔ `API_KEY` (tech debt: secret shipped in client bundle)
+**User auth:** Telegram bot login / demo → `X-User-Token`  
+**Gateway caller auth:** `VITE_AI_GATEWAY_API_KEY` ↔ `API_KEY` (tech debt: secret in client bundle)  
+**Device:** `X-Device-Id` for guest quota
 
 ## Monitoring & Observability
 
@@ -85,4 +88,4 @@ ai-food → VITE_AI_GATEWAY_* → ai-app /v1/* → OpenRouter
 
 ---
 
-*Integration analysis: 2026-08-03*
+*Integration analysis: 2026-08-13*

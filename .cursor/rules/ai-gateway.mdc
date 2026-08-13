@@ -14,6 +14,7 @@ AI Food does **not** contain its own AI backend. The gateway lives at:
 - **Food AI:** `POST /v1/food/analyze` (SSE), `/v1/food/refine`, `/v1/food/ask` (JSON) — prompts, `OPENROUTER_MODEL`, temperature `0`, and `messages[]` live in `apps/ai-app` (`src/food/*` + `routes/food.ts`)
 - **Client keeps:** image compress, XML/JSON response parse, UX; clean bodies only (no `model` / `messages` / `temperature` / system prompts)
 - **Generic proxy:** `POST /v1/chat/completions` remains for other callers (e.g. onboarding micronutrients)
+- **User-data sync (logged-in):** `POST /user/meals|weights|favorites|settings/sync` + nutrition profile (incl. micronutrientTargets) — see `apps/ai-food/docs/USER-DATA-SYNC.md`. **Meal photo blobs stay on device forever** (URI stubs only on the wire).
 - Full contract: `apps/ai-food/docs/AI-GATEWAY.md`
 
 ## Env (не смешивать)

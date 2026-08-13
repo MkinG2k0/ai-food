@@ -9,6 +9,8 @@ Frontend nutrition diary (`apps/ai-food`). AI backend is the sibling package:
 
 Do not assume an in-repo Express `/analyze-food` server.
 
+**User data sync:** after login, diary / nutrition profile (incl. micronutrientTargets) / weight / favorites / settings sync via gateway (`docs/USER-DATA-SYNC.md`). **Meal photo blobs never sync** — intentional permanent product decision (local Filesystem + URI stubs only).
+
 ## Env
 
 - Client: `apps/ai-food/.env` — only `VITE_*` (web / `pnpm dev`)

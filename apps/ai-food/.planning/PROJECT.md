@@ -2,11 +2,12 @@
 
 ## What This Is
 
-Web-first приложение для учёта питания: пользователь фотографирует еду, получает оценку КБЖУ через AI и сохраняет приёмы пищи в локальный дневник. Сейчас — brownfield single-package React (FSD) + Capacitor; AI через клиентский Gateway; цель ближайшего цикла — заменить mock на реальный OpenAI Vision и довести продукт до рабочего web-MVP, который можно показать пользователям.
+Web/PWA + Capacitor дневник питания (monorepo `apps/ai-food` + `apps/ai-app`): фото или текст → AI (gateway) → приём в дневник. После входа данные аккаунта синхронизируются между устройствами; **фото приёмов не синкаются** (только локальный Filesystem).
 
 ## Core Value
 
-Сфотографировал еду → получил правдоподобные данные о питании → сохранил в дневник — без лишних шагов и без потери данных при перезагрузке.
+Сфотографировал / описал еду → получил правдоподобные КБЖУ → сохранил в дневник — и после логина не потерял дневник/вес/избранное/профиль на другом устройстве (**фото нужно иметь локально / снимать заново**).
+
 
 ## Requirements
 
@@ -32,54 +33,41 @@ Web-first приложение для учёта питания: пользов�
 
 ### Out of Scope
 
-- Google OAuth / авторизация — отложено на следующий этап после MVP
-- Backend БД и серверный дневник — локальное хранение достаточно для web-MVP
-- Capacitor / нативная мобильная оболочка — web-first в этом цикле
-- Платежи и подписки — не нужны для MVP
-- On-device / self-hosted ML-модели — выбран OpenAI Vision API
-- Мультипользовательская синхронизация между устройствами — требует auth + backend
+- Sync **blob-фото** приёмов — **намеренно никогда** (только URI stubs / локальный Filesystem)
+- Medical-grade nutrition / on-device ML
+- Google OAuth (сейчас Telegram bot + demo)
+
 
 ## Context
 
-**Текущее состояние кодовой базы** (см. `.planning/codebase/`):
-- Фронтенд: React 18 + Vite + TypeScript, FSD, Zustand (UI state), TanStack Query (server state)
-- Отдельного backend в этом репо нет; AI через sibling gateway `d:\Project\Main\ai-app` (`openrouter-gateway`) — см. `docs/AI-GATEWAY.md`
-- Дневник: `useDiaryStore` в `entities/meal`, данные только в памяти (теряются при refresh)
-- Тесты: Vitest, co-located unit-тесты; покрытие неполное
-- Документация: утверждённый design spec (`docs/superpowers/specs/2026-06-24-ai-food-mvp-design.md`) описывает mock-MVP; часть пунктов (Capacitor, bottom nav, interceptors) ещё не реализована
+**Текущее состояние** (актуально 2026-08-13):
+- Monorepo: `apps/ai-food` (React FSD) + `apps/ai-app` (Express gateway, Prisma/Postgres)
+- Auth: Telegram bot / demo; квоты + годовая лицензия T-Bank
+- Sync после логина: профиль (+микро), дневник, вес, избранное, настройки — см. `docs/USER-DATA-SYNC.md`
+- **Не sync (навсегда):** фото приёмов
+- Локальный кэш: Capacitor Preferences; фото в Filesystem `meal-images/`
+- Канон продукта для агентов: `docs/AI-APP-FEATURES.md`
 
-**Известные пробелы** (из `.planning/codebase/CONCERNS.md`):
-- Spec drift между design doc и реализацией
-- Sonner toaster подключён, но не используется
-- React Query Devtools в prod bundle
-- Хардкод дневной нормы калорий (2000) и макросов
-- `clearDiary()` есть в store, но нет в UI
-- Нет ESLint/Prettier в репозитории
-
-**Направление пользователя:**
-- Сейчас внедрять AI (OpenAI Vision)
-- В целом довести до рабочего web-MVP
-- Auth (Google) — позже
+**Направление:**
+- Polish GDPR export/delete; не планировать blob-фото на сервер
 
 ## Constraints
 
-- **Tech stack**: Сохранить стек pnpm + React/FSD/Vite (single package) — не переписывать с нуля
-- **Security**: AI Gateway ключ сейчас в VITE_* на клиенте (техдолг: вынести с клиента)
-- **Persistence**: localStorage на клиенте; без БД в этом цикле
-- **Auth**: Без авторизации в MVP — один пользователь на устройство/браузер
-- **Architecture**: API-вызовы только через TanStack Query hooks; Zustand не хранит server data
-- **Compatibility**: Web-first; мобильный UX через responsive layout, не нативное приложение
+- **Tech stack**: pnpm + Turborepo; React/FSD/Vite (`ai-food`) + Express/Prisma (`ai-app`)
+- **Security**: `VITE_AI_GATEWAY_API_KEY` виден в бандле (техдолг); OpenRouter / T-Bank секреты только на сервере
+- **Persistence**: локальный кэш Preferences + Filesystem; server sync после логина для профиля/дневника/веса/избранного; **фото не на сервере**
+- **Auth**: Telegram / demo; гость — только устройство
+- **Architecture**: AI через gateway food routes; user-data через `/user/*/sync` + `X-User-Token`
+- **Compatibility**: Web + Capacitor Android
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| OpenAI Vision API для распознавания еды | Пользователь выбрал; быстрый путь к качественному vision без своей ML-инфраструктуры | — Pending |
-| Web-MVP (usable, showable) | Показать продукт пользователям без Capacitor/native shell | — Pending |
-| Локальное хранение дневника (localStorage) | Без auth и БД; достаточно для демо и первых пользователей | — Pending |
-| Auth отложен (Google OAuth позже) | Упростить MVP; один пользователь на устройство | — Pending |
-| AI-вызовы через backend proxy | Защита API key, единая точка для rate limiting и логирования | — Pending |
-| Пропустить Capacitor в этом цикле | Фокус на web-MVP и AI; native shell — следующий этап | — Pending |
+| User-data sync (meals/weight/favorites) + LWW | Restore после смены устройства без подписки | Done 2026-08-13 |
+| Фото только локально (URI stubs) | Нет blob storage / privacy / размер | Done (by design) |
+| Telegram auth + T-Bank license | Квоты AI; дневник бесплатно | Done |
+| AI через backend proxy | Ключ и промпты на сервере | Done |
 
 ## Evolution
 

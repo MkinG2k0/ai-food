@@ -80,10 +80,10 @@
 
 ## Cross-Cutting Concerns
 
-- Persistence: Capacitor Preferences (with localStorage migration)
-- Images: Capacitor Filesystem
+- Persistence: Capacitor Preferences (local cache) + server sync after login for diary / profile / weight / favorites (`docs/USER-DATA-SYNC.md`)
+- Images: Capacitor Filesystem — **not synced** between devices
 - PWA: `vite-plugin-pwa`
 
 ---
 
-*Architecture analysis: 2026-08-03 (single-package repo)*
+*Architecture analysis: 2026-08-13 (monorepo + user-data sync)*

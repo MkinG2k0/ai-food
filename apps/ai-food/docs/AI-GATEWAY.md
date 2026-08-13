@@ -1,6 +1,6 @@
 # AI Gateway (sibling backend)
 
-**Последнее обновление:** 2026-08-06
+**Последнее обновление:** 2026-08-13
 
 ## Что это
 
@@ -10,8 +10,8 @@
 |---|---|
 | Путь | `apps/ai-app` |
 | npm-пакет | `openrouter-gateway` |
-| Роль | HTTP-прокси к [OpenRouter](https://openrouter.ai) + **food domain endpoints** + optional Telegram auth, guest quota, billing |
-| Не делает | дневник / UI на клиенте; сжатие фото и парсинг XML/JSON ответа |
+| Роль | HTTP-прокси к [OpenRouter](https://openrouter.ai) + **food domain endpoints** + Telegram/demo auth, guest quota, billing, **user-data sync** (meals / weight / favorites) |
+| Не делает | UI дневника; сжатие фото и парсинг XML/JSON ответа; **хранилище blob-фото** (фото остаются на устройстве) |
 
 **Разделение ответственности:**
 
@@ -20,7 +20,8 @@
 | Промпты, сборка `messages[]` | Сжатие изображений перед upload |
 | `OPENROUTER_MODEL` + temperature `0` | Парсинг XML/JSON КБЖУ, feature-masking |
 | `POST /v1/food/analyze\|refine\|ask` | Auth/quota headers, UX ошибок |
-| Generic `POST /v1/chat/completions` (onboarding и пр.) | |
+| Generic `POST /v1/chat/completions` (onboarding и пр.) | Локальный кэш Preferences + Filesystem |
+| `POST /user/meals\|weights\|favorites/sync`, auth profile | Триггеры sync; **фото только локально** |
 
 ## Связка
 
@@ -147,7 +148,7 @@ apps/ai-app/
 ## См. также
 
 - [SUBSCRIPTION.md](./SUBSCRIPTION.md) — годовая лицензия / квоты
-- [USER-DATA-SYNC.md](./USER-DATA-SYNC.md) — inventory local vs server и design будущего diary/user-data sync (**не реализовано**; docs only)
+- [USER-DATA-SYNC.md](./USER-DATA-SYNC.md) — sync профиля(+микро) / дневника / веса / избранного / настроек; **фото приёмов намеренно никогда не на сервере**
 
 ## Команды (бэк)
 

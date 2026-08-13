@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260813-v27 — P1 weight + favorites sync
-last_updated: "2026-08-13T19:35:00.000Z"
+stopped_at: Completed P2 settings + micronutrientTargets sync; photos permanently out of scope
+last_updated: "2026-08-13T22:50:00.000Z"
 last_activity: 2026-08-13
-last_activity_desc: "P1 weight + favorites server/client sync"
+last_activity_desc: "P2 settings sync; photos never on server"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -21,10 +21,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-24)
+See: .planning/PROJECT.md (updated 2026-08-13)
 
-**Core value:** Сфотографировал еду → получил правдоподобные данные о питании → сохранил в дневник — без лишних шагов и без потери данных при перезагрузке.
-**Current focus:** Phase 2 — Photo Capture & Analysis Loading
+**Core value:** Сфотографировал / описал еду → КБЖУ → дневник; после логина данные аккаунта синкаются (**кроме фото**).
+**Current focus:** User-data sync shipped (P0+P1); photos remain device-local
 
 ## Current Position
 
@@ -183,6 +183,7 @@ None yet.
 | 260813-rut | Design server-side user data persistence (audit + USER-DATA-SYNC.md) | 2026-08-13 | 812728c, 5f4f6b2 | [260813-rut-design-server-side-user-data-persistence](./quick/260813-rut-design-server-side-user-data-persistence/) |
 | 260813-s5c | P0 diary meal sync (Prisma + /user/meals/sync + client triggers) | 2026-08-13 | 76f7ab1, e6a617a, 42721ab | [260813-s5c-implement-p0-diary-meal-sync-server-clie](./quick/260813-s5c-implement-p0-diary-meal-sync-server-clie/) |
 | 260813-v27 | P1 weight + favorites sync | 2026-08-13 | cf8f885, cf29a8e | [260813-v27-implement-p1-user-data-sync-weight-histo](./quick/260813-v27-implement-p1-user-data-sync-weight-histo/) |
+| 260813-p2s | P2 settings + micronutrientTargets sync; photos never on server | 2026-08-13 | (uncommitted) | — |
 
 ### Blockers/Concerns
 
