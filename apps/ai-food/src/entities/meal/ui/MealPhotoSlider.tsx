@@ -7,14 +7,20 @@ export interface MealPhotoSliderProps {
 }
 
 export function MealPhotoSlider({ imageUris, onOpen }: MealPhotoSliderProps) {
-  const srcs = useMealImages(imageUris);
+  const { srcs, settled } = useMealImages(imageUris);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
+  const [failed, setFailed] = useState<Set<number>>(() => new Set());
   const count = imageUris.length;
   const urisKey = imageUris.join('\0');
 
+  const visible = srcs
+    .map((src, i) => ({ src, i }))
+    .filter(({ src, i }) => Boolean(src) && !failed.has(i));
+
   useEffect(() => {
     setIndex(0);
+    setFailed(new Set());
     scrollerRef.current?.scrollTo({ left: 0 });
   }, [urisKey]);
 
@@ -22,32 +28,43 @@ export function MealPhotoSlider({ imageUris, onOpen }: MealPhotoSliderProps) {
     const el = scrollerRef.current;
     if (!el || el.clientWidth === 0) return;
     const next = Math.round(el.scrollLeft / el.clientWidth);
-    setIndex(Math.min(Math.max(next, 0), count - 1));
+    setIndex(Math.min(Math.max(next, 0), Math.max(visible.length - 1, 0)));
+  }
+
+  function markFailed(i: number) {
+    setFailed((prev) => {
+      if (prev.has(i)) return prev;
+      const next = new Set(prev);
+      next.add(i);
+      return next;
+    });
   }
 
   if (count === 0) return null;
 
-  const readySrcs = srcs.filter((s): s is string => Boolean(s));
-  if (readySrcs.length === 0) {
-    return (
-      <div className="w-full aspect-[4/3] rounded-xl bg-muted animate-pulse" />
-    );
+  if (visible.length === 0) {
+    if (!settled) {
+      return (
+        <div className="w-full aspect-[4/3] rounded-xl bg-muted animate-pulse" />
+      );
+    }
+    return null;
   }
 
-  if (count === 1) {
-    const src = srcs[0];
-    if (!src) return null;
+  if (visible.length === 1) {
+    const { src, i } = visible[0];
     return (
       <button
         type="button"
         className="w-full rounded-xl overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        onClick={() => onOpen?.(0)}
+        onClick={() => onOpen?.(i)}
         aria-label="Открыть фото"
       >
         <img
-          src={src}
+          src={src!}
           alt=""
           className="w-full aspect-[4/3] object-cover"
+          onError={() => markFailed(i)}
         />
       </button>
     );
@@ -61,35 +78,28 @@ export function MealPhotoSlider({ imageUris, onOpen }: MealPhotoSliderProps) {
         onScroll={handleScroll}
         role="region"
         aria-roledescription="carousel"
-        aria-label={`Фото приёма, ${index + 1} из ${count}`}
+        aria-label={`Фото приёма, ${index + 1} из ${visible.length}`}
       >
-        {srcs.map((src, i) =>
-          src ? (
-            <button
-              key={imageUris[i] ?? i}
-              type="button"
-              className="w-full shrink-0 snap-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-              onClick={() => onOpen?.(i)}
-              aria-label={`Открыть фото ${i + 1} из ${count}`}
-            >
-              <img
-                src={src}
-                alt=""
-                className="w-full aspect-[4/3] object-cover"
-                draggable={false}
-              />
-            </button>
-          ) : (
-            <div
-              key={imageUris[i] ?? i}
-              className="w-full shrink-0 snap-center aspect-[4/3] bg-muted animate-pulse"
-              aria-hidden
+        {visible.map(({ src, i }) => (
+          <button
+            key={imageUris[i] ?? i}
+            type="button"
+            className="w-full shrink-0 snap-center overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            onClick={() => onOpen?.(i)}
+            aria-label={`Открыть фото ${i + 1} из ${count}`}
+          >
+            <img
+              src={src!}
+              alt=""
+              className="w-full aspect-[4/3] object-cover"
+              draggable={false}
+              onError={() => markFailed(i)}
             />
-          ),
-        )}
+          </button>
+        ))}
       </div>
       <div className="flex items-center justify-center gap-1.5" aria-hidden>
-        {Array.from({ length: count }, (_, i) => (
+        {Array.from({ length: visible.length }, (_, i) => (
           <span
             key={i}
             className={

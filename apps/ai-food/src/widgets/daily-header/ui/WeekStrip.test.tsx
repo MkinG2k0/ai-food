@@ -12,12 +12,14 @@ const fixtureMeal: Meal = {
   status: 'ready',
   items: [
     {
+      id: 'oats',
       name: 'oats',
       grams: 100,
       calories: 500,
       protein: 20,
       fat: 10,
       carbs: 60,
+      fiber: 0,
     },
   ],
   totalCalories: 500,

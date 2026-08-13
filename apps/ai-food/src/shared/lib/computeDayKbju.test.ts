@@ -11,12 +11,14 @@ function meal(
     timestamp: day.toISOString(),
     items: [
       {
+        id: 'item',
         name: 'item',
         grams: 100,
         calories: 200,
         protein: 20,
         fat: 10,
         carbs: 15,
+        fiber: 0,
       },
     ],
     totalCalories: 200,
@@ -50,12 +52,14 @@ describe('computeDayKbju', () => {
         totalCalories: 2500,
         items: [
           {
+            id: 'big',
             name: 'big',
             grams: 500,
             calories: 2500,
             protein: 200,
             fat: 100,
             carbs: 300,
+            fiber: 0,
           },
         ],
       }),

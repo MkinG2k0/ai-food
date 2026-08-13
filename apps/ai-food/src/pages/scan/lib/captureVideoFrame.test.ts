@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { captureVideoFrame } from './captureVideoFrame';
+import { captureVideoFrame, snapshotVideoFrame } from './captureVideoFrame';
 
 function mockVideo(width: number, height: number): HTMLVideoElement {
   return {
@@ -74,5 +74,25 @@ describe('captureVideoFrame', () => {
     expect(file).toBeInstanceOf(File);
     expect(file?.type).toBe('image/jpeg');
     expect(drawImage).toHaveBeenCalledWith(pausedVideo, 0, 0, 640, 480);
+  });
+
+  it('snapshotVideoFrame copies pixels without waiting on toBlob', () => {
+    const drawImage = vi.fn();
+    const toBlob = vi.fn();
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ({ drawImage }),
+      toBlob,
+    };
+    vi.spyOn(document, 'createElement').mockReturnValue(
+      canvas as unknown as HTMLCanvasElement,
+    );
+
+    const snapped = snapshotVideoFrame(mockVideo(640, 480), { maxSide: 1024 });
+
+    expect(snapped).toBe(canvas);
+    expect(drawImage).toHaveBeenCalledTimes(1);
+    expect(toBlob).not.toHaveBeenCalled();
   });
 });

@@ -62,7 +62,7 @@ describe('clearLocalUserDataOnSignOut / signOut', () => {
           id: 'tg-1',
           name: 'A',
           username: 'a',
-          photo_url: null,
+          photo_url: '',
         },
         'jwt',
         { dataConsentAt: '2026-01-01', dataConsentVersion: '1' },

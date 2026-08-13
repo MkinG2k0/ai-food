@@ -20,7 +20,7 @@ import {
 import { useSaveMeal } from '@/features/save-meal';
 import { TextareaWithVoice, Button, SubpageShell } from '@/shared/ui';
 import { AI_IMAGE_MAX_SIDE, cn } from '@/shared/lib';
-import { captureVideoFrame } from '../lib/captureVideoFrame';
+import { jpegFileFromCanvas, snapshotVideoFrame } from '../lib/captureVideoFrame';
 import { createCaptureLock } from '../lib/createCaptureLock';
 import { drawVideoContain } from '../lib/drawVideoContain';
 import { isLivePreviewPainting } from '../lib/isLivePreviewPainting';
@@ -314,17 +314,40 @@ export function ScanPage() {
       }
       video.pause();
       setCapturing(true);
-      const file = await captureVideoFrame(video, {
+      const canvas = snapshotVideoFrame(video, {
         maxSide: AI_IMAGE_MAX_SIDE,
       });
-      if (!file) {
+      if (!canvas) {
         captureLockRef.current.unlock();
         setCapturing(false);
         toast.error('Не удалось сделать снимок');
         void video.play().catch(() => undefined);
         return;
       }
-      acceptFoodFile(file);
+
+      if (requireDescription) {
+        const file = await jpegFileFromCanvas(canvas);
+        if (!file) {
+          captureLockRef.current.unlock();
+          setCapturing(false);
+          toast.error('Не удалось сделать снимок');
+          void video.play().catch(() => undefined);
+          return;
+        }
+        acceptFoodFile(file);
+        return;
+      }
+
+      const submit = submitFood;
+      void jpegFileFromCanvas(canvas).then((file) => {
+        if (!file) {
+          toast.error('Не удалось сделать снимок');
+          return;
+        }
+        void submit({ image: file });
+      });
+      stopStream();
+      navigate('/');
     });
   };
 

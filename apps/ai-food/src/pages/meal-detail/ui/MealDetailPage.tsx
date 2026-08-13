@@ -34,7 +34,7 @@ export function MealDetailPage() {
   const meals = useDiaryStore((s) => s.meals);
   const meal = meals.find((m) => m.id === id);
   const imageUris = meal ? resolveMealImageUris(meal) : [];
-  const imageSrcs = useMealImages(imageUris);
+  const { srcs: imageSrcs } = useMealImages(imageUris);
   const featureComposition = useSettingsStore((s) => s.featureComposition);
   const isFavorite = useFavoritesStore((s) =>
     meal ? s.isFavorite(meal.id) : false,
