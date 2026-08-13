@@ -9,6 +9,13 @@ vi.mock('@capacitor/preferences', () => ({
   },
 }));
 
+vi.mock('@capacitor/filesystem', () => ({
+  Directory: { Data: 'DATA' },
+  Filesystem: {
+    rmdir: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import { useAuthStore } from './useAuthStore';
 import { isAuthMockEnabled, signOut } from './mockTelegramAuth';
 

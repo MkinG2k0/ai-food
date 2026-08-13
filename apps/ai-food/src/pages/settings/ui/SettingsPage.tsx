@@ -134,6 +134,7 @@ export function SettingsPage() {
   const handleSignOut = () => {
     signOut();
     toast.success('Вы вышли');
+    navigate('/onboarding', { replace: true });
   };
 
   const handleRedoConfirm = () => {

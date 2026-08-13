@@ -1,3 +1,4 @@
+import { clearLocalUserDataOnSignOut } from './clearLocalUserDataOnSignOut';
 import { useAuthStore } from './useAuthStore';
 
 /**
@@ -8,7 +9,11 @@ export function isAuthMockEnabled(): boolean {
   return import.meta.env.VITE_AUTH_MOCK !== 'false';
 }
 
-/** Auth.js-shaped helper: clear local session. */
+/**
+ * Clear all local user data (except device id), then drop auth session.
+ * Callers should navigate to `/onboarding`.
+ */
 export function signOut(): void {
+  clearLocalUserDataOnSignOut();
   useAuthStore.getState().signOut();
 }

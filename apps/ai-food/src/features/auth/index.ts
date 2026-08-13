@@ -23,12 +23,14 @@ export {
   fetchUsage,
   getCachedUsage,
   hydrateUsageCache,
+  clearUsageCache,
   createDefaultGuestUsage,
   getEffectiveFreeLimit,
   GUEST_FREE_USAGE_LIMIT,
   AUTH_LOGIN_GENERATION_BONUS,
   type UsageSnapshot,
 } from './api/fetchUsage';
+export { clearLocalUserDataOnSignOut } from './model/clearLocalUserDataOnSignOut';
 export { useUsage, usageQueryKey } from './model/useUsage';
 export { mapTelegramUserToSession } from './api/signInWithTelegram';
 export { signInWithTelegramBot } from './api/signInWithTelegramBot';

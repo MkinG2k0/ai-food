@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260813-s5c — P0 diary meal sync
-last_updated: "2026-08-13T19:05:00.000Z"
+stopped_at: Completed quick task 260813-v27 — P1 weight + favorites sync
+last_updated: "2026-08-13T19:35:00.000Z"
 last_activity: 2026-08-13
-last_activity_desc: "P0 diary meal sync server+client (leave/add/delete/login triggers)"
+last_activity_desc: "P1 weight + favorites server/client sync"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-24)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-08-13 - Completed quick task 260813-s5c: P0 diary meal sync
+Last activity: 2026-08-13 - Completed quick task 260813-v27: P1 weight + favorites sync
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -182,6 +182,7 @@ None yet.
 | 260813-1bg | Calendar KBJU rings + month swipe expand | 2026-08-13 | faec5f2, 9b58566, 81500db | [260813-1bg-calendar-kbju-rings-month-swipe](./quick/260813-1bg-calendar-kbju-rings-month-swipe/) |
 | 260813-rut | Design server-side user data persistence (audit + USER-DATA-SYNC.md) | 2026-08-13 | 812728c, 5f4f6b2 | [260813-rut-design-server-side-user-data-persistence](./quick/260813-rut-design-server-side-user-data-persistence/) |
 | 260813-s5c | P0 diary meal sync (Prisma + /user/meals/sync + client triggers) | 2026-08-13 | 76f7ab1, e6a617a, 42721ab | [260813-s5c-implement-p0-diary-meal-sync-server-clie](./quick/260813-s5c-implement-p0-diary-meal-sync-server-clie/) |
+| 260813-v27 | P1 weight + favorites sync | 2026-08-13 | cf8f885, cf29a8e | [260813-v27-implement-p1-user-data-sync-weight-histo](./quick/260813-v27-implement-p1-user-data-sync-weight-histo/) |
 
 ### Blockers/Concerns
 
@@ -190,7 +191,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-13T19:05:00Z
-Stopped at: Completed quick task 260813-s5c
+Last session: 2026-08-13T19:35:00Z
+Stopped at: Completed quick task 260813-v27
 Resume file: None
-Next: Apply Prisma meal migration on deployed DB; smoke demo login cross-device; or P1 weight/favorites sync
+Next: Apply weight/favorite Prisma migration; smoke 2-account restore; or P2 settings sync

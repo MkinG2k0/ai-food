@@ -161,6 +161,18 @@ async function persistUsageCache(snap: UsageSnapshot): Promise<void> {
   }
 }
 
+/** Drop in-memory + persisted usage snapshot (e.g. on sign-out). */
+export function clearUsageCache(): void {
+  memoryCache = null;
+  hydratePromise = null;
+  try {
+    localStorage.removeItem(USAGE_CACHE_KEY);
+  } catch {
+    // ignore
+  }
+  void capacitorStorage.removeItem(USAGE_CACHE_KEY);
+}
+
 export async function fetchUsage(): Promise<UsageSnapshot> {
   await hydrateUsageCache();
 

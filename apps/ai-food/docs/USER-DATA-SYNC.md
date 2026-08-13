@@ -2,7 +2,7 @@
 
 **Последнее обновление:** 2026-08-13
 
-P0 diary meal sync (**Phase B**) реализован: Prisma `Meal` + `POST /user/meals/sync` в `apps/ai-app`, клиентский feature `features/diary-sync` в `apps/ai-food`. Этот документ — контракт + inventory; детали триггеров — § Sync triggers.
+P0 diary + **P1 weight/favorites** sync реализованы (`POST /user/meals|weights|favorites/sync`). Документ — контракт + inventory.
 
 **Monorepo:** design в `apps/ai-food/docs`; реализация — `apps/ai-app` (Prisma + Express) + клиентские sync hooks в `apps/ai-food`.
 
@@ -28,7 +28,20 @@ Auth-паттерн для user-data роутов: `X-User-Token` (как `PUT /
 - Soft-delete tombstones (`deletedAt` + тот же clock)
 - Sync **не** требует подписки
 - Photo blobs **не** загружаются (только URI stubs)
-- Favorites / weight / settings / `micronutrientTargets` — **вне scope** P0
+- Favorites / weight / settings / `micronutrientTargets` — **вне scope** P0 (weight+favorites → P1 ниже)
+
+---
+
+## Sync triggers (P1 weight + favorites — locked)
+
+| Trigger | Behavior |
+|---------|----------|
+| **Weight add/update / goalKg** | Immediate full `POST /user/weights/sync` when token present |
+| **Favorite add/remove** | Immediate upsert/delete `POST /user/favorites/sync` |
+| **Login / auth hydrate** | Full weight + favorites sync alongside diary |
+| **Guests** | Local Preferences only — no weight/favorites API |
+
+Endpoints: `POST /user/weights/sync` (body includes `goalKg`), `POST /user/favorites/sync`. LWW `clientUpdatedAt`, soft-delete, image stubs, no subscription gate.
 
 ---
 
@@ -39,8 +52,8 @@ Auth-паттерн для user-data роутов: `X-User-Token` (как `PUT /
 | Store / key | Данные |
 |-------------|--------|
 | `ai-food-diary` | `meals[]` — КБЖУ, items, portions, grams, imageUri(s), micronutrients, healthiness, status, timestamps; + `pendingDeletes` для tombstone clocks |
-| `ai-food-favorites` | `favorites[]` (max 50, включая image refs) |
-| `ai-food-weight` | weight `entries[]` + `goalKg` |
+| `ai-food-favorites` | `favorites[]` + `pendingDeletes` (max 50; image URI stubs) |
+| `ai-food-weight` | weight `entries[]` + `goalKg` (+ `clientUpdatedAt` on entries) |
 | `ai-food-settings` | `customInstructions`, feature flags, `aiModel`, `calendarRings` |
 | `ai-food-profile` | `profile`, `targets` (DailyTargets), **`micronutrientTargets`** — часть синкается (см. ниже) |
 | `ai-food-auth` | session token локально (на сервере — `User`) |
@@ -53,14 +66,16 @@ Auth-паттерн для user-data роутов: `X-User-Token` (как `PUT /
 
 | Model | Релевантные поля |
 |-------|------------------|
-| `User` | `telegramId`, names, `photoUrl`, consent, **`nutritionProfile` Json**, subscription* |
+| `User` | `telegramId`, names, `photoUrl`, consent, **`nutritionProfile` Json**, **`goalKg`**, subscription* |
 | `Meal` | client-cuid id, items Json, KBJU fields, `clientUpdatedAt`, soft-delete `deletedAt` |
+| `WeightEntry` | id, date (YYYY-MM-DD), kg, `clientUpdatedAt`, soft-delete |
+| `Favorite` | id, sourceMealId, name, items Json, macros, image stubs, `clientUpdatedAt`, soft-delete |
 | `Device` | `deviceId`, optional `userId` |
 | `UsageEvent` | kind + device/user |
 | `Payment` / `PromoCode` / `AppSettings` | billing |
 | `GatewayRequest` | observability |
 
-**Нет** (ещё) моделей `Favorite`, `WeightEntry`, `UserSettings`.
+**Нет** (ещё) модели `UserSettings`.
 
 ### Already synced
 
@@ -69,6 +84,8 @@ Auth-паттерн для user-data роутов: `X-User-Token` (как `PUT /
 | Auth → `User` | Telegram / demo login → JWT |
 | Nutrition profile | `PUT /auth/profile` + `GET /auth/me` (`X-User-Token`); payload `{ profile, targets }` |
 | Diary meals (P0) | `POST /user/meals/sync` (`X-User-Token`); LWW + soft-delete |
+| Weight + goalKg (P1) | `POST /user/weights/sync` |
+| Favorites (P1) | `POST /user/favorites/sync` |
 | Usage / quota + billing | `/usage`, `/billing/*` |
 | Guest → user device linking | при логине |
 
@@ -78,8 +95,8 @@ Auth-паттерн для user-data роутов: `X-User-Token` (как `PUT /
 
 | Priority | Gap | Почему |
 |----------|-----|--------|
-| **P0** | Diary `meals[]` | **Done** — cross-device restore после login |
-| **P1** | Weight history + favorites | Статы / быстрый add; меньше объём, чем diary |
+| **P0** | Diary `meals[]` | **Done** |
+| **P1** | Weight history + favorites | **Done** — bulk sync + client features |
 | **P2** | Settings (`customInstructions`, UI prefs, model override) | Удобство; не блокирует restore дневника |
 | **P3** | Meal photos (blob upload) | Размер, consent, storage; до P3 — URL/null stubs |
 | **P2-adjacent** | `useProfileStore.micronutrientTargets` (`MicronutrientEstimate[] \| null`) | **Подтверждено:** живёт только в persist `ai-food-profile`. `NutritionProfilePayload` / `User.nutritionProfile` = `{ profile: UserProfile, targets: DailyTargets }` (ккал/БЖУ/клетчатка) — **без** `micronutrientTargets`. `syncNutritionProfileToServer` шлёт только `{ profile, targets }`. После login на новом устройстве нормы микронутриентов для Stats chart не восстанавливаются с сервера (нужен re-onboarding AI или будущий sync). |
@@ -177,17 +194,17 @@ Multi-device: последний записавший meal целиком поб
 |-------|--------|-------------------|
 | **A** | Profile | Done: `{ profile, targets }` ↔ `User.nutritionProfile` via `PUT /auth/profile` |
 | **B** | Diary P0 | Done: Meals bulk sync + Prisma `Meal`; cross-device diary restore |
-| **C** | Weight + favorites | History и избранное на сервере |
+| **C** | Weight + favorites | **Done:** `POST /user/weights/sync` + `/user/favorites/sync` + client features |
 | **D** | Settings | `customInstructions` / UI prefs (и опционально `aiModel`) |
 | **E** | Images P3 | Blob storage + consent; замена URI stubs |
 
 ---
 
-## 7. Out of scope for P0 (still)
+## 7. Remaining out of scope
 
-- Favorites / weight / settings / `micronutrientTargets` sync
-- Meal photo blob upload
+- Settings / `micronutrientTargets` sync (P2)
+- Meal photo blob upload (P3)
 - Per-field live sync while editing meal UI
-- Subscription gate on diary sync
+- Subscription gate on user-data sync
 
 См. также: [AI-GATEWAY.md](./AI-GATEWAY.md), [SUBSCRIPTION.md](./SUBSCRIPTION.md).
