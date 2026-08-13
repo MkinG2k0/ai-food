@@ -21,7 +21,7 @@ Auth-паттерн для будущих user-data роутов: `X-User-Token`
 | `ai-food-diary` | `meals[]` — КБЖУ, items, portions, grams, imageUri(s), micronutrients, healthiness, status, timestamps |
 | `ai-food-favorites` | `favorites[]` (max 50, включая image refs) |
 | `ai-food-weight` | weight `entries[]` + `goalKg` |
-| `ai-food-settings` | `customInstructions`, feature flags, `aiModel`, `calendarRingMode` |
+| `ai-food-settings` | `customInstructions`, feature flags, `aiModel`, `calendarRings` |
 | `ai-food-profile` | `profile`, `targets` (DailyTargets), **`micronutrientTargets`** — часть синкается (см. ниже) |
 | `ai-food-auth` | session token локально (на сервере — `User`) |
 | `ai-food-model-test` | UI state model-test (dev) |
