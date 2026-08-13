@@ -152,10 +152,13 @@ export function useSaveMeal() {
       });
       if (signal.aborted) return;
       applyAnalyzeResultToMeal(mealId, response.result, itemId);
+      // Completes add flow on Home (no meal-UI leave) — push ready meal (D-02).
+      queueDiarySync({ mode: 'upsert', mealIds: [mealId] });
       void queryClient.invalidateQueries({ queryKey: usageQueryKey });
     } catch (error) {
       if (signal.aborted) return;
       updateMeal(mealId, analyzeErrorPatch(error));
+      queueDiarySync({ mode: 'upsert', mealIds: [mealId] });
     } finally {
       endMealAnalyze(mealId);
     }

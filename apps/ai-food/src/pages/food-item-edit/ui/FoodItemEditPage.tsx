@@ -17,6 +17,7 @@ import {
   useConfirmDeleteMealItem,
   DeleteItemConfirmSheet,
 } from '@/features/edit-meal';
+import { useSyncMealOnLeave } from '@/features/diary-sync';
 import { Button, SubpageShell } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 
@@ -85,6 +86,7 @@ function densityFromItem(item: {
 export function FoodItemEditPage() {
   const navigate = useNavigate();
   const { mealId, itemId } = useParams<{ mealId: string; itemId: string }>();
+  useSyncMealOnLeave(mealId ?? '');
   const meals = useDiaryStore((s) => s.meals);
   const updateMealItem = useDiaryStore((s) => s.updateMealItem);
   const meal = meals.find((m) => m.id === mealId);

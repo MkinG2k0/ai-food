@@ -24,10 +24,12 @@ import { useFavoritesStore } from '@/features/favorites';
 import { RefineMealSheet, useRefineMeal } from '@/features/refine-meal';
 import { handleQuotaExceeded } from '@/features/billing';
 import { useSettingsStore } from '@/features/settings';
+import { useSyncMealOnLeave } from '@/features/diary-sync';
 import { Button, ImageLightbox, SubpageShell } from '@/shared/ui';
 export function MealDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  useSyncMealOnLeave(id ?? '');
   const meals = useDiaryStore((s) => s.meals);
   const meal = meals.find((m) => m.id === id);
   const imageUris = meal ? resolveMealImageUris(meal) : [];

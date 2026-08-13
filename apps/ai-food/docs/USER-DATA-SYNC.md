@@ -2,13 +2,33 @@
 
 **Последнее обновление:** 2026-08-13
 
-Design-only: inventory local vs server, gaps, P0 diary sketch, conflict strategy, rollout. **Реализации sync API / Prisma Meal в этом документе нет** — только контракт для будущего quick/phase.
+P0 diary meal sync (**Phase B**) реализован: Prisma `Meal` + `POST /user/meals/sync` в `apps/ai-app`, клиентский feature `features/diary-sync` в `apps/ai-food`. Этот документ — контракт + inventory; детали триггеров — § Sync triggers.
 
-**Monorepo:** design живёт в `apps/ai-food/docs`; реализация позже — `apps/ai-app` (Prisma + Express) + клиентские sync hooks в `apps/ai-food`.
+**Monorepo:** design в `apps/ai-food/docs`; реализация — `apps/ai-app` (Prisma + Express) + клиентские sync hooks в `apps/ai-food`.
 
 Мотивация: restore дневника/веса/избранного после Telegram login на другом устройстве. Дневник, ручной ввод, штрихкод, статистика, онбординг, настройки — **бесплатно всегда** ([SUBSCRIPTION.md](./SUBSCRIPTION.md)); sync **не** гейтить подпиской.
 
-Auth-паттерн для будущих user-data роутов: `X-User-Token` (как `PUT /auth/profile` / `putNutritionProfile`).
+Auth-паттерн для user-data роутов: `X-User-Token` (как `PUT /auth/profile` / `putNutritionProfile`).
+
+---
+
+## Sync triggers (P0 diary — locked)
+
+| Trigger | Behavior |
+|---------|----------|
+| **Leave meal UI** | Upsert текущего meal при уходе с `/meal/:id` или `/meal/:mealId/item/:itemId` — **не** на каждый keystroke/field edit |
+| **Add meal** | Immediate upsert после `addMeal` (scan / manual / barcode / favorite quick-add); после завершения AI analyze/error на Home — ещё один upsert (финальный статус без захода в meal UI) |
+| **Confirm delete** | Immediate soft-delete sync после подтверждения удаления |
+| **Login / auth hydrate** | Full sync после успешного login и один раз при hydrate, если есть `X-User-Token` |
+| **Guests** | Только Preferences / `ai-food-diary` — **нет** вызовов `/user/meals/sync` без токена |
+
+Дополнительно (контракт):
+
+- LWW по `clientUpdatedAt` на уровне целого meal
+- Soft-delete tombstones (`deletedAt` + тот же clock)
+- Sync **не** требует подписки
+- Photo blobs **не** загружаются (только URI stubs)
+- Favorites / weight / settings / `micronutrientTargets` — **вне scope** P0
 
 ---
 
@@ -18,7 +38,7 @@ Auth-паттерн для будущих user-data роутов: `X-User-Token`
 
 | Store / key | Данные |
 |-------------|--------|
-| `ai-food-diary` | `meals[]` — КБЖУ, items, portions, grams, imageUri(s), micronutrients, healthiness, status, timestamps |
+| `ai-food-diary` | `meals[]` — КБЖУ, items, portions, grams, imageUri(s), micronutrients, healthiness, status, timestamps; + `pendingDeletes` для tombstone clocks |
 | `ai-food-favorites` | `favorites[]` (max 50, включая image refs) |
 | `ai-food-weight` | weight `entries[]` + `goalKg` |
 | `ai-food-settings` | `customInstructions`, feature flags, `aiModel`, `calendarRings` |
@@ -34,12 +54,13 @@ Auth-паттерн для будущих user-data роутов: `X-User-Token`
 | Model | Релевантные поля |
 |-------|------------------|
 | `User` | `telegramId`, names, `photoUrl`, consent, **`nutritionProfile` Json**, subscription* |
+| `Meal` | client-cuid id, items Json, KBJU fields, `clientUpdatedAt`, soft-delete `deletedAt` |
 | `Device` | `deviceId`, optional `userId` |
 | `UsageEvent` | kind + device/user |
 | `Payment` / `PromoCode` / `AppSettings` | billing |
 | `GatewayRequest` | observability |
 
-**Нет** моделей `Meal`, `Favorite`, `WeightEntry`, `UserSettings` — на момент аудита.
+**Нет** (ещё) моделей `Favorite`, `WeightEntry`, `UserSettings`.
 
 ### Already synced
 
@@ -47,6 +68,7 @@ Auth-паттерн для будущих user-data роутов: `X-User-Token`
 |--------|-----|
 | Auth → `User` | Telegram / demo login → JWT |
 | Nutrition profile | `PUT /auth/profile` + `GET /auth/me` (`X-User-Token`); payload `{ profile, targets }` |
+| Diary meals (P0) | `POST /user/meals/sync` (`X-User-Token`); LWW + soft-delete |
 | Usage / quota + billing | `/usage`, `/billing/*` |
 | Guest → user device linking | при логине |
 
@@ -56,7 +78,7 @@ Auth-паттерн для будущих user-data роутов: `X-User-Token`
 
 | Priority | Gap | Почему |
 |----------|-----|--------|
-| **P0** | Diary `meals[]` | Ядро продукта; cross-device restore после login |
+| **P0** | Diary `meals[]` | **Done** — cross-device restore после login |
 | **P1** | Weight history + favorites | Статы / быстрый add; меньше объём, чем diary |
 | **P2** | Settings (`customInstructions`, UI prefs, model override) | Удобство; не блокирует restore дневника |
 | **P3** | Meal photos (blob upload) | Размер, consent, storage; до P3 — URL/null stubs |
@@ -66,9 +88,9 @@ Sync diary/manual/barcode/stats/settings **не** должен требоват�
 
 ---
 
-## 3. P0 diary sync sketch
+## 3. P0 diary sync
 
-### Proposed Prisma `Meal` (design only)
+### Prisma `Meal`
 
 | Prisma field | Client `Meal` / notes |
 |--------------|------------------------|
@@ -99,14 +121,14 @@ Sync diary/manual/barcode/stats/settings **не** должен требоват�
 
 `@@index([userId, timestamp])`, `@@index([userId, clientUpdatedAt])`.
 
-### API sketch (gateway, `X-User-Token`)
+### API (gateway, `X-User-Token`)
 
-**Primary recommendation: bulk sync** `POST /user/meals/sync`
+**Bulk sync** `POST /user/meals/sync`
 
 | | |
 |---|---|
 | Auth | `X-User-Token` (обязателен; **нет** anonymous diary sync) |
-| Body (sketch) | `{ since?: ISO, upserts: MealPayload[], deletes: { id, clientUpdatedAt }[] }` |
+| Body | `{ since?: ISO, upserts: MealPayload[], deletes: { id, clientUpdatedAt }[] }` |
 | Response | `{ meals: MealPayload[], tombstones?: id[] }` — серверный snapshot / delta после merge |
 | Ownership | все writes scoped к `userId` из токена; reject чужие id |
 
@@ -116,20 +138,20 @@ Sync diary/manual/barcode/stats/settings **не** должен требоват�
 
 Images в P0: передавать `imageUri`/`imageUris` как optional string/null stubs (локальные пути на другом девайсе бесполезны); полный upload — Phase E / P3 + explicit consent.
 
-Threat mitigations (design): user scoping via token; monotonic `clientUpdatedAt`; no guest diary sync.
+Threat mitigations: user scoping via token; monotonic `clientUpdatedAt`; no guest diary sync.
 
 ---
 
 ## 4. Conflict strategy
 
-**Рекомендация по умолчанию: LWW** по `clientUpdatedAt` (fallback: `updatedAt`) на уровне целого meal-документа.
+**LWW** по `clientUpdatedAt` (fallback: `updatedAt`) на уровне целого meal-документа.
 
 | | |
 |---|---|
 | Почему LWW | Проще offline-first; совпадает с Zustand persist; меньше edge cases на gateway |
 | Soft-delete | tombstone с `deletedAt` + `clientUpdatedAt`; более новый tombstone побеждает recreate и наоборот |
 | Когда merge имел бы смысл | concurrent edit **разных** `items[]` на двух устройствах — редко; field-merge дороже и ошибочнее для состава блюда |
-| Server | сравнивает incoming `clientUpdatedAt` с stored; older write → 409 или silent ignore + return winner |
+| Server | сравнивает incoming `clientUpdatedAt` с stored; older write → silent ignore + return winner |
 
 Multi-device: последний записавший meal целиком побеждает; UI не пытается мержить ингредиенты посередине.
 
@@ -154,18 +176,18 @@ Multi-device: последний записавший meal целиком поб
 | Phase | Scope | Outcome (one line) |
 |-------|--------|-------------------|
 | **A** | Profile | Done: `{ profile, targets }` ↔ `User.nutritionProfile` via `PUT /auth/profile` |
-| **B** | Diary P0 | Meals CRUD/bulk sync + Prisma `Meal`; cross-device diary restore |
+| **B** | Diary P0 | Done: Meals bulk sync + Prisma `Meal`; cross-device diary restore |
 | **C** | Weight + favorites | History и избранное на сервере |
 | **D** | Settings | `customInstructions` / UI prefs (и опционально `aiModel`) |
 | **E** | Images P3 | Blob storage + consent; замена URI stubs |
 
 ---
 
-## 7. Out of scope for this quick task
+## 7. Out of scope for P0 (still)
 
-- Нет Prisma migrations / модели `Meal` в `apps/ai-app`
-- Нет Express routes `/user/meals*`
-- Нет client sync hooks / Zustand ↔ server adapters
-- Implementation — отдельный future quick/phase после approve этого design
+- Favorites / weight / settings / `micronutrientTargets` sync
+- Meal photo blob upload
+- Per-field live sync while editing meal UI
+- Subscription gate on diary sync
 
 См. также: [AI-GATEWAY.md](./AI-GATEWAY.md), [SUBSCRIPTION.md](./SUBSCRIPTION.md).
