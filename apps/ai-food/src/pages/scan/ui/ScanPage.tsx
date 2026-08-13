@@ -290,6 +290,7 @@ export function ScanPage() {
     if (mode === 'barcode') {
       const video = videoRef.current;
       if (!video) return;
+      video.pause();
       setCapturing(true);
       try {
         const code = nativeMlKit
@@ -299,6 +300,7 @@ export function ScanPage() {
         else toast.message('Штрихкод не найден — наведите ближе');
       } finally {
         setCapturing(false);
+        void video.play().catch(() => undefined);
       }
       return;
     }
