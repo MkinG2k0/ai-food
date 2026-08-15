@@ -73,6 +73,17 @@ describe('useDiaryStore', () => {
     endMealAnalyze('live');
   });
 
+  it('recoverStaleAnalyzingMeals keeps analyzing when a gateway job id is present', () => {
+    useDiaryStore.setState({
+      meals: [
+        { ...mockMeal, id: 'jobbed', status: 'analyzing', analyzeJobId: 'job-1' },
+      ],
+    });
+    expect(recoverStaleAnalyzingMeals()).toBe(0);
+    expect(useDiaryStore.getState().meals[0]?.status).toBe('analyzing');
+    expect(useDiaryStore.getState().meals[0]?.analyzeJobId).toBe('job-1');
+  });
+
   it('starts with empty meals', () => {
     const { result } = renderHook(() => useDiaryStore());
     expect(result.current.meals).toHaveLength(0);

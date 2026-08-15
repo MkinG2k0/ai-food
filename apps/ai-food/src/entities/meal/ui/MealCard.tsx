@@ -9,6 +9,10 @@ import { useAuthStore } from '@/features/auth';
 import { useMealImage } from '../model/useMealImage';
 import { resolveMealImageUris } from '../model/resolveMealImageUris';
 import { mealDisplayName } from '../model/mealDisplayName';
+import {
+  mealShowsAnalyzeLoader,
+  mealShowsAnalyzeRetry,
+} from '../model/mealAnalyzeUi';
 import { FoodMacrosBadges } from './FoodMacrosBadges';
 
 /** After this, an analyzing card is treated as stuck and shows «Повторить». */
@@ -23,9 +27,8 @@ export function MealCard({ meal }: MealCardProps) {
   const retry = useRetryAnalyzeMeal();
   const photoCount = resolveMealImageUris(meal).length;
   const imageSrc = useMealImage(meal.imageUri);
-  const status = meal.status ?? 'ready';
-  const isAnalyzing = status === 'analyzing';
-  const isError = status === 'error';
+  const isAnalyzing = mealShowsAnalyzeLoader(meal);
+  const isError = mealShowsAnalyzeRetry(meal);
   const [analyzingStale, setAnalyzingStale] = useState(false);
   const time = new Date(meal.timestamp).toLocaleTimeString([], {
     hour: '2-digit',
@@ -43,7 +46,7 @@ export function MealCard({ meal }: MealCardProps) {
   );
 
   useEffect(() => {
-    if (!isAnalyzing) {
+    if (!isAnalyzing || meal.analyzeJobId) {
       setAnalyzingStale(false);
       return;
     }
@@ -52,7 +55,7 @@ export function MealCard({ meal }: MealCardProps) {
       setAnalyzingStale(true);
     }, ANALYZING_STALE_MS);
     return () => window.clearTimeout(timer);
-  }, [isAnalyzing, meal.id]);
+  }, [isAnalyzing, meal.analyzeJobId, meal.id]);
 
   const showRetry = isError || (isAnalyzing && analyzingStale);
   const canOpenDetail = !isAnalyzing && !isError;

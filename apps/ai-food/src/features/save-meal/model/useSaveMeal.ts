@@ -106,6 +106,9 @@ export function useSaveMeal() {
         dietType,
         features,
         signal,
+        onJobId: (jobId: string) => {
+          updateMeal(mealId, { analyzeJobId: jobId });
+        },
         onPartial: (partial: PartialNutritionXml) => {
           if (signal.aborted) return;
           applyPartialAnalyzeResultToMeal(mealId, partial, itemId);

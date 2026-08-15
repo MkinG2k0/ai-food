@@ -37,6 +37,24 @@ describe('mergeMealsLww', () => {
     expect(merged[0].name).toBe('local');
   });
 
+  it('keeps local analyzeJobId when remote meal omits it', () => {
+    const local = [
+      meal('a', '2026-08-13T10:00:00.000Z', {
+        status: 'analyzing',
+        analyzeJobId: 'job-1',
+      }),
+    ];
+    const remote = [
+      meal('a', '2026-08-13T12:00:00.000Z', {
+        status: 'analyzing',
+        name: 'Анализ…',
+      }),
+    ];
+    const merged = mergeMealsLww(local, remote, []);
+    expect(merged[0].analyzeJobId).toBe('job-1');
+    expect(merged[0].name).toBe('Анализ…');
+  });
+
   it('tombstone removes local meal when delete clock wins', () => {
     const local = [meal('a', '2026-08-13T10:00:00.000Z')];
     const merged = mergeMealsLww(local, [], [
@@ -61,6 +79,7 @@ describe('buildSyncPayload', () => {
       meal('a', '2026-08-13T10:00:00.000Z', {
         imageUri: 'file://local/a.jpg',
         imageUris: ['file://local/a.jpg'],
+        analyzeJobId: 'job-local',
       }),
     ];
     const body = buildSyncPayload({
@@ -71,6 +90,7 @@ describe('buildSyncPayload', () => {
     expect(body.upserts).toHaveLength(1);
     expect(body.upserts[0].clientUpdatedAt).toBe('2026-08-13T10:00:00.000Z');
     expect(body.upserts[0].imageUri).toBe('file://local/a.jpg');
+    expect(body.upserts[0].analyzeJobId).toBeUndefined();
     expect(body.deletes).toEqual([]);
   });
 

@@ -19,6 +19,7 @@ vi.mock('../lib/recordGatewayRequest.js', () => ({
 
 import { createApp } from '../app.js';
 import { DEFAULT_OPENROUTER_MODEL, FOOD_TEMPERATURE } from '../food/modelConfig.js';
+import { getAnalyzeJob, resetAnalyzeJobs } from '../food/analyzeJobs.js';
 
 const ORIGINAL = process.env.API_KEY;
 const ORIGINAL_OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
@@ -40,6 +41,7 @@ function mockOpenAI(partial: {
 describe('POST /v1/food/*', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetAnalyzeJobs();
     process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
     delete process.env.API_KEY;
     delete process.env.OPENROUTER_MODEL;
@@ -87,7 +89,11 @@ describe('POST /v1/food/*', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/event-stream/);
+    expect(res.headers['x-analyze-job-id']).toMatch(
+      /^[0-9a-f-]{36}$/i,
+    );
     expect(String(res.body)).toContain('data:');
+    expect(String(res.body)).toContain('"jobId"');
     expect(createChat).toHaveBeenCalledTimes(1);
     const args = createChat.mock.calls[0][0] as {
       model: string;
@@ -234,6 +240,83 @@ describe('POST /v1/food/*', () => {
     expect(args.model).toBe(DEFAULT_OPENROUTER_MODEL);
     expect(args.temperature).toBe(0);
     expect(args.messages[0].content).toMatch(/OFF_TOPIC|блюде/i);
+  });
+
+  it('GET /analyze/:jobId returns stored content after stream completes', async () => {
+    const createChat = vi.fn().mockResolvedValue({
+      controller: { abort: vi.fn() },
+      async *[Symbol.asyncIterator]() {
+        yield {
+          id: 'c',
+          object: 'chat.completion.chunk',
+          choices: [{ index: 0, delta: { content: '<foodName>Суп</foodName>' }, finish_reason: null }],
+        };
+      },
+    });
+    mockOpenAI({ createChat });
+
+    const posted = await request(createApp())
+      .post('/v1/food/analyze')
+      .set('X-Device-Id', 'phone-1')
+      .send({ description: 'суп' })
+      .buffer(true)
+      .parse((response, callback) => {
+        const data: Buffer[] = [];
+        response.on('data', (part: Buffer) => data.push(part));
+        response.on('end', () => callback(null, Buffer.concat(data).toString('utf8')));
+      });
+
+    const jobId = posted.headers['x-analyze-job-id'] as string;
+    expect(getAnalyzeJob(jobId)?.status).toBe('done');
+
+    const got = await request(createApp())
+      .get(`/v1/food/analyze/${jobId}`)
+      .set('X-Device-Id', 'phone-1');
+    expect(got.status).toBe(200);
+    expect(got.body).toEqual({
+      jobId,
+      status: 'done',
+      content: '<foodName>Суп</foodName>',
+    });
+  });
+
+  it('GET /analyze/:jobId is 404 for another device', async () => {
+    const createChat = vi.fn().mockResolvedValue({
+      controller: { abort: vi.fn() },
+      async *[Symbol.asyncIterator]() {
+        yield {
+          choices: [{ index: 0, delta: { content: 'x' }, finish_reason: null }],
+        };
+      },
+    });
+    mockOpenAI({ createChat });
+
+    const posted = await request(createApp())
+      .post('/v1/food/analyze')
+      .set('X-Device-Id', 'phone-1')
+      .send({ description: 'суп' })
+      .buffer(true)
+      .parse((response, callback) => {
+        const data: Buffer[] = [];
+        response.on('data', (part: Buffer) => data.push(part));
+        response.on('end', () => callback(null, Buffer.concat(data).toString('utf8')));
+      });
+
+    const jobId = posted.headers['x-analyze-job-id'] as string;
+    const got = await request(createApp())
+      .get(`/v1/food/analyze/${jobId}`)
+      .set('X-Device-Id', 'phone-2');
+    expect(got.status).toBe(404);
+    expect(got.body.code).toBe('JOB_NOT_FOUND');
+  });
+
+  it('GET unknown analyze job returns 404', async () => {
+    mockOpenAI({});
+    const res = await request(createApp()).get(
+      '/v1/food/analyze/00000000-0000-0000-0000-000000000000',
+    );
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('JOB_NOT_FOUND');
   });
 
   it('ask without question and instructions returns 400', async () => {

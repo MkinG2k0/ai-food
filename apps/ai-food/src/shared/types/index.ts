@@ -82,6 +82,8 @@ export interface Meal {
   confidence?: number;
   /** Last analyze failure code; set when status is error */
   analyzeErrorCode?: string;
+  /** Gateway analyze job id; omitted on legacy / finished meals */
+  analyzeJobId?: string;
   /** Quantitative micronutrient amounts for the portion; omitted on legacy meals */
   micronutrients?: MicronutrientEstimate[];
   /** OpenRouter model id used for the scan; omitted on legacy / manual meals */

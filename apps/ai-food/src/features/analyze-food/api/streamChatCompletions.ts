@@ -14,9 +14,11 @@ export interface StreamFoodAnalyzeParams {
       healthiness?: boolean;
       composition?: boolean;
     };
+    clientMealId?: string;
   };
   signal?: AbortSignal;
   onDelta?: (accumulated: string) => void;
+  onJobId?: (jobId: string) => void;
   extraHeaders?: Record<string, string>;
 }
 
@@ -30,8 +32,8 @@ function rejectApiError(message: string, code: string, status: number): never {
  */
 export async function streamFoodAnalyze(
   params: StreamFoodAnalyzeParams,
-): Promise<string> {
-  const { gatewayUrl, apiKey, body, signal, onDelta, extraHeaders } = params;
+): Promise<{ content: string; jobId?: string }> {
+  const { gatewayUrl, apiKey, body, signal, onDelta, onJobId, extraHeaders } = params;
 
   let response: Response;
   try {
@@ -63,6 +65,10 @@ export async function streamFoodAnalyze(
     await mapHttpError(response);
   }
 
+  const headerJobId = response.headers.get('X-Analyze-Job-Id')?.trim();
+  let jobId = headerJobId || undefined;
+  if (jobId) onJobId?.(jobId);
+
   if (!response.body) {
     rejectApiError('Анализ вернул пустой поток.', 'ANALYSIS_FAILED', 500);
   }
@@ -71,6 +77,12 @@ export async function streamFoodAnalyze(
   const decoder = new TextDecoder();
   let lineBuffer = '';
   let content = '';
+
+  const emitJobId = (id: string) => {
+    if (!id || id === jobId) return;
+    jobId = id;
+    onJobId?.(id);
+  };
 
   try {
     while (true) {
@@ -88,7 +100,7 @@ export async function streamFoodAnalyze(
 
         const data = line.slice(5).trimStart();
         if (data === '[DONE]') {
-          return content;
+          return { content, jobId };
         }
 
         let parsed: unknown;
@@ -96,6 +108,21 @@ export async function streamFoodAnalyze(
           parsed = JSON.parse(data);
         } catch {
           continue;
+        }
+
+        if (parsed && typeof parsed === 'object' && 'jobId' in parsed) {
+          const id = (parsed as { jobId?: unknown }).jobId;
+          if (typeof id === 'string' && id.trim()) emitJobId(id.trim());
+        }
+
+        if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+          const err = (parsed as { error?: { message?: string; code?: string; status?: number } })
+            .error;
+          rejectApiError(
+            err?.message ?? 'Анализ не удался. Попробуйте ещё раз.',
+            err?.code ?? 'ANALYSIS_FAILED',
+            err?.status ?? 500,
+          );
         }
 
         const delta = extractDeltaContent(parsed);
@@ -131,6 +158,15 @@ export async function streamFoodAnalyze(
         504,
       );
     }
+    if (jobId) {
+      const interrupted: ApiError & { jobId: string } = {
+        message: 'Поток анализа оборвался.',
+        code: 'STREAM_INTERRUPTED',
+        status: 499,
+        jobId,
+      };
+      throw interrupted;
+    }
     rejectApiError(
       error instanceof Error ? error.message : 'Поток анализа оборвался.',
       'ANALYSIS_FAILED',
@@ -138,7 +174,7 @@ export async function streamFoodAnalyze(
     );
   }
 
-  return content;
+  return { content, jobId };
 }
 
 /** @deprecated Prefer streamFoodAnalyze — kept for any leftover generic callers. */
@@ -308,6 +344,7 @@ async function mapHttpError(response: Response): Promise<never> {
     'ANALYSIS_TIMEOUT',
     'ANALYSIS_FAILED',
     'QUOTA_EXCEEDED',
+    'JOB_NOT_FOUND',
   ]);
 
   if (gatewayCode && APP_ERROR_CODES.has(gatewayCode)) {

@@ -77,13 +77,15 @@ const NUTRIENT_KEYS: NutrientKey[] = [
   'fiber',
 ];
 
-/** Meals left as analyzing after reload/abort have no live request — flip to error for retry. */
+/** Meals left as analyzing after reload/abort have no live request — flip to error for retry.
+ *  Durable gateway jobs stay analyzing so resume can poll GET /v1/food/analyze/:jobId. */
 export function recoverStaleAnalyzingMeals(): number {
   const { meals } = useDiaryStore.getState();
   let recovered = 0;
   const next = meals.map((meal) => {
     if (meal.status !== 'analyzing') return meal;
     if (isMealAnalyzeInFlight(meal.id)) return meal;
+    if (meal.analyzeJobId) return meal;
     recovered += 1;
     return { ...meal, status: 'error' as const };
   });

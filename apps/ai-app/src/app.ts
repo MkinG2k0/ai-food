@@ -35,6 +35,7 @@ export function createApp() {
         'X-Usage-Kind',
         'X-Admin-Key',
       ],
+      exposedHeaders: ['X-Analyze-Job-Id'],
     }),
   );
   app.use(express.json({ limit: '10mb' }));
@@ -55,7 +56,17 @@ export function createApp() {
   v1.use('/models', modelsRouter);
   v1.use('/embeddings', embeddingsRouter);
   v1.use('/chat/completions', enforceChatQuota, chatRouter);
-  v1.use('/food', enforceChatQuota, foodRouter);
+  v1.use(
+    '/food',
+    (req, res, next) => {
+      if (req.method === 'GET') {
+        next();
+        return;
+      }
+      void enforceChatQuota(req, res, next);
+    },
+    foodRouter,
+  );
   app.use('/v1', v1);
 
   app.use((_req, _res, next) => {

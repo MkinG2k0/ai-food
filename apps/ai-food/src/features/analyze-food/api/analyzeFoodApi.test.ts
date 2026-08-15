@@ -68,13 +68,16 @@ function sseBodyFromContent(content: string, chunkSize = 40): string {
   );
 }
 
-function mockStreamOk(content: string, chunkSize = 40) {
+function mockStreamOk(content: string, chunkSize = 40, jobId?: string) {
   vi.stubGlobal(
     'fetch',
     vi.fn().mockResolvedValue(
       new Response(sseBodyFromContent(content, chunkSize), {
         status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
+        headers: {
+          'Content-Type': 'text/event-stream',
+          ...(jobId ? { 'X-Analyze-Job-Id': jobId } : {}),
+        },
       }),
     ),
   );
@@ -160,6 +163,13 @@ describe('analyzeFoodApi (food/analyze SSE)', () => {
       status: 422,
       message: expect.stringMatching(/не обнаружена еда/i),
     } satisfies Partial<ApiError>);
+  });
+
+  it('calls onJobId from X-Analyze-Job-Id header', async () => {
+    mockStreamOk(nutritionResultToXml(validNutrition), 40, 'job-abc');
+    const onJobId = vi.fn();
+    await analyzeFoodApi({ description: 'куриный салат' }, { onJobId });
+    expect(onJobId).toHaveBeenCalledWith('job-abc');
   });
 
   it('sends description-only body without images', async () => {

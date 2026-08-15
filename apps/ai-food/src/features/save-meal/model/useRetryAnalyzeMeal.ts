@@ -63,6 +63,9 @@ export function useRetryAnalyzeMeal() {
         dietType,
         features,
         signal,
+        onJobId: (jobId: string) => {
+          updateMeal(mealId, { analyzeJobId: jobId });
+        },
         onPartial: (partial: PartialNutritionXml) => {
           if (signal.aborted) return;
           applyPartialAnalyzeResultToMeal(

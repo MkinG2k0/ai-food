@@ -3,6 +3,7 @@ export { useMealCustomContent } from './model/useMealCustomContent';
 export { MealCustomContentBlock } from './ui/MealCustomContentBlock';
 export {
   analyzeFoodApi,
+  parseAnalyzeFoodResponse,
   type AnalyzeFoodInput,
   type AnalyzeFoodOptions,
   type PartialNutritionXml,
@@ -17,6 +18,10 @@ export {
   type RefineMealInput,
   type RefineMealContextItem,
 } from './api/refineMealApi';
+export {
+  fetchAnalyzeJobApi,
+  waitForAnalyzeJob,
+} from './api/fetchAnalyzeJobApi';
 export {
   fetchMealCustomContentApi,
   type MealCustomContentInput,

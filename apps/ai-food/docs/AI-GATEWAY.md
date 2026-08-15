@@ -92,7 +92,8 @@ ai-app (openrouter-gateway)
 | `GET` | `/v1/models` | да* | список моделей OpenRouter |
 | `POST` | `/v1/embeddings` | да* | embeddings |
 | `POST` | `/v1/chat/completions` | да* + quota | Generic proxy (JSON или SSE); клиент шлёт `model`/`messages` — используется onboarding и legacy callers |
-| `POST` | `/v1/food/analyze` | да* + quota | **SSE** nutrition analyze; body без `model`/`messages`/`temperature` |
+| `POST` | `/v1/food/analyze` | да* + quota | **SSE** nutrition analyze; durable job (`X-Analyze-Job-Id`); body без `model`/`messages`/`temperature` |
+| `GET` | `/v1/food/analyze/:jobId` | да* (без quota) | Статус/XML результат job после обрыва SSE |
 | `POST` | `/v1/food/refine` | да* + quota | **JSON** meal correction; `response_format: json_object` на сервере |
 | `POST` | `/v1/food/ask` | да* + quota | **JSON** settings custom-content или follow-up question |
 
@@ -100,7 +101,11 @@ ai-app (openrouter-gateway)
 
 ### Food request shapes (clean client payloads)
 
-**Analyze** — `images?: string[]` (data-URL после client compress), `description?`, `customInstructions?`, `dietType?`, `features?`. Нужно хотя бы фото или непустое описание. Клиент **не** шлёт `model`, `temperature`, `messages`, `system`.
+**Analyze** — `images?: string[]` (data-URL после client compress), `description?`, `customInstructions?`, `dietType?`, `features?`, `clientMealId?`. Нужно хотя бы фото или непустое описание. Клиент **не** шлёт `model`, `temperature`, `messages`, `system`.
+
+`POST /v1/food/analyze` сразу создаёт in-memory job (TTL 15 мин, без хранения фото). Заголовок `X-Analyze-Job-Id` + первое SSE-событие `{ jobId }`. Обрыв SSE **не** отменяет OpenRouter: результат копится в job. `GET /v1/food/analyze/:jobId` (тот же `X-Device-Id`, без списания квоты) → `{ jobId, status: running|done|failed, content?, error? }`. `content` — сырой XML, как накопленный SSE. Фото в job не сохраняются.
+
+Клиент пишет `analyzeJobId` на приём, при lock/kill оставляет `status: analyzing` и на resume поллит GET, затем рисует КБЖУ в той же карточке.
 
 **Refine** — `correction`, `mealContext: { name?, items[] }`, optional `imageDataUrl`, `customInstructions?`, `dietType?`, `features?`.
 
@@ -116,8 +121,9 @@ Temperature на food-роутах всегда `0`. Модель — `OPENROUTE
 
 | Клиентский модуль | Путь | Назначение |
 |-------------------|------|------------|
-| `src/features/analyze-food/api/analyzeFoodApi.ts` | `/v1/food/analyze` | Анализ фото/текста → XML КБЖУ (SSE) |
+| `src/features/analyze-food/api/analyzeFoodApi.ts` | `/v1/food/analyze` | Анализ фото/текста → XML КБЖУ (SSE + poll job) |
 | `src/features/analyze-food/api/streamChatCompletions.ts` | `streamFoodAnalyze` → `/v1/food/analyze` | SSE-клиент analyze |
+| `src/features/analyze-food/api/fetchAnalyzeJobApi.ts` | `GET /v1/food/analyze/:jobId` | Resume после обрыва SSE |
 | `src/features/analyze-food/api/refineMealApi.ts` | `/v1/food/refine` | Уточнение результата (JSON) |
 | `src/features/analyze-food/api/fetchMealCustomContentApi.ts` | `/v1/food/ask` | Доп. markdown-контент / вопрос о блюде |
 | `src/features/onboarding/api/micronutrientTargetsApi.ts` | `/v1/chat/completions` | Цели по микронутриентам (пока generic chat) |

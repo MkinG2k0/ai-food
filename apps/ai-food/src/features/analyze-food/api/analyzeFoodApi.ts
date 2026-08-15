@@ -24,6 +24,7 @@ import {
   type PartialNutritionXml,
 } from './parseNutritionXml';
 import { streamFoodAnalyze } from './streamChatCompletions';
+import { waitForAnalyzeJob } from './fetchAnalyzeJobApi';
 
 export type { AnalyzeFeatures };
 export {
@@ -46,7 +47,11 @@ export interface AnalyzeFoodOptions {
   features?: AnalyzeFeatures;
   /** Called as closed XML tags become available during the stream */
   onPartial?: (partial: PartialNutritionXml) => void;
-  /** Cancels the in-flight gateway request (also respects the 30s timeout). */
+  /** Called as soon as the gateway assigns a durable job id. */
+  onJobId?: (jobId: string) => void;
+  /** Client meal id so the gateway can index the job. */
+  clientMealId?: string;
+  /** Cancels the in-flight gateway request (also respects the deadline). */
   signal?: AbortSignal;
 }
 
@@ -139,8 +144,9 @@ export async function analyzeFoodApi(
   }
 
   const startTime = Date.now();
+  const deadlineAt = startTime + 120_000;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+  const timeoutId = setTimeout(() => controller.abort(), 120_000);
   const externalSignal = options?.signal;
   const onExternalAbort = () => controller.abort();
   if (externalSignal) {
@@ -160,31 +166,78 @@ export async function analyzeFoodApi(
     options?.onPartial?.(partial);
   };
 
+  let jobId: string | undefined;
+  const emitJobId = (id: string) => {
+    jobId = id;
+    options?.onJobId?.(id);
+  };
+
   let rawContent: string;
   try {
-    rawContent = await streamFoodAnalyze({
-      gatewayUrl,
-      apiKey,
-      signal: controller.signal,
-      onDelta: emitPartial,
-      extraHeaders: await getQuotaHeaders(usageKind),
-      body: {
-        ...(imageDataUrls.length > 0 ? { images: imageDataUrls } : {}),
-        ...(description ? { description } : {}),
-        ...(options?.customInstructions
-          ? { customInstructions: options.customInstructions }
-          : {}),
-        ...(options?.dietType ? { dietType: options.dietType } : {}),
-        features,
-      },
-    });
+    try {
+      const streamed = await streamFoodAnalyze({
+        gatewayUrl,
+        apiKey,
+        signal: controller.signal,
+        onDelta: emitPartial,
+        onJobId: emitJobId,
+        extraHeaders: await getQuotaHeaders(usageKind),
+        body: {
+          ...(imageDataUrls.length > 0 ? { images: imageDataUrls } : {}),
+          ...(description ? { description } : {}),
+          ...(options?.customInstructions
+            ? { customInstructions: options.customInstructions }
+            : {}),
+          ...(options?.dietType ? { dietType: options.dietType } : {}),
+          ...(options?.clientMealId ? { clientMealId: options.clientMealId } : {}),
+          features,
+        },
+      });
+      jobId = streamed.jobId ?? jobId;
+      rawContent = streamed.content;
+    } catch (error) {
+      if (externalSignal?.aborted) {
+        rejectApiError('Анализ отменён.', 'ANALYSIS_FAILED', 499);
+      }
+      const interruptedJobId =
+        jobId ??
+        (error &&
+        typeof error === 'object' &&
+        'jobId' in error &&
+        typeof (error as { jobId?: unknown }).jobId === 'string'
+          ? (error as { jobId: string }).jobId
+          : undefined);
+      if (interruptedJobId) {
+        emitJobId(interruptedJobId);
+        rawContent = await waitForAnalyzeJob(interruptedJobId, {
+          signal: externalSignal,
+          deadlineAt,
+        });
+      } else {
+        throw error;
+      }
+    }
+
+    if (!rawContent && jobId && !externalSignal?.aborted) {
+      rawContent = await waitForAnalyzeJob(jobId, {
+        signal: externalSignal,
+        deadlineAt,
+      });
+    }
   } finally {
     externalSignal?.removeEventListener('abort', onExternalAbort);
     clearTimeout(timeoutId);
   }
 
   const processingTime = Date.now() - startTime;
+  return parseAnalyzeFoodResponse(rawContent, features, processingTime);
+}
 
+export function parseAnalyzeFoodResponse(
+  rawContent: string,
+  features: AnalyzeFeatures,
+  processingTime: number,
+): AnalyzeFoodResponse {
   if (!rawContent || typeof rawContent !== 'string') {
     rejectApiError('Анализ вернул пустой ответ.', 'ANALYSIS_FAILED', 500);
   }

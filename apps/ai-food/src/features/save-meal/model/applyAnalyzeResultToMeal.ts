@@ -57,6 +57,7 @@ export function applyAnalyzeResultToMeal(
       healthinessReason: result.healthinessReason,
       disclaimers: result.disclaimers,
       analyzeErrorCode: undefined,
+      analyzeJobId: undefined,
     });
     return;
   }
@@ -89,5 +90,6 @@ export function applyAnalyzeResultToMeal(
     healthinessReason: result.healthinessReason,
     disclaimers: result.disclaimers,
     analyzeErrorCode: undefined,
+    analyzeJobId: undefined,
   });
 }

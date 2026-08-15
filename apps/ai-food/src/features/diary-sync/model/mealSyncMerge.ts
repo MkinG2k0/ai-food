@@ -37,7 +37,11 @@ export function mergeMealsLww(
   for (const m of remote) {
     const cur = byId.get(m.id);
     if (!cur || newerOrEqual(m.clientUpdatedAt, cur.clientUpdatedAt)) {
-      byId.set(m.id, m);
+      const merged =
+        cur?.analyzeJobId && !m.analyzeJobId
+          ? { ...m, analyzeJobId: cur.analyzeJobId }
+          : m;
+      byId.set(m.id, merged);
     }
   }
   for (const t of tombstones) {
@@ -56,13 +60,15 @@ export function ensureClientUpdatedAt(meal: Meal): string {
 
 export function mealToSyncPayload(meal: Meal): Meal {
   const clientUpdatedAt = ensureClientUpdatedAt(meal);
-  return {
+  const payload: Meal = {
     ...meal,
     clientUpdatedAt,
     // P0: URI stubs only — no blob upload
     imageUri: meal.imageUri,
     imageUris: meal.imageUris,
   };
+  delete payload.analyzeJobId;
+  return payload;
 }
 
 export function buildSyncPayload(args: {

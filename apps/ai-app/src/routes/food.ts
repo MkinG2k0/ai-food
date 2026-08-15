@@ -16,6 +16,15 @@ import {
   buildRefineMessages,
 } from '../food/buildMessages.js';
 import { FOOD_TEMPERATURE, resolveModel } from '../food/modelConfig.js';
+import {
+  analyzeJobOwnerKey,
+  canAccessAnalyzeJob,
+  completeAnalyzeJob,
+  createAnalyzeJob,
+  failAnalyzeJob,
+  getAnalyzeJob,
+  publicAnalyzeJob,
+} from '../food/analyzeJobs.js';
 
 const STREAM_TIMEOUT_MS = 120_000;
 
@@ -54,6 +63,8 @@ const AnalyzeBodySchema = z
     customInstructions: z.string().optional(),
     dietType: DietTypeSchema.optional(),
     features: AnalyzeFeaturesSchema,
+    /** Client meal id — used only to index the durable job, never stored as a blob. */
+    clientMealId: z.string().min(1).optional(),
   })
   .strict();
 
@@ -97,11 +108,59 @@ function resolveFeatures(
   };
 }
 
+function extractDeltaContent(chunk: unknown): string {
+  if (!chunk || typeof chunk !== 'object') return '';
+  const choices = (chunk as { choices?: unknown }).choices;
+  if (!Array.isArray(choices) || choices.length === 0) return '';
+  const content = (choices[0] as { delta?: { content?: unknown } })?.delta
+    ?.content;
+  return typeof content === 'string' ? content : '';
+}
+
+function isClientGone(
+  req: { aborted?: boolean },
+  res: { destroyed: boolean; writableEnded: boolean },
+  disconnected: boolean,
+): boolean {
+  return disconnected || Boolean(req.aborted) || res.destroyed || res.writableEnded;
+}
+
+function writeSse(
+  res: Parameters<Parameters<typeof asyncHandler>[0]>[1],
+  payload: string,
+): boolean {
+  if (res.destroyed || res.writableEnded) return false;
+  try {
+    return res.write(payload);
+  } catch {
+    return false;
+  }
+}
+
+function beginAnalyzeSse(
+  req: Parameters<Parameters<typeof asyncHandler>[0]>[0],
+  res: Parameters<Parameters<typeof asyncHandler>[0]>[1],
+  jobId: string,
+): boolean {
+  if (req.aborted || res.destroyed || res.headersSent) return false;
+  res.status(200);
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader('X-Analyze-Job-Id', jobId);
+  res.setHeader('Access-Control-Expose-Headers', 'X-Analyze-Job-Id');
+  res.flushHeaders?.();
+  writeSse(res, `data: ${JSON.stringify({ jobId })}\n\n`);
+  return true;
+}
+
 async function streamCompletion(
   req: Parameters<Parameters<typeof asyncHandler>[0]>[0],
   res: Parameters<Parameters<typeof asyncHandler>[0]>[1],
   messages: OpenAI.Chat.ChatCompletionMessageParam[],
   model: string,
+  jobId: string,
 ) {
   const baseParams = {
     model,
@@ -125,25 +184,15 @@ async function streamCompletion(
       | undefined;
     let disconnected = req.aborted || res.destroyed || res.writableEnded;
     let completed = false;
-    const isDisconnected = () =>
-      disconnected || req.aborted || res.destroyed || res.writableEnded;
+    const isDisconnected = () => isClientGone(req, res, disconnected);
     const onDisconnect = () => {
       if (completed) return;
       disconnected = true;
-      createAbort.abort();
-      stream?.controller.abort();
-      release();
     };
     req.once('aborted', onDisconnect);
     res.once('close', onDisconnect);
 
     try {
-      if (isDisconnected()) {
-        createAbort.abort();
-        release();
-        return;
-      }
-
       try {
         stream = await client.chat.completions.create(
           { ...baseParams, stream: true },
@@ -151,35 +200,40 @@ async function streamCompletion(
         );
         startedUpstream = true;
       } catch (error) {
-        if (isDisconnected()) return;
         startedUpstream = true;
         throw error;
       }
 
-      if (isDisconnected()) {
-        stream.controller.abort();
-        release();
-        return;
-      }
-
       await finalizeQuotaUsage(req);
 
-      res.status(200);
-      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache, no-transform');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('X-Accel-Buffering', 'no');
+      if (!res.headersSent && !isDisconnected()) {
+        beginAnalyzeSse(req, res, jobId);
+      }
 
+      let accumulated = '';
       for await (const chunk of stream) {
-        if (isDisconnected()) break;
         timer.markTtfb();
-        res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        accumulated += extractDeltaContent(chunk);
+        if (!isDisconnected()) {
+          if (!writeSse(res, `data: ${JSON.stringify(chunk)}\n\n`)) {
+            disconnected = true;
+          }
+        }
+      }
+
+      completeAnalyzeJob(jobId, accumulated);
+      timer.markTtfb();
+      completed = true;
+      ok = true;
+
+      if (!res.headersSent) {
+        res.status(200).json(publicAnalyzeJob(getAnalyzeJob(jobId)!));
+        return;
       }
       if (!isDisconnected()) {
-        timer.markTtfb();
-        res.write('data: [DONE]\n\n');
-        completed = true;
-        ok = true;
+        writeSse(res, 'data: [DONE]\n\n');
+      }
+      if (!res.writableEnded) {
         res.end();
       }
     } finally {
@@ -234,16 +288,43 @@ foodRouter.post(
       model,
     });
 
+    const job = createAnalyzeJob({
+      ownerKey: analyzeJobOwnerKey(req.header('x-device-id') ?? undefined),
+      clientMealId: body.clientMealId,
+    });
+    beginAnalyzeSse(req, res, job.id);
+
     try {
-      await streamCompletion(req, res, messages, model);
+      await streamCompletion(req, res, messages, model, job.id);
     } catch (error) {
       console.error('OpenRouter food/analyze error:', error);
+      const mapped = mapOpenAIError(error);
+      failAnalyzeJob(job.id, mapped);
       if (!res.headersSent) {
-        const mapped = mapOpenAIError(error);
         throw new ApiError(mapped.status, mapped.code, mapped.message);
       }
-      res.end();
+      writeSse(
+        res,
+        `data: ${JSON.stringify({ error: mapped })}\n\n`,
+      );
+      writeSse(res, 'data: [DONE]\n\n');
+      if (!res.writableEnded) {
+        res.end();
+      }
     }
+  }),
+);
+
+foodRouter.get(
+  '/analyze/:jobId',
+  asyncHandler(async (req, res) => {
+    const jobId = String(req.params.jobId ?? '').trim();
+    const ownerKey = analyzeJobOwnerKey(req.header('x-device-id') ?? undefined);
+    const job = getAnalyzeJob(jobId);
+    if (!job || !canAccessAnalyzeJob(job, ownerKey)) {
+      throw new ApiError(404, 'JOB_NOT_FOUND', 'Analyze job not found.');
+    }
+    res.json(publicAnalyzeJob(job));
   }),
 );
 
