@@ -7,6 +7,14 @@ export interface NewsRelease {
 /** User-facing changelog; newest first. Update manually when shipping features. */
 export const NEWS_CHANGELOG: NewsRelease[] = [
   {
+    date: '2026-08-15',
+    title: 'Анализ в фоне',
+    items: [
+      'Анализ фото и описания продолжается, если заблокировать телефон или свернуть приложение',
+      'Когда анализ готов, КБЖУ само появляется в карточке дневника',
+    ],
+  },
+  {
     date: '2026-08-06',
     title: 'Скан, голос и аккаунт',
     items: [
