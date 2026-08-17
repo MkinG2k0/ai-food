@@ -5,11 +5,15 @@ export type PromoDefinition = {
   discountPercent: number;
 };
 
+export const REFERRAL_DISCOUNT_PERCENT = 10;
+
 export type ResolvedPromo = {
   code: string;
   discountPercent: number;
   originalAmount: number;
   finalAmount: number;
+  source: 'admin' | 'referral';
+  referrerId?: string;
 };
 
 export function normalizePromoCode(raw: string): string {
@@ -44,11 +48,25 @@ export async function resolvePromo(
   originalAmount: number,
 ): Promise<ResolvedPromo | null> {
   const promo = await lookupPromo(prisma, raw);
-  if (!promo) return null;
+  if (promo) {
+    return {
+      code: promo.code,
+      discountPercent: promo.discountPercent,
+      originalAmount,
+      finalAmount: applyPromoDiscount(originalAmount, promo.discountPercent),
+      source: 'admin',
+    };
+  }
+  const key = normalizePromoCode(raw.trim().replace(/^@+/, ''));
+  if (!key || !prisma) return null;
+  const referrer = await prisma.user.findUnique({ where: { referralCode: key } });
+  if (!referrer) return null;
   return {
-    code: promo.code,
-    discountPercent: promo.discountPercent,
+    code: key,
+    discountPercent: REFERRAL_DISCOUNT_PERCENT,
     originalAmount,
-    finalAmount: applyPromoDiscount(originalAmount, promo.discountPercent),
+    finalAmount: applyPromoDiscount(originalAmount, REFERRAL_DISCOUNT_PERCENT),
+    source: 'referral',
+    referrerId: referrer.id,
   };
 }

@@ -10,6 +10,9 @@ const mocks = vi.hoisted(() => ({
   sendMessage: vi.fn(),
   answerCallbackQuery: vi.fn(),
   userUpsert: vi.fn(),
+  userUpdate: vi.fn(),
+  userFindUnique: vi.fn(),
+  promoFindUnique: vi.fn(),
   signUserToken: vi.fn(),
   ensureDevice: vi.fn(),
 }));
@@ -26,7 +29,12 @@ vi.mock('../lib/telegramBotApi.js', () => ({
 vi.mock('../lib/prisma.js', () => ({
   isDatabaseConfigured: () => true,
   getPrisma: () => ({
-    user: { upsert: mocks.userUpsert },
+    user: {
+      upsert: mocks.userUpsert,
+      update: mocks.userUpdate,
+      findUnique: mocks.userFindUnique,
+    },
+    promoCode: { findUnique: mocks.promoFindUnique },
   }),
 }));
 vi.mock('../lib/jwt.js', () => ({
@@ -57,6 +65,15 @@ const challenge = {
 describe('Telegram webhook', () => {
   beforeEach(() => {
     process.env.TELEGRAM_WEBHOOK_SECRET = 'webhook-secret';
+    mocks.userFindUnique.mockResolvedValue(null);
+    mocks.promoFindUnique.mockResolvedValue(null);
+    mocks.userUpdate.mockImplementation(
+      async ({ data }: { data: Record<string, unknown> }) => ({
+        id: 'user-1',
+        telegramId: '42',
+        ...data,
+      }),
+    );
   });
 
   afterEach(() => {

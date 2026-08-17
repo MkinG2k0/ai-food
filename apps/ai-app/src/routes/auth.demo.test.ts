@@ -6,6 +6,8 @@ import { errorHandler } from '../middleware/error.js';
 const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   upsert: vi.fn(),
+  update: vi.fn(),
+  promoFindUnique: vi.fn(),
   ensureDevice: vi.fn(),
   signUserToken: vi.fn(),
   assertAuthConfigured: vi.fn(),
@@ -67,9 +69,22 @@ describe('POST /auth/demo/login', () => {
     delete process.env.AUTH_MOCK;
     mocks.isDatabaseConfigured.mockReturnValue(true);
     mocks.getPrisma.mockReturnValue({
-      user: { upsert: mocks.upsert, findUnique: mocks.findUnique },
+      user: {
+        upsert: mocks.upsert,
+        findUnique: mocks.findUnique,
+        update: mocks.update,
+      },
+      promoCode: { findUnique: mocks.promoFindUnique },
     });
     mocks.upsert.mockResolvedValue(demoUser);
+    mocks.findUnique.mockResolvedValue(null);
+    mocks.promoFindUnique.mockResolvedValue(null);
+    mocks.update.mockImplementation(
+      async ({ data }: { data: Record<string, unknown> }) => ({
+        ...demoUser,
+        ...data,
+      }),
+    );
     mocks.signUserToken.mockResolvedValue('jwt-demo');
   });
 

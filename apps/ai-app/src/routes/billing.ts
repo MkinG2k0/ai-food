@@ -18,6 +18,7 @@ import {
   verifyTbankToken,
 } from '../lib/tbank.js';
 import { resolvePromo } from '../lib/promos.js';
+import { ensureUserReferralCode } from '../lib/referralCode.js';
 
 function requireDb() {
   if (!isDatabaseConfigured()) {
@@ -96,6 +97,18 @@ function gatewayPublicBase(req: {
 }
 
 export const billingRouter = Router();
+
+billingRouter.get(
+  '/referral',
+  asyncHandler(async (req, res) => {
+    const { prisma, user } = await requireUser(req);
+    const code = await ensureUserReferralCode(prisma, user);
+    const conversionCount = await prisma.payment.count({
+      where: { promoCode: code, status: 'confirmed' },
+    });
+    res.json({ code, conversionCount });
+  }),
+);
 
 billingRouter.get(
   '/price',

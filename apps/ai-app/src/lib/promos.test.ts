@@ -6,7 +6,10 @@ import {
   resolvePromo,
 } from './promos.js';
 
-function mockPrisma(rows: { code: string; discountPercent: number }[]) {
+function mockPrisma(
+  rows: { code: string; discountPercent: number }[],
+  users: { id: string; referralCode: string }[] = [],
+) {
   return {
     promoCode: {
       findUnique: vi.fn(async ({ where }: { where: { code: string } }) => {
@@ -15,6 +18,19 @@ function mockPrisma(rows: { code: string; discountPercent: number }[]) {
           ? { id: 'p1', code: row.code, discountPercent: row.discountPercent }
           : null;
       }),
+    },
+    user: {
+      findUnique: vi.fn(
+        async ({ where }: { where: { id?: string; referralCode?: string } }) => {
+          if (where.referralCode) {
+            return users.find((u) => u.referralCode === where.referralCode) ?? null;
+          }
+          if (where.id) {
+            return users.find((u) => u.id === where.id) ?? null;
+          }
+          return null;
+        },
+      ),
     },
   };
 }
@@ -62,6 +78,7 @@ describe('promos', () => {
       discountPercent: 80,
       originalAmount: 10_000,
       finalAmount: 2_000,
+      source: 'admin',
     });
   });
 
@@ -69,5 +86,31 @@ describe('promos', () => {
     const prisma = mockPrisma([]);
     await expect(resolvePromo(prisma as never, 'x', 10_000)).resolves.toBeNull();
     await expect(resolvePromo(null, 'new80', 10_000)).resolves.toBeNull();
+  });
+
+  it('resolvePromo prefers admin catalog over a matching user referralCode', async () => {
+    const prisma = mockPrisma(
+      [{ code: 'alice', discountPercent: 50 }],
+      [{ id: 'ref-1', referralCode: 'alice' }],
+    );
+    await expect(resolvePromo(prisma as never, 'Alice', 10_000)).resolves.toEqual({
+      code: 'alice',
+      discountPercent: 50,
+      originalAmount: 10_000,
+      finalAmount: 5_000,
+      source: 'admin',
+    });
+  });
+
+  it('resolvePromo treats a free user referralCode as 10% referral', async () => {
+    const prisma = mockPrisma([], [{ id: 'ref-1', referralCode: 'alice' }]);
+    await expect(resolvePromo(prisma as never, ' @Alice ', 10_000)).resolves.toEqual({
+      code: 'alice',
+      discountPercent: 10,
+      originalAmount: 10_000,
+      finalAmount: 9_000,
+      source: 'referral',
+      referrerId: 'ref-1',
+    });
   });
 });

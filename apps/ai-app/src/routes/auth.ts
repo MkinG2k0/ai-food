@@ -20,6 +20,7 @@ import {
   getTelegramBotUsername,
 } from '../lib/telegramBotApi.js';
 import { subscriptionPublicFields } from '../lib/subscription.js';
+import { ensureUserReferralCode } from '../lib/referralCode.js';
 import { DATA_CONSENT_VERSION } from '../lib/consent.js';
 import {
   nutritionProfileBodySchema,
@@ -199,6 +200,7 @@ authRouter.post(
       create: { telegramId: DEMO_TELEGRAM_ID, ...DEMO_PROFILE },
       update: { ...DEMO_PROFILE },
     });
+    await ensureUserReferralCode(prisma, user);
 
     if (parsed.data.deviceId) {
       await ensureDevice(prisma, parsed.data.deviceId, user.id);

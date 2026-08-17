@@ -41,6 +41,8 @@ model User {
   /** Streak gamification blob; synced via POST /user/streak/sync (LWW) */
   clientStreak               Json?
   streakClientUpdatedAt      DateTime?
+  /** Shareable promo: Telegram nick or fallback (D-01, D-02) */
+  referralCode           String?            @unique
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
   devices                Device[]
@@ -134,8 +136,9 @@ model Payment {
   promoCode      String?
   tbankPaymentId String?       @unique
   tbankOrderId   String        @unique
-  paidAt         DateTime?
-  createdAt      DateTime      @default(now())
+  paidAt            DateTime?
+  referralGrantedAt DateTime?
+  createdAt         DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@index([userId, status])

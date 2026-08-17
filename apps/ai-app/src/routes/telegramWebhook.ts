@@ -9,6 +9,7 @@ import { answerCallbackQuery, sendMessage } from '../lib/telegramBotApi.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import { signUserToken } from '../lib/jwt.js';
 import { ensureDevice } from '../lib/quota.js';
+import { ensureUserReferralCode } from '../lib/referralCode.js';
 
 type TelegramUser = {
   id: number;
@@ -99,6 +100,7 @@ async function handleCallbackQuery(
     create: { telegramId, ...profile },
     update: profile,
   });
+  await ensureUserReferralCode(prisma, user);
 
   if (challenge.deviceId) {
     await ensureDevice(prisma, challenge.deviceId, user.id);

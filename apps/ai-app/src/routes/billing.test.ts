@@ -57,6 +57,7 @@ import { buildTbankToken } from '../lib/tbank.js';
 describe('billing routes', () => {
   const paymentStore = new Map<string, Record<string, unknown>>();
   const promoStore = new Map<string, { id: string; code: string; discountPercent: number }>();
+  const userStore = new Map<string, Record<string, unknown>>();
   let paymentSeq = 0;
 
   function mockPrisma() {
@@ -134,13 +135,67 @@ describe('billing routes', () => {
             return rows[rows.length - 1] ?? null;
           },
         ),
+        count: vi.fn(
+          async ({
+            where,
+          }: {
+            where: { promoCode?: string; status?: string };
+          }) =>
+            [...paymentStore.values()].filter((p) => {
+              if (where.promoCode && p.promoCode !== where.promoCode) return false;
+              if (where.status && p.status !== where.status) return false;
+              return true;
+            }).length,
+        ),
       },
       user: {
-        findUnique: vi.fn(async ({ where }: { where: { id: string } }) => ({
-          id: where.id,
-          subscriptionStatus: 'none',
-          subscriptionExpiresAt: null,
-        })),
+        findUnique: vi.fn(
+          async ({
+            where,
+          }: {
+            where: { id?: string; referralCode?: string };
+          }) => {
+            if (where.referralCode) {
+              return (
+                [...userStore.values()].find(
+                  (u) => u.referralCode === where.referralCode,
+                ) ?? null
+              );
+            }
+            if (where.id) {
+              return (
+                userStore.get(where.id) ?? {
+                  id: where.id,
+                  username: null,
+                  referralCode: null,
+                  subscriptionStatus: 'none',
+                  subscriptionExpiresAt: null,
+                }
+              );
+            }
+            return null;
+          },
+        ),
+        update: vi.fn(
+          async ({
+            where,
+            data,
+          }: {
+            where: { id: string };
+            data: Record<string, unknown>;
+          }) => {
+            const prev = userStore.get(where.id) ?? {
+              id: where.id,
+              username: null,
+              referralCode: null,
+              subscriptionStatus: 'none',
+              subscriptionExpiresAt: null,
+            };
+            const next = { ...prev, ...data };
+            userStore.set(where.id, next);
+            return next;
+          },
+        ),
       },
       promoCode: {
         findUnique: vi.fn(
@@ -155,6 +210,14 @@ describe('billing routes', () => {
     vi.clearAllMocks();
     paymentStore.clear();
     promoStore.clear();
+    userStore.clear();
+    userStore.set('user-1', {
+      id: 'user-1',
+      username: 'alice',
+      referralCode: null,
+      subscriptionStatus: 'none',
+      subscriptionExpiresAt: null,
+    });
     promoStore.set('new80', {
       id: 'promo-new80',
       code: 'new80',
@@ -376,6 +439,67 @@ describe('billing routes', () => {
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('INVALID_PROMO');
     expect(paymentStore.size).toBe(before);
+  });
+
+  it('GET /billing/referral without token returns 401', async () => {
+    const res = await request(createApp()).get('/billing/referral');
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /billing/referral returns code and confirmed conversion count', async () => {
+    userStore.set('user-1', {
+      id: 'user-1',
+      username: 'alice',
+      referralCode: 'alice',
+      subscriptionStatus: 'none',
+      subscriptionExpiresAt: null,
+    });
+    const prisma = mockGetPrisma();
+    await prisma.payment.create({
+      data: {
+        userId: 'other',
+        amount: 9_000,
+        status: 'confirmed',
+        promoCode: 'alice',
+        tbankOrderId: 'pay_ref_1',
+      },
+    });
+    await prisma.payment.create({
+      data: {
+        userId: 'other',
+        amount: 9_000,
+        status: 'pending',
+        promoCode: 'alice',
+        tbankOrderId: 'pay_ref_2',
+      },
+    });
+    const res = await request(createApp())
+      .get('/billing/referral')
+      .set('X-User-Token', 'jwt');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ code: 'alice', conversionCount: 1 });
+  });
+
+  it('POST /billing/promo/validate accepts a referral nick at 10%', async () => {
+    userStore.set('ref-1', {
+      id: 'ref-1',
+      username: 'bob',
+      referralCode: 'bob',
+      subscriptionStatus: 'none',
+      subscriptionExpiresAt: null,
+    });
+    const res = await request(createApp())
+      .post('/billing/promo/validate')
+      .set('X-User-Token', 'jwt')
+      .send({ promoCode: 'Bob' });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      valid: true,
+      code: 'bob',
+      discountPercent: 10,
+      originalAmount: 10_000,
+      finalAmount: 9_000,
+    });
   });
 
   it('GET /billing/status returns subscription snapshot', async () => {
