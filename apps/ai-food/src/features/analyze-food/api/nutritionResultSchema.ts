@@ -15,46 +15,11 @@ export interface NoFoodResult {
   reason: string;
 }
 
-export const NO_FOOD_PROMPT_RULE = `Если на изображении НЕТ съедобной еды или напитка — верни ТОЛЬКО XML:
-<analysis>
-  <noFood>true</noFood>
-  <reason>кратко на русском, что на фото вместо еды</reason>
-</analysis>
-Случаи noFood: люди, животные, пейзажи, непищевые предметы, неясное/размытое фото, пустая тарелка без еды, грязь/мусор, меню/скриншоты без продукта, пустая/выброшенная упаковка без продукта.
-НЕ noFood: закрытая упаковка еды/напитка (йогурт, сок, молоко, батончик и т.п.) — это продукт, анализируй его.
-НЕ придумывай блюдо и НЕ возвращай КБЖУ для таких фото. НЕ пиши foodName вроде «Неизвестное блюдо», «Нет еды», «Человек».
-Если еда есть — верни обычную схему питания БЕЗ тега noFood.`;
-
-/** Gemini-only noFood rule (slightly different XML wording; same packaged-food policy). */
-export const GEMINI_NO_FOOD_PROMPT_RULE = `Если на изображении НЕТ съедобной еды или напитка — верни ТОЛЬКО:
-<analysis>
-  <noFood>true</noFood>
-  <reason>кратко на русском, что на фото вместо еды</reason>
-</analysis>
-
-Случаи noFood: люди, животные, пейзажи, непищевые предметы, неясное/размытое фото, пустая тарелка без еды, грязь/мусор, меню/скриншоты без продукта, пустая/выброшенная упаковка без продукта.
-НЕ noFood: закрытая упаковка еды/напитка (йогурт, сок, молоко, батончик и т.п.) — это продукт, анализируй его.
-НЕ придумывай блюдо и НЕ возвращай КБЖУ для таких фото. НЕ пиши foodName вроде «Неизвестное блюдо», «Нет еды», «Человек».
-Если еда есть — верни обычную схему питания БЕЗ тега noFood.`;
-
 export function isNoFoodResult(value: unknown): value is NoFoodResult {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
   return v.noFood === true && typeof v.reason === 'string' && v.reason.trim().length > 0;
 }
-
-export const MICRONUTRIENTS_PROMPT_RULE = `micronutrients — ровно 8 элементов <micronutrient> для всей порции (оценка, не меддиагноз):
-каждый: <id>, <amount>, <unit>;
-id ∈ vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium;
-amount — неотрицательное число (оценка содержания в этой порции); неизвестно → 0;
-unit строго по id: vitaminA/vitaminD/vitaminB12/folate → µg; vitaminC/iron/calcium/magnesium → mg.
-Всегда включай все 8 id. Не используй граммы и не возвращай качественные level.`;
-
-/** Gemini-only: self-closing nutrient tags with amount_mg. */
-export const GEMINI_MICRONUTRIENTS_PROMPT_RULE = `micronutrients — ровно 8 элементов <nutrient name="…" amount_mg="…"/> для всей порции (оценка, не меддиагноз):
-name ∈ vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium;
-amount_mg — неотрицательное число в миллиграммах (даже если нутрициологически принято мкг: 1 мкг = 0.001 мг); неизвестно → 0.
-Всегда включай все 8 name. Не смешивай единицы и не возвращай качественные level.`;
 
 /** Convert model amount_mg into canonical MicronutrientEstimate (µg for A/D/B12/folate). */
 export function amountMgToCanonical(

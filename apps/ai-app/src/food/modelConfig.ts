@@ -8,8 +8,3 @@ export function resolveModel(): string {
   const fromEnv = process.env.OPENROUTER_MODEL?.trim();
   return fromEnv && fromEnv.length > 0 ? fromEnv : DEFAULT_OPENROUTER_MODEL;
 }
-
-/** Same heuristic as frontend `isGeminiModel`. */
-export function isGeminiModel(model?: string | null): boolean {
-  return !!model && /gemini/i.test(model);
-}

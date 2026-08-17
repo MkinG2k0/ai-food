@@ -27,11 +27,7 @@ import { streamFoodAnalyze } from './streamChatCompletions';
 import { waitForAnalyzeJob } from './fetchAnalyzeJobApi';
 
 export type { AnalyzeFeatures };
-export {
-  DEFAULT_ANALYZE_FEATURES,
-  SINGLE_ITEM_COMPOSITION_RULE,
-  GEMINI_SINGLE_ITEM_COMPOSITION_RULE,
-} from './analyzeFeatures';
+export { DEFAULT_ANALYZE_FEATURES } from './analyzeFeatures';
 
 export interface AnalyzeFoodInput {
   /** Single photo (legacy). Ignored when `images` is non-empty. */

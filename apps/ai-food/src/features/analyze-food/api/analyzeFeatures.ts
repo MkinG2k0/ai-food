@@ -13,9 +13,6 @@ export const DEFAULT_ANALYZE_FEATURES: AnalyzeFeatures = {
 
 /** When composition is off — one item for the whole dish, no layer breakdown. */
 export const SINGLE_ITEM_COMPOSITION_RULE =
-  'Состав (items): не разбивай блюдо на ингредиенты/слои — верни ровно один item с name равным foodName и КБЖУ/grams всего блюда.';
-
-export const GEMINI_SINGLE_ITEM_COMPOSITION_RULE =
   'Не разбивай блюдо на ингредиенты/слои — ровно один item с name = foodName на всё блюдо.';
 
 /**

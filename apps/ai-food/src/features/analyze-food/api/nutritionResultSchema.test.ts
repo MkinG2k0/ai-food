@@ -4,9 +4,6 @@ import {
   isNoFoodResult,
   isNutritionResult,
   normalizeMicronutrients,
-  MICRONUTRIENTS_PROMPT_RULE,
-  NO_FOOD_PROMPT_RULE,
-  GEMINI_NO_FOOD_PROMPT_RULE,
 } from './nutritionResultSchema';
 
 describe('nutritionResultSchema micronutrients', () => {
@@ -110,15 +107,6 @@ describe('nutritionResultSchema micronutrients', () => {
       { id: 'iron', amount: 2, unit: 'mg' },
     ]);
   });
-
-  it('MICRONUTRIENTS_PROMPT_RULE requires amount and units for all eight ids', () => {
-    expect(MICRONUTRIENTS_PROMPT_RULE).toMatch(/vitaminA/);
-    expect(MICRONUTRIENTS_PROMPT_RULE).toMatch(/vitaminB12/);
-    expect(MICRONUTRIENTS_PROMPT_RULE).toMatch(/magnesium/);
-    expect(MICRONUTRIENTS_PROMPT_RULE).toMatch(/amount/);
-    expect(MICRONUTRIENTS_PROMPT_RULE).toMatch(/µg|mg/);
-    expect(MICRONUTRIENTS_PROMPT_RULE).not.toMatch(/high\|medium\|low\|none/);
-  });
 });
 
 describe('nutritionResultSchema noFood', () => {
@@ -130,19 +118,5 @@ describe('nutritionResultSchema noFood', () => {
     expect(isNoFoodResult({ foodName: 'Суп', calories: 100 })).toBe(false);
     expect(isNoFoodResult({ noFood: false, reason: 'x' })).toBe(false);
     expect(isNoFoodResult({ noFood: true, reason: '' })).toBe(false);
-  });
-
-  it('NO_FOOD_PROMPT_RULE forbids inventing dish names for non-food photos', () => {
-    expect(NO_FOOD_PROMPT_RULE).toMatch(/noFood/i);
-    expect(NO_FOOD_PROMPT_RULE).toMatch(/животн|люди|человек/i);
-    expect(NO_FOOD_PROMPT_RULE).toMatch(/Неизвестное блюдо|Нет еды|Человек/);
-    expect(NO_FOOD_PROMPT_RULE).toMatch(/НЕ noFood.*йогурт|йогурт.*анализируй/i);
-  });
-
-  it('GEMINI_NO_FOOD_PROMPT_RULE does not treat retail packaging as noFood', () => {
-    expect(GEMINI_NO_FOOD_PROMPT_RULE).toMatch(/НЕ noFood.*йогурт|йогурт.*анализируй/i);
-    expect(GEMINI_NO_FOOD_PROMPT_RULE).not.toMatch(
-      /упаковка продукта без видимой порции/,
-    );
   });
 });

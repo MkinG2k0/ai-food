@@ -34,7 +34,7 @@ export function buildAnalyzeMessages(input: {
 
   const systemContent = appendDietPreference(
     appendCustomInstructions(
-      selectAnalyzeSystemPrompt(hasImage, input.model, features),
+      selectAnalyzeSystemPrompt(hasImage, features),
       input.customInstructions,
     ),
     input.dietType,

@@ -11,7 +11,6 @@ export {
 export {
   normalizeMicronutrients,
   isNutritionResult,
-  MICRONUTRIENTS_PROMPT_RULE,
 } from './api/nutritionResultSchema';
 export {
   refineMealApi,
