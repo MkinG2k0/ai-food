@@ -18,6 +18,7 @@ import { userMealsRouter } from './routes/userMeals.js';
 import { userWeightsRouter } from './routes/userWeights.js';
 import { userFavoritesRouter } from './routes/userFavorites.js';
 import { userSettingsRouter } from './routes/userSettings.js';
+import { userStreakRouter } from './routes/userStreak.js';
 
 export function createApp() {
   const app = express();
@@ -50,6 +51,7 @@ export function createApp() {
   app.use('/user/weights', userWeightsRouter);
   app.use('/user/favorites', userFavoritesRouter);
   app.use('/user/settings', userSettingsRouter);
+  app.use('/user/streak', userStreakRouter);
 
   const v1 = express.Router();
   v1.use(requireApiKey);

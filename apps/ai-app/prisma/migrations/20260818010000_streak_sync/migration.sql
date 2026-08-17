@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "clientStreak" JSONB;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "streakClientUpdatedAt" TIMESTAMP(3);
