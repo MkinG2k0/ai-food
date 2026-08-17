@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useDiaryStore } from '@/entities/meal';
 import { localDateKey } from '@/entities/streak';
 import { SwipeableMealCard } from '@/features/delete-meal';
-import { entranceListItem, isSameDay } from '@/shared/lib';
+import { entranceContainer, entranceListItem, isSameDay } from '@/shared/lib';
 
 interface MealListProps {
   selectedDate: Date;
@@ -21,7 +21,7 @@ export function MealList({ selectedDate }: MealListProps) {
   if (filteredMeals.length === 0) {
     return (
       <motion.div
-        key={entranceKey}
+        key={`empty-${entranceKey}`}
         className="flex h-48 flex-col items-center justify-center text-muted-foreground"
         initial={reducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -39,8 +39,9 @@ export function MealList({ selectedDate }: MealListProps) {
 
   return (
     <motion.div
-      key={entranceKey}
+      key={`list-${entranceKey}`}
       className="space-y-3"
+      variants={entranceContainer(reducedMotion)}
       initial="hidden"
       animate="show"
     >
