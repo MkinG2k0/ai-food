@@ -6,9 +6,9 @@ import {
   formatItemGrams,
   nutrientsFromPer100,
   nutrientsPer100FromPortion,
+  parseNutrientInput,
   resolveItemGrams,
   sanitizeGrams,
-  sanitizeNutrient,
   useDiaryStore,
   type NutrientKey,
   type PortionNutrients,
@@ -154,7 +154,7 @@ export function FoodItemEditPage() {
   const per100 = rememberedDensity ?? ZERO_DENSITY;
 
   function patchNumber(field: NutrientKey, raw: string) {
-    const value = sanitizeNutrient(Number(raw));
+    const value = parseNutrientInput(raw);
     const next = {
       calories: field === 'calories' ? value : item!.calories,
       protein: field === 'protein' ? value : item!.protein,
@@ -173,7 +173,7 @@ export function FoodItemEditPage() {
     const base = densityRef.current ?? ZERO_DENSITY;
     const nextPer100: PortionNutrients = {
       ...base,
-      [field]: sanitizeNutrient(Number(raw)),
+      [field]: parseNutrientInput(raw),
     };
     rememberDensity(nextPer100);
     const g = resolveItemGrams(item!);
@@ -305,13 +305,14 @@ export function FoodItemEditPage() {
                     type="number"
                     inputMode="decimal"
                     min={0}
+                    step={0.1}
                     aria-label={
                       isPer100
                         ? `${macro.ariaLabel} на 100 г`
                         : macro.ariaLabel
                     }
                     className={cn(inputClassName, 'text-center tabular-nums')}
-                    value={Math.round(value)}
+                    value={formatItemGrams(value)}
                     onChange={(e) =>
                       isPer100
                         ? patchPer100(macro.field, e.target.value)

@@ -1,4 +1,5 @@
 import { Plus, Trash2 } from 'lucide-react';
+import { parseNutrientInput } from '@/entities/meal';
 import { Button } from '@/shared/ui';
 import { cn } from '@/shared/lib';
 import type { ManualCompositionDraftItem } from '../model/buildManualMeal';
@@ -117,6 +118,7 @@ export function ManualCompositionDraft({
                       type="number"
                       inputMode="decimal"
                       min={0}
+                      step={0.1}
                       className={inputClassName}
                       value={item[field] || ''}
                       onChange={(e) =>
@@ -125,7 +127,7 @@ export function ManualCompositionDraft({
                             [field]:
                               field === 'grams'
                                 ? parseNum(e.target.value)
-                                : Math.round(parseNum(e.target.value)),
+                                : parseNutrientInput(e.target.value),
                           }),
                         )
                       }

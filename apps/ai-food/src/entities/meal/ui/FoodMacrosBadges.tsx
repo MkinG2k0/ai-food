@@ -11,7 +11,7 @@ export interface FoodMacrosBadgesProps {
 }
 
 function MacroDigits({ value, maxDigits }: { value: number; maxDigits: number }) {
-  const animated = useAnimatedNumber(value);
+  const animated = useAnimatedNumber(value, { decimals: 1 });
   return (
     <span
       className="inline-block text-right tabular-nums"
@@ -59,19 +59,19 @@ function CompactMacros({
       <div className="flex min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
         <span className="inline-flex shrink-0 items-center gap-1">
           <LetterCircle letter="Б" className="bg-blue-500" />
-          <MacroDigits value={protein} maxDigits={3} />
+          <MacroDigits value={protein} maxDigits={4} />
         </span>
         <span className="inline-flex shrink-0 items-center gap-1">
           <LetterCircle letter="Ж" className="bg-red-500" />
-          <MacroDigits value={fat} maxDigits={3} />
+          <MacroDigits value={fat} maxDigits={4} />
         </span>
         <span className="inline-flex shrink-0 items-center gap-1">
           <LetterCircle letter="У" className="bg-amber-500" />
-          <MacroDigits value={carbs} maxDigits={3} />
+          <MacroDigits value={carbs} maxDigits={4} />
         </span>
         <span className="inline-flex shrink-0 items-center gap-1">
           <LetterCircle letter="К" className="bg-teal-500" />
-          <MacroDigits value={fiber} maxDigits={3} />
+          <MacroDigits value={fiber} maxDigits={4} />
         </span>
       </div>
     </div>
@@ -86,10 +86,10 @@ function BadgeMacros({
   fiber,
 }: Omit<FoodMacrosBadgesProps, 'density'>) {
   const animatedCalories = useAnimatedNumber(calories);
-  const animatedProtein = useAnimatedNumber(protein);
-  const animatedFat = useAnimatedNumber(fat);
-  const animatedCarbs = useAnimatedNumber(carbs);
-  const animatedFiber = useAnimatedNumber(fiber);
+  const animatedProtein = useAnimatedNumber(protein, { decimals: 1 });
+  const animatedFat = useAnimatedNumber(fat, { decimals: 1 });
+  const animatedCarbs = useAnimatedNumber(carbs, { decimals: 1 });
+  const animatedFiber = useAnimatedNumber(fiber, { decimals: 1 });
 
   return (
     <div className="flex flex-nowrap gap-0.5 overflow-hidden">

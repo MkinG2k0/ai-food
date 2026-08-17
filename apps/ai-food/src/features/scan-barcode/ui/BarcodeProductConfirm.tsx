@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { sanitizeGrams } from '@/entities/meal';
 import { formatCalories, formatMacro } from '@/shared/lib';
 import { Button } from '@/shared/ui';
 import {
@@ -27,7 +28,7 @@ export function BarcodeProductConfirm({
   const grams = useMemo(() => {
     const n = Number(gramsRaw.replace(',', '.'));
     if (!Number.isFinite(n) || n <= 0) return 0;
-    return Math.round(n);
+    return sanitizeGrams(n);
   }, [gramsRaw]);
 
   const preview = useMemo(
@@ -66,7 +67,7 @@ export function BarcodeProductConfirm({
           type="number"
           inputMode="decimal"
           min={1}
-          step={1}
+          step={0.1}
           value={gramsRaw}
           onChange={(e) => setGramsRaw(e.target.value)}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

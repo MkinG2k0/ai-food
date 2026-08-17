@@ -7,6 +7,7 @@ import {
   MAX_PORTIONS,
   mealDisplayName,
   MIN_PORTIONS,
+  parseNutrientInput,
   PORTION_STEP,
   resolveMealPortions,
   resolveMealTotalGrams,
@@ -28,12 +29,6 @@ function toDatetimeLocalValue(iso: string): string {
   if (!Number.isFinite(d.getTime())) return '';
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function parseNutrient(raw: string): number {
-  const n = Number(raw);
-  if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.round(n));
 }
 
 function parseGrams(raw: string): number {
@@ -203,15 +198,16 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
               type="number"
               inputMode="decimal"
               min={0}
+              step={0.1}
               aria-label="Калории блюда"
               className={cn(
                 inputClassName,
                 'text-2xl font-semibold text-emerald-600',
               )}
-              value={Math.round(meal.totalCalories)}
+              value={formatItemGrams(meal.totalCalories)}
               onChange={(e) =>
                 updateMealNutrition(meal.id, {
-                  calories: parseNutrient(e.target.value),
+                  calories: parseNutrientInput(e.target.value),
                 })
               }
             />
@@ -333,12 +329,13 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
                 type="number"
                 inputMode="decimal"
                 min={0}
+                step={0.1}
                 aria-label={macro.ariaLabel}
                 className={cn(inputClassName, 'text-center tabular-nums')}
-                value={Math.round(macro.value)}
+                value={formatItemGrams(macro.value)}
                 onChange={(e) =>
                   updateMealNutrition(meal.id, {
-                    [macro.field]: parseNutrient(e.target.value),
+                    [macro.field]: parseNutrientInput(e.target.value),
                   })
                 }
               />

@@ -6,6 +6,11 @@ interface NutritionRowProps {
   color?: string;
 }
 
+function formatRowValue(value: number): string {
+  const n = Number.isFinite(value) ? Math.max(0, Math.round(value * 10) / 10) : 0;
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
 export function NutritionRow({
   label,
   value,
@@ -20,7 +25,7 @@ export function NutritionRow({
       <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-medium">
-          {Math.round(value)}
+          {formatRowValue(value)}
           {unit}
         </span>
       </div>

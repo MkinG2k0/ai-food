@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ImagePlus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { parseNutrientInput } from '@/entities/meal';
 import {
   ManualCompositionDraft,
   useSaveManualMeal,
@@ -16,12 +17,6 @@ const inputClassName = cn(
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
   'disabled:cursor-not-allowed disabled:opacity-60',
 );
-
-function parseNutrient(raw: string): number {
-  const n = Number(raw.replace(',', '.'));
-  if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.round(n));
-}
 
 function parseGrams(raw: string): number {
   const n = Number(raw.replace(',', '.'));
@@ -217,11 +212,11 @@ export function ManualEntryPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {(
               [
-                ['calories', 'Ккал', displayCalories, setCalories, parseNutrient],
-                ['protein', 'Белки', displayProtein, setProtein, parseNutrient],
-                ['carbs', 'Углеводы', displayCarbs, setCarbs, parseNutrient],
-                ['fat', 'Жиры', displayFat, setFat, parseNutrient],
-                ['fiber', 'Клетчатка', displayFiber, setFiber, parseNutrient],
+                ['calories', 'Ккал', displayCalories, setCalories, parseNutrientInput],
+                ['protein', 'Белки', displayProtein, setProtein, parseNutrientInput],
+                ['carbs', 'Углеводы', displayCarbs, setCarbs, parseNutrientInput],
+                ['fat', 'Жиры', displayFat, setFat, parseNutrientInput],
+                ['fiber', 'Клетчатка', displayFiber, setFiber, parseNutrientInput],
                 ['grams', 'Граммы', displayGrams, setGrams, parseGrams],
               ] as const
             ).map(([key, label, value, setter, parser]) => (
@@ -231,6 +226,7 @@ export function ManualEntryPage() {
                   type="number"
                   inputMode="decimal"
                   min={0}
+                  step={0.1}
                   readOnly={compositionActive}
                   disabled={compositionActive}
                   className={inputClassName}

@@ -1,3 +1,5 @@
+import { sanitizeGrams } from '@/entities/meal';
+
 export interface OffNutritionPer100g {
   calories: number;
   protein: number;
@@ -87,7 +89,7 @@ export function parseServingGrams(servingSize?: string): number | null {
   if (!match) return null;
   const n = Number(match[1].replace(',', '.'));
   if (!Number.isFinite(n) || n <= 0) return null;
-  return Math.round(n);
+  return sanitizeGrams(n);
 }
 
 /** Default portion: package serving when known, otherwise 100 g. */
