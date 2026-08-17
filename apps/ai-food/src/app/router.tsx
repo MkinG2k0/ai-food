@@ -8,6 +8,7 @@ import { StatsPage } from '@/pages/stats';
 import { SettingsPage } from '@/pages/settings';
 import { NewsPage } from '@/pages/news';
 import { FavoritesPage } from '@/pages/favorites';
+import { FriendsPage, FriendProfilePage } from '@/pages/friends';
 import { ManualEntryPage } from '@/pages/manual-entry';
 import { BarcodePage } from '@/pages/barcode';
 import { ScanPage } from '@/pages/scan';
@@ -77,6 +78,22 @@ const router = createBrowserRouter([
         element: (
           <ConsentGuard>
             <ProfileGuard><FavoritesPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/friends',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><FriendsPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/friends/:userId',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><FriendProfilePage /></ProfileGuard>
           </ConsentGuard>
         ),
       },

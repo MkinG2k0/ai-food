@@ -126,6 +126,10 @@ export function SettingsPage() {
   const setFeatureHealthiness = useSettingsStore((s) => s.setFeatureHealthiness);
   const featureComposition = useSettingsStore((s) => s.featureComposition);
   const setFeatureComposition = useSettingsStore((s) => s.setFeatureComposition);
+  const sharePhotosToFriends = useSettingsStore((s) => s.sharePhotosToFriends);
+  const setSharePhotosToFriends = useSettingsStore(
+    (s) => s.setSharePhotosToFriends,
+  );
   const calendarRings = useSettingsStore((s) => s.calendarRings);
   const setCalendarRing = useSettingsStore((s) => s.setCalendarRing);
 
@@ -685,6 +689,32 @@ export function SettingsPage() {
             </>
           )}
         </section>
+
+        {userToken ? (
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium leading-none">Друзья</h2>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-input"
+                checked={sharePhotosToFriends}
+                onChange={(e) => {
+                  setSharePhotosToFriends(e.target.checked);
+                  queueSettingsSoon();
+                }}
+              />
+              <span className="space-y-0.5">
+                <span className="block text-sm font-medium">
+                  Показывать фото друзьям
+                </span>
+                <span className="block text-sm text-muted-foreground">
+                  Если выключено, друзья видят только названия и КБЖУ приёмов —
+                  без значка фото в профиле.
+                </span>
+              </span>
+            </label>
+          </section>
+        ) : null}
 
         <section className="space-y-3">
           <h2 className="text-sm font-medium leading-none">Отчёты</h2>

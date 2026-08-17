@@ -152,6 +152,7 @@ export type SettingsSyncPayload = {
   featureHealthiness: boolean;
   featureComposition: boolean;
   calendarRings: CalendarRingsSelection;
+  sharePhotosToFriends: boolean;
 };
 
 export function settingsSyncPayloadFromState(s: {
@@ -171,6 +172,7 @@ export function settingsSyncPayloadFromState(s: {
     featureHealthiness: s.featureHealthiness,
     featureComposition: s.featureComposition,
     calendarRings: { ...s.calendarRings },
+    sharePhotosToFriends: s.sharePhotosToFriends,
   };
 }
 
@@ -191,6 +193,9 @@ interface SettingsState {
   /** Show dish composition (items) in UI and ask AI to break down ingredients */
   featureComposition: boolean;
   setFeatureComposition: (value: boolean) => void;
+  /** When false, friends see text-only meal rows in profile (D-01). */
+  sharePhotosToFriends: boolean;
+  setSharePhotosToFriends: (value: boolean) => void;
   /** Which КБЖУ rings to show on the calendar (any combination). */
   calendarRings: CalendarRingsSelection;
   setCalendarRing: (key: CalendarRingKey, enabled: boolean) => void;
@@ -229,6 +234,9 @@ export const useSettingsStore = create<SettingsState>()(
       featureComposition: true,
       setFeatureComposition: (value) =>
         set({ featureComposition: value, clientUpdatedAt: bumpClock() }),
+      sharePhotosToFriends: true,
+      setSharePhotosToFriends: (value) =>
+        set({ sharePhotosToFriends: value, clientUpdatedAt: bumpClock() }),
       calendarRings: { ...DEFAULT_CALENDAR_RINGS },
       setCalendarRing: (key, enabled) =>
         set((s) => ({
@@ -244,7 +252,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'ai-food-settings',
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => capacitorStorage),
       migrate: (persisted, version) => {
         if (!isCalendarRingsRecord(persisted)) {
@@ -261,6 +269,12 @@ export const useSettingsStore = create<SettingsState>()(
         }
         if (typeof next.clientUpdatedAt !== 'string') {
           next.clientUpdatedAt = SETTINGS_EPOCH_ISO;
+        }
+        if (version < 4) {
+          next.sharePhotosToFriends =
+            typeof next.sharePhotosToFriends === 'boolean'
+              ? next.sharePhotosToFriends
+              : true;
         }
         return next as unknown as SettingsState;
       },

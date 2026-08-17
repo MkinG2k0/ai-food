@@ -31,6 +31,7 @@ export async function syncSettings(): Promise<void> {
     featureHealthiness: next.settings.featureHealthiness,
     featureComposition: next.settings.featureComposition,
     calendarRings: normalizeCalendarRings(next.settings.calendarRings),
+    sharePhotosToFriends: next.settings.sharePhotosToFriends ?? true,
     clientUpdatedAt: next.clientUpdatedAt,
   });
 }

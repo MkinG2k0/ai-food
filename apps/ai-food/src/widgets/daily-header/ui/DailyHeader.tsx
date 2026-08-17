@@ -6,6 +6,7 @@ import { localDateKey } from '@/entities/streak';
 import { useProfileStore } from '@/features/onboarding';
 import { useSettingsStore } from '@/features/settings';
 import { StreakSheet, useStreak } from '@/features/streak';
+import { FriendsBellButton } from '@/features/friends';
 import { isSameDay, useSearchParamSheet } from '@/shared/lib';
 import { WeekStrip } from './WeekStrip';
 import { NutritionSummaryCard } from './NutritionSummaryCard';
@@ -103,14 +104,17 @@ export function DailyHeader({
           </button>
         </div>
         <h1 className="text-lg font-semibold tracking-tight">AI Food</h1>
-        <button
-          type="button"
-          className="absolute right-0 p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors"
-          aria-label="Настройки"
-          onClick={() => navigate('/settings')}
-        >
-          <User className="h-5 w-5" />
-        </button>
+        <div className="absolute right-0 flex items-center gap-0.5">
+          <FriendsBellButton />
+          <button
+            type="button"
+            className="p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors"
+            aria-label="Настройки"
+            onClick={() => navigate('/settings')}
+          >
+            <User className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <WeekStrip
