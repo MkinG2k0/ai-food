@@ -53,10 +53,11 @@ export async function applyWeightSync(
   body: WeightSyncBody,
 ): Promise<WeightSyncResponse> {
   for (const upsert of body.upserts) {
-    const stored = await prisma.weightEntry.findFirst({
-      where: { id: upsert.id, userId },
+    const existing = await prisma.weightEntry.findUnique({
+      where: { id: upsert.id },
     });
-    if (!shouldApplyUpsert(stored, upsert.clientUpdatedAt)) continue;
+    if (existing && existing.userId !== userId) continue;
+    if (!shouldApplyUpsert(existing, upsert.clientUpdatedAt)) continue;
 
     const data = {
       id: upsert.id,
@@ -67,54 +68,41 @@ export async function applyWeightSync(
       deletedAt: null as Date | null,
     };
 
-    const anyRow = await prisma.weightEntry.findUnique({
+    await prisma.weightEntry.upsert({
       where: { id: upsert.id },
+      create: data,
+      update: {
+        date: data.date,
+        kg: data.kg,
+        clientUpdatedAt: data.clientUpdatedAt,
+        deletedAt: null,
+      },
     });
-    if (anyRow && anyRow.userId !== userId) continue;
-
-    if (anyRow) {
-      await prisma.weightEntry.update({
-        where: { id: upsert.id },
-        data: {
-          date: data.date,
-          kg: data.kg,
-          clientUpdatedAt: data.clientUpdatedAt,
-          deletedAt: null,
-        },
-      });
-    } else {
-      await prisma.weightEntry.create({ data });
-    }
   }
 
   for (const del of body.deletes) {
-    const stored = await prisma.weightEntry.findFirst({
-      where: { id: del.id, userId },
+    const existing = await prisma.weightEntry.findUnique({
+      where: { id: del.id },
     });
-    if (!shouldApplyDelete(stored, del.clientUpdatedAt)) continue;
+    if (existing && existing.userId !== userId) continue;
+    if (!shouldApplyDelete(existing, del.clientUpdatedAt)) continue;
 
     const clock = new Date(del.clientUpdatedAt);
-    if (stored) {
-      await prisma.weightEntry.update({
-        where: { id: del.id },
-        data: { deletedAt: clock, clientUpdatedAt: clock },
-      });
-    } else {
-      const anyRow = await prisma.weightEntry.findUnique({
-        where: { id: del.id },
-      });
-      if (anyRow) continue;
-      await prisma.weightEntry.create({
-        data: {
-          id: del.id,
-          userId,
-          date: '1970-01-01',
-          kg: 0,
-          clientUpdatedAt: clock,
-          deletedAt: clock,
-        },
-      });
-    }
+    await prisma.weightEntry.upsert({
+      where: { id: del.id },
+      create: {
+        id: del.id,
+        userId,
+        date: '1970-01-01',
+        kg: 0,
+        clientUpdatedAt: clock,
+        deletedAt: clock,
+      },
+      update: {
+        deletedAt: clock,
+        clientUpdatedAt: clock,
+      },
+    });
   }
 
   if (body.goalKg !== undefined) {
