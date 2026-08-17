@@ -13,6 +13,7 @@
 | Избранное | `selectedDate`, model-test, deviceId generation |
 | Вес + `goalKg` | |
 | Настройки UI / `customInstructions` / `aiModel` / feature flags / `calendarRings` | |
+| Серия (заморозки, рекорд, celebration) | |
 | Auth / квоты / подписка | |
 
 **Главное для продукта:** после входа восстанавливаются профиль (вкл. микро), дневник, избранное, вес, настройки. **Фото еды намеренно никогда не хранятся на сервере** — только локальный Filesystem + URI stubs в sync.
@@ -72,6 +73,18 @@ Endpoint settings: `POST /user/settings/sync` — single-doc LWW на `User.clie
 
 ---
 
+## Sync triggers (P3 streak — locked)
+
+| Trigger | Behavior |
+|---------|----------|
+| **Streak persist change** | Immediate `POST /user/streak/sync` when `freezeCount`, consumed freezes, milestone grants, `bestStreak`, or `lastCelebratedLocalDate` change (after local reconcile or celebration) |
+| **Login / auth hydrate** | `syncStreak` в `queueFullUserDataSync` |
+| **Guests** | Local `ai-food-streak` only |
+
+Endpoint: `POST /user/streak/sync` — single-doc LWW на `User.clientStreak` + `streakClientUpdatedAt`. Payload: **`currentLength`** (активная серия для друзей), `freezeCount`, `consumedFreezeDateKeys`, `grantedMilestones`, `lastCelebratedLocalDate`, `bestStreak`. Перед push клиент пересчитывает `currentLength` из дневника; full sync streak идёт **после** diary sync.
+
+---
+
 ## 1. Inventory (as-of audit 2026-08-13)
 
 ### Client-only (Capacitor Preferences / Zustand persist / Filesystem)
@@ -82,6 +95,7 @@ Endpoint settings: `POST /user/settings/sync` — single-doc LWW на `User.clie
 | `ai-food-favorites` | `favorites[]` + `pendingDeletes` (max 50; image URI stubs) |
 | `ai-food-weight` | weight `entries[]` + `goalKg` (+ `clientUpdatedAt` on entries) |
 | `ai-food-settings` | `customInstructions`, feature flags, `aiModel`, `calendarRings` |
+| `ai-food-streak` | `currentLength`, `freezeCount`, consumed freezes, milestone grants, `bestStreak`, `lastCelebratedLocalDate`, `clientUpdatedAt` |
 | `ai-food-profile` | `profile`, `targets` (DailyTargets), **`micronutrientTargets`** — часть синкается (см. ниже) |
 | `ai-food-auth` | session token локально (на сервере — `User`) |
 | `ai-food-model-test` | UI state model-test (dev) |
@@ -93,7 +107,7 @@ Endpoint settings: `POST /user/settings/sync` — single-doc LWW на `User.clie
 
 | Model | Релевантные поля |
 |-------|------------------|
-| `User` | `telegramId`, names, `photoUrl`, consent, **`nutritionProfile` Json** (profile+targets+micronutrientTargets?), **`clientSettings` Json**, **`settingsClientUpdatedAt`**, **`goalKg`**, subscription* |
+| `User` | `telegramId`, names, `photoUrl`, consent, **`nutritionProfile` Json** (profile+targets+micronutrientTargets?), **`clientSettings` Json**, **`settingsClientUpdatedAt`**, **`clientStreak` Json**, **`streakClientUpdatedAt`**, **`goalKg`**, subscription* |
 | `Meal` | client-cuid id, items Json, KBJU fields, `clientUpdatedAt`, soft-delete `deletedAt` |
 | `WeightEntry` | id, date (YYYY-MM-DD), kg, `clientUpdatedAt`, soft-delete |
 | `Favorite` | id, sourceMealId, name, items Json, macros, image stubs, `clientUpdatedAt`, soft-delete |
@@ -114,6 +128,7 @@ Endpoint settings: `POST /user/settings/sync` — single-doc LWW на `User.clie
 | Weight + goalKg (P1) | `POST /user/weights/sync` |
 | Favorites (P1) | `POST /user/favorites/sync` |
 | Settings (P2) | `POST /user/settings/sync` |
+| Streak persist (P3) | `POST /user/streak/sync` |
 | Usage / quota + billing | `/usage`, `/billing/*` |
 | Guest → user device linking | при логине |
 
