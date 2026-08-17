@@ -21,6 +21,12 @@ enum PaymentStatus {
   refunded
 }
 
+enum FriendRequestStatus {
+  pending
+  accepted
+  declined
+}
+
 model User {
   id                     String             @id @default(cuid())
   telegramId             String             @unique
@@ -51,6 +57,8 @@ model User {
   meals                  Meal[]
   weightEntries          WeightEntry[]
   favorites              Favorite[]
+  sentFriendRequests     FriendRequest[] @relation("FriendRequestFrom")
+  receivedFriendRequests FriendRequest[] @relation("FriendRequestTo")
 }
 
 model Meal {
@@ -183,6 +191,21 @@ model PromoCode {
   discountPercent Int
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model FriendRequest {
+  id         String              @id @default(cuid())
+  fromUserId String
+  fromUser   User                @relation("FriendRequestFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId   String
+  toUser     User                @relation("FriendRequestTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  status     FriendRequestStatus @default(pending)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId, status])
+  @@index([fromUserId, status])
 }
 
 model GatewayRequest {

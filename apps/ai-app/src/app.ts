@@ -19,6 +19,7 @@ import { userWeightsRouter } from './routes/userWeights.js';
 import { userFavoritesRouter } from './routes/userFavorites.js';
 import { userSettingsRouter } from './routes/userSettings.js';
 import { userStreakRouter } from './routes/userStreak.js';
+import { userFriendsRouter } from './routes/userFriends.js';
 
 export function createApp() {
   const app = express();
@@ -52,6 +53,7 @@ export function createApp() {
   app.use('/user/favorites', userFavoritesRouter);
   app.use('/user/settings', userSettingsRouter);
   app.use('/user/streak', userStreakRouter);
+  app.use('/user/friends', userFriendsRouter);
 
   const v1 = express.Router();
   v1.use(requireApiKey);

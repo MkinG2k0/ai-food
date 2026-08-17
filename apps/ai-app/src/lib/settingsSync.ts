@@ -17,6 +17,7 @@ export const settingsPayloadSchema = z.object({
     fat: z.boolean(),
     carbs: z.boolean(),
   }),
+  sharePhotosToFriends: z.boolean().default(true),
 });
 
 export const settingsSyncBodySchema = z.object({
