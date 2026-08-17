@@ -19,6 +19,7 @@ import {
 } from '../lib/tbank.js';
 import { resolvePromo } from '../lib/promos.js';
 import { ensureUserReferralCode } from '../lib/referralCode.js';
+import { grantReferralRewardIfNeeded } from '../lib/referralGrant.js';
 
 function requireDb() {
   if (!isDatabaseConfigured()) {
@@ -53,9 +54,23 @@ async function requireUser(req: { header: (name: string) => string | undefined }
   return { prisma, user, payload };
 }
 
+function assertNotSelfReferral(
+  resolved: { source: string; referrerId?: string },
+  subscriberId: string,
+) {
+  if (resolved.source === 'referral' && resolved.referrerId === subscriberId) {
+    throw new ApiError(
+      400,
+      'SELF_REFERRAL',
+      'Нельзя использовать свой промокод',
+    );
+  }
+}
+
 async function resolveSubscribeAmount(
   prisma: PrismaClient | null,
   promoCodeRaw: unknown,
+  subscriberId: string,
 ): Promise<{
   amount: number;
   originalAmount: number;
@@ -72,6 +87,7 @@ async function resolveSubscribeAmount(
   if (!resolved) {
     throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
   }
+  assertNotSelfReferral(resolved, subscriberId);
   return {
     amount: resolved.finalAmount,
     originalAmount: resolved.originalAmount,
@@ -125,7 +141,7 @@ billingRouter.get(
 billingRouter.post(
   '/promo/validate',
   asyncHandler(async (req, res) => {
-    const { prisma } = await requireUser(req);
+    const { prisma, user } = await requireUser(req);
     const originalAmount = await getSubscriptionPriceKopecks(prisma);
     const raw = req.body?.promoCode;
     if (typeof raw !== 'string') {
@@ -135,6 +151,7 @@ billingRouter.post(
     if (!resolved) {
       throw new ApiError(400, 'INVALID_PROMO', 'Invalid promo code.');
     }
+    assertNotSelfReferral(resolved, user.id);
     res.json({
       valid: true,
       code: resolved.code,
@@ -159,7 +176,7 @@ billingRouter.post(
     }
 
     const { amount, originalAmount, promoCode } =
-      await resolveSubscribeAmount(prisma, req.body?.promoCode);
+      await resolveSubscribeAmount(prisma, req.body?.promoCode, user.id);
     // Create then set tbankOrderId = Payment.id (D-05 OrderId)
     const payment = await prisma.payment.create({
       data: {
@@ -267,12 +284,13 @@ billingRouter.post(
 
     if (status === 'CONFIRMED') {
       if (payment.status === 'confirmed') {
+        await grantReferralRewardIfNeeded(prisma, payment);
         res.status(200).send('OK');
         return;
       }
 
       const paidAt = new Date();
-      await prisma.payment.update({
+      const confirmed = await prisma.payment.update({
         where: { id: payment.id },
         data: {
           status: 'confirmed',
@@ -281,6 +299,7 @@ billingRouter.post(
         },
       });
       await activateYearLicense(prisma, payment.userId, paidAt);
+      await grantReferralRewardIfNeeded(prisma, confirmed);
       res.status(200).send('OK');
       return;
     }
@@ -341,6 +360,7 @@ billingRouter.post(
     }
 
     if (payment.status === 'confirmed') {
+      await grantReferralRewardIfNeeded(prisma, payment);
       const fresh = await prisma.user.findUnique({ where: { id: user.id } });
       res.json({
         paymentId: payment.id,
@@ -353,11 +373,12 @@ billingRouter.post(
     if (isTbankMock()) {
       // Mock sync: treat as CONFIRMED for local success flow
       const paidAt = new Date();
-      await prisma.payment.update({
+      const confirmed = await prisma.payment.update({
         where: { id: payment.id },
         data: { status: 'confirmed', paidAt },
       });
       await activateYearLicense(prisma, user.id, paidAt);
+      await grantReferralRewardIfNeeded(prisma, confirmed);
       const fresh = await prisma.user.findUnique({ where: { id: user.id } });
       res.json({
         paymentId: payment.id,
@@ -386,11 +407,12 @@ billingRouter.post(
     const state = await getPaymentState(payment.tbankPaymentId);
     if (state.status === 'CONFIRMED') {
       const paidAt = new Date();
-      await prisma.payment.update({
+      const confirmed = await prisma.payment.update({
         where: { id: payment.id },
         data: { status: 'confirmed', paidAt },
       });
       await activateYearLicense(prisma, user.id, paidAt);
+      await grantReferralRewardIfNeeded(prisma, confirmed);
     }
 
     const fresh = await prisma.user.findUnique({ where: { id: user.id } });
@@ -422,15 +444,17 @@ billingRouter.post(
       throw new ApiError(404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
     }
     if (payment.status === 'confirmed') {
+      await grantReferralRewardIfNeeded(prisma, payment);
       res.json({ ok: true, alreadyConfirmed: true });
       return;
     }
     const paidAt = new Date();
-    await prisma.payment.update({
+    const confirmed = await prisma.payment.update({
       where: { id: payment.id },
       data: { status: 'confirmed', paidAt },
     });
     await activateYearLicense(prisma, user.id, paidAt);
+    await grantReferralRewardIfNeeded(prisma, confirmed);
     res.json({ ok: true });
   }),
 );

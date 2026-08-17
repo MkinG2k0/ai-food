@@ -61,7 +61,7 @@ describe('billing routes', () => {
   let paymentSeq = 0;
 
   function mockPrisma() {
-    return {
+    const prisma = {
       payment: {
         create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
           paymentSeq += 1;
@@ -203,7 +203,11 @@ describe('billing routes', () => {
             promoStore.get(where.code) ?? null,
         ),
       },
+      $transaction: vi.fn(async (fn: (tx: typeof prisma) => Promise<unknown>) =>
+        fn(prisma),
+      ),
     };
+    return prisma;
   }
 
   beforeEach(() => {
@@ -515,5 +519,136 @@ describe('billing routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.hasActiveSubscription).toBe(true);
     expect(res.body.subscriptionExpiresAt).toBe('2027-01-01T00:00:00.000Z');
+  });
+
+  it('POST /billing/promo/validate rejects own referralCode as SELF_REFERRAL', async () => {
+    userStore.set('user-1', {
+      id: 'user-1',
+      username: 'alice',
+      referralCode: 'alice',
+      subscriptionStatus: 'none',
+      subscriptionExpiresAt: null,
+    });
+    const res = await request(createApp())
+      .post('/billing/promo/validate')
+      .set('X-User-Token', 'jwt')
+      .send({ promoCode: 'alice' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('SELF_REFERRAL');
+    expect(res.body.message).toBe('Нельзя использовать свой промокод');
+  });
+
+  it('POST /billing/subscribe rejects own referralCode as SELF_REFERRAL', async () => {
+    mockIsTbankMock.mockReturnValue(true);
+    userStore.set('user-1', {
+      id: 'user-1',
+      username: 'alice',
+      referralCode: 'alice',
+      subscriptionStatus: 'none',
+      subscriptionExpiresAt: null,
+    });
+    const before = paymentStore.size;
+    const res = await request(createApp())
+      .post('/billing/subscribe')
+      .set('X-User-Token', 'jwt')
+      .send({ promoCode: 'alice' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('SELF_REFERRAL');
+    expect(paymentStore.size).toBe(before);
+  });
+
+  it('CONFIRMED notification grants referrer 30 days once', async () => {
+    userStore.set('ref-1', {
+      id: 'ref-1',
+      username: 'bob',
+      referralCode: 'bob',
+      subscriptionStatus: 'none',
+      subscriptionExpiresAt: null,
+    });
+    const prisma = mockGetPrisma();
+    const payment = await prisma.payment.create({
+      data: {
+        userId: 'user-1',
+        amount: 9_000,
+        status: 'pending',
+        promoCode: 'bob',
+        tbankOrderId: 'pay_ref_grant',
+        tbankPaymentId: 'tb-ref',
+        referralGrantedAt: null,
+      },
+    });
+    paymentStore.delete(payment.id);
+    paymentStore.set('pay_ref_grant', {
+      ...payment,
+      id: 'pay_ref_grant',
+      tbankOrderId: 'pay_ref_grant',
+    });
+
+    const notif = {
+      TerminalKey: 'term-key',
+      OrderId: 'pay_ref_grant',
+      PaymentId: 'tb-ref',
+      Status: 'CONFIRMED',
+      Success: true,
+      Amount: 9000,
+    };
+    const token = buildTbankToken(notif, 'term-pass');
+
+    const res1 = await request(createApp())
+      .post('/billing/tbank/notification')
+      .send({ ...notif, Token: token });
+    expect(res1.status).toBe(200);
+    expect(mockActivate).toHaveBeenCalledTimes(1);
+    const expiry1 = userStore.get('ref-1')?.subscriptionExpiresAt as Date;
+    expect(userStore.get('ref-1')?.subscriptionStatus).toBe('active');
+    expect(expiry1).toBeInstanceOf(Date);
+    expect(paymentStore.get('pay_ref_grant')?.referralGrantedAt).toBeInstanceOf(
+      Date,
+    );
+
+    const res2 = await request(createApp())
+      .post('/billing/tbank/notification')
+      .send({ ...notif, Token: token });
+    expect(res2.status).toBe(200);
+    expect(mockActivate).toHaveBeenCalledTimes(1);
+    expect(userStore.get('ref-1')?.subscriptionExpiresAt).toEqual(expiry1);
+  });
+
+  it('already-confirmed sync and mock/confirm still grant once', async () => {
+    mockIsTbankMock.mockReturnValue(true);
+    userStore.set('ref-1', {
+      id: 'ref-1',
+      username: 'bob',
+      referralCode: 'bob',
+      subscriptionStatus: 'none',
+      subscriptionExpiresAt: null,
+    });
+    const prisma = mockGetPrisma();
+    await prisma.payment.create({
+      data: {
+        userId: 'user-1',
+        amount: 9_000,
+        status: 'confirmed',
+        promoCode: 'bob',
+        tbankOrderId: 'pay_1',
+        referralGrantedAt: null,
+      },
+    });
+
+    const sync = await request(createApp())
+      .post('/billing/sync')
+      .set('X-User-Token', 'jwt')
+      .send({ paymentId: 'pay_1' });
+    expect(sync.status).toBe(200);
+    expect(userStore.get('ref-1')?.subscriptionStatus).toBe('active');
+    const expiry = userStore.get('ref-1')?.subscriptionExpiresAt as Date;
+
+    const mockConfirm = await request(createApp())
+      .post('/billing/mock/confirm')
+      .set('X-User-Token', 'jwt')
+      .send({ paymentId: 'pay_1' });
+    expect(mockConfirm.status).toBe(200);
+    expect(mockConfirm.body.alreadyConfirmed).toBe(true);
+    expect(userStore.get('ref-1')?.subscriptionExpiresAt).toEqual(expiry);
   });
 });
