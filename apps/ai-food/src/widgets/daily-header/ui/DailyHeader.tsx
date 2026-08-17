@@ -6,7 +6,7 @@ import { localDateKey } from '@/entities/streak';
 import { useProfileStore } from '@/features/onboarding';
 import { useSettingsStore } from '@/features/settings';
 import { StreakSheet, useStreak } from '@/features/streak';
-import { isSameDay } from '@/shared/lib';
+import { isSameDay, useSearchParamSheet } from '@/shared/lib';
 import { WeekStrip } from './WeekStrip';
 import { NutritionSummaryCard } from './NutritionSummaryCard';
 import { DailyBudgetSheet } from './DailyBudgetSheet';
@@ -37,7 +37,11 @@ export function DailyHeader({
   const targets = useProfileStore((s) => s.targets);
   const calendarRings = useSettingsStore((s) => s.calendarRings);
   const [budgetOpen, setBudgetOpen] = useState(false);
-  const [streakOpen, setStreakOpen] = useState(false);
+  const {
+    isOpen: streakOpen,
+    open: openStreakSheet,
+    close: closeStreakSheet,
+  } = useSearchParamSheet('streak');
   const { snapshot: streakSnapshot, markCelebrated, hydrated } = useStreak();
 
   const goalKcal = targets?.kcal ?? FALLBACK_TARGETS.kcal;
@@ -72,9 +76,9 @@ export function DailyHeader({
 
   useEffect(() => {
     if (!hydrated || !streakSnapshot.shouldCelebrate) return;
-    setStreakOpen(true);
+    openStreakSheet();
     markCelebrated(localDateKey(new Date()));
-  }, [hydrated, streakSnapshot.shouldCelebrate, markCelebrated]);
+  }, [hydrated, streakSnapshot.shouldCelebrate, markCelebrated, openStreakSheet]);
 
   return (
     <header className="px-4 pt-safe-header pb-2">
@@ -92,7 +96,7 @@ export function DailyHeader({
             type="button"
             className="flex items-center gap-1 rounded-full px-1.5 py-1 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             aria-label={`Серия ${streakSnapshot.currentLength} дней`}
-            onClick={() => setStreakOpen(true)}
+            onClick={openStreakSheet}
           >
             <Flame className="h-4 w-4 text-primary" aria-hidden />
             <span className="tabular-nums">{streakSnapshot.currentLength}</span>
@@ -120,6 +124,7 @@ export function DailyHeader({
       />
 
       <NutritionSummaryCard
+        entranceKey={localDateKey(selectedDate)}
         consumedKcal={consumedKcal}
         consumedProtein={consumedProtein}
         consumedFat={consumedFat}
@@ -143,7 +148,7 @@ export function DailyHeader({
 
       <StreakSheet
         open={streakOpen}
-        onClose={() => setStreakOpen(false)}
+        onClose={closeStreakSheet}
         snapshot={streakSnapshot}
       />
     </header>

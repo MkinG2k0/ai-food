@@ -24,6 +24,14 @@ export { takePhotoAsFile, mediaResultToFile } from './takePhoto';
 export { useSpeechToText } from './useSpeechToText';
 export type { UseSpeechToTextOptions } from './useSpeechToText';
 export { useAnimatedNumber } from './useAnimatedNumber';
+export { useSearchParamSheet } from './useSearchParamSheet';
+export {
+  ENTRANCE_EASE,
+  ENTRANCE_STAGGER,
+  entranceContainer,
+  entranceItem,
+  entranceListItem,
+} from './motionEntrance';
 export { getDeviceId } from './deviceId';
 export { getLegalUrl, type LegalPath } from './legalSiteUrl';
 export {

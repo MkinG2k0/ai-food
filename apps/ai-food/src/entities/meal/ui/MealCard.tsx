@@ -20,9 +20,10 @@ const ANALYZING_STALE_MS = 45_000;
 
 interface MealCardProps {
   meal: Meal;
+  entranceKey?: string;
 }
 
-export function MealCard({ meal }: MealCardProps) {
+export function MealCard({ meal, entranceKey }: MealCardProps) {
   const navigate = useNavigate();
   const retry = useRetryAnalyzeMeal();
   const photoCount = resolveMealImageUris(meal).length;
@@ -162,11 +163,13 @@ export function MealCard({ meal }: MealCardProps) {
                 {hasPartialMacros ? (
                   <FoodMacrosBadges
                     density="compact"
+                    macroDecimals={0}
                     calories={meal.totalCalories}
                     protein={totals.protein}
                     fat={totals.fat}
                     carbs={totals.carbs}
                     fiber={totals.fiber}
+                    entranceKey={entranceKey}
                   />
                 ) : (
                   <div className="flex flex-nowrap items-center gap-1.5">
@@ -220,11 +223,13 @@ export function MealCard({ meal }: MealCardProps) {
               </div>
               <FoodMacrosBadges
                 density="compact"
+                macroDecimals={0}
                 calories={meal.totalCalories}
                 protein={totals.protein}
                 fat={totals.fat}
                 carbs={totals.carbs}
                 fiber={totals.fiber}
+                entranceKey={entranceKey}
               />
             </>
           )}

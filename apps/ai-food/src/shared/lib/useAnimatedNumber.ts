@@ -4,10 +4,16 @@ import { animate, useMotionValue, useMotionValueEvent, useReducedMotion } from '
 interface UseAnimatedNumberOptions {
   /** Seconds. Default ~0.75s for a readable step-by-step count. */
   duration?: number;
+  /** Delay before animation starts (seconds). */
+  delay?: number;
   /** Skip entrance animation on first mount (jump to target). Default true. */
   skipInitial?: boolean;
+  /** Start value when skipInitial is false. Default 0. */
+  from?: number;
   /** Display precision. Default 0 (whole numbers, e.g. daily header kcal). */
   decimals?: number;
+  /** When this changes, replay count-up from `from` (e.g. selected day). */
+  resetKey?: string | number;
 }
 
 function snapToDecimals(value: number, decimals: number): number {
@@ -21,19 +27,37 @@ function snapToDecimals(value: number, decimals: number): number {
  */
 export function useAnimatedNumber(
   target: number,
-  { duration = 0.75, skipInitial = true, decimals = 0 }: UseAnimatedNumberOptions = {},
+  {
+    duration = 0.75,
+    delay = 0,
+    skipInitial = true,
+    from = 0,
+    decimals = 0,
+    resetKey,
+  }: UseAnimatedNumberOptions = {},
 ): number {
   const reducedMotion = useReducedMotion();
-  const motionValue = useMotionValue(target);
-  const [display, setDisplay] = useState(() => snapToDecimals(target, decimals));
+  const initial = skipInitial ? target : from;
+  const motionValue = useMotionValue(initial);
+  const [display, setDisplay] = useState(() => snapToDecimals(initial, decimals));
   const isFirst = useRef(true);
+  const prevResetKey = useRef(resetKey);
 
   useMotionValueEvent(motionValue, 'change', (latest) => {
     setDisplay(snapToDecimals(latest, decimals));
   });
 
   useEffect(() => {
-    if (isFirst.current && skipInitial) {
+    const replayEntrance =
+      resetKey !== undefined && resetKey !== prevResetKey.current;
+
+    if (replayEntrance) {
+      prevResetKey.current = resetKey;
+    }
+
+    const entranceRun = replayEntrance || (!skipInitial && isFirst.current);
+
+    if (isFirst.current && skipInitial && !replayEntrance) {
       isFirst.current = false;
       motionValue.set(target);
       setDisplay(snapToDecimals(target, decimals));
@@ -47,13 +71,29 @@ export function useAnimatedNumber(
       return;
     }
 
+    if (entranceRun) {
+      motionValue.set(from);
+      setDisplay(snapToDecimals(from, decimals));
+    }
+
     const controls = animate(motionValue, target, {
       duration,
+      delay: entranceRun ? delay : 0,
       ease: 'easeOut',
     });
 
     return () => controls.stop();
-  }, [target, duration, reducedMotion, motionValue, skipInitial, decimals]);
+  }, [
+    target,
+    duration,
+    delay,
+    from,
+    reducedMotion,
+    motionValue,
+    skipInitial,
+    decimals,
+    resetKey,
+  ]);
 
   return display;
 }

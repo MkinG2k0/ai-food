@@ -14,9 +14,10 @@ const REVEAL_WIDTH = 96;
 
 interface SwipeableMealCardProps {
   meal: Meal;
+  entranceKey?: string;
 }
 
-export function SwipeableMealCard({ meal }: SwipeableMealCardProps) {
+export function SwipeableMealCard({ meal, entranceKey }: SwipeableMealCardProps) {
   const x = useMotionValue(0);
   const didDrag = useRef(false);
   const { isOpen, openConfirm, closeConfirm, confirmDelete } =
@@ -86,7 +87,7 @@ export function SwipeableMealCard({ meal }: SwipeableMealCardProps) {
           onClickCapture={handleClickCapture}
           className="relative touch-pan-y bg-background"
         >
-          <MealCard meal={meal} />
+          <MealCard meal={meal} entranceKey={entranceKey} />
         </motion.div>
       </div>
 

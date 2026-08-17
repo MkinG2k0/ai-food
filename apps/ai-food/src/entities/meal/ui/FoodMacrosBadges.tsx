@@ -8,10 +8,31 @@ export interface FoodMacrosBadgesProps {
   carbs: number;
   fiber: number;
   density?: 'badges' | 'compact';
+  /** Compact Б/Ж/У/К precision. Meal cards use 0; elsewhere keep tenths. */
+  macroDecimals?: number;
+  /** Replays count-up when the selected day changes. */
+  entranceKey?: string;
 }
 
-function MacroDigits({ value, maxDigits }: { value: number; maxDigits: number }) {
-  const animated = useAnimatedNumber(value, { decimals: 1 });
+function MacroDigits({
+  value,
+  maxDigits,
+  decimals = 1,
+  entranceKey,
+  delay = 0,
+}: {
+  value: number;
+  maxDigits: number;
+  decimals?: number;
+  entranceKey?: string;
+  delay?: number;
+}) {
+  const animated = useAnimatedNumber(value, {
+    decimals,
+    resetKey: entranceKey,
+    duration: 0.75,
+    delay,
+  });
   return (
     <span
       className="inline-block text-right tabular-nums"
@@ -45,8 +66,15 @@ function CompactMacros({
   fat,
   carbs,
   fiber,
+  macroDecimals = 1,
+  entranceKey,
 }: Omit<FoodMacrosBadgesProps, 'density'>) {
-  const animatedCalories = useAnimatedNumber(calories);
+  const animatedCalories = useAnimatedNumber(calories, {
+    resetKey: entranceKey,
+    duration: 0.8,
+    delay: 0.08,
+  });
+  const maxDigits = macroDecimals > 0 ? 4 : 3;
 
   return (
     <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
@@ -59,19 +87,43 @@ function CompactMacros({
       <div className="flex min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
         <span className="inline-flex shrink-0 items-center gap-1">
           <LetterCircle letter="Б" className="bg-blue-500" />
-          <MacroDigits value={protein} maxDigits={4} />
+          <MacroDigits
+            value={protein}
+            maxDigits={maxDigits}
+            decimals={macroDecimals}
+            entranceKey={entranceKey}
+            delay={0.12}
+          />
         </span>
         <span className="inline-flex shrink-0 items-center gap-1">
           <LetterCircle letter="Ж" className="bg-red-500" />
-          <MacroDigits value={fat} maxDigits={4} />
+          <MacroDigits
+            value={fat}
+            maxDigits={maxDigits}
+            decimals={macroDecimals}
+            entranceKey={entranceKey}
+            delay={0.16}
+          />
         </span>
         <span className="inline-flex shrink-0 items-center gap-1">
           <LetterCircle letter="У" className="bg-amber-500" />
-          <MacroDigits value={carbs} maxDigits={4} />
+          <MacroDigits
+            value={carbs}
+            maxDigits={maxDigits}
+            decimals={macroDecimals}
+            entranceKey={entranceKey}
+            delay={0.2}
+          />
         </span>
         <span className="inline-flex shrink-0 items-center gap-1">
           <LetterCircle letter="К" className="bg-teal-500" />
-          <MacroDigits value={fiber} maxDigits={4} />
+          <MacroDigits
+            value={fiber}
+            maxDigits={maxDigits}
+            decimals={macroDecimals}
+            entranceKey={entranceKey}
+            delay={0.24}
+          />
         </span>
       </div>
     </div>
@@ -143,6 +195,8 @@ export function FoodMacrosBadges({
   carbs,
   fiber,
   density = 'badges',
+  macroDecimals,
+  entranceKey,
 }: FoodMacrosBadgesProps) {
   if (density === 'compact') {
     return (
@@ -152,6 +206,8 @@ export function FoodMacrosBadges({
         fat={fat}
         carbs={carbs}
         fiber={fiber}
+        macroDecimals={macroDecimals}
+        entranceKey={entranceKey}
       />
     );
   }

@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Flame } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { useAnimatedNumber } from '@/shared/lib';
+import {
+  ENTRANCE_EASE,
+  entranceContainer,
+  entranceItem,
+  useAnimatedNumber,
+} from '@/shared/lib';
 
 interface NutritionSummaryCardProps {
+  entranceKey: string;
   consumedKcal: number;
   consumedProtein: number;
   consumedFat: number;
@@ -22,33 +28,43 @@ const RING_STROKE = 6;
 const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
-const BAR_TRANSITION = { duration: 0.75, ease: 'easeOut' as const };
-const RING_TRANSITION = { duration: 0.75, ease: 'easeOut' as const };
+const BAR_TRANSITION = { duration: 0.85, ease: ENTRANCE_EASE };
+const RING_TRANSITION = { duration: 0.9, ease: ENTRANCE_EASE };
 
 function MacroColumn({
   label,
   consumed,
   goal,
   barClassName,
+  entranceKey,
+  barDelay = 0,
 }: {
   label: string;
   consumed: number;
   goal: number;
   barClassName: string;
+  entranceKey: string;
+  barDelay?: number;
 }) {
-  const animatedConsumed = useAnimatedNumber(consumed);
+  const reducedMotion = useReducedMotion();
+  const animatedConsumed = useAnimatedNumber(consumed, {
+    resetKey: entranceKey,
+    duration: 0.85,
+    delay: barDelay,
+  });
   const overGoal = consumed > goal;
   const fillPct = goal > 0 ? Math.min((consumed / goal) * 100, 100) : 0;
 
   return (
-    <div className="flex flex-col gap-1.5 min-w-0">
+    <motion.div className="flex min-w-0 flex-col gap-1.5" variants={entranceItem(reducedMotion)}>
       <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <motion.div
+          key={entranceKey}
           className={`h-full rounded-full ${barClassName}`}
-          initial={false}
+          initial={{ width: reducedMotion ? `${fillPct}%` : '0%' }}
           animate={{ width: `${fillPct}%` }}
-          transition={BAR_TRANSITION}
+          transition={{ ...BAR_TRANSITION, delay: barDelay }}
         />
       </div>
       <span
@@ -58,11 +74,12 @@ function MacroColumn({
       >
         {animatedConsumed}/{Math.round(goal)}г
       </span>
-    </div>
+    </motion.div>
   );
 }
 
 export function NutritionSummaryCard({
+  entranceKey,
   consumedKcal,
   consumedProtein,
   consumedFat,
@@ -77,10 +94,18 @@ export function NutritionSummaryCard({
 }: NutritionSummaryCardProps) {
   const reducedMotion = useReducedMotion();
   const remainingTarget = Math.max(0, Math.round(goalKcal - consumedKcal));
-  const animatedRemaining = useAnimatedNumber(remainingTarget);
+  const animatedRemaining = useAnimatedNumber(remainingTarget, {
+    resetKey: entranceKey,
+    duration: 1,
+    delay: 0.15,
+  });
   const overGoal = consumedKcal > goalKcal;
   const overBy = Math.round(consumedKcal - goalKcal);
-  const animatedOverBy = useAnimatedNumber(Math.max(0, overBy));
+  const animatedOverBy = useAnimatedNumber(Math.max(0, overBy), {
+    resetKey: entranceKey,
+    duration: 0.75,
+    delay: 0.35,
+  });
   const progress = goalKcal > 0 ? Math.min(consumedKcal / goalKcal, 1) : 0;
   const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
 
@@ -95,20 +120,29 @@ export function NutritionSummaryCard({
   }, [consumedKcal]);
 
   return (
-    <div className="mt-4 rounded-2xl border bg-card text-card-foreground shadow-sm p-4">
-      <div className="flex items-center justify-between gap-4">
+    <motion.div
+      key={entranceKey}
+      className="mt-4 rounded-2xl border bg-card p-4 text-card-foreground shadow-sm"
+      variants={entranceContainer(reducedMotion)}
+      initial="hidden"
+      animate="show"
+    >
+      <motion.div
+        className="flex items-center justify-between gap-4"
+        variants={entranceItem(reducedMotion)}
+      >
         <div className="min-w-0">
           <div className="flex items-baseline gap-1.5">
             <span className="text-3xl font-bold tabular-nums tracking-tight">
               {animatedRemaining}
             </span>
-            <span className="text-sm text-muted-foreground tabular-nums">
+            <span className="text-sm tabular-nums text-muted-foreground">
               /{Math.round(goalKcal)}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground mt-0.5">Калорий осталось</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Калорий осталось</p>
           {overGoal && (
-            <p className="text-xs text-destructive mt-1">
+            <p className="mt-1 text-xs text-destructive">
               +{animatedOverBy} сверх нормы
             </p>
           )}
@@ -137,6 +171,7 @@ export function NutritionSummaryCard({
               className="stroke-muted"
             />
             <motion.circle
+              key={entranceKey}
               cx={RING_SIZE / 2}
               cy={RING_SIZE / 2}
               r={RING_RADIUS}
@@ -144,16 +179,28 @@ export function NutritionSummaryCard({
               strokeWidth={RING_STROKE}
               strokeLinecap="round"
               strokeDasharray={RING_CIRCUMFERENCE}
-              initial={false}
+              initial={{
+                strokeDashoffset: reducedMotion
+                  ? dashOffset
+                  : RING_CIRCUMFERENCE,
+              }}
               animate={{ strokeDashoffset: dashOffset }}
-              transition={reducedMotion ? { duration: 0 } : RING_TRANSITION}
+              transition={
+                reducedMotion
+                  ? { duration: 0 }
+                  : { ...RING_TRANSITION, delay: 0.2 }
+              }
               className={overGoal ? 'stroke-destructive' : 'stroke-primary'}
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
             <motion.div
-              key={flamePulse}
-              initial={flamePulse === 0 || reducedMotion ? false : { scale: 1 }}
+              key={`${entranceKey}-${flamePulse}`}
+              initial={
+                flamePulse === 0 || reducedMotion
+                  ? false
+                  : { scale: 1 }
+              }
               animate={
                 flamePulse === 0 || reducedMotion
                   ? { scale: 1, rotate: 0 }
@@ -173,34 +220,45 @@ export function NutritionSummaryCard({
             </motion.div>
           </div>
         </button>
-      </div>
+      </motion.div>
 
-      <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-3">
+      <motion.div
+        className="mt-4 grid grid-cols-4 gap-2 sm:gap-3"
+        variants={entranceItem(reducedMotion)}
+      >
         <MacroColumn
           label="Белки"
           consumed={consumedProtein}
           goal={goalProtein}
           barClassName="bg-rose-400"
+          entranceKey={entranceKey}
+          barDelay={0.28}
         />
         <MacroColumn
           label="Жир"
           consumed={consumedFat}
           goal={goalFat}
           barClassName="bg-amber-400"
+          entranceKey={entranceKey}
+          barDelay={0.34}
         />
         <MacroColumn
           label="Углеводы"
           consumed={consumedCarbs}
           goal={goalCarbs}
           barClassName="bg-sky-500"
+          entranceKey={entranceKey}
+          barDelay={0.4}
         />
         <MacroColumn
           label="Клетчатка"
           consumed={consumedFiber}
           goal={goalFiber}
           barClassName="bg-emerald-500"
+          entranceKey={entranceKey}
+          barDelay={0.46}
         />
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
