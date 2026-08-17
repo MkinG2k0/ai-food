@@ -1,6 +1,6 @@
 {
   "name": "ai-food",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "type": "module",
   "scripts": {
@@ -24,6 +24,7 @@
     "@capacitor/device": "^8",
     "@capacitor/filesystem": "^8",
     "@capacitor/preferences": "^8.0.0",
+    "@capacitor/share": "^8.0.1",
     "@capacitor/status-bar": "^8",
     "@capgo/capacitor-speech-recognition": "^8.1.10",
     "@ionic/pwa-elements": "^3.4.0",
@@ -34,6 +35,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.0",
+    "html2pdf.js": "^0.14.0",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.408.0",
     "react": "^18.3.1",
