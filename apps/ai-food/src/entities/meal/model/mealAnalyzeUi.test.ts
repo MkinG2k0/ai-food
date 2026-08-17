@@ -47,6 +47,17 @@ describe('mealAnalyzeUi', () => {
     expect(mealShowsAnalyzeRetry(gone)).toBe(true);
   });
 
+  it('shows retry for no-food even if a leftover analyzeJobId is still on the meal', () => {
+    const row = meal({
+      status: 'error',
+      analyzeErrorCode: 'NO_FOOD_DETECTED',
+      analyzeJobId: 'job-1',
+    });
+    expect(mealShowsAnalyzeLoader(row)).toBe(false);
+    expect(mealShowsAnalyzeRetry(row)).toBe(true);
+    expect(mealShouldResumeAnalyze(row)).toBe(false);
+  });
+
   it('does not show loader for a ready meal', () => {
     expect(mealShowsAnalyzeLoader(meal({ status: 'ready' }))).toBe(false);
     expect(mealShowsAnalyzeRetry(meal({ status: 'ready' }))).toBe(false);

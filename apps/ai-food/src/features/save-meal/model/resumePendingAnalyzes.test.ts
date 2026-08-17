@@ -125,4 +125,44 @@ describe('resumePendingAnalyzes', () => {
     expect(retry).toHaveBeenCalledWith('meal-1');
     expect(useDiaryStore.getState().meals[0].status).toBe('analyzing');
   });
+
+  it('does not resume a terminal no-food meal even if analyzeJobId is leftover', async () => {
+    useDiaryStore.setState({
+      meals: [
+        analyzingMeal({
+          status: 'error',
+          analyzeErrorCode: 'NO_FOOD_DETECTED',
+        }),
+      ],
+    });
+    const retry = vi.fn();
+
+    await resumePendingAnalyzes(retry);
+
+    expect(waitForAnalyzeJob).not.toHaveBeenCalled();
+    expect(retry).not.toHaveBeenCalled();
+    expect(useDiaryStore.getState().meals[0].status).toBe('error');
+    expect(useDiaryStore.getState().meals[0].analyzeErrorCode).toBe(
+      'NO_FOOD_DETECTED',
+    );
+  });
+
+  it('drops analyzeJobId when a finished job parses as no-food', async () => {
+    useDiaryStore.setState({ meals: [analyzingMeal()] });
+    waitForAnalyzeJob.mockResolvedValue('<noFood>true</noFood>');
+    parseAnalyzeFoodResponse.mockImplementation(() => {
+      throw {
+        code: 'NO_FOOD_DETECTED',
+        status: 422,
+        message: 'На фото не обнаружена еда.',
+      };
+    });
+
+    await resumePendingAnalyzes(vi.fn());
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.status).toBe('error');
+    expect(meal.analyzeErrorCode).toBe('NO_FOOD_DETECTED');
+    expect(meal.analyzeJobId).toBeUndefined();
+  });
 });

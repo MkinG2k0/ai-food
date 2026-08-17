@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { useSaveMeal } from './useSaveMeal';
-import { useDiaryStore } from '@/entities/meal';
+import { mealShowsAnalyzeLoader, mealShowsAnalyzeRetry, useDiaryStore } from '@/entities/meal';
 import { isSameDay } from '@/shared/lib';
 import { analyzeFoodApi } from '@/features/analyze-food';
 
@@ -368,10 +368,13 @@ describe('useSaveMeal', () => {
   });
 
   it('stores analyzeErrorCode NO_FOOD_DETECTED when photo has no food', async () => {
-    vi.mocked(analyzeFoodApi).mockRejectedValue({
-      message: 'На фото не обнаружена еда. Сфотографируйте блюдо и попробуйте снова.',
-      code: 'NO_FOOD_DETECTED',
-      status: 422,
+    vi.mocked(analyzeFoodApi).mockImplementation(async (_input, options) => {
+      options?.onJobId?.('job-1');
+      throw {
+        message: 'На фото не обнаружена еда. Сфотографируйте блюдо и попробуйте снова.',
+        code: 'NO_FOOD_DETECTED',
+        status: 422,
+      };
     });
 
     const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
@@ -384,6 +387,9 @@ describe('useSaveMeal', () => {
     const meal = useDiaryStore.getState().meals[0];
     expect(meal.status).toBe('error');
     expect(meal.analyzeErrorCode).toBe('NO_FOOD_DETECTED');
+    expect(meal.analyzeJobId).toBeUndefined();
+    expect(mealShowsAnalyzeLoader(meal)).toBe(false);
+    expect(mealShowsAnalyzeRetry(meal)).toBe(true);
   });
 
   it('sets meal.name to Без названия when no-image description is empty', async () => {
