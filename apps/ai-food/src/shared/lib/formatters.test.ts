@@ -16,12 +16,13 @@ describe('formatCalories', () => {
 });
 
 describe('formatMacro', () => {
-  it('formats whole grams', () => {
+  it('formats whole grams without trailing .0', () => {
     expect(formatMacro(35)).toBe('35 г');
   });
 
-  it('rounds fractional grams', () => {
-    expect(formatMacro(35.9)).toBe('36 г');
+  it('shows one decimal and keeps 5.5', () => {
+    expect(formatMacro(5.5)).toBe('5.5 г');
+    expect(formatMacro(35.9)).toBe('35.9 г');
   });
 });
 

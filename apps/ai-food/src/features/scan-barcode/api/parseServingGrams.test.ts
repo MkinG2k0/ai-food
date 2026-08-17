@@ -5,7 +5,7 @@ describe('parseServingGrams', () => {
   it('parses plain gram servings', () => {
     expect(parseServingGrams('32 g')).toBe(32);
     expect(parseServingGrams('32g')).toBe(32);
-    expect(parseServingGrams('25,5 г')).toBe(26);
+    expect(parseServingGrams('25,5 г')).toBe(25.5);
   });
 
   it('parses grams inside descriptive text', () => {

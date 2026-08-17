@@ -53,6 +53,11 @@ describe('buildManualMeal', () => {
     expect(meal!.totalGrams).toBe(250);
   });
 
+  it('persists protein 5.5 on the fallback FoodItem', () => {
+    const meal = buildManualMeal(baseInput({ protein: 5.5 }), ids);
+    expect(meal!.items[0]?.protein).toBe(5.5);
+  });
+
   it('uses composition items and sums totals when composition non-empty', () => {
     const meal = buildManualMeal(
       baseInput({
