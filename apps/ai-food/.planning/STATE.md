@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260813-vu3 — freeze shutter preview while encoding
-last_updated: "2026-08-13T20:06:00.000Z"
-last_activity: 2026-08-13
-last_activity_desc: "Freeze camera shutter preview while JPEG encode runs"
+stopped_at: Completed quick task 260817-wes — fractional KBJU tenths
+last_updated: "2026-08-17T20:42:00.000Z"
+last_activity: 2026-08-17
+last_activity_desc: "Store/display/scale macros as tenths (5.5g protein); AI prompts request one decimal"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-13)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-08-13 - Completed quick task 260813-vu3: Fix camera shutter button going gray/disabled for ~2s after capture while live preview keeps running
+Last activity: 2026-08-17 - Completed quick task 260817-wes: Fractional KBJU macros (store 5.5g protein; AI tenths; portion/ratio scale)
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -185,6 +185,7 @@ None yet.
 | 260813-v27 | P1 weight + favorites sync | 2026-08-13 | cf8f885, cf29a8e | [260813-v27-implement-p1-user-data-sync-weight-histo](./quick/260813-v27-implement-p1-user-data-sync-weight-histo/) |
 | 260813-p2s | P2 settings + micronutrientTargets sync; photos never on server | 2026-08-13 | (uncommitted) | — |
 | 260813-vu3 | Fix camera shutter button going gray/disabled for ~2s after capture while live preview keeps running | 2026-08-13 | 73294c1, f1c2115, 52fa2a7 | [260813-vu3-fix-camera-shutter-button-going-gray-dis](./quick/260813-vu3-fix-camera-shutter-button-going-gray-dis/) |
+| 260817-wes | Fractional KBJU macros: store 5.5g protein; AI tenths; portion/ratio scale | 2026-08-17 | 316f653, 668b175, 2eabd8d, d39317b, 5834299 | [260817-wes-fractional-kbju-macros-store-values-like](./quick/260817-wes-fractional-kbju-macros-store-values-like/) |
 
 ### Blockers/Concerns
 
@@ -193,7 +194,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-13T20:06:00Z
-Stopped at: Completed quick task 260813-vu3
+Last session: 2026-08-17T20:42:00Z
+Stopped at: Completed quick task 260817-wes
 Resume file: None
-Next: Manual Android check — food shutter freezes canvas immediately while button is gray
+Next: Manual check — diary shows 5.5 protein after analyze/edit/portion change
