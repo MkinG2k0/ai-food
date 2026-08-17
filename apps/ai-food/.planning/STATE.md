@@ -6,9 +6,9 @@ current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
 stopped_at: Completed quick task 260817-wes — fractional KBJU tenths
-last_updated: "2026-08-17T20:42:00.000Z"
-last_activity: 2026-08-17
-last_activity_desc: "Store/display/scale macros as tenths (5.5g protein); AI prompts request one decimal"
+last_updated: "2026-08-17T21:50:00.000Z"
+last_activity: 2026-08-18
+last_activity_desc: "Completed quick task 260818-0sq — in-app meal logging streaks (chip + sheet, freezes, local diary)"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -186,6 +186,7 @@ None yet.
 | 260813-p2s | P2 settings + micronutrientTargets sync; photos never on server | 2026-08-13 | (uncommitted) | — |
 | 260813-vu3 | Fix camera shutter button going gray/disabled for ~2s after capture while live preview keeps running | 2026-08-13 | 73294c1, f1c2115, 52fa2a7 | [260813-vu3-fix-camera-shutter-button-going-gray-dis](./quick/260813-vu3-fix-camera-shutter-button-going-gray-dis/) |
 | 260817-wes | Fractional KBJU macros: store 5.5g protein; AI tenths; portion/ratio scale | 2026-08-17 | 316f653, 668b175, 2eabd8d, d39317b, 5834299 | [260817-wes-fractional-kbju-macros-store-values-like](./quick/260817-wes-fractional-kbju-macros-store-values-like/) |
+| 260818-0sq | In-app meal logging streaks: chip + sheet, freezes, local diary | 2026-08-18 | (uncommitted) | [260818-0sq-develop-in-app-meal-logging-streaks-seri](./quick/260818-0sq-develop-in-app-meal-logging-streaks-seri/) |
 
 ### Blockers/Concerns
 
