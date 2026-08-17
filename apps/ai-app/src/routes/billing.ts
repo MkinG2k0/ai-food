@@ -102,6 +102,34 @@ function publicAppUrl(): string {
   );
 }
 
+function isNativeClient(client: unknown): boolean {
+  return client === 'native';
+}
+
+function nativeAppScheme(): string {
+  return (
+    process.env.NATIVE_APP_SCHEME?.trim().replace(/:$/, '') || 'aifood'
+  );
+}
+
+function buildSubscribeReturnUrl(
+  client: 'web' | 'native',
+  outcome: 'success' | 'fail',
+  paymentId: string,
+  extra?: { mock?: boolean },
+): string {
+  const params = new URLSearchParams({ paymentId });
+  if (extra?.mock) {
+    params.set('mock', '1');
+  }
+
+  if (client === 'native') {
+    return `${nativeAppScheme()}://subscribe/${outcome}?${params}`;
+  }
+
+  return `${publicAppUrl()}/subscribe/${outcome}?${params}`;
+}
+
 function gatewayPublicBase(req: {
   protocol: string;
   get: (name: string) => string | undefined;
@@ -193,9 +221,13 @@ billingRouter.post(
       data: { tbankOrderId: payment.id },
     });
 
-    const appUrl = publicAppUrl();
-    const successUrl = `${appUrl}/subscribe/success?paymentId=${updated.id}`;
-    const failUrl = `${appUrl}/subscribe/fail?paymentId=${updated.id}`;
+    const returnClient = isNativeClient(req.body?.client) ? 'native' : 'web';
+    const successUrl = buildSubscribeReturnUrl(
+      returnClient,
+      'success',
+      updated.id,
+    );
+    const failUrl = buildSubscribeReturnUrl(returnClient, 'fail', updated.id);
     const notificationUrl = `${gatewayPublicBase(req)}/billing/tbank/notification`;
 
     if (isTbankMock()) {
@@ -204,7 +236,12 @@ billingRouter.post(
         where: { id: updated.id },
         data: { tbankPaymentId: mockTbankId },
       });
-      const paymentUrl = `${appUrl}/subscribe/success?mock=1&paymentId=${updated.id}`;
+      const paymentUrl = buildSubscribeReturnUrl(
+        returnClient,
+        'success',
+        updated.id,
+        { mock: true },
+      );
       res.json({
         paymentUrl,
         paymentId: updated.id,

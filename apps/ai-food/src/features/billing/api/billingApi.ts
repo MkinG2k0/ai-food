@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import type { ApiError } from '@ai-food/shared-types';
 import { getQuotaHeaders } from '@/features/auth';
 
@@ -82,6 +83,17 @@ export async function validatePromo(
   return (await res.json()) as PromoValidateResult;
 }
 
+function subscribeRequestBody(promoCode?: string): Record<string, string> {
+  const body: Record<string, string> = {};
+  if (promoCode) {
+    body.promoCode = promoCode;
+  }
+  if (Capacitor.isNativePlatform()) {
+    body.client = 'native';
+  }
+  return body;
+}
+
 export async function subscribe(promoCode?: string): Promise<SubscribeResult> {
   const headers = await getQuotaHeaders('other');
   const res = await fetch(`${gatewayBase()}/billing/subscribe`, {
@@ -90,7 +102,7 @@ export async function subscribe(promoCode?: string): Promise<SubscribeResult> {
       ...headers,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(promoCode ? { promoCode } : {}),
+    body: JSON.stringify(subscribeRequestBody(promoCode)),
   });
   if (!res.ok) await parseError(res);
   return (await res.json()) as SubscribeResult;

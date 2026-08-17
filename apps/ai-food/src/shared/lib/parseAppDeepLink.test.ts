@@ -23,6 +23,24 @@ describe('parseAppDeepLink', () => {
     });
   });
 
+  it('routes aifood://subscribe/success with query to subscribe success page', () => {
+    expect(
+      parseAppDeepLink('aifood://subscribe/success?paymentId=pay_1&mock=1'),
+    ).toEqual({
+      kind: 'route',
+      path: '/subscribe/success?paymentId=pay_1&mock=1',
+    });
+  });
+
+  it('routes aifood://subscribe/fail with query to subscribe fail page', () => {
+    expect(parseAppDeepLink('aifood://subscribe/fail?paymentId=pay_1')).toEqual(
+      {
+        kind: 'route',
+        path: '/subscribe/fail?paymentId=pay_1',
+      },
+    );
+  });
+
   it('keeps existing aifood://add/* results unchanged', () => {
     expect(parseAppDeepLink('aifood://add/scan')).toEqual({
       kind: 'route',

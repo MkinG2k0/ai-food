@@ -43,5 +43,30 @@ export function parseAppDeepLink(url: string): AppDeepLinkResult | null {
     return { kind: 'route', path: '/stats' };
   }
 
+  // aifood://subscribe/success|fail?paymentId=… → /subscribe/success|fail
+  let subscribeOutcome: 'success' | 'fail' | null = null;
+  if (host === 'subscribe' && pathParts.length === 1) {
+    const action = pathParts[0].toLowerCase();
+    if (action === 'success' || action === 'fail') {
+      subscribeOutcome = action;
+    }
+  }
+  if (
+    (host === '' || host === 'subscribe') &&
+    pathParts.length === 2 &&
+    pathParts[0].toLowerCase() === 'subscribe'
+  ) {
+    const action = pathParts[1].toLowerCase();
+    if (action === 'success' || action === 'fail') {
+      subscribeOutcome = action;
+    }
+  }
+  if (subscribeOutcome) {
+    return {
+      kind: 'route',
+      path: `/subscribe/${subscribeOutcome}${parsed.search}`,
+    };
+  }
+
   return parseAddFoodDeepLink(url);
 }

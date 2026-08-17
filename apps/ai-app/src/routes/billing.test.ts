@@ -283,6 +283,20 @@ describe('billing routes', () => {
     expect(mockInitPayment).not.toHaveBeenCalled();
   });
 
+  it('POST /billing/subscribe native client uses aifood deep link return URLs', async () => {
+    mockIsTbankMock.mockReturnValue(true);
+    mockIsTbankConfigured.mockReturnValue(false);
+    const res = await request(createApp())
+      .post('/billing/subscribe')
+      .set('X-User-Token', 'jwt')
+      .send({ client: 'native' });
+    expect(res.status).toBe(200);
+    expect(res.body.paymentUrl).toMatch(
+      /^aifood:\/\/subscribe\/success\?paymentId=pay_/,
+    );
+    expect(res.body.paymentUrl).toContain('mock=1');
+  });
+
   it('POST /billing/subscribe real Init stores tbankPaymentId', async () => {
     mockInitPayment.mockResolvedValue({
       paymentId: 'tb-100',

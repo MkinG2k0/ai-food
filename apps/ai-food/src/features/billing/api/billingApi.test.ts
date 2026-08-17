@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@capacitor/core', () => ({
+  Capacitor: {
+    isNativePlatform: vi.fn(() => false),
+  },
+}));
+
 vi.mock('@/features/auth', () => ({
   getQuotaHeaders: vi.fn(async () => ({
     'X-Device-Id': 'test-device',
@@ -96,6 +102,33 @@ describe('billingApi', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ promoCode: 'new50' }),
+      }),
+    );
+  });
+
+  it('subscribe sends client native on Capacitor platform', async () => {
+    const { Capacitor } = await import('@capacitor/core');
+    vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        paymentUrl: 'aifood://subscribe/success?paymentId=pay_1&mock=1',
+        paymentId: 'pay_1',
+        amount: 10_000,
+        originalAmount: 10_000,
+        promoCode: null,
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { subscribe } = await import('./billingApi');
+    await subscribe();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://gw.test/billing/subscribe',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ client: 'native' }),
       }),
     );
   });
