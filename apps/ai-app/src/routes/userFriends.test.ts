@@ -93,7 +93,9 @@ describe('POST /user/friends/request', () => {
     expect(res.status).toBe(401);
   });
 
-  it('400 SELF_REQUEST', async () => {
+  it('400 SELF_REQUEST in production', async () => {
+    const prevNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
     mocks.resolveFriendTarget.mockResolvedValue({
       id: callerId,
       username: 'alice',
@@ -101,12 +103,39 @@ describe('POST /user/friends/request', () => {
       photoUrl: null,
       telegramId: '1',
     });
-    const res = await request(createApp())
-      .post('/user/friends/request')
-      .set('x-user-token', 'jwt')
-      .send({ query: '@alice' });
-    expect(res.status).toBe(400);
-    expect(res.body.code).toBe('SELF_REQUEST');
+    try {
+      const res = await request(createApp())
+        .post('/user/friends/request')
+        .set('x-user-token', 'jwt')
+        .send({ query: '@alice' });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe('SELF_REQUEST');
+    } finally {
+      process.env.NODE_ENV = prevNodeEnv;
+    }
+  });
+
+  it('201 allows self request in development without Telegram DM', async () => {
+    const prevNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+    mocks.resolveFriendTarget.mockResolvedValue({
+      id: callerId,
+      username: 'demo_user',
+      firstName: 'Demo',
+      photoUrl: null,
+      telegramId: '1',
+    });
+    try {
+      const res = await request(createApp())
+        .post('/user/friends/request')
+        .set('x-user-token', 'jwt')
+        .send({ query: 'demo_user' });
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('pending');
+      expect(mocks.sendMessage).not.toHaveBeenCalled();
+    } finally {
+      process.env.NODE_ENV = prevNodeEnv;
+    }
   });
 
   it('400 ALREADY_FRIENDS', async () => {

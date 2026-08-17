@@ -4,6 +4,7 @@ import {
   parseStreakLength,
   resolveFriendTarget,
   sortFriendsByStreakDesc,
+  allowsDevSelfFriendRequest,
   sumMealMacros,
 } from './friends.js';
 
@@ -108,5 +109,23 @@ describe('parseSharePhotosToFriends', () => {
         sharePhotosToFriends: false,
       }),
     ).toBe(false);
+  });
+});
+
+describe('allowsDevSelfFriendRequest', () => {
+  it('is true outside production', () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+    expect(allowsDevSelfFriendRequest()).toBe(true);
+    process.env.NODE_ENV = 'test';
+    expect(allowsDevSelfFriendRequest()).toBe(true);
+    process.env.NODE_ENV = prev;
+  });
+
+  it('is false in production', () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    expect(allowsDevSelfFriendRequest()).toBe(false);
+    process.env.NODE_ENV = prev;
   });
 });

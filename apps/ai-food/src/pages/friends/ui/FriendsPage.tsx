@@ -79,17 +79,26 @@ export function FriendsPage() {
   }
 
   return (
-    <SubpageShell title="Друзья" onBack={() => navigate('/')}>
-      <form className="flex gap-2" onSubmit={(e) => void handleSubmit(e)}>
+    <SubpageShell
+      title="Друзья"
+      onBack={() => navigate('/')}
+      headerClassName="pb-4"
+      mainClassName="space-y-5 pb-10 pt-2"
+    >
+      <form className="flex items-stretch gap-2" onSubmit={(e) => void handleSubmit(e)}>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="@username или Telegram ID"
-          className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className="min-w-0 flex-1 rounded-lg border border-input bg-background px-3 py-2.5 text-sm"
           disabled={requestMutation.isPending}
         />
-        <Button type="submit" disabled={requestMutation.isPending || !query.trim()}>
+        <Button
+          type="submit"
+          className="shrink-0 px-4"
+          disabled={requestMutation.isPending || !query.trim()}
+        >
           Добавить
         </Button>
       </form>
@@ -97,21 +106,23 @@ export function FriendsPage() {
       {requestsLoading ? (
         <p className="text-sm text-muted-foreground">Загрузка заявок…</p>
       ) : (requests?.incoming.length ?? 0) > 0 ? (
-        <section className="space-y-2">
+        <section className="space-y-3">
           <h2 className="text-sm font-medium">Входящие заявки</h2>
-          {requests!.incoming.map((request) => (
-            <FriendRequestRow
-              key={request.requestId}
-              request={request}
-              busy={mutationBusy}
-              onAccept={(id) => void handleAccept(id)}
-              onDecline={(id) => void handleDecline(id)}
-            />
-          ))}
+          <div className="space-y-2">
+            {requests!.incoming.map((request) => (
+              <FriendRequestRow
+                key={request.requestId}
+                request={request}
+                busy={mutationBusy}
+                onAccept={(id) => void handleAccept(id)}
+                onDecline={(id) => void handleDecline(id)}
+              />
+            ))}
+          </div>
         </section>
       ) : null}
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h2 className="text-sm font-medium">Друзья</h2>
         {friendsLoading ? (
           <p className="text-sm text-muted-foreground">Загрузка…</p>
@@ -120,13 +131,15 @@ export function FriendsPage() {
             Пока нет друзей — отправьте заявку по @username или Telegram ID.
           </p>
         ) : (
-          friends.map((friend) => (
-            <FriendListRow
-              key={friend.userId}
-              friend={friend}
-              onOpen={(userId) => navigate(`/friends/${userId}`)}
-            />
-          ))
+          <div className="space-y-2">
+            {friends.map((friend) => (
+              <FriendListRow
+                key={friend.userId}
+                friend={friend}
+                onOpen={(userId) => navigate(`/friends/${userId}`)}
+              />
+            ))}
+          </div>
         )}
       </section>
     </SubpageShell>

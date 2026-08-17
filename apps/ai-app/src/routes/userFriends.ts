@@ -7,6 +7,7 @@ import { assertAuthConfigured, verifyUserToken } from '../lib/jwt.js';
 import { sendMessage } from '../lib/telegramBotApi.js';
 import {
   assertFriendship,
+  allowsDevSelfFriendRequest,
   buildFriendProfile,
   displayName,
   listAcceptedFriends,
@@ -89,10 +90,11 @@ userFriendsRouter.post(
     if (!target) {
       throw new ApiError(404, 'USER_NOT_FOUND', 'User not found.');
     }
-    if (target.id === payload.sub) {
+    if (target.id === payload.sub && !allowsDevSelfFriendRequest()) {
       throw new ApiError(400, 'SELF_REQUEST', 'Cannot send a friend request to yourself.');
     }
 
+    const isSelfRequest = target.id === payload.sub;
     const existing = await prisma.friendRequest.findFirst({
       where: {
         OR: [
@@ -123,13 +125,15 @@ userFriendsRouter.post(
     });
 
     const senderName = displayName(requestRow.fromUser);
-    void sendMessage(
-      Number(target.telegramId),
-      `${senderName} хочет добавить вас в друзья. Откройте AI Food → Друзья.`,
-    ).catch((err: unknown) => {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('[friends] Telegram sendMessage failed:', message);
-    });
+    if (!isSelfRequest) {
+      void sendMessage(
+        Number(target.telegramId),
+        `${senderName} хочет добавить вас в друзья. Откройте AI Food → Друзья.`,
+      ).catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error('[friends] Telegram sendMessage failed:', message);
+      });
+    }
 
     res.status(201).json({ requestId: requestRow.id, status: 'pending' });
   }),

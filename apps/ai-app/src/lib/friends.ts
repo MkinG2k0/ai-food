@@ -119,6 +119,11 @@ export function sortFriendsByStreakDesc(
   return [...friends].sort((a, b) => b.streak - a.streak);
 }
 
+/** Local dev / demo: allow self friend-request to test the flow solo. */
+export function allowsDevSelfFriendRequest(): boolean {
+  return process.env.NODE_ENV !== 'production';
+}
+
 export async function resolveFriendTarget(
   prisma: PrismaClient,
   rawQuery: string,

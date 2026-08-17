@@ -10,7 +10,7 @@ export function FriendListRow({ friend, onOpen }: FriendListRowProps) {
   return (
     <button
       type="button"
-      className="flex w-full items-center gap-3 rounded-lg border border-input bg-background px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+      className="flex w-full items-center gap-3 rounded-lg border border-input bg-background px-4 py-3 text-left hover:bg-muted/50 transition-colors"
       onClick={() => onOpen(friend.userId)}
     >
       <div className="min-w-0 flex-1">
