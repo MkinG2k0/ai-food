@@ -36,6 +36,8 @@ export const PACKAGED_FOOD_PROMPT_RULE = `## Упакованные продук
 5. Порция = то, что на фото (целая упаковка / частично съеденная / налито в стакан).
 noFood для упаковки ТОЛЬКО если: пустая/выброшенная упаковка без продукта; меню/скриншот без продукта; явно непищевой предмет.`;
 
+export const MACRO_DECIMAL_PROMPT_RULE = `- Для calories/protein/carbs/fat/fiber выводи одно десятичное, если значение не целое (пример 5.5); никогда не округляй макросы до целых. 0 если нет. healthiness остаётся целым 1–10.`;
+
 const GEMINI_FOOD_NAME_PROMPT_RULE =
   'foodName — краткое название всего блюда/приёма целиком. items — отдельные атомарные компоненты.';
 
@@ -79,21 +81,21 @@ const LEGACY_NUTRITION_XML_SCHEMA = `<analysis>
   <foodName>краткое название всего блюда/приёма на русском, например «Свежий овощной салат» — НЕ перечень ингредиентов через запятую</foodName>
   <itemCount>число поштучных единиц (роллы/крылышки/наггетсы…): 5 роллов → 5; салат/паста/рагу → 1. НЕ равно числу items; КБЖУ на все штуки</itemCount>
   <totalGrams>оценка веса всего блюда в граммах (сумма items[].grams); только число</totalGrams>
-  <calories>суммарные килокалории всего приёма (число)</calories>
-  <protein>grams, сумма по составу (число)</protein>
-  <carbs>grams, сумма по составу (число)</carbs>
-  <fat>grams, сумма по составу (число)</fat>
-  <fiber>grams, сумма по составу (число)</fiber>
+  <calories>суммарные килокалории всего приёма (число, одно десятичное при необходимости, пример 5.5)</calories>
+  <protein>grams, сумма по составу (число, одно десятичное при необходимости, пример 5.5)</protein>
+  <carbs>grams, сумма по составу (число, одно десятичное при необходимости, пример 5.5)</carbs>
+  <fat>grams, сумма по составу (число, одно десятичное при необходимости, пример 5.5)</fat>
+  <fiber>grams, сумма по составу (число, одно десятичное при необходимости, пример 5.5)</fiber>
   <healthiness>целое 1–10</healthiness>
   <items>
     <item>
       <name>атомарный видимый ингредиент/слой на русском</name>
-      <calories>число</calories>
-      <protein>число</protein>
-      <carbs>число</carbs>
-      <fat>число</fat>
+      <calories>число, одно десятичное при необходимости, пример 5.5</calories>
+      <protein>число, одно десятичное при необходимости, пример 5.5</protein>
+      <carbs>число, одно десятичное при необходимости, пример 5.5</carbs>
+      <fat>число, одно десятичное при необходимости, пример 5.5</fat>
       <grams>REQUIRED — оценка веса в граммах; только число</grams>
-      <fiber>optional число</fiber>
+      <fiber>optional число, одно десятичное при необходимости, пример 5.5</fiber>
     </item>
   </items>
   <micronutrients>
@@ -156,7 +158,7 @@ const EXAMPLE_C_XML = `<analysis>
   <itemCount>1</itemCount>
   <totalGrams>125</totalGrams>
   <calories>90</calories>
-  <protein>4</protein>
+  <protein>5.5</protein>
   <carbs>14</carbs>
   <fat>2</fat>
   <fiber>0</fiber>
@@ -165,7 +167,7 @@ const EXAMPLE_C_XML = `<analysis>
     <item>
       <name>Йогурт клубничный</name>
       <calories>90</calories>
-      <protein>4</protein>
+      <protein>5.5</protein>
       <carbs>14</carbs>
       <fat>2</fat>
       <grams>125</grams>
@@ -201,6 +203,7 @@ ${ITEM_COUNT_PROMPT_RULE}
 - Якоря масштаба: тарелка ≈ 22–27 см; столовая ложка; банка; бутылка 0.5 л; вес/объём с этикетки упаковки.
 - Оценивай видимую порцию на фото, а не «стандартную порцию из меню».
 - Top-level calories/protein/carbs/fat/fiber = сумма соответствующих полей items (и fiber items, где задан).
+${MACRO_DECIMAL_PROMPT_RULE}
 
 ## Способ приготовления
 Учитывай масло, корочку, панировку, гриль, сырое vs приготовленное. Если способ неочевиден — типичный для блюда.
@@ -258,6 +261,7 @@ ${ITEM_COUNT_PROMPT_RULE}
 - Если размер порции в описании неясен — оцени типичную порцию.
 - Якоря: тарелка ≈ 22–27 см; столовая ложка; банка; бутылка 0.5 л; вес/объём с упаковки если указан.
 - Top-level calories/protein/carbs/fat/fiber = сумма соответствующих полей items.
+${MACRO_DECIMAL_PROMPT_RULE}
 
 ## Способ приготовления
 Учитывай масло, корочку, панировку, гриль, сырое vs приготовленное, если упомянуто или типично. Если неочевидно — типичный способ.
@@ -296,12 +300,12 @@ const GEMINI_NUTRITION_XML_SCHEMA = `<analysis>
   <portionReference>какой якорь использован для оценки размера порции (тарелка/ложка/банка/бутылка), или "явный референс отсутствует, оценка приблизительная"</portionReference>
 
   <totals>
-    <calories unit="kcal">число</calories>
-    <protein unit="g">число</protein>
-    <carbs unit="g">число</carbs>
+    <calories unit="kcal">число, одно десятичное при необходимости, пример 5.5</calories>
+    <protein unit="g">число, одно десятичное при необходимости, пример 5.5</protein>
+    <carbs unit="g">число, одно десятичное при необходимости, пример 5.5</carbs>
     <addedSugar unit="g">число — доля добавленного/свободного сахара внутри carbs, 0 если его нет</addedSugar>
-    <fat unit="g">число</fat>
-    <fiber unit="g">число</fiber>
+    <fat unit="g">число, одно десятичное при необходимости, пример 5.5</fat>
+    <fiber unit="g">число, одно десятичное при необходимости, пример 5.5</fiber>
   </totals>
 
   <healthiness value="целое 1–10">короткое пояснение на русском, почему такая оценка</healthiness>
@@ -310,11 +314,11 @@ const GEMINI_NUTRITION_XML_SCHEMA = `<analysis>
     <item>
       <name>атомарный видимый ингредиент/слой на русском</name>
       <grams>REQUIRED — оценка веса в граммах, число без единиц в тексте</grams>
-      <calories unit="kcal">число</calories>
-      <protein unit="g">число</protein>
-      <carbs unit="g">число</carbs>
-      <fat unit="g">число</fat>
-      <fiber unit="g">число</fiber>
+      <calories unit="kcal">число, одно десятичное при необходимости, пример 5.5</calories>
+      <protein unit="g">число, одно десятичное при необходимости, пример 5.5</protein>
+      <carbs unit="g">число, одно десятичное при необходимости, пример 5.5</carbs>
+      <fat unit="g">число, одно десятичное при необходимости, пример 5.5</fat>
+      <fiber unit="g">число, одно десятичное при необходимости, пример 5.5</fiber>
     </item>
   </items>
 
@@ -347,6 +351,7 @@ ${GEMINI_NUTRITION_XML_SCHEMA}
 
 ## Правила единиц измерения (обязательно)
 - Все числовые значения в calories/protein/carbs/fat/fiber/grams — ТОЛЬКО число, без текста единиц измерения внутри самого значения (атрибут unit уже указывает единицу).
+${MACRO_DECIMAL_PROMPT_RULE}
 - Все микронутриенты приводи к миллиграммам (amount_mg), даже если по нутрициологическим нормам единица другая (витамин A и D обычно в мкг, калий и магний иногда в граммах): 1 мкг = 0.001 мг, 1 г = 1000 мг. Не смешивай единицы внутри одного списка.
 
 ## Правила названия и состава
@@ -398,6 +403,7 @@ ${GEMINI_NUTRITION_XML_SCHEMA}
 
 ## Правила единиц измерения (обязательно)
 - Все числовые значения в calories/protein/carbs/fat/fiber/grams — ТОЛЬКО число, без текста единиц измерения внутри самого значения (атрибут unit уже указывает единицу).
+${MACRO_DECIMAL_PROMPT_RULE}
 - Все микронутриенты приводи к миллиграммам (amount_mg): 1 мкг = 0.001 мг, 1 г = 1000 мг. Не смешивай единицы внутри одного списка.
 
 ## Правила названия и состава
@@ -513,12 +519,12 @@ const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user pro
   "foodName": string (краткое название всего блюда/приёма на русском),
   "itemCount": number (поштучные единицы: 5 роллов → 5; 8 крылышек → 8; салат/паста/рагу → 1; КБЖУ на все штуки; НЕ равно длине items),
   "totalGrams": number (оценка веса всего блюда в граммах; обычно ≈ сумма items[].grams),
-  "calories": number (суммарные килокалории — сумма items),
-  "protein": number (grams, сумма по составу),
-  "carbs": number (grams, сумма по составу),
+  "calories": number (суммарные килокалории — сумма items; one decimal when not whole, e.g. 5.5),
+  "protein": number (grams, сумма по составу; one decimal when not whole, e.g. 5.5),
+  "carbs": number (grams, сумма по составу; one decimal when not whole, e.g. 5.5),
   "addedSugar": number (optional, grams of added/free sugar within carbs, 0 if none),
-  "fat": number (grams, сумма по составу),
-  "fiber": number (grams, сумма по составу),
+  "fat": number (grams, сумма по составу; one decimal when not whole, e.g. 5.5),
+  "fiber": number (grams, сумма по составу; one decimal when not whole, e.g. 5.5),
   "healthiness": number (integer 1–10),
   "healthinessReason": string (optional, короткое пояснение на русском),
   "portionReference": string (optional, якорь размера порции),
@@ -544,6 +550,7 @@ ${COMPOSITION_PROMPT_RULE}
 ${ITEM_COUNT_PROMPT_RULE}
 ${PACKAGED_FOOD_PROMPT_RULE}
 ${REFINE_MICRONUTRIENTS_RULE}
+${MACRO_DECIMAL_PROMPT_RULE}
 Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many countable units were eaten (e.g. «съел 3 из 5 роллов» → itemCount=3; KBJU for those units). Update totalGrams to match the revised dish weight.
 If the correction is NOT a meal edit (not about portion, ingredients, swaps, composition, calories of THIS dish — e.g. math, code, identity, jokes, bare numbers without food intent) — return ONLY JSON {"offTopic":true,"reason":"..."} instead of NutritionResult. Never invent a new meal for off-topic input.
 Do not include any text outside the JSON object. No markdown fences.`;

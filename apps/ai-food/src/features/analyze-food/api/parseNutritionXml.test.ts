@@ -93,6 +93,57 @@ describe('parseNutritionXml', () => {
   it('throws on invalid XML', () => {
     expect(() => parseNutritionXml('<analysis><foodName>x</foodName></analysis>')).toThrow();
   });
+
+  it('keeps one-decimal protein 5.5 on totals and items', () => {
+    const xml = `<analysis>
+  <foodName>Йогурт клубничный 125 г</foodName>
+  <calories>90</calories>
+  <protein>5.5</protein>
+  <carbs>14</carbs>
+  <fat>2</fat>
+  <fiber>0</fiber>
+  <healthiness>6</healthiness>
+  <items>
+    <item>
+      <name>Йогурт клубничный</name>
+      <calories>90</calories>
+      <protein>5.5</protein>
+      <carbs>14</carbs>
+      <fat>2</fat>
+      <grams>125</grams>
+      <fiber>0</fiber>
+    </item>
+  </items>
+</analysis>`;
+    const parsed = parseNutritionXml(xml);
+    expect(parsed).toMatchObject({ protein: 5.5 });
+    expect(parsed.items?.[0]?.protein).toBe(5.5);
+  });
+
+  it('parses comma decimals as tenths', () => {
+    const xml = `<analysis>
+  <foodName>Йогурт</foodName>
+  <calories>90</calories>
+  <protein>5,5</protein>
+  <carbs>14</carbs>
+  <fat>2</fat>
+  <fiber>0</fiber>
+  <healthiness>6</healthiness>
+  <items>
+    <item>
+      <name>Йогурт</name>
+      <calories>90</calories>
+      <protein>5,5</protein>
+      <carbs>14</carbs>
+      <fat>2</fat>
+      <grams>125</grams>
+    </item>
+  </items>
+</analysis>`;
+    const parsed = parseNutritionXml(xml);
+    expect(parsed).toMatchObject({ protein: 5.5 });
+    expect(parsed.items?.[0]?.protein).toBe(5.5);
+  });
 });
 
 describe('parsePartialNutritionXml', () => {
