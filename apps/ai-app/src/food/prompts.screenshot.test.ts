@@ -1,11 +1,20 @@
 import { describe, expect, it } from 'vitest';
+import {
+  GEMINI_SINGLE_ITEM_COMPOSITION_RULE,
+  SINGLE_ITEM_COMPOSITION_RULE,
+} from './analyzeFeatures.js';
 import { buildAnalyzeMessages } from './buildMessages.js';
 import {
   ANALYSIS_PROMPT,
   ANALYSIS_PROMPT_MULTI,
+  COMPOSITION_PROMPT_RULE,
+  GEMINI_COMPOSITION_PROMPT_RULE,
   buildAnalyzeVisionUserText,
   selectAnalyzeSystemPrompt,
 } from './prompts.js';
+
+/** Distinctive composition-on instruction for a readable dish list on a screenshot. */
+const SCREENSHOT_SPLIT_SENTENCE = 'разбивай items по этому списку';
 
 const GEMINI = 'google/gemini-3-flash-preview';
 const LEGACY = 'openai/gpt-4.1-mini';
@@ -123,4 +132,54 @@ describe('vision prompts: screenshot of food is food, not noFood', () => {
       expect(prompt).not.toMatch(/приложени[яие] доставк/);
     },
   );
+});
+
+describe('vision prompts: screenshot dish composition splits when composition is on', () => {
+  const compositionOff = {
+    vitamins: true,
+    healthiness: true,
+    composition: false,
+  };
+
+  it.each([
+    ['gemini', GEMINI],
+    ['legacy', LEGACY],
+  ] as const)(
+    '%s composition-on vision prompt splits a screenshot ingredient list into items (D-02)',
+    (_label, model) => {
+      const prompt = selectAnalyzeSystemPrompt(true, model);
+      expect(prompt).toMatch(/если это скриншот/i);
+      expect(prompt).toContain(SCREENSHOT_SPLIT_SENTENCE);
+      expect(prompt).toMatch(/доставка/);
+      expect(prompt).toMatch(/карточка блюда/);
+    },
+  );
+
+  it.each([
+    ['gemini', GEMINI],
+    ['legacy', LEGACY],
+  ] as const)(
+    '%s composition-on vision prompt still forbids splitting a packaged product from the physical label (D-04)',
+    (_label, model) => {
+      const prompt = selectAnalyzeSystemPrompt(true, model);
+      expect(prompt).toMatch(/йогурт/);
+      expect(prompt).toMatch(/не разбивай.*этикетк/i);
+    },
+  );
+
+  it('composition-off Gemini vision prompt swaps to a single item and drops screenshot-split (D-01 still holds)', () => {
+    const prompt = selectAnalyzeSystemPrompt(true, GEMINI, compositionOff);
+    expect(prompt).toContain(GEMINI_SINGLE_ITEM_COMPOSITION_RULE);
+    expect(prompt).not.toContain(GEMINI_COMPOSITION_PROMPT_RULE);
+    expect(prompt).not.toContain(SCREENSHOT_SPLIT_SENTENCE);
+    expectScreenshotIsFood(prompt);
+  });
+
+  it('composition-off legacy vision prompt swaps to a single item and drops screenshot-split (D-01 still holds)', () => {
+    const prompt = selectAnalyzeSystemPrompt(true, LEGACY, compositionOff);
+    expect(prompt).toContain(SINGLE_ITEM_COMPOSITION_RULE);
+    expect(prompt).not.toContain(COMPOSITION_PROMPT_RULE);
+    expect(prompt).not.toContain(SCREENSHOT_SPLIT_SENTENCE);
+    expectScreenshotIsFood(prompt);
+  });
 });
