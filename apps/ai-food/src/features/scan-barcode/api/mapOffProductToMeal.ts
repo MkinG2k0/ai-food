@@ -1,25 +1,22 @@
 import type { FoodItem, Meal } from '@ai-food/shared-types';
+import { sanitizeGrams, sanitizeNutrient } from '@/entities/meal';
 import type { OffProduct } from './fetchProductByBarcode';
-
-function scale(per100: number, grams: number): number {
-  return Math.round((per100 * grams) / 100);
-}
 
 export function scaleOffProductToItem(
   product: OffProduct,
   grams: number,
   itemId: string = crypto.randomUUID(),
 ): FoodItem {
-  const g = Math.max(1, Math.round(grams));
+  const g = Math.max(1, sanitizeGrams(grams));
   const { per100g } = product;
   return {
     id: itemId,
     name: product.name,
-    calories: scale(per100g.calories, g),
-    protein: scale(per100g.protein, g),
-    carbs: scale(per100g.carbs, g),
-    fat: scale(per100g.fat, g),
-    fiber: scale(per100g.fiber, g),
+    calories: sanitizeNutrient((per100g.calories * g) / 100),
+    protein: sanitizeNutrient((per100g.protein * g) / 100),
+    carbs: sanitizeNutrient((per100g.carbs * g) / 100),
+    fat: sanitizeNutrient((per100g.fat * g) / 100),
+    fiber: sanitizeNutrient((per100g.fiber * g) / 100),
     grams: g,
   };
 }

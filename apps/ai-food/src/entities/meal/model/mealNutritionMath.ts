@@ -29,7 +29,12 @@ const ZERO_NUTRIENTS: PortionNutrients = {
 
 export function sanitizeNutrient(value: number): number {
   if (!Number.isFinite(value)) return 0;
-  return Math.max(0, Math.round(value));
+  return Math.max(0, Math.round(value * 10) / 10);
+}
+
+/** Parse editor input (comma or dot) then snap to tenths. */
+export function parseNutrientInput(raw: string): number {
+  return sanitizeNutrient(Number(raw.replace(',', '.')));
 }
 
 /** Absolute portion nutrients from per-100g density × grams. */

@@ -30,6 +30,7 @@ export {
 } from './model/mealAnalyzeUi';
 export {
   sanitizeNutrient,
+  parseNutrientInput,
   nutrientsFromPer100,
   nutrientsPer100FromPortion,
   scalePortionNutrientsByGrams,
