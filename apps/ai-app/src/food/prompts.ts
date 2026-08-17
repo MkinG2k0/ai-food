@@ -55,10 +55,13 @@ export const NO_FOOD_PROMPT_RULE = `Если на изображении НЕТ 
 НЕ придумывай блюдо и НЕ возвращай КБЖУ для таких фото. НЕ пиши foodName вроде «Неизвестное блюдо», «Нет еды», «Человек».
 Если еда есть — верни обычную схему питания БЕЗ тега noFood.`;
 
-export const MICRONUTRIENTS_PROMPT_RULE = `micronutrients — ровно 8 элементов <nutrient name="…" amount_mg="…"/> для всей порции (оценка, не меддиагноз):
-name ∈ vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium;
-amount_mg — неотрицательное число в миллиграммах (даже если нутрициологически принято мкг: 1 мкг = 0.001 мг); неизвестно → 0.
-Всегда включай все 8 name. Не смешивай единицы и не возвращай качественные level.`;
+export const MICRONUTRIENTS_PROMPT_RULE = `micronutrients — ровно 8 элементов <micronutrient> для всей порции (оценка, не меддиагноз):
+каждый: <id>, <amount>, <unit>;
+id ∈ vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium;
+amount — неотрицательное число (оценка содержания в этой порции); неизвестно → 0;
+unit строго по id: vitaminA/vitaminD/vitaminB12/folate → µg; vitaminC/iron/calcium/magnesium → mg.
+Пример: vitaminA → amount 120, unit µg (не mg). vitaminC → amount 45, unit mg.
+Всегда включай все 8 id. Не используй amount_mg, граммы и не возвращай качественные level.`;
 
 const NUTRITION_XML_SCHEMA = `<analysis>
   <foodName>краткое название всего блюда/приёма на русском</foodName>
@@ -93,14 +96,11 @@ const NUTRITION_XML_SCHEMA = `<analysis>
   </items>
 
   <micronutrients>
-    <nutrient name="vitaminA" amount_mg="число"/>
-    <nutrient name="vitaminC" amount_mg="число"/>
-    <nutrient name="vitaminD" amount_mg="число"/>
-    <nutrient name="vitaminB12" amount_mg="число"/>
-    <nutrient name="iron" amount_mg="число"/>
-    <nutrient name="calcium" amount_mg="число"/>
-    <nutrient name="folate" amount_mg="число"/>
-    <nutrient name="magnesium" amount_mg="число"/>
+    <micronutrient>
+      <id>vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium</id>
+      <amount>число</amount>
+      <unit>mg|µg — строго по id</unit>
+    </micronutrient>
   </micronutrients>
 
   <disclaimers>
@@ -122,7 +122,6 @@ ${NUTRITION_XML_SCHEMA}
 ## Правила единиц измерения (обязательно)
 - Все числовые значения в calories/protein/carbs/fat/fiber/grams — ТОЛЬКО число, без текста единиц измерения внутри самого значения (атрибут unit уже указывает единицу).
 ${MACRO_DECIMAL_PROMPT_RULE}
-- Все микронутриенты приводи к миллиграммам (amount_mg), даже если по нутрициологическим нормам единица другая (витамин A и D обычно в мкг, калий и магний иногда в граммах): 1 мкг = 0.001 мг, 1 г = 1000 мг. Не смешивай единицы внутри одного списка.
 
 ## Правила названия и состава
 ${ANALYZE_FOOD_NAME_PROMPT_RULE} ${ANALYZE_COMPOSITION_PROMPT_RULE}
@@ -176,7 +175,6 @@ ${NUTRITION_XML_SCHEMA}
 ## Правила единиц измерения (обязательно)
 - Все числовые значения в calories/protein/carbs/fat/fiber/grams — ТОЛЬКО число, без текста единиц измерения внутри самого значения (атрибут unit уже указывает единицу).
 ${MACRO_DECIMAL_PROMPT_RULE}
-- Все микронутриенты приводи к миллиграммам (amount_mg): 1 мкг = 0.001 мг, 1 г = 1000 мг. Не смешивай единицы внутри одного списка.
 
 ## Правила названия и состава
 ${ANALYZE_FOOD_NAME_PROMPT_RULE} ${ANALYZE_COMPOSITION_PROMPT_RULE}

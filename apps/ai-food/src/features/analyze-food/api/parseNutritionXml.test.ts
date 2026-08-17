@@ -69,13 +69,49 @@ describe('parseNutritionXml', () => {
     expect(parsed).not.toHaveProperty('itemCount');
   });
 
-  it('converts amount_mg micronutrients to canonical units', () => {
+  it('preserves canonical micronutrient units in round-trip', () => {
     const xml = nutritionResultToXml(sample);
     const parsed = parseNutritionXml(xml);
     expect(parsed).toMatchObject({
       micronutrients: expect.arrayContaining([
         expect.objectContaining({ id: 'vitaminA', amount: 120, unit: 'µg' }),
         expect.objectContaining({ id: 'vitaminC', amount: 5, unit: 'mg' }),
+      ]),
+    });
+  });
+
+  it('still parses legacy amount_mg micronutrients for backward compatibility', () => {
+    const xml = `<analysis>
+  <foodName>Тест</foodName>
+  <totals>
+    <calories unit="kcal">100</calories>
+    <protein unit="g">5</protein>
+    <carbs unit="g">10</carbs>
+    <fat unit="g">3</fat>
+    <fiber unit="g">1</fiber>
+  </totals>
+  <healthiness value="5">ok</healthiness>
+  <items>
+    <item>
+      <name>Тест</name>
+      <grams>100</grams>
+      <calories unit="kcal">100</calories>
+      <protein unit="g">5</protein>
+      <carbs unit="g">10</carbs>
+      <fat unit="g">3</fat>
+      <fiber unit="g">1</fiber>
+    </item>
+  </items>
+  <micronutrients>
+    <nutrient name="vitaminA" amount_mg="0.12"/>
+    <nutrient name="vitaminC" amount_mg="45"/>
+  </micronutrients>
+</analysis>`;
+    const parsed = parseNutritionXml(xml);
+    expect(parsed).toMatchObject({
+      micronutrients: expect.arrayContaining([
+        expect.objectContaining({ id: 'vitaminA', amount: 120, unit: 'µg' }),
+        expect.objectContaining({ id: 'vitaminC', amount: 45, unit: 'mg' }),
       ]),
     });
   });

@@ -456,8 +456,11 @@ export function nutritionResultToXml(result: NutritionResult): string {
   const micros =
     result.micronutrients
       ?.map(
-        (m) =>
-          `    <nutrient name="${m.id}" amount_mg="${toAmountMg(m)}"/>`,
+        (m) => `    <micronutrient>
+      <id>${m.id}</id>
+      <amount>${m.amount}</amount>
+      <unit>${m.unit}</unit>
+    </micronutrient>`,
       )
       .join('\n') ?? '';
 
