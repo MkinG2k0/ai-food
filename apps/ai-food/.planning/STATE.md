@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 1
 current_phase_name: Photo Capture & Analysis Loading
 status: executing
-stopped_at: Completed quick task 260817-wes — fractional KBJU tenths
-last_updated: "2026-08-17T21:50:00.000Z"
+stopped_at: Completed quick task 260818-28i — referral system
+last_updated: "2026-08-18T00:00:00.000Z"
 last_activity: 2026-08-18
-last_activity_desc: "Completed quick task 260818-0sq — in-app meal logging streaks (chip + sheet, freezes, local diary)"
+last_activity_desc: "Completed quick task 260818-28i — referral nick promo, 10% referee, +30d after paid"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-13)
 Phase: 1 of 6 COMPLETE — next: Phase 2 (Photo Capture & Analysis Loading)
 Plan: 2/2 complete in Phase 1
 Status: Phase 1 verified PASS — Phase 2 not started
-Last activity: 2026-08-17 - Completed quick task 260817-wes: Fractional KBJU macros (store 5.5g protein; AI tenths; portion/ratio scale)
+Last activity: 2026-08-18 - Completed quick task 260818-28i: Referral system (Telegram nick promo, 10% referee, +30d after paid)
 
 Progress: [█░░░░░░░░░] 17%
 
@@ -187,6 +187,7 @@ None yet.
 | 260813-vu3 | Fix camera shutter button going gray/disabled for ~2s after capture while live preview keeps running | 2026-08-13 | 73294c1, f1c2115, 52fa2a7 | [260813-vu3-fix-camera-shutter-button-going-gray-dis](./quick/260813-vu3-fix-camera-shutter-button-going-gray-dis/) |
 | 260817-wes | Fractional KBJU macros: store 5.5g protein; AI tenths; portion/ratio scale | 2026-08-17 | 316f653, 668b175, 2eabd8d, d39317b, 5834299 | [260817-wes-fractional-kbju-macros-store-values-like](./quick/260817-wes-fractional-kbju-macros-store-values-like/) |
 | 260818-0sq | In-app meal logging streaks: chip + sheet, freezes, local diary | 2026-08-18 | (uncommitted) | [260818-0sq-develop-in-app-meal-logging-streaks-seri](./quick/260818-0sq-develop-in-app-meal-logging-streaks-seri/) |
+| 260818-28i | Referral system: Telegram nick promo, 10% for referee, +30d after paid | 2026-08-18 | 3680af1, f7b699f, c70be13 | [260818-28i-referral-system-referrer-telegram-nick-a](../../../.planning/quick/260818-28i-referral-system-referrer-telegram-nick-a/) |
 
 ### Blockers/Concerns
 
@@ -195,7 +196,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-17T20:42:00Z
-Stopped at: Completed quick task 260817-wes
+Last session: 2026-08-18T00:00:00Z
+Stopped at: Completed quick task 260818-28i
 Resume file: None
-Next: Manual check — diary shows 5.5 protein after analyze/edit/portion change
+Next: Apply referral migration on DB; smoke-check Settings copy + mock pay +30d
