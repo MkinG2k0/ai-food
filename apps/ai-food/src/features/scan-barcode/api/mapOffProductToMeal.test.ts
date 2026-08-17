@@ -16,26 +16,27 @@ const product: OffProduct = {
 };
 
 describe('scaleOffProductToItem', () => {
-  it('scales 100g to full per-100 values (rounded)', () => {
+  it('keeps OFF tenths at 100g', () => {
     const item = scaleOffProductToItem(product, 100, 'item-1');
     expect(item).toMatchObject({
       id: 'item-1',
       name: 'Nutella',
       calories: 539,
-      protein: 6,
-      carbs: 58,
-      fat: 31,
+      protein: 6.3,
+      carbs: 57.5,
+      fat: 30.9,
       fiber: 0,
       grams: 100,
     });
   });
 
-  it('scales 50g to half', () => {
+  it('scales 50g calories to tenths', () => {
     const item = scaleOffProductToItem(product, 50, 'item-2');
-    expect(item.calories).toBe(270);
+    expect(item.calories).toBe(269.5);
     expect(item.grams).toBe(50);
   });
 });
+
 
 describe('buildBarcodeMeal', () => {
   it('builds ready meal with brand in name', () => {

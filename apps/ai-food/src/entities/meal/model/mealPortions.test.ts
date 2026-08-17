@@ -79,4 +79,23 @@ describe('mealPortions', () => {
     expect(result.items).toBe(items);
     expect(result.totalCalories).toBe(140);
   });
+
+  it('doubles 5.5 protein and 50g without integer snap', () => {
+    const fractional: FoodItem[] = [
+      {
+        id: 'yogurt',
+        name: 'Yogurt',
+        calories: 90,
+        protein: 5.5,
+        carbs: 14,
+        fat: 2,
+        fiber: 0,
+        grams: 50,
+      },
+    ];
+    const { items: scaled } = scaleMealByPortionRatio(fractional, 2);
+    expect(scaled[0]?.protein).toBe(11);
+    expect(scaled[0]?.grams).toBe(100);
+  });
 });
+
