@@ -13,9 +13,11 @@ export function ReferralCodeBlock() {
 
   if (!data) return null;
 
+  const { code, conversionCount } = data;
+
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(data.code);
+      await navigator.clipboard.writeText(code);
       toast.success('Скопировано');
     } catch {
       toast.error('Не удалось скопировать');
@@ -31,7 +33,7 @@ export function ReferralCodeBlock() {
       </p>
       <div className="flex items-center gap-2">
         <code className="min-w-0 flex-1 truncate rounded-md bg-muted px-2 py-1 font-mono text-sm">
-          {data.code}
+          {code}
         </code>
         <Button
           type="button"
@@ -45,7 +47,7 @@ export function ReferralCodeBlock() {
         </Button>
       </div>
       <p className="text-sm text-muted-foreground">
-        Оплачено по коду: {data.conversionCount}
+        Оплачено по коду: {conversionCount}
       </p>
     </div>
   );

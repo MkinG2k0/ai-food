@@ -13,6 +13,7 @@ const base: SettingsSyncPayload = {
   featureHealthiness: true,
   featureComposition: true,
   calendarRings: { kcal: true, protein: true, fat: false, carbs: false },
+  sharePhotosToFriends: true,
 };
 
 describe('mergeSettingsLww', () => {

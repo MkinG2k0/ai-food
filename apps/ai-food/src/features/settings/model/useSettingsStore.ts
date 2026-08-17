@@ -163,6 +163,7 @@ export function settingsSyncPayloadFromState(s: {
   featureHealthiness: boolean;
   featureComposition: boolean;
   calendarRings: CalendarRingsSelection;
+  sharePhotosToFriends: boolean;
 }): SettingsSyncPayload {
   return {
     customInstructions: s.customInstructions,

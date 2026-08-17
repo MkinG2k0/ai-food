@@ -3,7 +3,6 @@ import {
   isNoFoodResult,
   isNutritionResult,
   normalizeMicronutrients,
-  toAmountMg,
   type NoFoodResult,
 } from './nutritionResultSchema';
 

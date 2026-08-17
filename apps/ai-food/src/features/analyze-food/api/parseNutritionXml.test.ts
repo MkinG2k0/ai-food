@@ -7,6 +7,7 @@ import {
   parsePartialNutritionXml,
 } from './parseNutritionXml';
 import type { NutritionResult } from '@ai-food/shared-types';
+import { isNutritionResult } from './nutritionResultSchema';
 
 const sample: NutritionResult = {
   foodName: 'Бургер с сыром',
@@ -153,7 +154,10 @@ describe('parseNutritionXml', () => {
 </analysis>`;
     const parsed = parseNutritionXml(xml);
     expect(parsed).toMatchObject({ protein: 5.5 });
-    expect(parsed.items?.[0]?.protein).toBe(5.5);
+    expect(isNutritionResult(parsed)).toBe(true);
+    if (isNutritionResult(parsed)) {
+      expect(parsed.items?.[0]?.protein).toBe(5.5);
+    }
   });
 
   it('parses comma decimals as tenths', () => {
@@ -178,7 +182,10 @@ describe('parseNutritionXml', () => {
 </analysis>`;
     const parsed = parseNutritionXml(xml);
     expect(parsed).toMatchObject({ protein: 5.5 });
-    expect(parsed.items?.[0]?.protein).toBe(5.5);
+    expect(isNutritionResult(parsed)).toBe(true);
+    if (isNutritionResult(parsed)) {
+      expect(parsed.items?.[0]?.protein).toBe(5.5);
+    }
   });
 });
 
