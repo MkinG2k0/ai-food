@@ -1,5 +1,8 @@
 import type { DailyTargets, Meal, UserProfile } from '@ai-food/shared-types';
-import type { WeightEntry } from '@/features/stats';
+import {
+  getIdealSegmentInWindow,
+  type WeightEntry,
+} from '@/features/stats';
 import { computeDayKbju } from '@/shared/lib/computeDayKbju';
 import { formatDayLabel, isSameDay } from '@/shared/lib/dateUtils';
 import {
@@ -47,12 +50,21 @@ export interface ReportSummary {
   dayCount: number;
 }
 
+export interface ReportWeightPoint {
+  date: string;
+  kg: number;
+}
+
 export interface ReportWeightSnapshot {
   currentKg: number | null;
   goalKg: number | null;
   deltaToGoal: number | null;
   periodStartKg: number | null;
   periodEndKg: number | null;
+  viewStart: string;
+  viewEnd: string;
+  points: ReportWeightPoint[];
+  idealPoints: ReportWeightPoint[];
 }
 
 export interface NutritionReportData {
@@ -133,6 +145,43 @@ function toDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+function startWeightSeed(
+  profile: UserProfile | null,
+): ReportWeightPoint | null {
+  if (!profile) return null;
+  const kg = profile.planStartWeight ?? profile.weight;
+  const date = profile.planStartDate;
+  if (kg == null || !date) return null;
+  return { date, kg };
+}
+
+/** Logged weights in the period plus onboarding start weight if it falls in range. */
+export function buildWeightChartPoints(
+  entries: WeightEntry[],
+  periodStart: Date,
+  periodEnd: Date,
+  profile: UserProfile | null,
+): ReportWeightPoint[] {
+  const startKey = toDateKey(periodStart);
+  const endKey = toDateKey(periodEnd);
+  const byDate = new Map<string, number>();
+
+  const seed = startWeightSeed(profile);
+  if (seed && seed.date >= startKey && seed.date <= endKey) {
+    byDate.set(seed.date, seed.kg);
+  }
+
+  for (const entry of entries) {
+    if (entry.date >= startKey && entry.date <= endKey) {
+      byDate.set(entry.date, entry.kg);
+    }
+  }
+
+  return [...byDate.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, kg]) => ({ date, kg }));
+}
+
 export function buildNutritionReportData(input: {
   period: ReportPeriod;
   meals: Meal[];
@@ -205,15 +254,43 @@ export function buildNutritionReportData(input: {
     isInPeriod(new Date(m.timestamp), period.start, period.end),
   ).length;
 
+  const viewStart = toDateKey(period.start);
+  const viewEnd = toDateKey(period.end);
+  const seed = startWeightSeed(profile);
+  const latestLogged = latestWeightOnOrBefore(weightEntries, period.end);
   const currentKg =
-    profile?.weight ??
-    latestWeightOnOrBefore(weightEntries, period.end) ??
-    null;
+    latestLogged ?? seed?.kg ?? profile?.weight ?? null;
   const goalKg = weightGoalKg ?? profile?.targetWeight ?? null;
   const deltaToGoal =
     currentKg != null && goalKg != null
       ? Math.round((goalKg - currentKg) * 10) / 10
       : null;
+  const points = buildWeightChartPoints(
+    weightEntries,
+    period.start,
+    period.end,
+    profile,
+  );
+  const periodStartKg =
+    points[0]?.kg ??
+    latestWeightOnOrBefore(weightEntries, period.start) ??
+    (seed && seed.date <= viewStart ? seed.kg : null);
+  const periodEndKg =
+    points[points.length - 1]?.kg ?? latestLogged ?? currentKg;
+  const idealPoints =
+    profile?.planStartDate &&
+    (profile.planStartWeight ?? profile.weight) != null &&
+    profile.targetWeightDate &&
+    goalKg != null
+      ? getIdealSegmentInWindow({
+          planStartDate: profile.planStartDate,
+          planStartWeight: profile.planStartWeight ?? profile.weight,
+          targetWeightDate: profile.targetWeightDate,
+          goalKg,
+          viewStartYmd: viewStart,
+          viewEndYmd: viewEnd,
+        }).map((p) => ({ date: toDateKey(p.date), kg: p.kg }))
+      : [];
 
   return {
     appName,
@@ -240,8 +317,12 @@ export function buildNutritionReportData(input: {
       currentKg,
       goalKg,
       deltaToGoal,
-      periodStartKg: latestWeightOnOrBefore(weightEntries, period.start),
-      periodEndKg: latestWeightOnOrBefore(weightEntries, period.end),
+      periodStartKg,
+      periodEndKg,
+      viewStart,
+      viewEnd,
+      points,
+      idealPoints,
     },
   };
 }

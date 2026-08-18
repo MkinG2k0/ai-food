@@ -75,6 +75,41 @@ describe('buildNutritionReportData', () => {
     expect(data.summary.avgKcal).toBe(100);
     expect(data.days.find((d) => d.dateLabel.includes('17'))?.meals).toHaveLength(1);
     expect(data.days.filter((d) => d.meals.length === 0)).toHaveLength(6);
-    expect(data.weight.deltaToGoal).toBe(8);
+    expect(data.weight.deltaToGoal).toBe(7.5);
+    expect(data.weight.currentKg).toBe(63.5);
+    expect(data.weight.points).toEqual([
+      { date: '2026-08-17', kg: 63.5 },
+    ]);
+  });
+
+  it('plots onboarding start weight and a later logged entry', () => {
+    const data = buildNutritionReportData({
+      period,
+      meals: [],
+      profile: {
+        gender: 'male',
+        age: 26,
+        height: 173,
+        weight: 70,
+        targetWeight: 80.5,
+        targetWeightDate: '2026-09-15',
+        planStartDate: '2026-08-17',
+        planStartWeight: 70,
+        activity: 'medium',
+        goal: 'gain',
+        dietType: 'none',
+      },
+      targets: null,
+      weightEntries: [{ id: 'w2', date: '2026-08-18', kg: 72 }],
+      weightGoalKg: 80.5,
+    });
+
+    expect(data.weight.currentKg).toBe(72);
+    expect(data.weight.periodStartKg).toBe(70);
+    expect(data.weight.periodEndKg).toBe(72);
+    expect(data.weight.points).toEqual([
+      { date: '2026-08-17', kg: 70 },
+      { date: '2026-08-18', kg: 72 },
+    ]);
   });
 });

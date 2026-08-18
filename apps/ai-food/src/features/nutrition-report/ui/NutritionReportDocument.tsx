@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import type { NutritionReportData } from '../model/buildReportData';
+import { NutritionReportWeightChart } from './NutritionReportWeightChart';
 
 function progressPct(value: number, goal: number): number {
   if (goal <= 0) return 0;
@@ -135,22 +136,27 @@ export const NutritionReportDocument = forwardRef<
             <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
               Динамика веса
             </p>
-            {weight.goalKg != null ? (
-              <p className="mt-1 text-sm text-neutral-600">
-                Цель {weight.goalKg} кг
-              </p>
-            ) : null}
-            {weight.periodStartKg != null && weight.periodEndKg != null ? (
-              <p className="mt-2 text-lg font-semibold tabular-nums">
+            <p className="mt-1 text-sm text-neutral-600">
+              {weight.goalKg != null
+                ? `Цель ${weight.goalKg} кг`
+                : data.periodRange}
+            </p>
+            {weight.periodStartKg != null &&
+            weight.periodEndKg != null &&
+            weight.periodStartKg !== weight.periodEndKg ? (
+              <p className="mt-1 text-lg font-semibold tabular-nums">
                 {weight.periodStartKg} кг → {weight.periodEndKg} кг
               </p>
-            ) : weight.currentKg != null ? (
-              <p className="mt-2 text-lg font-semibold tabular-nums">
-                {weight.currentKg} кг
-              </p>
-            ) : (
-              <p className="mt-2 text-sm text-neutral-500">Нет записей</p>
-            )}
+            ) : null}
+            <div className="mt-2">
+              <NutritionReportWeightChart
+                points={weight.points}
+                idealPoints={weight.idealPoints}
+                goalKg={weight.goalKg}
+                viewStart={weight.viewStart}
+                viewEnd={weight.viewEnd}
+              />
+            </div>
           </section>
 
           <section className="report-diary">
