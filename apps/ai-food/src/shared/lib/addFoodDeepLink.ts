@@ -25,7 +25,7 @@ const ROUTE_BY_ACTION: Record<
   string
 > = {
   scan: '/scan',
-  'scan-describe': '/scan?describe=1',
+  'scan-describe': '/scan',
   manual: '/manual-entry',
   favorites: '/favorites',
 };

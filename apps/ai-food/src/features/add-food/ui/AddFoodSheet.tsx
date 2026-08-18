@@ -107,11 +107,6 @@ export function AddFoodSheet({
     navigate('/scan');
   };
 
-  const handleCameraDescribeClick = () => {
-    handleClose();
-    navigate('/scan?describe=1');
-  };
-
   const handleDescribeClick = () => {
     setMode('describe');
   };
@@ -163,15 +158,6 @@ export function AddFoodSheet({
               >
                 <Camera className="h-5 w-5 text-emerald-600" />
                 <span>Камера / Штрихкод</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-12 w-full justify-start gap-3"
-                onClick={handleCameraDescribeClick}
-              >
-                <PenLine className="h-5 w-5 text-emerald-600" />
-                <span>Камера + Описание</span>
               </Button>
 
               <Button
