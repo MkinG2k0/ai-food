@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Camera } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
-import { ImageIcon, X, Zap, ZapOff } from 'lucide-react';
+import { ImageIcon, PenLine, X, Zap, ZapOff } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   BarcodeProductConfirm,
@@ -33,8 +33,6 @@ export function ScanPage() {
   const [searchParams] = useSearchParams();
   const initialMode: ScanMode =
     searchParams.get('mode') === 'barcode' ? 'barcode' : 'food';
-  /** When true, after photo ask for text (+ voice). When false — analyze photo immediately. */
-  const requireDescription = searchParams.get('describe') === '1';
 
   const [mode, setMode] = useState<ScanMode>(initialMode);
   const [torchOn, setTorchOn] = useState(false);
@@ -262,11 +260,12 @@ export function ScanPage() {
 
   const acceptFoodFile = (file: File) => {
     stopStream();
-    if (!requireDescription) {
-      void submitFood({ image: file });
-      navigate('/');
-      return;
-    }
+    void submitFood({ image: file });
+    navigate('/');
+  };
+
+  const beginPendingDescription = (file: File) => {
+    stopStream();
     setPendingPhoto(file);
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
@@ -325,19 +324,6 @@ export function ScanPage() {
         return;
       }
 
-      if (requireDescription) {
-        const file = await jpegFileFromCanvas(canvas);
-        if (!file) {
-          captureLockRef.current.unlock();
-          setCapturing(false);
-          toast.error('Не удалось сделать снимок');
-          void video.play().catch(() => undefined);
-          return;
-        }
-        acceptFoodFile(file);
-        return;
-      }
-
       const submit = submitFood;
       void jpegFileFromCanvas(canvas).then((file) => {
         if (!file) {
@@ -348,6 +334,41 @@ export function ScanPage() {
       });
       stopStream();
       navigate('/');
+    });
+  };
+
+  const handlePenCapture = async () => {
+    if (mode !== 'food' || cameraError || capturing) return;
+
+    await captureLockRef.current.run(async () => {
+      const video = videoRef.current;
+      if (!video) {
+        captureLockRef.current.unlock();
+        setCapturing(false);
+        return;
+      }
+      video.pause();
+      setCapturing(true);
+      const canvas = snapshotVideoFrame(video, {
+        maxSide: AI_IMAGE_MAX_SIDE,
+      });
+      if (!canvas) {
+        captureLockRef.current.unlock();
+        setCapturing(false);
+        toast.error('Не удалось сделать снимок');
+        void video.play().catch(() => undefined);
+        return;
+      }
+
+      const file = await jpegFileFromCanvas(canvas);
+      if (!file) {
+        captureLockRef.current.unlock();
+        setCapturing(false);
+        toast.error('Не удалось сделать снимок');
+        void video.play().catch(() => undefined);
+        return;
+      }
+      beginPendingDescription(file);
     });
   };
 
@@ -605,6 +626,20 @@ export function ScanPage() {
                 capturing && 'opacity-50',
               )}
             />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void handlePenCapture()}
+            disabled={mode === 'barcode' || Boolean(cameraError) || capturing}
+            aria-hidden={mode === 'barcode'}
+            className={cn(
+              'flex h-10 w-10 items-center justify-center rounded-full bg-black/45 disabled:opacity-40',
+              mode === 'barcode' && 'invisible pointer-events-none',
+            )}
+            aria-label="Сфотографировать с описанием"
+          >
+            <PenLine className="h-5 w-5" />
           </button>
 
           <button
