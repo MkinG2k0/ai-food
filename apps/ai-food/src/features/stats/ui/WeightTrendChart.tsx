@@ -8,6 +8,8 @@ interface WeightTrendChartProps {
   viewStart: Date;
   viewEnd: Date;
   onPanDays?: (deltaDays: number) => void;
+  /** When false, hide swipe hint and disable pan (read-only friend profile). */
+  interactive?: boolean;
 }
 
 const VB_W = 320;
@@ -61,6 +63,7 @@ export function WeightTrendChart({
   viewStart,
   viewEnd,
   onPanDays,
+  interactive = true,
 }: WeightTrendChartProps) {
   const gradId = useId();
   const plotW = VB_W - PAD.left - PAD.right;
@@ -134,10 +137,7 @@ export function WeightTrendChart({
     (d, i, arr) =>
       i === 0 || d.getTime() !== arr[0].getTime(),
   );
-  if (
-    points.length > 0 &&
-    viewEnd.getTime() - viewStart.getTime() > 0
-  ) {
+  if (viewEnd.getTime() - viewStart.getTime() > 0) {
     const mid = new Date(
       (viewStart.getTime() + viewEnd.getTime()) / 2,
     );
@@ -150,13 +150,14 @@ export function WeightTrendChart({
     }
   }
 
-  const showChart = points.length > 0 || idealPoints.length > 0;
+  const hasSeries = points.length > 0 || idealPoints.length > 0;
   const subtitle = `${formatAxisDay(viewStart)} – ${formatAxisDay(viewEnd)}`;
+  const canPan = interactive && Boolean(onPanDays);
 
   const daysPerPx = (WEIGHT_VIEW_SPAN_DAYS - 1) / plotW;
 
   function onPointerDown(e: PointerEvent<SVGSVGElement>) {
-    if (!onPanDays) return;
+    if (!canPan) return;
     pointerRef.current = {
       id: e.pointerId,
       x: e.clientX,
@@ -164,12 +165,12 @@ export function WeightTrendChart({
       locked: null,
       accDx: 0,
     };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
   }
 
   function onPointerMove(e: PointerEvent<SVGSVGElement>) {
     const st = pointerRef.current;
-    if (!st || st.id !== e.pointerId || !onPanDays) return;
+    if (!st || st.id !== e.pointerId || !canPan) return;
     const dx = e.clientX - st.x;
     const dy = e.clientY - st.y;
     if (st.locked === null) {
@@ -187,7 +188,7 @@ export function WeightTrendChart({
     st.y = e.clientY;
     const dayDelta = -Math.round(st.accDx * daysPerPx);
     if (dayDelta !== 0) {
-      onPanDays(dayDelta);
+      onPanDays?.(dayDelta);
       st.accDx += dayDelta / daysPerPx;
     }
   }
@@ -205,31 +206,35 @@ export function WeightTrendChart({
     >
       <header className="mb-3">
         <h2 className="text-base font-semibold tracking-tight">Динамика веса</h2>
-        <p className="text-xs text-muted-foreground">{subtitle} · свайп</p>
+        <p className="text-xs text-muted-foreground">
+          {canPan ? `${subtitle} · свайп` : subtitle}
+        </p>
       </header>
 
-      {!showChart ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">
-          Запишите вес — здесь появится тренд
-        </p>
-      ) : (
-        <>
-          <svg
-            viewBox={`0 0 ${VB_W} ${VB_H}`}
-            className="h-auto w-full touch-pan-y"
-            role="img"
-            aria-label={`График веса, окно ${subtitle}`}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-          >
-            <defs>
-              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={FACT_STROKE} stopOpacity="0.28" />
-                <stop offset="100%" stopColor={FACT_STROKE} stopOpacity="0" />
-              </linearGradient>
-            </defs>
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${VB_W} ${VB_H}`}
+          className={`h-auto w-full ${canPan ? 'touch-pan-y' : ''}`}
+          role="img"
+          aria-label={`График веса, окно ${subtitle}`}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        >
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={FACT_STROKE} stopOpacity="0.28" />
+              <stop offset="100%" stopColor={FACT_STROKE} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <rect
+            x={0}
+            y={0}
+            width={VB_W}
+            height={VB_H}
+            fill="transparent"
+          />
 
             {ticks.map((tick) => {
               const y =
@@ -326,27 +331,36 @@ export function WeightTrendChart({
             })}
           </svg>
 
-          <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-            {points.length > 0 && (
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  className="h-0.5 w-4 rounded"
-                  style={{ backgroundColor: FACT_STROKE }}
-                />
-                Факт
-              </span>
-            )}
-            {idealMapped.length > 0 && (
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  className="w-4 border-t-2 border-dashed"
-                  style={{ borderColor: PLAN_STROKE }}
-                />
-                План
-              </span>
-            )}
-          </div>
-        </>
+        {!hasSeries && (
+          <p className="pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-muted-foreground">
+            {canPan
+              ? 'Нет записей за этот период'
+              : 'Запишите вес — здесь появится тренд'}
+          </p>
+        )}
+      </div>
+
+      {(points.length > 0 || idealMapped.length > 0) && (
+        <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+          {points.length > 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="h-0.5 w-4 rounded"
+                style={{ backgroundColor: FACT_STROKE }}
+              />
+              Факт
+            </span>
+          )}
+          {idealMapped.length > 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="w-4 border-t-2 border-dashed"
+                style={{ borderColor: PLAN_STROKE }}
+              />
+              План
+            </span>
+          )}
+        </div>
       )}
     </section>
   );

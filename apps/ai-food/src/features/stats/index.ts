@@ -28,6 +28,8 @@ export {
   remainingCopy,
   isGoalReached,
   getWeightTrendPoints,
+  getIdealSegmentInWindow,
+  WEIGHT_VIEW_DAYS,
   type WeightChartPoint,
 } from './model/weightProgress';
 export { WeeklyCaloriesChart } from './ui/WeeklyCaloriesChart';
