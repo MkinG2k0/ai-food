@@ -38,7 +38,15 @@ describe('friendsApi', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        friends: [{ userId: 'u1', displayName: 'Alice', username: 'alice', streak: 3 }],
+        friends: [
+          {
+            userId: 'u1',
+            displayName: 'Alice',
+            username: 'alice',
+            streak: 3,
+            calorieStreak: 4,
+          },
+        ],
       }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -46,6 +54,7 @@ describe('friendsApi', () => {
     const { fetchFriends } = await import('./friendsApi');
     const result = await fetchFriends();
     expect(result.friends).toHaveLength(1);
+    expect(result.friends[0]?.calorieStreak).toBe(4);
     expect(fetchMock).toHaveBeenCalledWith(
       'https://gw.test/user/friends',
       expect.objectContaining({ method: 'GET' }),

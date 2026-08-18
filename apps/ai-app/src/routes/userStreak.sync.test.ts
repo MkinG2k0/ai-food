@@ -119,4 +119,75 @@ describe('POST /user/streak/sync', () => {
     expect(res.body.streak.bestStreak).toBe(12);
     expect(res.body.clientUpdatedAt).toBe('2026-08-18T15:00:00.000Z');
   });
+
+  it('round-trips nested calorieStreak', async () => {
+    const calorieStreak = {
+      currentLength: 4,
+      freezeCount: 1,
+      consumedFreezeDateKeys: ['2026-08-14'],
+      grantedMilestones: [7],
+      bestStreak: 4,
+    };
+    const res = await request(createApp())
+      .post('/user/streak/sync')
+      .set('x-user-token', 'jwt')
+      .send({
+        streak: { ...sampleStreak, calorieStreak },
+        clientUpdatedAt: '2026-08-18T12:00:00.000Z',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.streak.calorieStreak).toEqual(calorieStreak);
+  });
+
+  it('still 200 without calorieStreak and returns empty nested zeros', async () => {
+    const res = await request(createApp())
+      .post('/user/streak/sync')
+      .set('x-user-token', 'jwt')
+      .send({
+        streak: sampleStreak,
+        clientUpdatedAt: '2026-08-18T12:00:00.000Z',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.streak.calorieStreak).toEqual({
+      currentLength: 0,
+      freezeCount: 0,
+      consumedFreezeDateKeys: [],
+      grantedMilestones: [],
+      bestStreak: 0,
+    });
+  });
+
+  it('keeps stored calorieStreak when a newer payload omits it', async () => {
+    const storedCalorie = {
+      currentLength: 9,
+      freezeCount: 2,
+      consumedFreezeDateKeys: [],
+      grantedMilestones: [7, 14],
+      bestStreak: 9,
+    };
+    mocks.userFindUnique.mockResolvedValue({
+      clientStreak: { ...sampleStreak, calorieStreak: storedCalorie },
+      streakClientUpdatedAt: new Date('2026-08-18T10:00:00.000Z'),
+    });
+
+    const res = await request(createApp())
+      .post('/user/streak/sync')
+      .set('x-user-token', 'jwt')
+      .send({
+        streak: sampleStreak,
+        clientUpdatedAt: '2026-08-18T12:00:00.000Z',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.streak.calorieStreak).toEqual(storedCalorie);
+    expect(mocks.userUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          clientStreak: expect.objectContaining({ calorieStreak: storedCalorie }),
+        }),
+      }),
+    );
+  });
 });

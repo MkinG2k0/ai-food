@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   parseSharePhotosToFriends,
   parseStreakLength,
+  parseCalorieStreakLength,
   resolveFriendTarget,
   sortFriendsByStreakDesc,
   allowsDevSelfFriendRequest,
@@ -70,14 +71,35 @@ describe('parseStreakLength', () => {
   });
 });
 
+describe('parseCalorieStreakLength', () => {
+  it('reads nested currentLength and defaults missing clientStreak to 0', () => {
+    expect(
+      parseCalorieStreakLength({
+        currentLength: 3,
+        calorieStreak: { currentLength: 11 },
+      }),
+    ).toBe(11);
+    expect(parseCalorieStreakLength(null)).toBe(0);
+    expect(parseCalorieStreakLength({ currentLength: 3 })).toBe(0);
+  });
+});
+
 describe('sortFriendsByStreakDesc', () => {
   it('sorts by streak descending', () => {
     const sorted = sortFriendsByStreakDesc([
-      { userId: 'a', displayName: 'A', username: null, streak: 2 },
-      { userId: 'b', displayName: 'B', username: null, streak: 10 },
-      { userId: 'c', displayName: 'C', username: null, streak: 5 },
+      { userId: 'a', displayName: 'A', username: null, streak: 2, calorieStreak: 0 },
+      { userId: 'b', displayName: 'B', username: null, streak: 10, calorieStreak: 0 },
+      { userId: 'c', displayName: 'C', username: null, streak: 5, calorieStreak: 0 },
     ]);
     expect(sorted.map((f) => f.userId)).toEqual(['b', 'c', 'a']);
+  });
+
+  it('does not sort by calorieStreak', () => {
+    const sorted = sortFriendsByStreakDesc([
+      { userId: 'a', displayName: 'A', username: null, streak: 2, calorieStreak: 50 },
+      { userId: 'b', displayName: 'B', username: null, streak: 10, calorieStreak: 1 },
+    ]);
+    expect(sorted.map((f) => f.userId)).toEqual(['b', 'a']);
   });
 });
 
