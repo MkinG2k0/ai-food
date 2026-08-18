@@ -8,7 +8,7 @@ const DEDUPE_MS = 1500;
 
 /**
  * Handles Android widget / custom-scheme launches
- * (`aifood://add/<action>`, `aifood://stats`).
+ * (`aifood://add/<action>`, `aifood://stats`, `aifood://streak`).
  * Cold start: App.getLaunchUrl(); warm: appUrlOpen.
  */
 export function DeepLinkHandler() {

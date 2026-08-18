@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_button_bg"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="1dp"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/widget_streak_day_mon"
+            android:textColor="@color/widget_week_kcal_muted"
+            android:textSize="10sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/widget_streak_day_tue"
+            android:textColor="@color/widget_week_kcal_muted"
+            android:textSize="10sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/widget_streak_day_wed"
+            android:textColor="@color/widget_week_kcal_muted"
+            android:textSize="10sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/widget_streak_day_thu"
+            android:textColor="@color/widget_week_kcal_muted"
+            android:textSize="10sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/widget_streak_day_fri"
+            android:textColor="@color/widget_week_kcal_muted"
+            android:textSize="10sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/widget_streak_day_sat"
+            android:textColor="@color/widget_week_kcal_muted"
+            android:textSize="10sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/widget_streak_day_sun"
+            android:textColor="@color/widget_week_kcal_muted"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_widget_flame" />
+
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_logging" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_logging" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_logging" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_logging" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_empty" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_empty" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_empty" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_widget_target" />
+
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_empty" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_empty" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_empty" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_empty" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_empty" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_empty" />
+        </FrameLayout>
+        <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+            <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_gravity="center" android:contentDescription="@null" android:src="@drawable/widget_streak_dot_empty" />
+        </FrameLayout>
+    </LinearLayout>
+</LinearLayout>

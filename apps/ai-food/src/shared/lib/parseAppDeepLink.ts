@@ -6,7 +6,7 @@ import {
 export type AppDeepLinkResult = AddFoodDeepLinkResult;
 
 /**
- * App custom-scheme deep links: stats route + existing add-food actions.
+ * App custom-scheme deep links: stats / streak sheets + existing add-food actions.
  * Schemes: {@code aifood} / {@code com.aifood.app}.
  */
 export function parseAppDeepLink(url: string): AppDeepLinkResult | null {
@@ -28,6 +28,20 @@ export function parseAppDeepLink(url: string): AppDeepLinkResult | null {
     .split('/')
     .map((p) => p.trim())
     .filter(Boolean);
+
+  // aifood://streak or aifood://streak/ → home with streak sheet
+  if (host === 'streak' && pathParts.length === 0) {
+    return { kind: 'route', path: '/?sheet=streak' };
+  }
+
+  // aifood:///streak (empty host, path /streak)
+  if (
+    (host === '' || host === 'streak') &&
+    pathParts.length === 1 &&
+    pathParts[0].toLowerCase() === 'streak'
+  ) {
+    return { kind: 'route', path: '/?sheet=streak' };
+  }
 
   // aifood://stats or aifood://stats/ → /stats
   if (host === 'stats' && pathParts.length === 0) {

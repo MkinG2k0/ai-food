@@ -591,66 +591,68 @@ export function ScanPage() {
           </button>
         </div>
 
-        <div className="flex w-full max-w-sm items-center justify-between">
-          <button
-            type="button"
-            onClick={() => void toggleTorch()}
-            disabled={torchDisabled}
-            className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-full bg-black/45',
-              torchDisabled && 'opacity-40',
-            )}
-            aria-label={torchOn ? 'Выключить вспышку' : 'Включить вспышку'}
-          >
-            {torchOn ? (
-              <Zap className="h-5 w-5" />
-            ) : (
-              <ZapOff className="h-5 w-5" />
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => void handleShutter()}
-            disabled={Boolean(cameraError) || capturing}
-            className="flex items-center justify-center rounded-full border-4 border-white/80 bg-white disabled:opacity-40"
-            style={{ height: '4.5rem', width: '4.5rem' }}
-            aria-label={
-              mode === 'barcode' ? 'Распознать штрихкод' : 'Сфотографировать'
-            }
-            aria-busy={capturing}
-          >
-            <span
-              className={cn(
-                'h-14 w-14 rounded-full bg-white transition-opacity',
-                capturing && 'opacity-50',
-              )}
-            />
-          </button>
-
+        <div className="flex w-full max-w-sm flex-col items-center gap-10">
           <button
             type="button"
             onClick={() => void handlePenCapture()}
             disabled={mode === 'barcode' || Boolean(cameraError) || capturing}
             aria-hidden={mode === 'barcode'}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-full bg-black/45 disabled:opacity-40',
+              'flex h-12 w-12 items-center justify-center rounded-full bg-white text-black disabled:opacity-40',
               mode === 'barcode' && 'invisible pointer-events-none',
             )}
             aria-label="Сфотографировать с описанием"
           >
-            <PenLine className="h-5 w-5" />
+            <PenLine className="h-6 w-6" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => galleryInputRef.current?.click()}
-            disabled={capturing}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-black/45 disabled:opacity-40"
-            aria-label="Галерея"
-          >
-            <ImageIcon className="h-5 w-5" />
-          </button>
+          <div className="flex w-full items-center justify-between">
+            <button
+              type="button"
+              onClick={() => void toggleTorch()}
+              disabled={torchDisabled}
+              className={cn(
+                'flex h-12 w-12 items-center justify-center rounded-full bg-black/45',
+                torchDisabled && 'opacity-40',
+              )}
+              aria-label={torchOn ? 'Выключить вспышку' : 'Включить вспышку'}
+            >
+              {torchOn ? (
+                <Zap className="h-5 w-5" />
+              ) : (
+                <ZapOff className="h-5 w-5" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => void handleShutter()}
+              disabled={Boolean(cameraError) || capturing}
+              className="flex items-center justify-center rounded-full border-4 border-white/80 bg-white disabled:opacity-40"
+              style={{ height: '4.5rem', width: '4.5rem' }}
+              aria-label={
+                mode === 'barcode' ? 'Распознать штрихкод' : 'Сфотографировать'
+              }
+              aria-busy={capturing}
+            >
+              <span
+                className={cn(
+                  'h-14 w-14 rounded-full bg-white transition-opacity',
+                  capturing && 'opacity-50',
+                )}
+              />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => galleryInputRef.current?.click()}
+              disabled={capturing}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-black/45 disabled:opacity-40"
+              aria-label="Галерея"
+            >
+              <ImageIcon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
 

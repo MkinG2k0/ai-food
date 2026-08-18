@@ -23,4 +23,17 @@
     <string name="widget_week_kcal_legend_protein">Б</string>
     <string name="widget_week_kcal_legend_fat">Ж</string>
     <string name="widget_week_kcal_legend_carbs">У</string>
+    <string name="widget_streak_diary_title">Дневник</string>
+    <string name="widget_streak_calorie_title">Норма калорий</string>
+    <string name="widget_streak_calorie_title_short">Норма</string>
+    <string name="widget_streak_diary_description">Дневник</string>
+    <string name="widget_streak_calorie_description">Норма калорий</string>
+    <string name="widget_streak_week_description">Серии за неделю</string>
+    <string name="widget_streak_day_mon">пн</string>
+    <string name="widget_streak_day_tue">вт</string>
+    <string name="widget_streak_day_wed">ср</string>
+    <string name="widget_streak_day_thu">чт</string>
+    <string name="widget_streak_day_fri">пт</string>
+    <string name="widget_streak_day_sat">сб</string>
+    <string name="widget_streak_day_sun">вс</string>
 </resources>

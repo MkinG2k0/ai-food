@@ -7,11 +7,30 @@ import {
 } from 'framer-motion';
 import type { StreakSnapshot, StreakTrackSnapshot, StreakWeekDay } from '@/entities/streak';
 import { streakDaysLabel } from '@/entities/streak';
-import { useAnimatedNumber } from '@/shared/lib';
+import { cn, useAnimatedNumber } from '@/shared/lib';
 import { BottomSheet, Button, RING_COLORS } from '@/shared/ui';
 
 const LOGGING_FILL = RING_COLORS.kcal;
 const CALORIE_FILL = RING_COLORS.protein;
+
+const TRACK = {
+  logging: {
+    title: 'Дневник',
+    short: 'Еда',
+    rule: 'Хотя бы одна запись еды за день',
+    accent: LOGGING_FILL,
+    Icon: Flame,
+  },
+  calorie: {
+    title: 'Норма калорий',
+    short: 'Норма',
+    rule: 'Калории за день в пределах вашей нормы',
+    accent: CALORIE_FILL,
+    Icon: Target,
+  },
+} as const;
+
+type TrackKind = keyof typeof TRACK;
 
 export interface StreakSheetProps {
   open: boolean;
@@ -23,28 +42,31 @@ const EASE_OUT: Transition['ease'] = [0.22, 1, 0.36, 1];
 const STAGGER = 0.09;
 
 function formatStartDate(date: Date | null): string {
-  if (!date) return '—';
-  return date.toLocaleDateString('ru-RU', {
+  if (!date) return 'Ещё не началась';
+  return `С ${date.toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'short',
-  });
+  })}`;
+}
+
+function freezeHint(count: number): string {
+  if (count <= 0) {
+    return 'Появится за длинную серию — тогда можно пропустить день';
+  }
+  return `Можно пропустить ${count} ${streakDaysLabel(count)} — серия сохранится`;
 }
 
 function buildVariants(reducedMotion: boolean | null): {
   container: Variants;
   item: Variants;
-  flame: Variants;
   day: Variants;
-  filledDay: Variants;
   progress: Transition;
 } {
   if (reducedMotion) {
     return {
       container: {},
       item: {},
-      flame: {},
       day: {},
-      filledDay: {},
       progress: { duration: 0 },
     };
   }
@@ -63,102 +85,82 @@ function buildVariants(reducedMotion: boolean | null): {
         transition: { duration: 0.5, ease: EASE_OUT },
       },
     },
-    flame: {
-      hidden: { opacity: 0, scale: 0.35, rotate: -18 },
-      show: {
-        opacity: 1,
-        scale: 1,
-        rotate: 0,
-        transition: { type: 'spring', stiffness: 280, damping: 16 },
-      },
-    },
     day: {
       hidden: { opacity: 0, scale: 0.55 },
       show: (i: number) => ({
         opacity: 1,
         scale: 1,
         transition: {
-          delay: 0.28 + i * 0.05,
+          delay: 0.28 + i * 0.04,
           type: 'spring',
           stiffness: 420,
           damping: 22,
         },
       }),
     },
-    filledDay: {
-      hidden: { scale: 0 },
-      show: {
-        scale: [0, 1.25, 1],
-        transition: { duration: 0.45, ease: EASE_OUT, delay: 0.08 },
-      },
-    },
     progress: { duration: 0.95, delay: 0.55, ease: EASE_OUT },
   };
 }
 
-function SplitDayCell({
-  loggingFilled,
-  calorieFilled,
+function HeroTile({
+  kind,
+  length,
+  reducedMotion,
 }: {
-  loggingFilled: boolean;
-  calorieFilled: boolean;
+  kind: TrackKind;
+  length: number;
+  reducedMotion: boolean | null;
 }) {
-  const label = `Запись ${loggingFilled ? 'да' : 'нет'}, Норма ${calorieFilled ? 'да' : 'нет'}`;
-
-  if (!loggingFilled && !calorieFilled) {
-    return (
-      <div
-        className="h-11 w-11 rounded-full border border-muted bg-transparent"
-        aria-label={label}
-      />
-    );
-  }
-
-  if (loggingFilled && !calorieFilled) {
-    return (
-      <div
-        className="flex h-11 w-11 items-center justify-center rounded-full"
-        style={{ backgroundColor: LOGGING_FILL }}
-        aria-label={label}
-      >
-        <Flame className="h-4 w-4 text-white" aria-hidden />
-      </div>
-    );
-  }
-
-  if (!loggingFilled && calorieFilled) {
-    return (
-      <div
-        className="flex h-11 w-11 items-center justify-center rounded-full"
-        style={{ backgroundColor: CALORIE_FILL }}
-        aria-label={label}
-      >
-        <Target className="h-4 w-4 text-white" aria-hidden />
-      </div>
-    );
-  }
+  const meta = TRACK[kind];
+  const Icon = meta.Icon;
+  const animated = useAnimatedNumber(length, {
+    skipInitial: false,
+    duration: 1.15,
+    delay: 0.25,
+  });
 
   return (
-    <div
-      className="relative h-11 w-11 overflow-hidden rounded-full"
-      aria-label={label}
-      style={{
-        background: `linear-gradient(135deg, ${LOGGING_FILL} calc(50% - 1px), hsl(var(--background)) calc(50% - 1px), hsl(var(--background)) calc(50% + 1px), ${CALORIE_FILL} calc(50% + 1px))`,
-      }}
-    >
-      <Flame
-        className="absolute left-[10px] top-[9px] h-3 w-3 text-white"
-        aria-hidden
-      />
-      <Target
-        className="absolute bottom-[9px] right-[10px] h-3 w-3 text-white"
-        aria-hidden
-      />
+    <div className="flex min-w-0 flex-1 flex-col items-center rounded-2xl border bg-card px-3 py-4 text-center shadow-sm">
+      <motion.div
+        initial={reducedMotion ? false : { opacity: 0, scale: 0.35, rotate: -18 }}
+        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+        transition={{ type: 'spring', stiffness: 280, damping: 16 }}
+      >
+        <Icon className="h-6 w-6" style={{ color: meta.accent }} aria-hidden />
+      </motion.div>
+      <p className="mt-2 text-4xl font-bold tabular-nums tracking-tight">
+        {animated}
+      </p>
+      <p className="mt-0.5 text-sm text-muted-foreground">
+        {streakDaysLabel(length)} подряд
+      </p>
+      <p className="mt-2 text-sm font-medium leading-tight">{meta.title}</p>
     </div>
   );
 }
 
-function CombinedWeek({
+function WeekDot({
+  filled,
+  accent,
+  label,
+}: {
+  filled: boolean;
+  accent: string;
+  label: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'mx-auto h-7 w-7 rounded-full',
+        filled ? '' : 'border border-muted bg-transparent',
+      )}
+      style={filled ? { backgroundColor: accent } : undefined}
+      aria-label={label}
+    />
+  );
+}
+
+function DualWeek({
   loggingDays,
   calorieDays,
   variants,
@@ -169,29 +171,46 @@ function CombinedWeek({
 }) {
   return (
     <div>
-      <div className="mb-3 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <Flame className="h-3 w-3" style={{ color: LOGGING_FILL }} aria-hidden />
-          Запись
-        </span>
-        <span className="flex items-center gap-1">
-          <Target className="h-3 w-3" style={{ color: CALORIE_FILL }} aria-hidden />
-          Норма
-        </span>
-      </div>
-      <div className="grid grid-cols-7 gap-2">
-        {loggingDays.map((logDay, index) => (
-          <motion.div
-            key={logDay.label}
-            className="flex flex-col items-center gap-2"
-            variants={variants.day}
-            custom={index}
+      <p className="mb-1 text-sm font-medium text-foreground">Эта неделя</p>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Две отдельные серии — заполненный кружок значит, что день засчитан
+      </p>
+      <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] items-center gap-x-1 gap-y-2.5">
+        <span aria-hidden />
+        {loggingDays.map((day) => (
+          <span
+            key={`label-${day.label}`}
+            className="text-center text-[11px] text-muted-foreground"
           >
-            <SplitDayCell
-              loggingFilled={logDay.filled}
-              calorieFilled={calorieDays[index]?.filled ?? false}
+            {day.label}
+          </span>
+        ))}
+
+        <span className="flex items-center gap-1 text-[11px] font-medium text-foreground">
+          <Flame className="h-3 w-3 shrink-0" style={{ color: LOGGING_FILL }} aria-hidden />
+          {TRACK.logging.short}
+        </span>
+        {loggingDays.map((day, index) => (
+          <motion.div key={`log-${day.label}`} variants={variants.day} custom={index}>
+            <WeekDot
+              filled={day.filled}
+              accent={LOGGING_FILL}
+              label={`${TRACK.logging.title}, ${day.label}: ${day.filled ? 'да' : 'нет'}`}
             />
-            <span className="text-xs text-muted-foreground">{logDay.label}</span>
+          </motion.div>
+        ))}
+
+        <span className="flex items-center gap-1 text-[11px] font-medium text-foreground">
+          <Target className="h-3 w-3 shrink-0" style={{ color: CALORIE_FILL }} aria-hidden />
+          {TRACK.calorie.short}
+        </span>
+        {calorieDays.map((day, index) => (
+          <motion.div key={`cal-${day.label}`} variants={variants.day} custom={index}>
+            <WeekDot
+              filled={day.filled}
+              accent={CALORIE_FILL}
+              label={`${TRACK.calorie.title}, ${day.label}: ${day.filled ? 'да' : 'нет'}`}
+            />
           </motion.div>
         ))}
       </div>
@@ -200,13 +219,13 @@ function CombinedWeek({
 }
 
 function NextGoalBar({
-  label,
   track,
+  accent,
   reducedMotion,
   progress,
 }: {
-  label: string;
   track: StreakTrackSnapshot;
+  accent: string;
   reducedMotion: boolean | null;
   progress: Transition;
 }) {
@@ -214,117 +233,131 @@ function NextGoalBar({
     track.achieved100 || track.nextMilestone === null
       ? 100
       : track.nextMilestone - track.remainingDays;
-  const animatedCurrent = useAnimatedNumber(track.currentLength, {
-    skipInitial: false,
-    duration: 0.9,
-    delay: 0.52,
-  });
   const animatedRemaining = useAnimatedNumber(track.remainingDays, {
     skipInitial: false,
     duration: 0.75,
     delay: 0.58,
   });
-  const Icon = label === 'Запись' ? Flame : Target;
-  const accent = label === 'Запись' ? LOGGING_FILL : CALORIE_FILL;
+  const goal = track.nextMilestone ?? previousMilestone;
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex w-10 shrink-0 flex-col items-center gap-1">
-        <Icon className="h-5 w-5" style={{ color: accent }} aria-hidden />
-        <span className="text-sm font-semibold tabular-nums">
-          {animatedCurrent}
-        </span>
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        {track.achieved100 ? (
-          <p className="text-sm font-medium text-foreground">
-            100 дней достигнуто
-          </p>
-        ) : (
-          <p className="text-sm font-medium text-foreground">
-            Ещё {animatedRemaining} {streakDaysLabel(track.remainingDays)}
-          </p>
-        )}
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ backgroundColor: accent }}
-            initial={{
-              width: reducedMotion
-                ? `${Math.round(track.progress01 * 100)}%`
-                : '0%',
-            }}
-            animate={{ width: `${Math.round(track.progress01 * 100)}%` }}
-            transition={progress}
-          />
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">до следующей цели</p>
-      </div>
-
-      <div className="flex w-10 shrink-0 flex-col items-center gap-1">
-        <Icon
-          className={`h-5 w-5 ${
-            track.nextMilestone ? 'text-muted-foreground' : 'text-primary'
-          }`}
-          aria-hidden
+    <div>
+      {track.achieved100 ? (
+        <p className="text-sm font-medium text-foreground">100 дней достигнуто</p>
+      ) : (
+        <p className="text-sm font-medium text-foreground">
+          Ещё {animatedRemaining} {streakDaysLabel(track.remainingDays)} до {goal}
+        </p>
+      )}
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+        <motion.div
+          className="h-full rounded-full"
+          style={{ backgroundColor: accent }}
+          initial={{
+            width: reducedMotion
+              ? `${Math.round(track.progress01 * 100)}%`
+              : '0%',
+          }}
+          animate={{ width: `${Math.round(track.progress01 * 100)}%` }}
+          transition={progress}
         />
-        <span
-          className={`text-sm font-semibold tabular-nums ${
-            track.nextMilestone ? 'text-muted-foreground' : 'text-primary'
-          }`}
-        >
-          {track.nextMilestone ?? previousMilestone}
-        </span>
       </div>
+      <p className="mt-1 text-xs text-muted-foreground">следующая цель</p>
     </div>
   );
 }
 
-function ProtectionRow({
-  label,
-  freezeCount,
+function TrackCard({
+  kind,
+  track,
   reducedMotion,
+  progress,
 }: {
-  label: string;
-  freezeCount: number;
+  kind: TrackKind;
+  track: StreakTrackSnapshot;
   reducedMotion: boolean | null;
+  progress: Transition;
 }) {
+  const meta = TRACK[kind];
+  const Icon = meta.Icon;
+  const animatedBest = useAnimatedNumber(track.bestStreak, {
+    skipInitial: false,
+    duration: 0.85,
+    delay: 0.5,
+  });
+
   return (
-    <div className="flex items-start justify-between gap-3">
-      <div>
-        <p className="text-sm font-medium text-foreground">
-          {label}
-          {freezeCount > 0 ? ` ×${freezeCount}` : ''}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Сработает автоматически, если пропустите день
-        </p>
+    <div className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm">
+      <div className="flex items-start gap-2.5">
+        <Icon className="mt-0.5 h-5 w-5 shrink-0" style={{ color: meta.accent }} aria-hidden />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">{meta.title}</p>
+          <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+            {meta.rule}
+          </p>
+        </div>
       </div>
-      <div className="flex shrink-0 gap-1.5">
-        {[0, 1].map((slot) => (
-          <motion.div
-            key={`${label}-${slot}`}
-            initial={reducedMotion ? false : { opacity: 0, scale: 0.6 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              delay: 0.65 + slot * 0.1,
-              type: 'spring',
-              stiffness: 380,
-              damping: 20,
-            }}
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-xs text-muted-foreground">Серия</p>
+          <p className="mt-0.5 text-sm font-medium">
+            {formatStartDate(track.startDate)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Личный рекорд</p>
+          <p
+            className="mt-0.5 text-sm font-semibold tabular-nums"
+            style={{ color: meta.accent }}
           >
-            <Shield
-              className={`h-5 w-5 ${
-                slot < freezeCount
-                  ? 'text-primary'
-                  : 'text-muted-foreground/40'
-              }`}
-              aria-hidden
-            />
-          </motion.div>
-        ))}
+            {animatedBest} {streakDaysLabel(track.bestStreak)}
+          </p>
+        </div>
+      </div>
+
+      <NextGoalBar
+        track={track}
+        accent={meta.accent}
+        reducedMotion={reducedMotion}
+        progress={progress}
+      />
+
+      <div className="flex items-start justify-between gap-3 border-t pt-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">
+            Страховка
+            {track.freezeCount > 0 ? ` · ${track.freezeCount}` : ''}
+          </p>
+          <p className="mt-1 text-xs leading-snug text-muted-foreground">
+            {freezeHint(track.freezeCount)}
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-1.5">
+          {[0, 1].map((slot) => (
+            <motion.div
+              key={`${kind}-freeze-${slot}`}
+              initial={reducedMotion ? false : { opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{
+                delay: 0.65 + slot * 0.1,
+                type: 'spring',
+                stiffness: 380,
+                damping: 20,
+              }}
+            >
+              <Shield
+                className={cn(
+                  'h-5 w-5',
+                  slot < track.freezeCount
+                    ? 'text-foreground'
+                    : 'text-muted-foreground/35',
+                )}
+                aria-hidden
+              />
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -339,151 +372,59 @@ function StreakSheetContent({
 }) {
   const reducedMotion = useReducedMotion();
   const variants = buildVariants(reducedMotion);
-  const calorie = snapshot.calorie;
-
-  const {
-    currentLength,
-    startDate,
-    weekDays,
-    bestStreak,
-    freezeCount,
-  } = snapshot;
-
-  const animatedCurrent = useAnimatedNumber(currentLength, {
-    skipInitial: false,
-    duration: 1.15,
-    delay: 0.25,
-  });
-  const animatedBest = useAnimatedNumber(bestStreak, {
-    skipInitial: false,
-    duration: 0.85,
-    delay: 0.5,
-  });
-  const animatedCalorieBest = useAnimatedNumber(calorie.bestStreak, {
-    skipInitial: false,
-    duration: 0.85,
-    delay: 0.5,
-  });
 
   return (
     <div className="max-h-[min(92dvh,56rem)] overflow-x-hidden overflow-y-auto px-1 pb-4">
       <motion.div
-        className="space-y-5 overflow-hidden"
+        className="space-y-4 overflow-hidden"
         variants={variants.container}
         initial="hidden"
         animate="show"
       >
-        <motion.div
-          className="flex flex-col items-center pt-2 text-center"
-          variants={variants.item}
-        >
-          <motion.div variants={variants.flame}>
-            <Flame className="h-14 w-14 text-primary" aria-hidden />
-          </motion.div>
-          <motion.p
-            className="mt-3 text-5xl font-bold tabular-nums tracking-tight"
-            initial={reducedMotion ? false : { opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.55, delay: 0.2, ease: EASE_OUT }}
-          >
-            {animatedCurrent}
-          </motion.p>
-          <motion.p
-            className="mt-1 text-base text-muted-foreground"
-            initial={reducedMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.45 }}
-          >
-            {streakDaysLabel(currentLength)} подряд
-          </motion.p>
-          <p className="mt-2 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-            <Target className="h-4 w-4" style={{ color: CALORIE_FILL }} aria-hidden />
-            Норма {calorie.currentLength}
+        <motion.div className="pt-1" variants={variants.item}>
+          <p className="mb-3 text-center text-sm text-muted-foreground">
+            Считаются две серии — отдельно дневник и норма калорий
           </p>
+          <div className="flex gap-3">
+            <HeroTile
+              kind="logging"
+              length={snapshot.currentLength}
+              reducedMotion={reducedMotion}
+            />
+            <HeroTile
+              kind="calorie"
+              length={snapshot.calorie.currentLength}
+              reducedMotion={reducedMotion}
+            />
+          </div>
         </motion.div>
 
         <motion.div
-          className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm"
+          className="rounded-2xl border bg-card p-4 shadow-sm"
           variants={variants.item}
         >
-          <CombinedWeek
-            loggingDays={weekDays}
-            calorieDays={calorie.weekDays}
+          <DualWeek
+            loggingDays={snapshot.weekDays}
+            calorieDays={snapshot.calorie.weekDays}
             variants={variants}
           />
         </motion.div>
 
-        <motion.div className="grid grid-cols-2 gap-3" variants={variants.item}>
-          <div className="rounded-2xl border bg-card p-4 shadow-sm">
-            <p className="text-sm text-muted-foreground">Начало серии</p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <div>
-                <p className="text-xs text-muted-foreground">Запись</p>
-                <p className="text-lg font-semibold tabular-nums">
-                  {formatStartDate(startDate)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Норма</p>
-                <p className="text-lg font-semibold tabular-nums">
-                  {formatStartDate(calorie.startDate)}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="rounded-2xl border bg-card p-4 shadow-sm">
-            <p className="text-sm text-muted-foreground">Личный рекорд</p>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <div>
-                <p className="text-xs text-muted-foreground">Запись</p>
-                <p className="text-lg font-semibold tabular-nums text-primary">
-                  {animatedBest}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Норма</p>
-                <p
-                  className="text-lg font-semibold tabular-nums"
-                  style={{ color: CALORIE_FILL }}
-                >
-                  {animatedCalorieBest}
-                </p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm"
-          variants={variants.item}
-        >
-          <NextGoalBar
-            label="Запись"
+        <motion.div variants={variants.item}>
+          <TrackCard
+            kind="logging"
             track={snapshot}
             reducedMotion={reducedMotion}
             progress={variants.progress}
           />
-          <NextGoalBar
-            label="Норма"
-            track={calorie}
-            reducedMotion={reducedMotion}
-            progress={variants.progress}
-          />
         </motion.div>
 
-        <motion.div
-          className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm"
-          variants={variants.item}
-        >
-          <ProtectionRow
-            label="Защита записи"
-            freezeCount={freezeCount}
+        <motion.div variants={variants.item}>
+          <TrackCard
+            kind="calorie"
+            track={snapshot.calorie}
             reducedMotion={reducedMotion}
-          />
-          <ProtectionRow
-            label="Защита нормы"
-            freezeCount={calorie.freezeCount}
-            reducedMotion={reducedMotion}
+            progress={variants.progress}
           />
         </motion.div>
 

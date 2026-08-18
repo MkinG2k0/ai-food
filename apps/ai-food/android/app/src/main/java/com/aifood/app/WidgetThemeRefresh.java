@@ -21,6 +21,9 @@ public final class WidgetThemeRefresh {
         KbjuRingsWidgetProvider.class,
         KbjuActivityRingsWidgetProvider.class,
         WeeklyCaloriesWidgetProvider.class,
+        StreakDiaryWidgetProvider.class,
+        StreakCalorieWidgetProvider.class,
+        StreakWeekWidgetProvider.class,
     };
 
     public static void refreshAll(Context context) {

@@ -2,6 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { parseAppDeepLink } from './parseAppDeepLink';
 
 describe('parseAppDeepLink', () => {
+  it('routes aifood://streak to home streak sheet', () => {
+    expect(parseAppDeepLink('aifood://streak')).toEqual({
+      kind: 'route',
+      path: '/?sheet=streak',
+    });
+  });
+
+  it('routes aifood://streak/ (trailing slash) to home streak sheet', () => {
+    expect(parseAppDeepLink('aifood://streak/')).toEqual({
+      kind: 'route',
+      path: '/?sheet=streak',
+    });
+  });
+
   it('routes aifood://stats to /stats', () => {
     expect(parseAppDeepLink('aifood://stats')).toEqual({
       kind: 'route',
