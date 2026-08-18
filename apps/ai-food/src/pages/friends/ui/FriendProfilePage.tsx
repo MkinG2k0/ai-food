@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Flame } from 'lucide-react';
+import { Flame, Target } from 'lucide-react';
 import { useAuthStore } from '@/features/auth';
 import {
   FriendProfileMeals,
@@ -59,12 +59,21 @@ export function FriendProfilePage() {
                 <p className="text-[11px] font-medium text-muted-foreground">
                   Серия
                 </p>
-                <p className="mt-1 flex items-center gap-1.5 text-xl font-semibold tabular-nums tracking-tight">
+                <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold tabular-nums tracking-tight">
                   <Flame
-                    className="h-5 w-5 text-emerald-500"
+                    className="h-4 w-4 shrink-0 text-emerald-500"
                     aria-hidden
                   />
+                  <span className="text-muted-foreground font-medium">Запись</span>
                   {profile.streak}
+                </p>
+                <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold tabular-nums tracking-tight">
+                  <Target
+                    className="h-4 w-4 shrink-0 text-emerald-500"
+                    aria-hidden
+                  />
+                  <span className="text-muted-foreground font-medium">Норма</span>
+                  {profile.calorieStreak ?? 0}
                 </p>
               </div>
               <div className="min-w-0">

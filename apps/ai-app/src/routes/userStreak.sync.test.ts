@@ -91,7 +91,16 @@ describe('POST /user/streak/sync', () => {
     expect(res.status).toBe(200);
     expect(mocks.userUpdate).toHaveBeenCalled();
     expect(res.body).toEqual({
-      streak: sampleStreak,
+      streak: {
+        ...sampleStreak,
+        calorieStreak: {
+          currentLength: 0,
+          freezeCount: 0,
+          consumedFreezeDateKeys: [],
+          grantedMilestones: [],
+          bestStreak: 0,
+        },
+      },
       clientUpdatedAt: '2026-08-18T12:00:00.000Z',
     });
   });

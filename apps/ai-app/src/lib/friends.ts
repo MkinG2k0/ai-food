@@ -14,6 +14,7 @@ export type FriendSummary = {
   displayName: string;
   username: string | null;
   streak: number;
+  calorieStreak: number;
   photoUrl?: string;
 };
 
@@ -39,6 +40,7 @@ export type FriendProfile = {
   userId: string;
   displayName: string;
   streak: number;
+  calorieStreak: number;
   goalKg: number | null;
   weightKg: number | null;
   weights: { date: string; kg: number }[];
@@ -73,6 +75,16 @@ export function displayName(user: {
 export function parseStreakLength(clientStreak: unknown): number {
   if (typeof clientStreak !== 'object' || clientStreak === null) return 0;
   const length = (clientStreak as { currentLength?: unknown }).currentLength;
+  return typeof length === 'number' && Number.isFinite(length)
+    ? Math.max(0, Math.floor(length))
+    : 0;
+}
+
+export function parseCalorieStreakLength(clientStreak: unknown): number {
+  if (typeof clientStreak !== 'object' || clientStreak === null) return 0;
+  const nested = (clientStreak as { calorieStreak?: unknown }).calorieStreak;
+  if (typeof nested !== 'object' || nested === null) return 0;
+  const length = (nested as { currentLength?: unknown }).currentLength;
   return typeof length === 'number' && Number.isFinite(length)
     ? Math.max(0, Math.floor(length))
     : 0;
@@ -287,6 +299,7 @@ export async function buildFriendProfile(
     userId: user.id,
     displayName: displayName(user),
     streak: parseStreakLength(user.clientStreak),
+    calorieStreak: parseCalorieStreakLength(user.clientStreak),
     goalKg: user.goalKg,
     weightKg: latestWeight?.kg ?? null,
     weights: uniqueWeightsByDate(weightRows),
@@ -345,6 +358,7 @@ export async function listAcceptedFriends(
       displayName: displayName(friend),
       username: friend.username,
       streak: parseStreakLength(friend.clientStreak),
+      calorieStreak: parseCalorieStreakLength(friend.clientStreak),
       ...(friend.photoUrl ? { photoUrl: friend.photoUrl } : {}),
     } satisfies FriendSummary;
   });

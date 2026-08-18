@@ -1,6 +1,11 @@
 import { useAuthStore } from '@/features/auth';
 import { useDiaryStore } from '@/entities/meal';
-import { applyStreakState } from '@/entities/streak';
+import {
+  applyStreakState,
+  EMPTY_CALORIE_STREAK_PERSIST,
+  type CalorieStreakInput,
+} from '@/entities/streak';
+import { useProfileStore } from '@/features/onboarding';
 import { useStreakStore } from '@/features/streak/model/useStreakStore';
 import { syncStreakApi } from '../api/syncStreakApi';
 import { applyStreakSyncResponse } from './streakSyncMerge';
@@ -10,15 +15,40 @@ function bumpClock(): string {
   return new Date().toISOString();
 }
 
+function calorieInputFromProfile(): CalorieStreakInput | null {
+  const goal = useProfileStore.getState().profile?.goal;
+  const kcalTarget = useProfileStore.getState().targets?.kcal;
+  if (goal !== 'lose' && goal !== 'maintain' && goal !== 'gain') return null;
+  if (kcalTarget == null || !Number.isFinite(kcalTarget) || kcalTarget <= 0) {
+    return null;
+  }
+  return { goal, kcalTarget };
+}
+
 /** Fresh streak payload from diary + persist (for wire and friends-facing sync). */
 export function buildFreshStreakSyncPayload(now: Date = new Date()) {
   const state = useStreakStore.getState();
   const meals = useDiaryStore.getState().meals;
-  const { snapshot, persistPatch } = applyStreakState(meals, state, now);
+  const persist = {
+    currentLength: state.currentLength,
+    freezeCount: state.freezeCount,
+    consumedFreezeDateKeys: state.consumedFreezeDateKeys,
+    grantedMilestones: state.grantedMilestones,
+    lastCelebratedLocalDate: state.lastCelebratedLocalDate,
+    bestStreak: state.bestStreak,
+    calorieStreak: state.calorieStreak ?? EMPTY_CALORIE_STREAK_PERSIST,
+  };
+  const { snapshot, persistPatch } = applyStreakState(
+    meals,
+    persist,
+    now,
+    calorieInputFromProfile(),
+  );
   return streakSyncPayloadFromState({
-    ...state,
+    ...persist,
     ...persistPatch,
     currentLength: snapshot.currentLength,
+    calorieStreak: persistPatch.calorieStreak ?? persist.calorieStreak,
   });
 }
 
@@ -57,6 +87,7 @@ export async function syncStreak(): Promise<void> {
     grantedMilestones: next.streak.grantedMilestones,
     lastCelebratedLocalDate: next.streak.lastCelebratedLocalDate,
     bestStreak: next.streak.bestStreak,
+    calorieStreak: next.streak.calorieStreak ?? local.streak.calorieStreak,
     clientUpdatedAt: next.clientUpdatedAt,
   });
 }

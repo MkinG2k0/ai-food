@@ -1,3 +1,4 @@
+import { EMPTY_CALORIE_STREAK_PERSIST } from '@/entities/streak';
 import type { StreakSyncPayload } from './streakSyncPayload';
 
 export type StreakSyncSnapshot = {
@@ -26,5 +27,15 @@ export function applyStreakSyncResponse(
   local: StreakSyncSnapshot,
   response: StreakSyncSnapshot,
 ): StreakSyncSnapshot {
-  return mergeStreakLww(local, response);
+  const winner = mergeStreakLww(local, response);
+  if (winner.streak.calorieStreak == null) {
+    return {
+      ...winner,
+      streak: {
+        ...winner.streak,
+        calorieStreak: local.streak.calorieStreak ?? EMPTY_CALORIE_STREAK_PERSIST,
+      },
+    };
+  }
+  return winner;
 }

@@ -1,4 +1,8 @@
-import type { StreakPersist } from '@/entities/streak';
+import {
+  EMPTY_CALORIE_STREAK_PERSIST,
+  type CalorieStreakPersist,
+  type StreakPersist,
+} from '@/entities/streak';
 
 export type StreakSyncPayload = StreakPersist;
 
@@ -19,6 +23,7 @@ export function streakSyncPayloadFromState(state: {
   grantedMilestones: number[];
   lastCelebratedLocalDate: string;
   bestStreak: number;
+  calorieStreak?: CalorieStreakPersist | null;
 }): StreakSyncPayload {
   return {
     currentLength: state.currentLength,
@@ -27,5 +32,6 @@ export function streakSyncPayloadFromState(state: {
     grantedMilestones: state.grantedMilestones,
     lastCelebratedLocalDate: state.lastCelebratedLocalDate,
     bestStreak: state.bestStreak,
+    calorieStreak: state.calorieStreak ?? EMPTY_CALORIE_STREAK_PERSIST,
   };
 }
