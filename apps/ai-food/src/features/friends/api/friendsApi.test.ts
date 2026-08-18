@@ -45,6 +45,8 @@ describe('friendsApi', () => {
             username: 'alice',
             streak: 3,
             calorieStreak: 4,
+            goalKg: 70,
+            weightKg: 75.2,
           },
         ],
       }),
@@ -55,6 +57,8 @@ describe('friendsApi', () => {
     const result = await fetchFriends();
     expect(result.friends).toHaveLength(1);
     expect(result.friends[0]?.calorieStreak).toBe(4);
+    expect(result.friends[0]?.weightKg).toBe(75.2);
+    expect(result.friends[0]?.goalKg).toBe(70);
     expect(fetchMock).toHaveBeenCalledWith(
       'https://gw.test/user/friends',
       expect.objectContaining({ method: 'GET' }),

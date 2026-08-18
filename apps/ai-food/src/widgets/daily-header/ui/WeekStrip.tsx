@@ -17,6 +17,8 @@ import {
 } from '@/shared/lib';
 import { DayCellRings, dayCellSizeForRingCount } from './DayCellRings';
 
+type MonthCursor = { year: number; month: number };
+
 interface WeekStripProps {
   weekOffset: number;
   selectedDate: Date;
@@ -30,7 +32,35 @@ interface WeekStripProps {
 const SWIPE_OFFSET_THRESHOLD = 80;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 const VERTICAL_EXPAND_THRESHOLD = 48;
+const AXIS_LOCK_PX = 12;
+const MAX_HORIZONTAL_FOR_VERTICAL = 20;
+const DRAG_CLICK_GUARD = 10;
 const WEEKDAY_HEADERS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const;
+
+/** Lock the gesture to the first dominant axis so a later drift does not switch it. */
+export function lockPanAxis(
+  current: 'x' | 'y' | null,
+  offsetX: number,
+  offsetY: number,
+  threshold = AXIS_LOCK_PX,
+): 'x' | 'y' | null {
+  if (current) return current;
+  const ax = Math.abs(offsetX);
+  const ay = Math.abs(offsetY);
+  if (ax < threshold && ay < threshold) return null;
+  return ax >= ay ? 'x' : 'y';
+}
+
+export function isVerticalCalendarGesture(
+  offsetX: number,
+  offsetY: number,
+): boolean {
+  const ax = Math.abs(offsetX);
+  const ay = Math.abs(offsetY);
+  if (ay < VERTICAL_EXPAND_THRESHOLD) return false;
+  if (ax > MAX_HORIZONTAL_FOR_VERTICAL) return false;
+  return ay >= ax * 2;
+}
 
 /** Coordinated crossfade: week and month swap without an empty gap. */
 const EXPAND_TRANSITION = {
@@ -41,6 +71,11 @@ const COLLAPSE_TRANSITION = {
   height: { duration: 0.34, ease: [0.32, 0.72, 0, 1] as const },
   opacity: { duration: 0.2, ease: 'easeIn' as const },
 };
+
+function shiftMonthCursor(cursor: MonthCursor, delta: -1 | 1): MonthCursor {
+  const next = new Date(cursor.year, cursor.month + delta, 1);
+  return { year: next.getFullYear(), month: next.getMonth() };
+}
 
 function CalendarHandle({
   expanded,
@@ -77,15 +112,23 @@ export function WeekStrip({
   onWeekChange,
 }: WeekStripProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
+  const monthViewportRef = useRef<HTMLDivElement>(null);
+  const panOffset = useRef({ x: 0, y: 0 });
+  const monthDidDrag = useRef(false);
   const x = useMotionValue(0);
+  const monthX = useMotionValue(0);
   const [expanded, setExpanded] = useState(false);
-  const [cursorYear, setCursorYear] = useState(selectedDate.getFullYear());
-  const [cursorMonth, setCursorMonth] = useState(selectedDate.getMonth());
+  const [monthCursor, setMonthCursor] = useState<MonthCursor>(() => ({
+    year: selectedDate.getFullYear(),
+    month: selectedDate.getMonth(),
+  }));
 
   useEffect(() => {
     if (!expanded) {
-      setCursorYear(selectedDate.getFullYear());
-      setCursorMonth(selectedDate.getMonth());
+      setMonthCursor({
+        year: selectedDate.getFullYear(),
+        month: selectedDate.getMonth(),
+      });
     }
   }, [selectedDate, expanded]);
 
@@ -95,16 +138,74 @@ export function WeekStrip({
     x.set(-slotWidth);
   }
 
+  function recenterMonth() {
+    const slotWidth =
+      monthViewportRef.current?.getBoundingClientRect().width ?? 0;
+    if (!slotWidth) return;
+    monthX.set(-slotWidth);
+  }
+
   useLayoutEffect(() => {
     if (!expanded) recenter();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekOffset, expanded]);
 
+  useLayoutEffect(() => {
+    if (expanded) recenterMonth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthCursor.year, monthCursor.month, expanded]);
+
   useEffect(() => {
-    window.addEventListener('resize', recenter);
-    return () => window.removeEventListener('resize', recenter);
+    function onResize() {
+      recenter();
+      recenterMonth();
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function trackPan(info: PanInfo) {
+    panOffset.current = { x: info.offset.x, y: info.offset.y };
+  }
+
+  function markMonthDrag(info: PanInfo) {
+    trackPan(info);
+    if (
+      Math.abs(info.offset.x) > DRAG_CLICK_GUARD ||
+      Math.abs(info.offset.y) > DRAG_CLICK_GUARD
+    ) {
+      monthDidDrag.current = true;
+    }
+  }
+
+  function handleMonthClickCapture(event: {
+    preventDefault: () => void;
+    stopPropagation: () => void;
+  }) {
+    if (!monthDidDrag.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    monthDidDrag.current = false;
+  }
+
+  function applyVerticalToggle(offsetY: number) {
+    if (offsetY > VERTICAL_EXPAND_THRESHOLD) setExpanded(true);
+    else if (offsetY < -VERTICAL_EXPAND_THRESHOLD) setExpanded(false);
+  }
+
+  function handleVerticalDragEnd(
+    _event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo,
+  ) {
+    const tracked = panOffset.current;
+    const ox =
+      Math.abs(tracked.x) >= Math.abs(info.offset.x) ? tracked.x : info.offset.x;
+    const oy =
+      Math.abs(tracked.y) >= Math.abs(info.offset.y) ? tracked.y : info.offset.y;
+    if (!isVerticalCalendarGesture(ox, oy)) return;
+    applyVerticalToggle(oy);
+  }
 
   function handleDragEnd(
     _event: MouseEvent | TouchEvent | PointerEvent,
@@ -139,45 +240,70 @@ export function WeekStrip({
     }
   }
 
-  function handleVerticalDragEnd(
+  function handleMonthDragEnd(
     _event: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo,
   ) {
-    if (info.offset.y > VERTICAL_EXPAND_THRESHOLD || info.velocity.y > 400) {
-      setExpanded(true);
-    } else if (
-      info.offset.y < -VERTICAL_EXPAND_THRESHOLD ||
-      info.velocity.y < -400
+    const slotWidth =
+      monthViewportRef.current?.getBoundingClientRect().width ?? 0;
+    if (!slotWidth) return;
+
+    if (
+      info.offset.x < -SWIPE_OFFSET_THRESHOLD ||
+      info.velocity.x < -SWIPE_VELOCITY_THRESHOLD
     ) {
-      setExpanded(false);
+      animate(monthX, -2 * slotWidth, {
+        type: 'tween',
+        duration: 0.2,
+        ease: 'easeOut',
+      }).then(() => {
+        setMonthCursor((c) => shiftMonthCursor(c, 1));
+      });
+    } else if (
+      info.offset.x > SWIPE_OFFSET_THRESHOLD ||
+      info.velocity.x > SWIPE_VELOCITY_THRESHOLD
+    ) {
+      animate(monthX, 0, { type: 'tween', duration: 0.2, ease: 'easeOut' }).then(
+        () => {
+          setMonthCursor((c) => shiftMonthCursor(c, -1));
+        },
+      );
+    } else {
+      animate(monthX, -slotWidth, {
+        type: 'spring',
+        stiffness: 400,
+        damping: 30,
+      });
     }
   }
 
   function handleMonthDaySelect(date: Date) {
     onDaySelect(date);
-    setExpanded(false);
   }
 
   function shiftMonth(delta: -1 | 1) {
-    const next = new Date(cursorYear, cursorMonth + delta, 1);
-    setCursorYear(next.getFullYear());
-    setCursorMonth(next.getMonth());
+    setMonthCursor((c) => shiftMonthCursor(c, delta));
   }
 
   const weekOffsets = [weekOffset - 1, weekOffset, weekOffset + 1];
-  const monthDays = getMonthGridDays(cursorYear, cursorMonth);
+  const monthPanels: MonthCursor[] = [
+    shiftMonthCursor(monthCursor, -1),
+    monthCursor,
+    shiftMonthCursor(monthCursor, 1),
+  ];
   const ringCellSize = dayCellSizeForRingCount(
     enabledCalendarRings(calendarRings).length,
   );
-  const monthLabel = new Date(cursorYear, cursorMonth, 1).toLocaleDateString(
-    'ru-RU',
-    { month: 'long', year: 'numeric' },
-  );
+  const monthLabel = new Date(
+    monthCursor.year,
+    monthCursor.month,
+    1,
+  ).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
   const transition = expanded ? EXPAND_TRANSITION : COLLAPSE_TRANSITION;
 
   return (
     <div
-      className="relative z-10 mt-4 rounded-2xl border border-border/60 bg-card px-2 pb-1 pt-3 shadow-sm"
+      className="relative z-10 mt-4 overflow-hidden rounded-2xl border border-border/60 bg-card px-2 pb-1 pt-3 shadow-sm"
       data-testid="calendar-panel"
     >
       {/* Both views stay mounted and crossfade heights — no empty frame */}
@@ -192,6 +318,10 @@ export function WeekStrip({
         drag={!expanded ? 'y' : false}
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.15}
+        onDragStart={() => {
+          panOffset.current = { x: 0, y: 0 };
+        }}
+        onDrag={(_event, info) => trackPan(info)}
         onDragEnd={handleVerticalDragEnd}
         className="overflow-hidden bg-card"
         style={{ pointerEvents: expanded ? 'none' : 'auto' }}
@@ -208,6 +338,7 @@ export function WeekStrip({
             dragConstraints={viewportRef}
             dragElastic={0.15}
             dragMomentum={false}
+            onDrag={(_event, info) => trackPan(info)}
             onDragEnd={handleDragEnd}
             className="flex cursor-grab active:cursor-grabbing select-none"
           >
@@ -275,6 +406,10 @@ export function WeekStrip({
         drag={expanded ? 'y' : false}
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.2}
+        onDragStart={() => {
+          panOffset.current = { x: 0, y: 0 };
+        }}
+        onDrag={(_event, info) => trackPan(info)}
         onDragEnd={handleVerticalDragEnd}
         className="overflow-hidden bg-card"
         style={{ pointerEvents: expanded ? 'auto' : 'none' }}
@@ -291,7 +426,12 @@ export function WeekStrip({
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <p className="text-sm font-medium capitalize">{monthLabel}</p>
+            <p
+              data-testid="month-calendar-label"
+              className="text-sm font-medium capitalize"
+            >
+              {monthLabel}
+            </p>
             <button
               type="button"
               tabIndex={expanded ? 0 : -1}
@@ -312,35 +452,70 @@ export function WeekStrip({
               </span>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-y-1">
-            {monthDays.map(({ date, inMonth }) => {
-              const isSelected = isSameDay(date, selectedDate);
-              const isFuture = isFutureDay(date);
-              const dayKbju = computeDayKbju(meals, targets, date);
-              return (
-                <button
-                  key={date.toISOString()}
-                  type="button"
-                  tabIndex={expanded ? 0 : -1}
-                  data-testid="month-day-cell"
-                  data-in-month={inMonth ? 'true' : 'false'}
-                  onClick={() => handleMonthDaySelect(date)}
-                  className={`flex flex-col items-center justify-center py-0.5 ${
-                    inMonth ? '' : 'opacity-40'
-                  }`}
-                >
-                  <DayCellRings
-                    dayNumber={date.getDate()}
-                    rings={calendarRings}
-                    progress={dayKbju.progress}
-                    hasReadyMeals={dayKbju.hasReadyMeals}
-                    selected={isSelected}
-                    future={isFuture}
-                    size={ringCellSize}
-                  />
-                </button>
-              );
-            })}
+          <div
+            ref={monthViewportRef}
+            data-testid="month-strip-viewport"
+            aria-label="Календарь, свайп для смены месяца"
+            className="overflow-x-hidden overflow-y-visible touch-pan-y overscroll-x-contain"
+          >
+            <motion.div
+              drag={expanded ? 'x' : false}
+              style={{ x: monthX, width: '300%' }}
+              dragConstraints={monthViewportRef}
+              dragElastic={0.15}
+              dragMomentum={false}
+              onDragStart={() => {
+                monthDidDrag.current = false;
+              }}
+              onDrag={(_event, info) => markMonthDrag(info)}
+              onDragEnd={handleMonthDragEnd}
+              onClickCapture={handleMonthClickCapture}
+              className="flex cursor-grab select-none active:cursor-grabbing"
+            >
+              {monthPanels.map((panel, i) => {
+                const isCurrent = i === 1;
+                const monthDays = getMonthGridDays(panel.year, panel.month);
+                return (
+                  <div
+                    key={['prev', 'current', 'next'][i]}
+                    className="grid grid-cols-7 gap-y-1"
+                    style={{ width: '33.3333%' }}
+                    aria-hidden={!isCurrent}
+                  >
+                    {monthDays.map(({ date, inMonth }) => {
+                      const isSelected = isSameDay(date, selectedDate);
+                      const isFuture = isFutureDay(date);
+                      const dayKbju = computeDayKbju(meals, targets, date);
+                      return (
+                        <button
+                          key={date.toISOString()}
+                          type="button"
+                          tabIndex={expanded && isCurrent ? 0 : -1}
+                          data-testid={isCurrent ? 'month-day-cell' : undefined}
+                          data-in-month={inMonth ? 'true' : 'false'}
+                          onClick={() =>
+                            isCurrent ? handleMonthDaySelect(date) : undefined
+                          }
+                          className={`flex flex-col items-center justify-center py-0.5 ${
+                            inMonth ? '' : 'opacity-40'
+                          } ${isCurrent ? '' : 'pointer-events-none'}`}
+                        >
+                          <DayCellRings
+                            dayNumber={date.getDate()}
+                            rings={calendarRings}
+                            progress={dayKbju.progress}
+                            hasReadyMeals={dayKbju.hasReadyMeals}
+                            selected={isSelected}
+                            future={isFuture}
+                            size={ringCellSize}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </motion.div>
           </div>
         </div>
       </motion.div>

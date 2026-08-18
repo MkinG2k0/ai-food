@@ -1,45 +1,52 @@
 import { useNavigate } from 'react-router-dom';
-import { NEWS_CHANGELOG, formatNewsDate } from '@/features/news';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Send } from 'lucide-react';
+import {
+  NEWS_CHANGELOG,
+  NewsReleaseCard,
+} from '@/features/news';
+import { entranceContainer, entranceListItem } from '@/shared/lib';
 import { Button, SubpageShell } from '@/shared/ui';
 
 const TELEGRAM_CHANNEL_URL = 'https://t.me/mk_develop_05';
 
 export function NewsPage() {
   const navigate = useNavigate();
+  const reducedMotion = useReducedMotion();
 
   return (
     <SubpageShell
       title="Новости"
       onBack={() => navigate('/settings')}
       actions={
-        <Button variant="ghost" size="sm" asChild>
+        <Button variant="ghost" size="sm" className="gap-1.5" asChild>
           <a
             href={TELEGRAM_CHANNEL_URL}
             target="_blank"
             rel="noopener noreferrer"
           >
+            <Send className="h-4 w-4" aria-hidden />
             Telegram
           </a>
         </Button>
       }
     >
-      <div className="space-y-8">
-        {NEWS_CHANGELOG.map((release) => (
-          <section key={release.date} className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              {formatNewsDate(release.date)}
-            </p>
-            <h2 className="text-base font-semibold text-foreground">
-              {release.title}
-            </h2>
-            <ul className="list-disc space-y-1.5 pl-5 text-sm text-foreground">
-              {release.items.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </section>
+      <motion.div
+        className="space-y-4 pb-6"
+        variants={entranceContainer(reducedMotion)}
+        initial="hidden"
+        animate="show"
+      >
+        {NEWS_CHANGELOG.map((release, index) => (
+          <motion.div
+            key={release.date}
+            variants={entranceListItem(reducedMotion)}
+            custom={index}
+          >
+            <NewsReleaseCard release={release} isLatest={index === 0} />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </SubpageShell>
   );
 }

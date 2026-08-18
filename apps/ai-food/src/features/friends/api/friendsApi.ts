@@ -29,6 +29,8 @@ export type FriendSummary = {
   username: string | null;
   streak: number;
   calorieStreak: number;
+  goalKg: number | null;
+  weightKg: number | null;
   photoUrl?: string;
 };
 

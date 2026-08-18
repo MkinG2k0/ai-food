@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { AddFoodSheet, type AddFoodAutoAction } from '@/features/add-food';
+import { LatestNewsSheet } from '@/features/news';
 import { useDiaryStore } from '@/entities/meal';
 import { DailyHeader } from '@/widgets/daily-header';
 import { MealList } from '@/widgets/meal-list';
@@ -78,6 +79,7 @@ export function HomePage() {
         autoAction={autoAction}
         onAutoActionConsumed={() => setAutoAction(null)}
       />
+      <LatestNewsSheet suppressed={isAddOpen} />
     </div>
   );
 }

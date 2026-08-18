@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { Meal } from '@ai-food/shared-types';
 import { getWeekDays, isSameDay } from '@/shared/lib';
-import { WeekStrip } from './WeekStrip';
+import { WeekStrip, lockPanAxis, isVerticalCalendarGesture } from './WeekStrip';
 
 const currentWeekDays = getWeekDays(0);
 
@@ -88,7 +88,7 @@ describe('WeekStrip', () => {
     expect(screen.getByLabelText('Календарь на месяц')).toBeInTheDocument();
   });
 
-  it('expands month grid on handle click and selects day', async () => {
+  it('expands month grid on handle click and keeps it open after selecting a day', async () => {
     const { onDaySelect } = renderWeekStrip();
     fireEvent.click(screen.getByTestId('calendar-expand-handle'));
 
@@ -102,13 +102,10 @@ describe('WeekStrip', () => {
     fireEvent.click(monthDays[10]!);
 
     expect(onDaySelect).toHaveBeenCalledTimes(1);
-    await waitFor(() => {
-      expect(screen.getByTestId('month-calendar-grid')).toHaveAttribute(
-        'data-expanded',
-        'false',
-      );
-    });
-    expect(screen.getByTestId('week-strip-viewport')).toBeInTheDocument();
+    expect(screen.getByTestId('month-calendar-grid')).toHaveAttribute(
+      'data-expanded',
+      'true',
+    );
   });
 
   it('toggles month closed when handle clicked again', async () => {
@@ -128,5 +125,53 @@ describe('WeekStrip', () => {
         'false',
       );
     });
+  });
+
+  it('swipes between months with chevrons and keeps a horizontal viewport', async () => {
+    renderWeekStrip();
+    fireEvent.click(screen.getByTestId('calendar-expand-handle'));
+    await waitFor(() => {
+      expect(screen.getByTestId('month-calendar-grid')).toHaveAttribute(
+        'data-expanded',
+        'true',
+      );
+    });
+
+    const viewport = screen.getByTestId('month-strip-viewport');
+    expect(viewport.className).toContain('overflow-x-hidden');
+    expect(viewport).toHaveAttribute(
+      'aria-label',
+      'Календарь, свайп для смены месяца',
+    );
+
+    const label = screen.getByTestId('month-calendar-label');
+    const initialLabel = label.textContent;
+    fireEvent.click(screen.getByLabelText('Следующий месяц'));
+    await waitFor(() => {
+      expect(label.textContent).not.toBe(initialLabel);
+    });
+
+    const afterNext = label.textContent;
+    fireEvent.click(screen.getByLabelText('Предыдущий месяц'));
+    await waitFor(() => {
+      expect(label.textContent).toBe(initialLabel);
+    });
+    expect(afterNext).not.toBe(initialLabel);
+  });
+});
+
+describe('calendar pan axis', () => {
+  it('locks to the first dominant axis and keeps it', () => {
+    expect(lockPanAxis(null, 4, 3)).toBeNull();
+    expect(lockPanAxis(null, 80, -20)).toBe('x');
+    expect(lockPanAxis(null, 20, -80)).toBe('y');
+    expect(lockPanAxis('x', 20, -80)).toBe('x');
+  });
+
+  it('does not treat a mostly-horizontal swipe as a vertical close', () => {
+    expect(isVerticalCalendarGesture(100, -35)).toBe(false);
+    expect(isVerticalCalendarGesture(50, -55)).toBe(false);
+    expect(isVerticalCalendarGesture(80, -45)).toBe(false);
+    expect(isVerticalCalendarGesture(10, -60)).toBe(true);
   });
 });

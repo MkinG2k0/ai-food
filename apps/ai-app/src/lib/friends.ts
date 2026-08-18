@@ -15,6 +15,8 @@ export type FriendSummary = {
   username: string | null;
   streak: number;
   calorieStreak: number;
+  goalKg: number | null;
+  weightKg: number | null;
   photoUrl?: string;
 };
 
@@ -320,6 +322,21 @@ export async function buildFriendProfile(
   };
 }
 
+const friendListUserSelect = {
+  id: true,
+  firstName: true,
+  username: true,
+  photoUrl: true,
+  clientStreak: true,
+  goalKg: true,
+  weightEntries: {
+    where: { deletedAt: null },
+    orderBy: [{ date: 'desc' as const }, { clientUpdatedAt: 'desc' as const }],
+    take: 1,
+    select: { kg: true },
+  },
+} as const;
+
 export async function listAcceptedFriends(
   prisma: PrismaClient,
   userId: string,
@@ -330,24 +347,8 @@ export async function listAcceptedFriends(
       OR: [{ fromUserId: userId }, { toUserId: userId }],
     },
     include: {
-      fromUser: {
-        select: {
-          id: true,
-          firstName: true,
-          username: true,
-          photoUrl: true,
-          clientStreak: true,
-        },
-      },
-      toUser: {
-        select: {
-          id: true,
-          firstName: true,
-          username: true,
-          photoUrl: true,
-          clientStreak: true,
-        },
-      },
+      fromUser: { select: friendListUserSelect },
+      toUser: { select: friendListUserSelect },
     },
   });
 
@@ -359,6 +360,8 @@ export async function listAcceptedFriends(
       username: friend.username,
       streak: parseStreakLength(friend.clientStreak),
       calorieStreak: parseCalorieStreakLength(friend.clientStreak),
+      goalKg: friend.goalKg,
+      weightKg: friend.weightEntries[0]?.kg ?? null,
       ...(friend.photoUrl ? { photoUrl: friend.photoUrl } : {}),
     } satisfies FriendSummary;
   });

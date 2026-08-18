@@ -8,6 +8,7 @@ import {
   allowsDevSelfFriendRequest,
   sumMealMacros,
   uniqueWeightsByDate,
+  listAcceptedFriends,
 } from './friends.js';
 
 const mocks = vi.hoisted(() => ({
@@ -87,17 +88,17 @@ describe('parseCalorieStreakLength', () => {
 describe('sortFriendsByStreakDesc', () => {
   it('sorts by streak descending', () => {
     const sorted = sortFriendsByStreakDesc([
-      { userId: 'a', displayName: 'A', username: null, streak: 2, calorieStreak: 0 },
-      { userId: 'b', displayName: 'B', username: null, streak: 10, calorieStreak: 0 },
-      { userId: 'c', displayName: 'C', username: null, streak: 5, calorieStreak: 0 },
+      { userId: 'a', displayName: 'A', username: null, streak: 2, calorieStreak: 0, goalKg: null, weightKg: null },
+      { userId: 'b', displayName: 'B', username: null, streak: 10, calorieStreak: 0, goalKg: null, weightKg: null },
+      { userId: 'c', displayName: 'C', username: null, streak: 5, calorieStreak: 0, goalKg: null, weightKg: null },
     ]);
     expect(sorted.map((f) => f.userId)).toEqual(['b', 'c', 'a']);
   });
 
   it('does not sort by calorieStreak', () => {
     const sorted = sortFriendsByStreakDesc([
-      { userId: 'a', displayName: 'A', username: null, streak: 2, calorieStreak: 50 },
-      { userId: 'b', displayName: 'B', username: null, streak: 10, calorieStreak: 1 },
+      { userId: 'a', displayName: 'A', username: null, streak: 2, calorieStreak: 50, goalKg: null, weightKg: null },
+      { userId: 'b', displayName: 'B', username: null, streak: 10, calorieStreak: 1, goalKg: 70, weightKg: 75 },
     ]);
     expect(sorted.map((f) => f.userId)).toEqual(['b', 'a']);
   });
@@ -146,6 +147,52 @@ describe('uniqueWeightsByDate', () => {
     ).toEqual([
       { date: '2026-08-01', kg: 71.8 },
       { date: '2026-08-02', kg: 71.5 },
+    ]);
+  });
+});
+
+describe('listAcceptedFriends', () => {
+  it('includes latest weightKg and goalKg for each friend', async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        fromUserId: 'me',
+        toUserId: 'friend',
+        fromUser: {
+          id: 'me',
+          firstName: 'Me',
+          username: 'me',
+          photoUrl: null,
+          clientStreak: null,
+          goalKg: null,
+          weightEntries: [],
+        },
+        toUser: {
+          id: 'friend',
+          firstName: 'Demo',
+          username: 'demo_user',
+          photoUrl: null,
+          clientStreak: { currentLength: 4 },
+          goalKg: 70,
+          weightEntries: [{ kg: 75.2 }],
+        },
+      },
+    ]);
+
+    const result = await listAcceptedFriends(
+      { friendRequest: { findMany } } as never,
+      'me',
+    );
+
+    expect(result).toEqual([
+      {
+        userId: 'friend',
+        displayName: 'Demo',
+        username: 'demo_user',
+        streak: 4,
+        calorieStreak: 0,
+        goalKg: 70,
+        weightKg: 75.2,
+      },
     ]);
   });
 });

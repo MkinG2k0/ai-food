@@ -178,8 +178,8 @@ describe('GET /user/friends', () => {
     mocks.getPrisma.mockReturnValue({});
     mocks.verifyUserToken.mockResolvedValue({ sub: callerId, telegramId: '1' });
     mocks.listAcceptedFriends.mockResolvedValue([
-      { userId: 'b', displayName: 'B', username: 'b', streak: 5, calorieStreak: 2 },
-      { userId: 'c', displayName: 'C', username: 'c', streak: 10, calorieStreak: 4 },
+      { userId: 'b', displayName: 'B', username: 'b', streak: 5, calorieStreak: 2, goalKg: 70, weightKg: 75 },
+      { userId: 'c', displayName: 'C', username: 'c', streak: 10, calorieStreak: 4, goalKg: null, weightKg: null },
     ]);
   });
 

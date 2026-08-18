@@ -129,6 +129,8 @@ export function useAcceptFriendRequestMutation() {
               username: accepted.username,
               streak: 0,
               calorieStreak: 0,
+              goalKg: null,
+              weightKg: null,
             },
           ]);
         }

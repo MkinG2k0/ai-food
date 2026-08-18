@@ -15,6 +15,8 @@ const alice: FriendSummary = {
   username: 'alice',
   streak: 2,
   calorieStreak: 0,
+  goalKg: 70,
+  weightKg: 72,
 };
 const bob: FriendSummary = {
   userId: 'b',
@@ -22,6 +24,8 @@ const bob: FriendSummary = {
   username: 'bob',
   streak: 5,
   calorieStreak: 0,
+  goalKg: null,
+  weightKg: null,
 };
 
 describe('mergeFriendLists', () => {
