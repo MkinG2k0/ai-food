@@ -390,7 +390,10 @@ describe('applyStreakState calorie track', () => {
     });
 
     expect(result.snapshot.calorie.currentLength).toBe(1);
-    expect(result.persistPatch.calorieStreak?.consumedFreezeDateKeys).toBeUndefined();
+    expect(result.snapshot.calorie.freezeCount).toBe(1);
+    expect(result.persistPatch.calorieStreak?.consumedFreezeDateKeys ?? []).toEqual(
+      [],
+    );
   });
 
   it('returns empty calorie length when CalorieStreakInput is missing', () => {

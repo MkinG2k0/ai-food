@@ -4,10 +4,13 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { useDiaryStore } from '@/entities/meal';
 import {
   applyStreakState,
+  EMPTY_CALORIE_STREAK_PERSIST,
   EMPTY_STREAK_PERSIST,
+  type CalorieStreakInput,
   type StreakPersist,
   type StreakSnapshot,
 } from '@/entities/streak';
+import { useProfileStore } from '@/features/onboarding';
 import { capacitorStorage } from '@/shared/lib';
 
 function bumpClock(): string {
@@ -53,6 +56,7 @@ export const useStreakStore = create<StreakStoreState>()(
         grantedMilestones: state.grantedMilestones,
         lastCelebratedLocalDate: state.lastCelebratedLocalDate,
         bestStreak: state.bestStreak,
+        calorieStreak: state.calorieStreak,
         clientUpdatedAt: state.clientUpdatedAt,
       }),
     },
@@ -63,6 +67,17 @@ export interface UseStreakResult {
   snapshot: StreakSnapshot;
   markCelebrated: (localDate: string) => void;
   hydrated: boolean;
+}
+
+function calorieInputFromProfile(
+  goal: string | undefined,
+  kcalTarget: number | undefined,
+): CalorieStreakInput | null {
+  if (goal !== 'lose' && goal !== 'maintain' && goal !== 'gain') return null;
+  if (kcalTarget == null || !Number.isFinite(kcalTarget) || kcalTarget <= 0) {
+    return null;
+  }
+  return { goal, kcalTarget };
 }
 
 export function useStreak(now: Date = new Date()): UseStreakResult {
@@ -77,8 +92,12 @@ export function useStreak(now: Date = new Date()): UseStreakResult {
     (state) => state.lastCelebratedLocalDate,
   );
   const bestStreak = useStreakStore((state) => state.bestStreak);
+  const calorieStreak =
+    useStreakStore((state) => state.calorieStreak) ?? EMPTY_CALORIE_STREAK_PERSIST;
   const markCelebrated = useStreakStore((state) => state.markCelebrated);
   const applyPersistPatch = useStreakStore((state) => state.applyPersistPatch);
+  const goal = useProfileStore((state) => state.profile?.goal);
+  const kcalTarget = useProfileStore((state) => state.targets?.kcal);
   const [hydrated, setHydrated] = useState(useStreakStore.persist.hasHydrated());
   const appliedRef = useRef<string>('');
 
@@ -90,6 +109,7 @@ export function useStreak(now: Date = new Date()): UseStreakResult {
       grantedMilestones,
       lastCelebratedLocalDate,
       bestStreak,
+      calorieStreak,
     }),
     [
       currentLength,
@@ -98,7 +118,13 @@ export function useStreak(now: Date = new Date()): UseStreakResult {
       grantedMilestones,
       lastCelebratedLocalDate,
       bestStreak,
+      calorieStreak,
     ],
+  );
+
+  const calorie = useMemo(
+    () => calorieInputFromProfile(goal, kcalTarget),
+    [goal, kcalTarget],
   );
 
   useEffect(() => {
@@ -112,20 +138,20 @@ export function useStreak(now: Date = new Date()): UseStreakResult {
   }, []);
 
   const snapshot = useMemo(
-    () => applyStreakState(meals, persist, now).snapshot,
-    [meals, persist, now],
+    () => applyStreakState(meals, persist, now, calorie).snapshot,
+    [meals, persist, now, calorie],
   );
 
   useEffect(() => {
     if (!hydrated) return;
 
-    const { persistPatch } = applyStreakState(meals, persist, now);
+    const { persistPatch } = applyStreakState(meals, persist, now, calorie);
     const patchKey = JSON.stringify(persistPatch);
     if (patchKey === '{}' || patchKey === appliedRef.current) return;
 
     appliedRef.current = patchKey;
     applyPersistPatch(persistPatch);
-  }, [meals, persist, now, hydrated, applyPersistPatch]);
+  }, [meals, persist, now, calorie, hydrated, applyPersistPatch]);
 
   return {
     snapshot,

@@ -1,12 +1,18 @@
 export {
   applyStreakState,
+  isCalorieGoalHit,
   localDateKey,
   streakDaysLabel,
+  CALORIE_STREAK_TOLERANCE,
   STREAK_MILESTONES,
   STREAK_WEEK_LABELS,
+  EMPTY_CALORIE_STREAK_PERSIST,
   EMPTY_STREAK_PERSIST,
+  type CalorieStreakInput,
+  type CalorieStreakPersist,
   type StreakApplyResult,
   type StreakPersist,
   type StreakSnapshot,
+  type StreakTrackSnapshot,
   type StreakWeekDay,
 } from './model/computeStreak';

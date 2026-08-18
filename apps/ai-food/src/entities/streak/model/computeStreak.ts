@@ -5,8 +5,31 @@ export const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100] as const;
 
 export const STREAK_WEEK_LABELS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'] as const;
 
+export const CALORIE_STREAK_TOLERANCE = 0.2;
+
 const FREEZE_GRANT_MILESTONES = [7, 14, 30, 60, 100] as const;
 const MAX_FREEZE_COUNT = 2;
+
+export interface CalorieStreakPersist {
+  currentLength: number;
+  freezeCount: number;
+  consumedFreezeDateKeys: string[];
+  grantedMilestones: number[];
+  bestStreak: number;
+}
+
+export const EMPTY_CALORIE_STREAK_PERSIST: CalorieStreakPersist = {
+  currentLength: 0,
+  freezeCount: 0,
+  consumedFreezeDateKeys: [],
+  grantedMilestones: [],
+  bestStreak: 0,
+};
+
+export interface CalorieStreakInput {
+  goal: 'lose' | 'maintain' | 'gain';
+  kcalTarget: number;
+}
 
 export interface StreakPersist {
   /** Active consecutive-day streak; synced for friends/social. */
@@ -16,6 +39,7 @@ export interface StreakPersist {
   grantedMilestones: number[];
   lastCelebratedLocalDate: string;
   bestStreak: number;
+  calorieStreak: CalorieStreakPersist;
 }
 
 export interface StreakWeekDay {
@@ -24,10 +48,9 @@ export interface StreakWeekDay {
   label: string;
 }
 
-export interface StreakSnapshot {
+export interface StreakTrackSnapshot {
   currentLength: number;
   todayCounted: boolean;
-  shouldCelebrate: boolean;
   startDate: Date | null;
   weekDays: StreakWeekDay[];
   nextMilestone: number | null;
@@ -37,6 +60,11 @@ export interface StreakSnapshot {
   freezeCount: number;
   bestStreak: number;
   personalBestLabel: string;
+}
+
+export interface StreakSnapshot extends StreakTrackSnapshot {
+  shouldCelebrate: boolean;
+  calorie: StreakTrackSnapshot;
 }
 
 export interface StreakApplyResult {
@@ -51,6 +79,7 @@ export const EMPTY_STREAK_PERSIST: StreakPersist = {
   grantedMilestones: [],
   lastCelebratedLocalDate: '',
   bestStreak: 0,
+  calorieStreak: EMPTY_CALORIE_STREAK_PERSIST,
 };
 
 export function localDateKey(date: Date): string {
@@ -84,6 +113,52 @@ function getCountedDateKeys(meals: Meal[]): Set<string> {
     }
   }
   return keys;
+}
+
+export function isCalorieGoalHit(
+  consumedKcal: number,
+  kcalTarget: number,
+  goal: CalorieStreakInput['goal'],
+): boolean {
+  const p = CALORIE_STREAK_TOLERANCE;
+  const lower = kcalTarget * (1 - p);
+  const upper = kcalTarget * (1 + p);
+  if (goal === 'gain') return consumedKcal >= lower;
+  if (goal === 'maintain') return consumedKcal >= lower && consumedKcal <= upper;
+  return consumedKcal <= upper;
+}
+
+function isValidCalorieInput(
+  calorie?: CalorieStreakInput | null,
+): calorie is CalorieStreakInput {
+  return (
+    calorie != null &&
+    Number.isFinite(calorie.kcalTarget) &&
+    calorie.kcalTarget > 0 &&
+    (calorie.goal === 'lose' ||
+      calorie.goal === 'maintain' ||
+      calorie.goal === 'gain')
+  );
+}
+
+function getCalorieHitDateKeys(
+  meals: Meal[],
+  calorie: CalorieStreakInput,
+): Set<string> {
+  const sums = new Map<string, number>();
+  for (const meal of meals) {
+    if (!isCountedMeal(meal)) continue;
+    const key = localDateKey(new Date(meal.timestamp));
+    sums.set(key, (sums.get(key) ?? 0) + meal.totalCalories);
+  }
+
+  const hits = new Set<string>();
+  for (const [key, kcal] of sums) {
+    if (kcal > 0 && isCalorieGoalHit(kcal, calorie.kcalTarget, calorie.goal)) {
+      hits.add(key);
+    }
+  }
+  return hits;
 }
 
 function isCovered(
@@ -264,6 +339,87 @@ function computeGrant(
   return { newFreezeCount, newGranted };
 }
 
+function sameStringList(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function sameNumberList(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function caloriePersistEquals(
+  a: CalorieStreakPersist,
+  b: CalorieStreakPersist,
+): boolean {
+  return (
+    a.currentLength === b.currentLength &&
+    a.freezeCount === b.freezeCount &&
+    a.bestStreak === b.bestStreak &&
+    sameStringList(a.consumedFreezeDateKeys, b.consumedFreezeDateKeys) &&
+    sameNumberList(a.grantedMilestones, b.grantedMilestones)
+  );
+}
+
+function applyTrack(
+  counted: Set<string>,
+  persist: CalorieStreakPersist,
+  now: Date,
+): { snapshot: StreakTrackSnapshot; next: CalorieStreakPersist } {
+  const consumed = new Set(persist.consumedFreezeDateKeys);
+  const todayKey = localDateKey(now);
+  const todayCounted = counted.has(todayKey);
+
+  const run = computeCurrentRun(
+    counted,
+    consumed,
+    persist.freezeCount,
+    now,
+  );
+
+  let nextConsumed = [...persist.consumedFreezeDateKeys];
+  let nextFreezeCount = run.newFreezeCount;
+
+  if (run.consumeKey) {
+    nextConsumed = [...nextConsumed, run.consumeKey];
+    consumed.add(run.consumeKey);
+  }
+
+  const grant = computeGrant(
+    run.length,
+    nextFreezeCount,
+    persist.grantedMilestones,
+  );
+  nextFreezeCount = grant.newFreezeCount;
+
+  const historicalBest = longestHistoricalRun(counted, consumed);
+  const bestStreak = Math.max(persist.bestStreak, run.length, historicalBest);
+  const goal = computeNextGoal(run.length);
+  const startDate = run.startKey ? dateFromLocalKey(run.startKey) : null;
+
+  return {
+    snapshot: {
+      currentLength: run.length,
+      todayCounted,
+      startDate,
+      weekDays: buildWeekDays(now, counted, consumed),
+      nextMilestone: goal.nextMilestone,
+      remainingDays: goal.remainingDays,
+      progress01: goal.progress01,
+      achieved100: goal.achieved100,
+      freezeCount: nextFreezeCount,
+      bestStreak,
+      personalBestLabel: 'Личный рекорд',
+    },
+    next: {
+      currentLength: run.length,
+      freezeCount: nextFreezeCount,
+      consumedFreezeDateKeys: nextConsumed,
+      grantedMilestones: grant.newGranted,
+      bestStreak,
+    },
+  };
+}
+
 export function streakDaysLabel(count: number): string {
   const mod10 = count % 10;
   const mod100 = count % 100;
@@ -276,85 +432,71 @@ export function applyStreakState(
   meals: Meal[],
   persist: StreakPersist,
   now: Date,
+  calorie?: CalorieStreakInput | null,
 ): StreakApplyResult {
   const counted = getCountedDateKeys(meals);
-  const consumed = new Set(persist.consumedFreezeDateKeys);
-  const todayKey = localDateKey(now);
-  const todayCounted = counted.has(todayKey);
-
-  const run = computeCurrentRun(
+  const logging = applyTrack(
     counted,
-    consumed,
-    persist.freezeCount,
+    {
+      currentLength: persist.currentLength,
+      freezeCount: persist.freezeCount,
+      consumedFreezeDateKeys: persist.consumedFreezeDateKeys,
+      grantedMilestones: persist.grantedMilestones,
+      bestStreak: persist.bestStreak,
+    },
     now,
   );
 
   const persistPatch: Partial<StreakPersist> = {};
-  let nextConsumed = [...persist.consumedFreezeDateKeys];
-  let nextFreezeCount = run.newFreezeCount;
-
-  if (run.consumeKey) {
-    nextConsumed = [...nextConsumed, run.consumeKey];
-    consumed.add(run.consumeKey);
-    persistPatch.consumedFreezeDateKeys = nextConsumed;
-    persistPatch.freezeCount = nextFreezeCount;
-  } else if (nextFreezeCount !== persist.freezeCount) {
-    persistPatch.freezeCount = nextFreezeCount;
+  if (logging.next.currentLength !== persist.currentLength) {
+    persistPatch.currentLength = logging.next.currentLength;
+  }
+  if (logging.next.freezeCount !== persist.freezeCount) {
+    persistPatch.freezeCount = logging.next.freezeCount;
+  }
+  if (
+    !sameStringList(
+      logging.next.consumedFreezeDateKeys,
+      persist.consumedFreezeDateKeys,
+    )
+  ) {
+    persistPatch.consumedFreezeDateKeys = logging.next.consumedFreezeDateKeys;
+  }
+  if (
+    !sameNumberList(logging.next.grantedMilestones, persist.grantedMilestones)
+  ) {
+    persistPatch.grantedMilestones = logging.next.grantedMilestones;
+  }
+  if (logging.next.bestStreak !== persist.bestStreak) {
+    persistPatch.bestStreak = logging.next.bestStreak;
   }
 
-  const grant = computeGrant(
-    run.length,
-    nextFreezeCount,
-    persist.grantedMilestones,
-  );
-  nextFreezeCount = grant.newFreezeCount;
-
-  if (grant.newGranted.length !== persist.grantedMilestones.length) {
-    persistPatch.grantedMilestones = grant.newGranted;
-    persistPatch.freezeCount = nextFreezeCount;
-  }
-
-  const historicalBest = longestHistoricalRun(counted, consumed);
-  const bestStreak = Math.max(
-    persist.bestStreak,
-    run.length,
-    historicalBest,
-  );
-
-  if (bestStreak !== persist.bestStreak) {
-    persistPatch.bestStreak = bestStreak;
-  }
-
-  if (run.length !== persist.currentLength) {
-    persistPatch.currentLength = run.length;
-  }
-
+  const todayKey = localDateKey(now);
+  const todayCounted = counted.has(todayKey);
   const shouldCelebrate =
     todayCounted &&
     persist.lastCelebratedLocalDate !== todayKey &&
-    run.length >= 1;
+    logging.next.currentLength >= 1;
 
-  const goal = computeNextGoal(run.length);
-  const startDate = run.startKey ? dateFromLocalKey(run.startKey) : null;
+  const caloriePersist = persist.calorieStreak ?? EMPTY_CALORIE_STREAK_PERSIST;
+  const calorieHits = isValidCalorieInput(calorie)
+    ? getCalorieHitDateKeys(meals, calorie)
+    : new Set<string>();
+  if (isValidCalorieInput(calorie)) {
+    calorieHits.delete(todayKey);
+  }
+
+  const calorieTrack = applyTrack(calorieHits, caloriePersist, now);
+  if (!caloriePersistEquals(calorieTrack.next, caloriePersist)) {
+    persistPatch.calorieStreak = calorieTrack.next;
+  }
 
   const snapshot: StreakSnapshot = {
-    currentLength: run.length,
+    ...logging.snapshot,
     todayCounted,
     shouldCelebrate,
-    startDate,
-    weekDays: buildWeekDays(now, counted, consumed),
-    nextMilestone: goal.nextMilestone,
-    remainingDays: goal.remainingDays,
-    progress01: goal.progress01,
-    achieved100: goal.achieved100,
-    freezeCount: nextFreezeCount,
-    bestStreak,
-    personalBestLabel: 'Личный рекорд',
+    calorie: calorieTrack.snapshot,
   };
-
-  if (Object.keys(persistPatch).length === 0) {
-    return { snapshot, persistPatch: {} };
-  }
 
   return { snapshot, persistPatch };
 }
