@@ -1,12 +1,14 @@
 import { Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth';
-import { useFriendRequests } from '../model/useFriendsQueries';
+import { useFriendRequests, useFriendsList } from '../model/useFriendsQueries';
 
 export function FriendsBellButton() {
   const navigate = useNavigate();
   const userToken = useAuthStore((s) => s.userToken);
-  const { data } = useFriendRequests(Boolean(userToken));
+  const loggedIn = Boolean(userToken);
+  useFriendsList(loggedIn);
+  const { data } = useFriendRequests(loggedIn);
   const pendingCount = data?.incoming.length ?? 0;
 
   if (!userToken) return null;

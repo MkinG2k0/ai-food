@@ -1,5 +1,6 @@
 import type { ApiError } from '@ai-food/shared-types';
 import { getQuotaHeaders } from '@/features/auth';
+import { setCachedReferral } from '../model/referralCache';
 
 function gatewayBase(): string {
   const url = import.meta.env.VITE_AI_GATEWAY_URL as string | undefined;
@@ -35,5 +36,7 @@ export async function fetchReferral(): Promise<ReferralInfo> {
     headers,
   });
   if (!res.ok) await parseError(res);
-  return (await res.json()) as ReferralInfo;
+  const info = (await res.json()) as ReferralInfo;
+  setCachedReferral(info);
+  return info;
 }

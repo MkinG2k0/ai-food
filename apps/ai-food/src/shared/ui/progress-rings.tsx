@@ -1,8 +1,25 @@
+const EMERALD = '#10B981';
+
 export const RING_COLORS = {
-  kcal: '#10B981',
+  kcal: EMERALD,
   protein: '#FB7185',
   fat: '#FBBF24',
   carbs: '#0EA5E9',
+} as const;
+
+/** Header bars + meal Б/Ж/У/К chips. Matches RING_COLORS hues. */
+export const MACRO_COLORS = {
+  protein: RING_COLORS.protein,
+  fat: RING_COLORS.fat,
+  carbs: RING_COLORS.carbs,
+  fiber: EMERALD,
+} as const;
+
+export const MACRO_BAR_CLASSES = {
+  protein: 'bg-rose-400',
+  fat: 'bg-amber-400',
+  carbs: 'bg-sky-500',
+  fiber: 'bg-emerald-500',
 } as const;
 
 export type KbjuRingKey = keyof typeof RING_COLORS;

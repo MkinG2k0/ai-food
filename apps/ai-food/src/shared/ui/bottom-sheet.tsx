@@ -6,6 +6,7 @@ import {
   useAnimationControls,
   type PanInfo,
 } from 'framer-motion';
+import { cn } from '@/shared/lib';
 
 const DISMISS_OFFSET = 100;
 const DISMISS_VELOCITY = 500;
@@ -14,9 +15,15 @@ export interface BottomSheetProps {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  className?: string;
 }
 
-export function BottomSheet({ open, onClose, children }: BottomSheetProps) {
+export function BottomSheet({
+  open,
+  onClose,
+  children,
+  className,
+}: BottomSheetProps) {
   const controls = useAnimationControls();
 
   useEffect(() => {
@@ -68,7 +75,10 @@ export function BottomSheet({ open, onClose, children }: BottomSheetProps) {
             onClick={onClose}
           />
           <motion.div
-            className="relative w-full max-w-md rounded-t-2xl bg-background p-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))] shadow-lg"
+            className={cn(
+              'relative w-full max-w-md rounded-t-2xl bg-background p-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))] shadow-lg',
+              className,
+            )}
             initial={{ y: '100%' }}
             animate={controls}
             exit={{ y: '100%' }}

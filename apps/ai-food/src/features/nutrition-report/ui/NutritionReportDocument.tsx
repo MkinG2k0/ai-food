@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { MACRO_BAR_CLASSES } from '@/shared/ui';
 import type { NutritionReportData } from '../model/buildReportData';
 import { NutritionReportWeightChart } from './NutritionReportWeightChart';
 
@@ -34,10 +35,10 @@ function profileSummary(data: NutritionReportData): string {
 
 const METRICS = [
   { key: 'kcal', label: 'Калории', unit: 'ккал', color: 'bg-emerald-500' },
-  { key: 'protein', label: 'Белки', unit: 'г', color: 'bg-sky-500' },
-  { key: 'fat', label: 'Жиры', unit: 'г', color: 'bg-rose-500' },
-  { key: 'carbs', label: 'Углеводы', unit: 'г', color: 'bg-amber-500' },
-  { key: 'fiber', label: 'Клетчатка', unit: 'г', color: 'bg-lime-600' },
+  { key: 'protein', label: 'Белки', unit: 'г', color: MACRO_BAR_CLASSES.protein },
+  { key: 'fat', label: 'Жиры', unit: 'г', color: MACRO_BAR_CLASSES.fat },
+  { key: 'carbs', label: 'Углеводы', unit: 'г', color: MACRO_BAR_CLASSES.carbs },
+  { key: 'fiber', label: 'Клетчатка', unit: 'г', color: MACRO_BAR_CLASSES.fiber },
 ] as const;
 
 export interface NutritionReportDocumentProps {

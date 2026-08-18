@@ -11,6 +11,7 @@ export {
   type FriendRequestsResponse,
   type FriendSummary,
 } from './api/friendsApi';
+export { clearFriendsCache } from './model/friendsCache';
 export {
   friendProfileQueryKey,
   friendRequestsQueryKey,

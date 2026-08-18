@@ -1,15 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchReferral } from '../api/fetchReferral';
 import { Button } from '@/shared/ui';
+import { useReferral } from '../model/useReferral';
 
 export function ReferralCodeBlock() {
-  const { data } = useQuery({
-    queryKey: ['billing', 'referral'],
-    queryFn: fetchReferral,
-    staleTime: 60_000,
-  });
+  const { data } = useReferral();
 
   if (!data) return null;
 

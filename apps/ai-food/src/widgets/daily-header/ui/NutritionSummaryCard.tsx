@@ -7,6 +7,7 @@ import {
   entranceItem,
   useAnimatedNumber,
 } from '@/shared/lib';
+import { MACRO_BAR_CLASSES } from '@/shared/ui';
 
 interface NutritionSummaryCardProps {
   entranceKey: string;
@@ -230,7 +231,7 @@ export function NutritionSummaryCard({
           label="Белки"
           consumed={consumedProtein}
           goal={goalProtein}
-          barClassName="bg-rose-400"
+          barClassName={MACRO_BAR_CLASSES.protein}
           entranceKey={entranceKey}
           barDelay={0.28}
         />
@@ -238,7 +239,7 @@ export function NutritionSummaryCard({
           label="Жир"
           consumed={consumedFat}
           goal={goalFat}
-          barClassName="bg-amber-400"
+          barClassName={MACRO_BAR_CLASSES.fat}
           entranceKey={entranceKey}
           barDelay={0.34}
         />
@@ -246,7 +247,7 @@ export function NutritionSummaryCard({
           label="Углеводы"
           consumed={consumedCarbs}
           goal={goalCarbs}
-          barClassName="bg-sky-500"
+          barClassName={MACRO_BAR_CLASSES.carbs}
           entranceKey={entranceKey}
           barDelay={0.4}
         />
@@ -254,7 +255,7 @@ export function NutritionSummaryCard({
           label="Клетчатка"
           consumed={consumedFiber}
           goal={goalFiber}
-          barClassName="bg-emerald-500"
+          barClassName={MACRO_BAR_CLASSES.fiber}
           entranceKey={entranceKey}
           barDelay={0.46}
         />

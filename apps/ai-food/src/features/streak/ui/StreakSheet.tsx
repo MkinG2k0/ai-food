@@ -8,7 +8,10 @@ import {
 import type { StreakSnapshot, StreakTrackSnapshot, StreakWeekDay } from '@/entities/streak';
 import { streakDaysLabel } from '@/entities/streak';
 import { useAnimatedNumber } from '@/shared/lib';
-import { BottomSheet, Button } from '@/shared/ui';
+import { BottomSheet, Button, RING_COLORS } from '@/shared/ui';
+
+const LOGGING_FILL = RING_COLORS.kcal;
+const CALORIE_FILL = RING_COLORS.protein;
 
 export interface StreakSheetProps {
   open: boolean;
@@ -93,43 +96,102 @@ function buildVariants(reducedMotion: boolean | null): {
   };
 }
 
-function WeekRow({
-  label,
-  weekDays,
-  filledIcon,
+function SplitDayCell({
+  loggingFilled,
+  calorieFilled,
+}: {
+  loggingFilled: boolean;
+  calorieFilled: boolean;
+}) {
+  const label = `Запись ${loggingFilled ? 'да' : 'нет'}, Норма ${calorieFilled ? 'да' : 'нет'}`;
+
+  if (!loggingFilled && !calorieFilled) {
+    return (
+      <div
+        className="h-11 w-11 rounded-full border border-muted bg-transparent"
+        aria-label={label}
+      />
+    );
+  }
+
+  if (loggingFilled && !calorieFilled) {
+    return (
+      <div
+        className="flex h-11 w-11 items-center justify-center rounded-full"
+        style={{ backgroundColor: LOGGING_FILL }}
+        aria-label={label}
+      >
+        <Flame className="h-4 w-4 text-white" aria-hidden />
+      </div>
+    );
+  }
+
+  if (!loggingFilled && calorieFilled) {
+    return (
+      <div
+        className="flex h-11 w-11 items-center justify-center rounded-full"
+        style={{ backgroundColor: CALORIE_FILL }}
+        aria-label={label}
+      >
+        <Target className="h-4 w-4 text-white" aria-hidden />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative h-11 w-11 overflow-hidden rounded-full"
+      aria-label={label}
+      style={{
+        background: `linear-gradient(135deg, ${LOGGING_FILL} calc(50% - 1px), hsl(var(--background)) calc(50% - 1px), hsl(var(--background)) calc(50% + 1px), ${CALORIE_FILL} calc(50% + 1px))`,
+      }}
+    >
+      <Flame
+        className="absolute left-[10px] top-[9px] h-3 w-3 text-white"
+        aria-hidden
+      />
+      <Target
+        className="absolute bottom-[9px] right-[10px] h-3 w-3 text-white"
+        aria-hidden
+      />
+    </div>
+  );
+}
+
+function CombinedWeek({
+  loggingDays,
+  calorieDays,
   variants,
 }: {
-  label: string;
-  weekDays: StreakWeekDay[];
-  filledIcon: 'flame' | 'target';
+  loggingDays: StreakWeekDay[];
+  calorieDays: StreakWeekDay[];
   variants: ReturnType<typeof buildVariants>;
 }) {
-  const Icon = filledIcon === 'flame' ? Flame : Target;
   return (
     <div>
-      <p className="mb-2 text-xs font-medium text-muted-foreground">{label}</p>
+      <div className="mb-3 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Flame className="h-3 w-3" style={{ color: LOGGING_FILL }} aria-hidden />
+          Запись
+        </span>
+        <span className="flex items-center gap-1">
+          <Target className="h-3 w-3" style={{ color: CALORIE_FILL }} aria-hidden />
+          Норма
+        </span>
+      </div>
       <div className="grid grid-cols-7 gap-2">
-        {weekDays.map((day, index) => (
+        {loggingDays.map((logDay, index) => (
           <motion.div
-            key={`${label}-${day.label}`}
+            key={logDay.label}
             className="flex flex-col items-center gap-2"
             variants={variants.day}
             custom={index}
           >
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full border ${
-                day.filled
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-muted bg-muted/40 text-muted-foreground'
-              }`}
-            >
-              {day.filled ? (
-                <motion.div variants={variants.filledDay}>
-                  <Icon className="h-4 w-4" aria-hidden />
-                </motion.div>
-              ) : null}
-            </div>
-            <span className="text-xs text-muted-foreground">{day.label}</span>
+            <SplitDayCell
+              loggingFilled={logDay.filled}
+              calorieFilled={calorieDays[index]?.filled ?? false}
+            />
+            <span className="text-xs text-muted-foreground">{logDay.label}</span>
           </motion.div>
         ))}
       </div>
@@ -163,11 +225,12 @@ function NextGoalBar({
     delay: 0.58,
   });
   const Icon = label === 'Запись' ? Flame : Target;
+  const accent = label === 'Запись' ? LOGGING_FILL : CALORIE_FILL;
 
   return (
     <div className="flex items-center gap-3">
       <div className="flex w-10 shrink-0 flex-col items-center gap-1">
-        <Icon className="h-5 w-5 text-primary" aria-hidden />
+        <Icon className="h-5 w-5" style={{ color: accent }} aria-hidden />
         <span className="text-sm font-semibold tabular-nums">
           {animatedCurrent}
         </span>
@@ -186,7 +249,8 @@ function NextGoalBar({
         )}
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
           <motion.div
-            className="h-full rounded-full bg-primary"
+            className="h-full rounded-full"
+            style={{ backgroundColor: accent }}
             initial={{
               width: reducedMotion
                 ? `${Math.round(track.progress01 * 100)}%`
@@ -302,7 +366,7 @@ function StreakSheetContent({
   });
 
   return (
-    <div className="max-h-[min(92dvh,56rem)] overflow-x-hidden overflow-y-auto px-1">
+    <div className="max-h-[min(92dvh,56rem)] overflow-x-hidden overflow-y-auto px-1 pb-4">
       <motion.div
         className="space-y-5 overflow-hidden"
         variants={variants.container}
@@ -333,7 +397,7 @@ function StreakSheetContent({
             {streakDaysLabel(currentLength)} подряд
           </motion.p>
           <p className="mt-2 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-            <Target className="h-4 w-4" aria-hidden />
+            <Target className="h-4 w-4" style={{ color: CALORIE_FILL }} aria-hidden />
             Норма {calorie.currentLength}
           </p>
         </motion.div>
@@ -342,16 +406,9 @@ function StreakSheetContent({
           className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm"
           variants={variants.item}
         >
-          <WeekRow
-            label="Запись"
-            weekDays={weekDays}
-            filledIcon="flame"
-            variants={variants}
-          />
-          <WeekRow
-            label="Норма"
-            weekDays={calorie.weekDays}
-            filledIcon="target"
+          <CombinedWeek
+            loggingDays={weekDays}
+            calorieDays={calorie.weekDays}
             variants={variants}
           />
         </motion.div>
@@ -385,7 +442,10 @@ function StreakSheetContent({
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Норма</p>
-                <p className="text-lg font-semibold tabular-nums text-primary">
+                <p
+                  className="text-lg font-semibold tabular-nums"
+                  style={{ color: CALORIE_FILL }}
+                >
                   {animatedCalorieBest}
                 </p>
               </div>
@@ -443,7 +503,11 @@ function StreakSheetContent({
 
 export function StreakSheet({ open, onClose, snapshot }: StreakSheetProps) {
   return (
-    <BottomSheet open={open} onClose={onClose}>
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      className="pb-[env(safe-area-inset-bottom)]"
+    >
       {open ? <StreakSheetContent snapshot={snapshot} onClose={onClose} /> : null}
     </BottomSheet>
   );

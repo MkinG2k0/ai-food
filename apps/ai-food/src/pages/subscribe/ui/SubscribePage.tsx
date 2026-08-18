@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Camera,
@@ -11,6 +12,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import {
+  billingStatusQueryKey,
   fetchBillingStatus,
   subscribe,
   syncBilling,
@@ -57,6 +59,7 @@ const LICENSE_FEATURES = [
 
 export function SubscribePage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const variant = searchParams.get('result'); // success | fail via query, or path
   const pathname =
@@ -101,6 +104,7 @@ export function SubscribePage() {
           await syncBilling(paymentId);
         }
         const status = await fetchBillingStatus();
+        queryClient.setQueryData([...billingStatusQueryKey, true], status);
         if (status.hasActiveSubscription) {
           setPollStatus('active');
           toast.success('Лицензия активирована');
@@ -112,7 +116,7 @@ export function SubscribePage() {
       await new Promise((r) => setTimeout(r, 2000));
     }
     setPollStatus('timeout');
-  }, [isMock, paymentId]);
+  }, [isMock, paymentId, queryClient]);
 
   useEffect(() => {
     if (!isSuccess || !userToken) return;

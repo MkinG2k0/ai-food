@@ -30,6 +30,8 @@ export {
 export {
   ProgressRings,
   RING_COLORS,
+  MACRO_COLORS,
+  MACRO_BAR_CLASSES,
   KBJU_RING_ORDER,
   dayCellSizeForRingCount,
   type KbjuRingKey,

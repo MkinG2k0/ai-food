@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import type { ApiError } from '@ai-food/shared-types';
 import { getQuotaHeaders } from '@/features/auth';
+import { setCachedBillingStatus } from '../model/billingCache';
 
 function gatewayBase(): string {
   const url = import.meta.env.VITE_AI_GATEWAY_URL as string | undefined;
@@ -115,7 +116,9 @@ export async function fetchBillingStatus(): Promise<BillingStatus> {
     headers,
   });
   if (!res.ok) await parseError(res);
-  return (await res.json()) as BillingStatus;
+  const status = (await res.json()) as BillingStatus;
+  setCachedBillingStatus(status);
+  return status;
 }
 
 export async function syncBilling(

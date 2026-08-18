@@ -20,10 +20,12 @@ export function FriendsPage() {
   const [query, setQuery] = useState('');
   const loggedIn = Boolean(userToken);
 
-  const { data: friends = [], isLoading: friendsLoading } =
+  const { data: friends = [], isPending: friendsPending } =
     useFriendsList(loggedIn);
-  const { data: requests, isLoading: requestsLoading } =
+  const { data: requests, isPending: requestsPending } =
     useFriendRequests(loggedIn);
+  const friendsLoading = friendsPending && friends.length === 0;
+  const requestsLoading = requestsPending && !requests;
   const requestMutation = useRequestFriendMutation();
   const acceptMutation = useAcceptFriendRequestMutation();
   const declineMutation = useDeclineFriendRequestMutation();

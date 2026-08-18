@@ -1,5 +1,5 @@
 import type { NutritionResult } from '@ai-food/shared-types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui';
+import { Card, CardContent, CardHeader, CardTitle, MACRO_BAR_CLASSES } from '@/shared/ui';
 import { MicronutrientsBadges, NutritionRow } from '@/entities/nutrition';
 import { useSettingsStore } from '@/features/settings';
 import { formatCalories } from '@/shared/lib';
@@ -25,28 +25,28 @@ export function NutritionCard({ result }: NutritionCardProps) {
           value={result.protein}
           unit="г"
           max={60}
-          color="bg-blue-500"
+          color={MACRO_BAR_CLASSES.protein}
         />
         <NutritionRow
           label="Углеводы"
           value={result.carbs}
           unit="г"
           max={150}
-          color="bg-amber-500"
+          color={MACRO_BAR_CLASSES.carbs}
         />
         <NutritionRow
           label="Жиры"
           value={result.fat}
           unit="г"
           max={80}
-          color="bg-red-400"
+          color={MACRO_BAR_CLASSES.fat}
         />
         <NutritionRow
           label="Клетчатка"
           value={result.fiber}
           unit="г"
           max={30}
-          color="bg-green-500"
+          color={MACRO_BAR_CLASSES.fiber}
         />
         {featureVitamins && (
           <MicronutrientsBadges micronutrients={result.micronutrients} />

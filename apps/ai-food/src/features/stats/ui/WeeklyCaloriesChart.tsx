@@ -8,6 +8,7 @@ import {
 } from 'framer-motion';
 import type { Meal } from '@ai-food/shared-types';
 import { formatCalories, formatDayLabel, formatMacro } from '@/shared/lib';
+import { MACRO_BAR_CLASSES } from '@/shared/ui';
 import {
   getWeeklyCalorieSeries,
   macroCalories,
@@ -41,9 +42,9 @@ const SWIPE_VELOCITY_THRESHOLD = 500;
 
 /** Stack order bottom → top (same hue language as home macros). */
 const STACK = [
-  { key: 'carbs' as const, label: 'Углеводы', className: 'bg-sky-500' },
-  { key: 'fat' as const, label: 'Жир', className: 'bg-amber-400' },
-  { key: 'protein' as const, label: 'Белки', className: 'bg-rose-400' },
+  { key: 'carbs' as const, label: 'Углеводы', className: MACRO_BAR_CLASSES.carbs },
+  { key: 'fat' as const, label: 'Жир', className: MACRO_BAR_CLASSES.fat },
+  { key: 'protein' as const, label: 'Белки', className: MACRO_BAR_CLASSES.protein },
 ];
 
 function barHeightKcal(point: DailyCaloriePoint): number {

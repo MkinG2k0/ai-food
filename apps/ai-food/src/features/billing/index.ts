@@ -10,6 +10,7 @@ export {
   type SyncBillingResult,
   type SubscriptionPrice,
 } from './api/billingApi';
+export { clearBillingCache } from './model/billingCache';
 export { useBillingStatus, billingStatusQueryKey } from './model/useBillingStatus';
 export {
   useSubscriptionPrice,

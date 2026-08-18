@@ -1,4 +1,4 @@
-import { Badge } from '@/shared/ui';
+import { Badge, MACRO_COLORS } from '@/shared/ui';
 import { useAnimatedNumber } from '@/shared/lib';
 
 export interface FoodMacrosBadgesProps {
@@ -45,14 +45,15 @@ function MacroDigits({
 
 function LetterCircle({
   letter,
-  className,
+  color,
 }: {
   letter: string;
-  className: string;
+  color: string;
 }) {
   return (
     <span
-      className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold leading-none text-white ${className}`}
+      className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold leading-none text-white"
+      style={{ backgroundColor: color }}
       aria-hidden
     >
       {letter}
@@ -86,7 +87,7 @@ function CompactMacros({
       </div>
       <div className="flex min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
         <span className="inline-flex shrink-0 items-center gap-1">
-          <LetterCircle letter="Б" className="bg-blue-500" />
+          <LetterCircle letter="Б" color={MACRO_COLORS.protein} />
           <MacroDigits
             value={protein}
             maxDigits={maxDigits}
@@ -96,7 +97,7 @@ function CompactMacros({
           />
         </span>
         <span className="inline-flex shrink-0 items-center gap-1">
-          <LetterCircle letter="Ж" className="bg-red-500" />
+          <LetterCircle letter="Ж" color={MACRO_COLORS.fat} />
           <MacroDigits
             value={fat}
             maxDigits={maxDigits}
@@ -106,7 +107,7 @@ function CompactMacros({
           />
         </span>
         <span className="inline-flex shrink-0 items-center gap-1">
-          <LetterCircle letter="У" className="bg-amber-500" />
+          <LetterCircle letter="У" color={MACRO_COLORS.carbs} />
           <MacroDigits
             value={carbs}
             maxDigits={maxDigits}
@@ -116,7 +117,7 @@ function CompactMacros({
           />
         </span>
         <span className="inline-flex shrink-0 items-center gap-1">
-          <LetterCircle letter="К" className="bg-teal-500" />
+          <LetterCircle letter="К" color={MACRO_COLORS.fiber} />
           <MacroDigits
             value={fiber}
             maxDigits={maxDigits}
@@ -154,7 +155,7 @@ function BadgeMacros({
       </Badge>
       <Badge
         variant="secondary"
-        className="shrink-0 gap-0.5 px-1.5 bg-blue-50 text-blue-700 border-blue-100 font-semibold"
+        className="shrink-0 gap-0.5 px-1.5 bg-rose-50 text-rose-700 border-rose-100 font-semibold"
       >
         <span>Б</span>
         <span className="tabular-nums">{animatedProtein}</span>
@@ -162,7 +163,7 @@ function BadgeMacros({
       </Badge>
       <Badge
         variant="secondary"
-        className="shrink-0 gap-0.5 px-1.5 bg-red-50 text-red-700 border-red-100 font-semibold"
+        className="shrink-0 gap-0.5 px-1.5 bg-amber-50 text-amber-700 border-amber-100 font-semibold"
       >
         <span>Ж</span>
         <span className="tabular-nums">{animatedFat}</span>
@@ -170,7 +171,7 @@ function BadgeMacros({
       </Badge>
       <Badge
         variant="secondary"
-        className="shrink-0 gap-0.5 px-1.5 bg-amber-50 text-amber-700 border-amber-100 font-semibold"
+        className="shrink-0 gap-0.5 px-1.5 bg-sky-50 text-sky-700 border-sky-100 font-semibold"
       >
         <span>У</span>
         <span className="tabular-nums">{animatedCarbs}</span>
@@ -178,7 +179,7 @@ function BadgeMacros({
       </Badge>
       <Badge
         variant="secondary"
-        className="shrink-0 gap-0.5 px-1.5 bg-teal-50 text-teal-700 border-teal-100 font-semibold"
+        className="shrink-0 gap-0.5 px-1.5 bg-emerald-50 text-emerald-700 border-emerald-100 font-semibold"
       >
         <span>К</span>
         <span className="tabular-nums">{animatedFiber}</span>

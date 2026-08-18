@@ -335,8 +335,8 @@ export function SettingsPage() {
           <div className="space-y-3 rounded-md border border-border px-3 py-3">
             <div className="space-y-1">
               <p className="text-sm font-medium">Аккаунт</p>
-              {userToken ? (
-                billing?.hasActiveSubscription ? (
+              {userToken && billing ? (
+                billing.hasActiveSubscription ? (
                   <p className="text-sm text-muted-foreground">
                     Лицензия активна
                     {billing.subscriptionExpiresAt
@@ -369,7 +369,7 @@ export function SettingsPage() {
                     ) : null}
                   </div>
                 </div>
-                {userToken && !billing?.hasActiveSubscription ? (
+                {userToken && billing && !billing.hasActiveSubscription ? (
                   <Button
                     className="w-full"
                     onClick={() => navigate('/subscribe')}

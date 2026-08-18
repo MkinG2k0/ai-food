@@ -2,13 +2,16 @@ import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { useDiaryStore } from '@/entities/meal';
 import { useImageStore } from '@/features/add-food';
+import { clearBillingCache } from '@/features/billing';
 import { useFavoritesStore } from '@/features/favorites';
+import { clearFriendsCache } from '@/features/friends';
 import {
   KBJU_WIDGET_PREFS_KEY,
   WEEK_KCAL_WIDGET_PREFS_KEY,
 } from '@/features/kbju-widget';
 import { useModelTestStore } from '@/features/model-test';
 import { useProfileStore } from '@/features/onboarding';
+import { clearReferralCache } from '@/features/referral';
 import {
   DEFAULT_AI_MODEL,
   DEFAULT_CALENDAR_RINGS,
@@ -47,6 +50,9 @@ export function clearLocalUserDataOnSignOut(): void {
 
   useModelTestStore.getState().clearResults();
   clearUsageCache();
+  clearFriendsCache();
+  clearBillingCache();
+  clearReferralCache();
   void queryClient.clear();
 
   void Preferences.remove({ key: KBJU_WIDGET_PREFS_KEY });
