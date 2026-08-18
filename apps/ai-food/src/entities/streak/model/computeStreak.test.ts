@@ -2,12 +2,19 @@ import { describe, it, expect } from 'vitest';
 import type { Meal } from '@ai-food/shared-types';
 import {
   applyStreakState,
+  CALORIE_STREAK_TOLERANCE,
+  EMPTY_CALORIE_STREAK_PERSIST,
   EMPTY_STREAK_PERSIST,
+  isCalorieGoalHit,
   localDateKey,
   streakDaysLabel,
 } from './computeStreak';
 
-function mealOn(date: Date, status: Meal['status'] = 'ready'): Meal {
+function mealOn(
+  date: Date,
+  status: Meal['status'] = 'ready',
+  totalCalories = 100,
+): Meal {
   return {
     id: crypto.randomUUID(),
     timestamp: date.toISOString(),
@@ -15,7 +22,7 @@ function mealOn(date: Date, status: Meal['status'] = 'ready'): Meal {
       {
         id: 'item-1',
         name: 'Test',
-        calories: 100,
+        calories: totalCalories,
         protein: 10,
         carbs: 10,
         fat: 5,
@@ -23,7 +30,7 @@ function mealOn(date: Date, status: Meal['status'] = 'ready'): Meal {
         grams: 100,
       },
     ],
-    totalCalories: 100,
+    totalCalories,
     status,
   };
 }
@@ -206,5 +213,189 @@ describe('applyStreakState', () => {
     );
     expect(result.snapshot.currentLength).toBe(0);
     expect(result.persistPatch.currentLength).toBe(0);
+  });
+});
+
+describe('CALORIE_STREAK_TOLERANCE', () => {
+  it('is 0.20', () => {
+    expect(CALORIE_STREAK_TOLERANCE).toBe(0.2);
+  });
+});
+
+describe('isCalorieGoalHit', () => {
+  it('applies D-03 bounds for G=2000', () => {
+    expect(isCalorieGoalHit(1820, 2000, 'gain')).toBe(true);
+    expect(isCalorieGoalHit(2500, 2000, 'gain')).toBe(true);
+    expect(isCalorieGoalHit(1500, 2000, 'gain')).toBe(false);
+
+    expect(isCalorieGoalHit(1820, 2000, 'maintain')).toBe(true);
+    expect(isCalorieGoalHit(2500, 2000, 'maintain')).toBe(false);
+    expect(isCalorieGoalHit(1500, 2000, 'maintain')).toBe(false);
+
+    expect(isCalorieGoalHit(2200, 2000, 'lose')).toBe(true);
+    expect(isCalorieGoalHit(2400, 2000, 'lose')).toBe(true);
+    expect(isCalorieGoalHit(2401, 2000, 'lose')).toBe(false);
+    expect(isCalorieGoalHit(100, 2000, 'lose')).toBe(true);
+  });
+});
+
+describe('applyStreakState calorie track', () => {
+  const yesterday = localNoon(2026, 8, 17);
+  const now = localNoon(2026, 8, 18);
+
+  function calorieResult(
+    kcal: number,
+    goal: 'lose' | 'maintain' | 'gain',
+    extras: {
+      persist?: typeof EMPTY_STREAK_PERSIST;
+      meals?: Meal[];
+      at?: Date;
+    } = {},
+  ) {
+    const at = extras.at ?? now;
+    const meals = extras.meals ?? [mealOn(yesterday, 'ready', kcal)];
+    return applyStreakState(meals, extras.persist ?? EMPTY_STREAK_PERSIST, at, {
+      goal,
+      kcalTarget: 2000,
+    });
+  }
+
+  it('counts gain hits at 1820 and 2500 yesterday and misses 1500', () => {
+    expect(calorieResult(1820, 'gain').snapshot.calorie.currentLength).toBe(1);
+    expect(calorieResult(2500, 'gain').snapshot.calorie.currentLength).toBe(1);
+    expect(calorieResult(1500, 'gain').snapshot.calorie.currentLength).toBe(0);
+  });
+
+  it('counts maintain hits at 1820 yesterday and misses 2500 and 1500', () => {
+    expect(calorieResult(1820, 'maintain').snapshot.calorie.currentLength).toBe(1);
+    expect(calorieResult(2500, 'maintain').snapshot.calorie.currentLength).toBe(0);
+    expect(calorieResult(1500, 'maintain').snapshot.calorie.currentLength).toBe(0);
+  });
+
+  it('counts lose hits at 2200 and 100 yesterday and misses 2401', () => {
+    expect(calorieResult(2200, 'lose').snapshot.calorie.currentLength).toBe(1);
+    expect(calorieResult(100, 'lose').snapshot.calorie.currentLength).toBe(1);
+    expect(calorieResult(2401, 'lose').snapshot.calorie.currentLength).toBe(0);
+  });
+
+  it('never hits a day with no ready meal, including analyzing-only and lose 0 kcal', () => {
+    const empty = applyStreakState([], EMPTY_STREAK_PERSIST, now, {
+      goal: 'lose',
+      kcalTarget: 2000,
+    });
+    expect(empty.snapshot.calorie.currentLength).toBe(0);
+
+    const analyzing = applyStreakState(
+      [mealOn(yesterday, 'analyzing', 1800)],
+      EMPTY_STREAK_PERSIST,
+      now,
+      { goal: 'lose', kcalTarget: 2000 },
+    );
+    expect(analyzing.snapshot.calorie.currentLength).toBe(0);
+
+    const zeroKcal = applyStreakState(
+      [mealOn(yesterday, 'ready', 0)],
+      EMPTY_STREAK_PERSIST,
+      now,
+      { goal: 'lose', kcalTarget: 2000 },
+    );
+    expect(zeroKcal.snapshot.calorie.currentLength).toBe(0);
+  });
+
+  it('excludes today from calorie length while logging still counts today', () => {
+    const today = localNoon(2026, 8, 19);
+    const meals = [
+      mealOn(localNoon(2026, 8, 18), 'ready', 2000),
+      mealOn(today, 'ready', 2000),
+    ];
+    const result = applyStreakState(meals, EMPTY_STREAK_PERSIST, today, {
+      goal: 'maintain',
+      kcalTarget: 2000,
+    });
+
+    expect(result.snapshot.currentLength).toBe(2);
+    expect(result.snapshot.todayCounted).toBe(true);
+    expect(result.snapshot.calorie.currentLength).toBe(1);
+    expect(result.snapshot.calorie.todayCounted).toBe(false);
+
+    const todayKey = localDateKey(today);
+    const calorieToday = result.snapshot.calorie.weekDays.find(
+      (day) => localDateKey(day.date) === todayKey,
+    );
+    const loggingToday = result.snapshot.weekDays.find(
+      (day) => localDateKey(day.date) === todayKey,
+    );
+    expect(calorieToday?.filled).toBe(false);
+    expect(loggingToday?.filled).toBe(true);
+  });
+
+  it('grants a calorie freeze at 7 without changing logging freezeCount', () => {
+    const meals = Array.from({ length: 7 }, (_, index) =>
+      mealOn(localNoon(2026, 8, 17 - index), 'ready', 2000),
+    );
+    const persist = {
+      ...EMPTY_STREAK_PERSIST,
+      freezeCount: 1,
+      grantedMilestones: [7],
+      calorieStreak: { ...EMPTY_CALORIE_STREAK_PERSIST },
+    };
+    const result = applyStreakState(meals, persist, now, {
+      goal: 'maintain',
+      kcalTarget: 2000,
+    });
+
+    expect(result.snapshot.calorie.currentLength).toBe(7);
+    expect(result.persistPatch.calorieStreak?.freezeCount).toBe(1);
+    expect(result.persistPatch.calorieStreak?.grantedMilestones).toEqual([7]);
+    expect(result.persistPatch.freezeCount).toBeUndefined();
+    expect(result.snapshot.freezeCount).toBe(1);
+  });
+
+  it('consumes Saturday from the calorie freeze pool only', () => {
+    const monday = localNoon(2026, 8, 17);
+    const meals = [
+      mealOn(localNoon(2026, 8, 14), 'ready', 2000),
+      mealOn(localNoon(2026, 8, 16), 'ready', 2000),
+    ];
+    const persist = {
+      ...EMPTY_STREAK_PERSIST,
+      freezeCount: 0,
+      calorieStreak: { ...EMPTY_CALORIE_STREAK_PERSIST, freezeCount: 1 },
+    };
+    const result = applyStreakState(meals, persist, monday, {
+      goal: 'maintain',
+      kcalTarget: 2000,
+    });
+
+    expect(result.snapshot.calorie.currentLength).toBe(3);
+    expect(result.persistPatch.calorieStreak?.consumedFreezeDateKeys).toEqual([
+      '2026-08-15',
+    ]);
+    expect(result.persistPatch.consumedFreezeDateKeys).toBeUndefined();
+  });
+
+  it('does not consume a calorie freeze across two consecutive misses', () => {
+    const monday = localNoon(2026, 8, 17);
+    const meals = [
+      mealOn(localNoon(2026, 8, 13), 'ready', 2000),
+      mealOn(localNoon(2026, 8, 16), 'ready', 2000),
+    ];
+    const persist = {
+      ...EMPTY_STREAK_PERSIST,
+      calorieStreak: { ...EMPTY_CALORIE_STREAK_PERSIST, freezeCount: 1 },
+    };
+    const result = applyStreakState(meals, persist, monday, {
+      goal: 'maintain',
+      kcalTarget: 2000,
+    });
+
+    expect(result.snapshot.calorie.currentLength).toBe(1);
+    expect(result.persistPatch.calorieStreak?.consumedFreezeDateKeys).toBeUndefined();
+  });
+
+  it('returns empty calorie length when CalorieStreakInput is missing', () => {
+    const meals = [mealOn(yesterday, 'ready', 2000)];
+    const result = applyStreakState(meals, EMPTY_STREAK_PERSIST, now);
+    expect(result.snapshot.calorie.currentLength).toBe(0);
   });
 });

@@ -11,10 +11,11 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 import { useDiaryStore } from '@/entities/meal';
-import { localDateKey } from '@/entities/streak';
+import { EMPTY_CALORIE_STREAK_PERSIST, localDateKey } from '@/entities/streak';
+import { useProfileStore } from '@/features/onboarding';
 import { useStreak, useStreakStore } from './useStreakStore';
 
-function mealOn(date: Date): Meal {
+function mealOn(date: Date, totalCalories = 100): Meal {
   return {
     id: crypto.randomUUID(),
     timestamp: date.toISOString(),
@@ -22,7 +23,7 @@ function mealOn(date: Date): Meal {
       {
         id: 'item-1',
         name: 'Test',
-        calories: 100,
+        calories: totalCalories,
         protein: 10,
         carbs: 10,
         fat: 5,
@@ -30,15 +31,28 @@ function mealOn(date: Date): Meal {
         grams: 100,
       },
     ],
-    totalCalories: 100,
+    totalCalories,
     status: 'ready',
   };
 }
+
+const maintainProfile = {
+  gender: 'male' as const,
+  age: 28,
+  height: 178,
+  weight: 78,
+  targetWeight: 78,
+  targetWeightDate: '2026-10-16',
+  activity: 'medium' as const,
+  goal: 'maintain' as const,
+  dietType: 'none' as const,
+};
 
 describe('useStreakStore', () => {
   beforeEach(async () => {
     await act(async () => {
       await useStreakStore.persist.rehydrate();
+      await useProfileStore.persist.rehydrate();
     });
     useStreakStore.setState({
       currentLength: 0,
@@ -47,9 +61,16 @@ describe('useStreakStore', () => {
       grantedMilestones: [],
       lastCelebratedLocalDate: '',
       bestStreak: 0,
+      calorieStreak: { ...EMPTY_CALORIE_STREAK_PERSIST },
       clientUpdatedAt: new Date(0).toISOString(),
     });
     useDiaryStore.setState({ meals: [], selectedDate: new Date() });
+    useProfileStore.setState({
+      profile: null,
+      targets: null,
+      micronutrientTargets: null,
+      suppressRemoteRestore: false,
+    });
   });
 
   it('reconciles freeze consumption after hydrate when meals change', async () => {
@@ -88,5 +109,26 @@ describe('useStreakStore', () => {
     });
 
     expect(result.current.snapshot.shouldCelebrate).toBe(false);
+  });
+
+  it('reconciles calorieStreak.currentLength from diary after hydrate', async () => {
+    const yesterday = new Date(2026, 7, 17, 12, 0, 0, 0);
+    const now = new Date(2026, 7, 18, 12, 0, 0, 0);
+
+    useProfileStore.setState({
+      profile: maintainProfile,
+      targets: { kcal: 2000, protein: 150, fat: 60, carbs: 200, fiber: 25 },
+    });
+    useDiaryStore.setState({
+      meals: [mealOn(yesterday, 2000)],
+    });
+
+    const { result } = renderHook(() => useStreak(now));
+
+    await waitFor(() => {
+      expect(result.current.hydrated).toBe(true);
+      expect(result.current.snapshot.calorie.currentLength).toBe(1);
+      expect(useStreakStore.getState().calorieStreak.currentLength).toBe(1);
+    });
   });
 });
