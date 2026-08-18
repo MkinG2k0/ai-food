@@ -28,7 +28,6 @@ import {
   queueSettingsSync,
   SETTINGS_SYNC_DEBOUNCE_MS,
 } from '@/features/settings-sync';
-import { NutritionReportSheet } from '@/features/nutrition-report';
 import { useWeightStore } from '@/features/stats';
 import { cn, getLegalUrl } from '@/shared/lib';
 import { BottomSheet, Button, SubpageShell, TextareaWithVoice } from '@/shared/ui';
@@ -101,7 +100,6 @@ export function SettingsPage() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
   const [pendingImport, setPendingImport] = useState<ReturnType<
     typeof parseAppDataExport
   > | null>(null);
@@ -717,22 +715,6 @@ export function SettingsPage() {
         ) : null}
 
         <section className="space-y-3">
-          <h2 className="text-sm font-medium leading-none">Отчёты</h2>
-          <p className="text-sm text-muted-foreground">
-            PDF со сводкой по калориям, БЖУ, весу и дневником питания за период.
-            Генерируется локально на устройстве.
-          </p>
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            onClick={() => setReportOpen(true)}
-          >
-            Отчёт о питании
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-          </Button>
-        </section>
-
-        <section className="space-y-3">
           <button
             type="button"
             className="flex w-full items-center justify-between gap-2 text-left"
@@ -914,11 +896,6 @@ export function SettingsPage() {
           </div>
         </div>
       </BottomSheet>
-
-      <NutritionReportSheet
-        open={reportOpen}
-        onClose={() => setReportOpen(false)}
-      />
 
       <BottomSheet open={redoOpen} onClose={() => setRedoOpen(false)}>
         <div className="w-full space-y-4 px-2 py-2">
