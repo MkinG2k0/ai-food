@@ -12,10 +12,10 @@ describe('parseAddFoodDeepLink', () => {
     });
   });
 
-  it('maps scan-describe to /scan?describe=1', () => {
+  it('maps scan-describe to /scan', () => {
     expect(parseAddFoodDeepLink('aifood://add/scan-describe')).toEqual({
       kind: 'route',
-      path: '/scan?describe=1',
+      path: '/scan',
     });
   });
 
