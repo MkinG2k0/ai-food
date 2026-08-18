@@ -6,6 +6,7 @@ import {
   sortFriendsByStreakDesc,
   allowsDevSelfFriendRequest,
   sumMealMacros,
+  uniqueWeightsByDate,
 } from './friends.js';
 
 const mocks = vi.hoisted(() => ({
@@ -109,6 +110,21 @@ describe('parseSharePhotosToFriends', () => {
         sharePhotosToFriends: false,
       }),
     ).toBe(false);
+  });
+});
+
+describe('uniqueWeightsByDate', () => {
+  it('keeps the last kg for a repeated date', () => {
+    expect(
+      uniqueWeightsByDate([
+        { date: '2026-08-01', kg: 72 },
+        { date: '2026-08-02', kg: 71.5 },
+        { date: '2026-08-01', kg: 71.8 },
+      ]),
+    ).toEqual([
+      { date: '2026-08-01', kg: 71.8 },
+      { date: '2026-08-02', kg: 71.5 },
+    ]);
   });
 });
 

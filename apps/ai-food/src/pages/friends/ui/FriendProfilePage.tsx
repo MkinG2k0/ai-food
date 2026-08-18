@@ -8,7 +8,8 @@ import {
   friendsErrorMessage,
   useFriendProfile,
 } from '@/features/friends';
-import { SubpageShell } from '@/shared/ui';
+import { RING_COLORS, SubpageShell } from '@/shared/ui';
+import { FriendWeightChart } from './FriendWeightChart';
 
 export function FriendProfilePage() {
   const navigate = useNavigate();
@@ -45,52 +46,123 @@ export function FriendProfilePage() {
     <SubpageShell
       title={profile?.displayName ?? 'Профиль друга'}
       onBack={() => navigate('/friends')}
+      headerClassName="sticky top-0 z-10 bg-zinc-50/90 backdrop-blur-md"
+      mainClassName="space-y-5 pb-10"
     >
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Загрузка…</p>
       ) : profile ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-lg border border-input bg-background px-3 py-2">
-              <p className="text-xs text-muted-foreground">Серия</p>
-              <p className="flex items-center gap-1 text-lg font-semibold tabular-nums">
-                <Flame className="h-4 w-4 text-primary" aria-hidden />
-                {profile.streak}
-              </p>
-            </div>
-            <div className="rounded-lg border border-input bg-background px-3 py-2">
-              <p className="text-xs text-muted-foreground">Вес</p>
-              <p className="text-lg font-semibold tabular-nums">
-                {profile.weightKg != null ? `${profile.weightKg} кг` : '—'}
-              </p>
-            </div>
-            {profile.goalKg != null ? (
-              <div className="rounded-lg border border-input bg-background px-3 py-2">
-                <p className="text-xs text-muted-foreground">Цель</p>
-                <p className="text-lg font-semibold tabular-nums">
-                  {profile.goalKg} кг
+        <>
+          <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Серия
+                </p>
+                <p className="mt-1 flex items-center gap-1.5 text-xl font-semibold tabular-nums tracking-tight">
+                  <Flame
+                    className="h-5 w-5 text-emerald-500"
+                    aria-hidden
+                  />
+                  {profile.streak}
                 </p>
               </div>
-            ) : null}
-            {profile.targets ? (
-              <div className="rounded-lg border border-input bg-background px-3 py-2 col-span-2">
-                <p className="text-xs text-muted-foreground">Дневные цели</p>
-                <p className="text-sm tabular-nums">
-                  {profile.targets.kcal} ккал · Б {profile.targets.protein} · Ж{' '}
-                  {profile.targets.fat} · У {profile.targets.carbs}
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Вес
                 </p>
+                <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight">
+                  {profile.weightKg != null ? (
+                    <>
+                      {profile.weightKg}
+                      <span className="ml-1 text-xs font-medium text-muted-foreground">
+                        кг
+                      </span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Цель
+                </p>
+                <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight">
+                  {profile.goalKg != null ? (
+                    <>
+                      {profile.goalKg}
+                      <span className="ml-1 text-xs font-medium text-muted-foreground">
+                        кг
+                      </span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {profile.targets ? (
+              <div className="mt-4 border-t border-border/60 pt-3">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Дневные цели
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <span
+                    className="rounded-full px-2.5 py-1 text-xs font-medium tabular-nums"
+                    style={{
+                      backgroundColor: `${RING_COLORS.kcal}18`,
+                      color: RING_COLORS.kcal,
+                    }}
+                  >
+                    {profile.targets.kcal} ккал
+                  </span>
+                  <span
+                    className="rounded-full px-2.5 py-1 text-xs font-medium tabular-nums"
+                    style={{
+                      backgroundColor: `${RING_COLORS.protein}22`,
+                      color: '#E11D48',
+                    }}
+                  >
+                    Б {profile.targets.protein}
+                  </span>
+                  <span
+                    className="rounded-full px-2.5 py-1 text-xs font-medium tabular-nums"
+                    style={{
+                      backgroundColor: `${RING_COLORS.fat}22`,
+                      color: '#D97706',
+                    }}
+                  >
+                    Ж {profile.targets.fat}
+                  </span>
+                  <span
+                    className="rounded-full px-2.5 py-1 text-xs font-medium tabular-nums"
+                    style={{
+                      backgroundColor: `${RING_COLORS.carbs}22`,
+                      color: '#0284C7',
+                    }}
+                  >
+                    У {profile.targets.carbs}
+                  </span>
+                </div>
               </div>
             ) : null}
           </div>
 
-          <section className="space-y-2">
+          <FriendWeightChart
+            weights={profile.weights}
+            goalKg={profile.goalKg}
+          />
+
+          <section className="space-y-3">
             <h2 className="text-sm font-medium">Приёмы за 7 дней</h2>
             <FriendProfileMeals
               meals={profile.meals}
-              sharePhotosToFriends={profile.sharePhotosToFriends}
+              targets={profile.targets}
             />
           </section>
-        </div>
+        </>
       ) : (
         <p className="text-sm text-muted-foreground">
           Не удалось загрузить профиль друга.

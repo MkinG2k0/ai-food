@@ -292,6 +292,7 @@ describe('GET /user/friends/:userId/profile', () => {
       weightKg: 75,
       targets: { kcal: 2000, protein: 150, fat: 70, carbs: 250 },
       sharePhotosToFriends: true,
+      weights: [],
       meals: [
         {
           id: 'meal-1',

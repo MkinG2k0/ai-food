@@ -60,6 +60,7 @@ export type FriendProfile = {
   streak: number;
   goalKg: number | null;
   weightKg: number | null;
+  weights: { date: string; kg: number }[];
   targets: {
     kcal: number;
     protein: number;
@@ -130,5 +131,9 @@ export async function fetchFriendProfile(userId: string): Promise<FriendProfile>
     { method: 'GET', headers },
   );
   if (!res.ok) await parseError(res);
-  return (await res.json()) as FriendProfile;
+  const data = (await res.json()) as FriendProfile;
+  return {
+    ...data,
+    weights: Array.isArray(data.weights) ? data.weights : [],
+  };
 }

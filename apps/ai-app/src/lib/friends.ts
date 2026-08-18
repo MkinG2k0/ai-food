@@ -41,6 +41,7 @@ export type FriendProfile = {
   streak: number;
   goalKg: number | null;
   weightKg: number | null;
+  weights: { date: string; kg: number }[];
   targets: {
     kcal: number;
     protein: number;
@@ -207,6 +208,26 @@ function parseNutritionTargets(
   };
 }
 
+export function uniqueWeightsByDate(
+  rows: { date: string; kg: number }[],
+): { date: string; kg: number }[] {
+  const byDate = new Map<string, number>();
+  for (const row of rows) {
+    byDate.set(row.date, row.kg);
+  }
+  return [...byDate.entries()].map(([date, kg]) => ({ date, kg }));
+}
+
+function ymdDaysAgo(days: number): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export async function buildFriendProfile(
   prisma: PrismaClient,
   friendUserId: string,
@@ -229,7 +250,7 @@ export async function buildFriendProfile(
   since.setUTCDate(since.getUTCDate() - 7);
   since.setUTCHours(0, 0, 0, 0);
 
-  const [meals, latestWeight] = await Promise.all([
+  const [meals, latestWeight, weightRows] = await Promise.all([
     prisma.meal.findMany({
       where: {
         userId: friendUserId,
@@ -251,6 +272,15 @@ export async function buildFriendProfile(
       orderBy: [{ date: 'desc' }, { clientUpdatedAt: 'desc' }],
       select: { kg: true },
     }),
+    prisma.weightEntry.findMany({
+      where: {
+        userId: friendUserId,
+        deletedAt: null,
+        date: { gte: ymdDaysAgo(90) },
+      },
+      orderBy: [{ date: 'asc' }, { clientUpdatedAt: 'asc' }],
+      select: { date: true, kg: true },
+    }),
   ]);
 
   return {
@@ -259,6 +289,7 @@ export async function buildFriendProfile(
     streak: parseStreakLength(user.clientStreak),
     goalKg: user.goalKg,
     weightKg: latestWeight?.kg ?? null,
+    weights: uniqueWeightsByDate(weightRows),
     targets: parseNutritionTargets(user.nutritionProfile),
     sharePhotosToFriends: parseSharePhotosToFriends(user.clientSettings),
     meals: meals.map((meal) => {
