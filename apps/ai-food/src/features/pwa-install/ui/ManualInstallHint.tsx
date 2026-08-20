@@ -1,9 +1,14 @@
 import { Share } from 'lucide-react';
-import { getManualInstallHint } from '../model/pwaInstallEnv';
+import {
+  getManualInstallHint,
+  getOpenInChromeHref,
+} from '../model/pwaInstallEnv';
 
 /** Fallback UI when `beforeinstallprompt` is missing (iOS / Yandex / etc.). */
 export function ManualInstallHint() {
   const { kind } = getManualInstallHint();
+  const chromeHref =
+    typeof window !== 'undefined' ? getOpenInChromeHref() : '/';
 
   return (
     <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
@@ -25,7 +30,14 @@ export function ManualInstallHint() {
             оттуда.
           </p>
           <ol className="list-decimal space-y-2 pl-4">
-            <li>Скопируйте адрес сайта и откройте его в Chrome</li>
+            <li>
+              <a
+                href={chromeHref}
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                Открыть в Chrome
+              </a>
+            </li>
             <li>Нажмите «Установить» в Chrome или в нашем экране установки</li>
           </ol>
         </div>
