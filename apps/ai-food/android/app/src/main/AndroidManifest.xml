@@ -49,6 +49,16 @@
                     android:host="streak" />
             </intent-filter>
 
+            <!-- T-Bank SuccessURL/FailURL: aifood://subscribe/success|fail?paymentId=… -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="aifood"
+                    android:host="subscribe" />
+            </intent-filter>
+
         </activity>
 
         <receiver

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import {
   Camera,
@@ -23,7 +25,16 @@ import { useAuthStore } from '@/features/auth';
 import { cn } from '@/shared/lib';
 import { Badge, Button, SubpageShell } from '@/shared/ui';
 
-function openPaymentUrl(url: string): void {
+/**
+ * Web: navigate in-tab to PaymentURL.
+ * Native: Chrome Custom Tabs / SFSafariViewController so SuccessURL
+ * `aifood://subscribe/…` can return to the app without destroying the SPA.
+ */
+async function openPaymentUrl(url: string): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    await Browser.open({ url });
+    return;
+  }
   window.location.assign(url);
 }
 
@@ -162,6 +173,19 @@ export function SubscribePage() {
     }
   }
 
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let handle: { remove: () => Promise<void> } | undefined;
+    void Browser.addListener('browserFinished', () => {
+      setPaying(false);
+    }).then((listener) => {
+      handle = listener;
+    });
+    return () => {
+      void handle?.remove();
+    };
+  }, []);
+
   async function handlePay() {
     if (!userToken) {
       navigate('/login', { replace: true, state: { from: '/subscribe' } });
@@ -170,7 +194,9 @@ export function SubscribePage() {
     setPaying(true);
     try {
       const result = await subscribe(applied?.code);
-      openPaymentUrl(result.paymentUrl);
+      await openPaymentUrl(result.paymentUrl);
+      // Web navigates away; native keeps SPA and waits for deep link / close.
+      if (!Capacitor.isNativePlatform()) return;
     } catch (err) {
       const message =
         err && typeof err === 'object' && 'message' in err
@@ -267,9 +293,52 @@ export function SubscribePage() {
     <SubpageShell
       title="Подписка"
       onBack={() => navigate(-1)}
-      mainClassName="space-y-5 pb-28"
+      mainClassName={cn('space-y-5', promoOpen ? 'pb-56' : 'pb-44')}
       footer={
         <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 border-t border-border/80 bg-zinc-50/95 px-4 pt-3 pb-safe backdrop-blur-md">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-gradient-to-t from-zinc-50/95 to-transparent"
+          />
+          <section className="mb-2.5 space-y-2">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between py-0.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => setPromoOpen((v) => !v)}
+              aria-expanded={promoOpen}
+            >
+              <span>
+                {applied ? `Промокод ${applied.code}` : 'Есть промокод?'}
+              </span>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 transition-transform',
+                  promoOpen && 'rotate-180',
+                )}
+              />
+            </button>
+            {promoOpen && (
+              <div className="flex gap-2">
+                <input
+                  id="promo"
+                  value={promoInput}
+                  onChange={(e) => clearAppliedIfEdited(e.target.value)}
+                  placeholder="Введите код"
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  autoComplete="off"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={applying || !promoInput.trim()}
+                  onClick={() => void handleApplyPromo()}
+                >
+                  {applying ? '…' : 'Применить'}
+                </Button>
+              </div>
+            )}
+          </section>
+
           <Button
             className="h-12 w-full text-base font-semibold shadow-sm shadow-primary/20"
             size="lg"
@@ -375,43 +444,6 @@ export function SubscribePage() {
           Дневник, ручной ввод, штрихкод и статистика остаются бесплатными —
           лицензия нужна только для AI.
         </p>
-      </section>
-
-      <section className="space-y-2">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between rounded-lg px-1 py-1 text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          onClick={() => setPromoOpen((v) => !v)}
-          aria-expanded={promoOpen}
-        >
-          <span>{applied ? `Промокод ${applied.code}` : 'Есть промокод?'}</span>
-          <ChevronDown
-            className={cn(
-              'h-4 w-4 transition-transform',
-              promoOpen && 'rotate-180',
-            )}
-          />
-        </button>
-        {promoOpen && (
-          <div className="flex gap-2">
-            <input
-              id="promo"
-              value={promoInput}
-              onChange={(e) => clearAppliedIfEdited(e.target.value)}
-              placeholder="Введите код"
-              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              autoComplete="off"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={applying || !promoInput.trim()}
-              onClick={() => void handleApplyPromo()}
-            >
-              {applying ? '…' : 'Применить'}
-            </Button>
-          </div>
-        )}
       </section>
     </SubpageShell>
   );

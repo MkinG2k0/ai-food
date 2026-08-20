@@ -1,6 +1,6 @@
 {
   "name": "ai-food",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,6 +19,7 @@
     "@capacitor-mlkit/barcode-scanning": "^8.1.0",
     "@capacitor/android": "^8.4.2",
     "@capacitor/app": "^8",
+    "@capacitor/browser": "^8",
     "@capacitor/camera": "^8",
     "@capacitor/core": "^8.4.1",
     "@capacitor/device": "^8",

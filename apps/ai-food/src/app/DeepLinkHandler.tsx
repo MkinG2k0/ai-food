@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { App } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { parseAppDeepLink } from '@/shared/lib';
 
@@ -8,7 +9,8 @@ const DEDUPE_MS = 1500;
 
 /**
  * Handles Android widget / custom-scheme launches
- * (`aifood://add/<action>`, `aifood://stats`, `aifood://streak`).
+ * (`aifood://add/<action>`, `aifood://stats`, `aifood://streak`,
+ * `aifood://subscribe/success|fail`).
  * Cold start: App.getLaunchUrl(); warm: appUrlOpen.
  */
 export function DeepLinkHandler() {
@@ -36,6 +38,13 @@ export function DeepLinkHandler() {
       if (!parsed) return;
 
       lastHandledRef.current = { url, at: now };
+
+      // Close payment Custom Tab / SFSafariViewController (iOS; no-op on Android).
+      if (parsed.kind === 'route' && parsed.path.startsWith('/subscribe/')) {
+        void Browser.close().catch(() => {
+          /* browser may already be dismissed */
+        });
+      }
 
       if (parsed.kind === 'route') {
         navigate(parsed.path);
