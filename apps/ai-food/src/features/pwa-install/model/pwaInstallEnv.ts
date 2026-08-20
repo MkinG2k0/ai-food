@@ -51,28 +51,44 @@ export function getOpenInChromeHref(href?: string): string {
   }
 }
 
-/** Try Chrome Intent; if Yandex swallows it, copy URL for paste into Chrome. */
-export async function openInChrome(href?: string): Promise<'intent' | 'copied'> {
+/**
+ * Yandex blocks Chrome Intents. Reliable paths: system share sheet (pick Chrome)
+ * or clipboard so the user can paste into Chrome.
+ */
+export async function shareOrCopyInstallUrl(
+  href?: string,
+): Promise<'shared' | 'copied'> {
   const url =
-    href ??
-    (typeof window !== 'undefined' ? window.location.href : '');
+    href ?? (typeof window !== 'undefined' ? window.location.href : '');
   if (!url) return 'copied';
+
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    try {
+      await navigator.share({
+        title: 'AI Food',
+        text: 'Откройте ссылку в Chrome и нажмите «Установить»',
+        url,
+      });
+      return 'shared';
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return 'shared';
+      }
+    }
+  }
 
   try {
     await navigator.clipboard.writeText(url);
   } catch {
-    // Clipboard may be blocked; still try Intent.
+    // ignore
   }
+  return 'copied';
+}
 
-  const intent = getOpenInChromeHref(url);
-  window.location.assign(intent);
-
-  await new Promise((r) => setTimeout(r, 600));
-  // Still in this tab → Intent was swallowed (typical for Yandex).
-  if (document.visibilityState === 'visible') {
-    return 'copied';
-  }
-  return 'intent';
+/** @deprecated use shareOrCopyInstallUrl — Intent is blocked by Yandex */
+export async function openInChrome(href?: string): Promise<'intent' | 'copied'> {
+  const result = await shareOrCopyInstallUrl(href);
+  return result === 'shared' ? 'intent' : 'copied';
 }
 
 function canInstallInThisEnvironment(): boolean {

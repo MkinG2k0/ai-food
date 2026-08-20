@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, Share } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/shared/ui';
-import { isIosSafari } from '../model/pwaInstallEnv';
+import {
+  isIosSafari,
+  isYandexBrowser,
+  shareOrCopyInstallUrl,
+} from '../model/pwaInstallEnv';
 import { usePwaInstallPrompt } from '../model/usePwaInstallPrompt';
 import { ManualInstallHint } from './ManualInstallHint';
 
@@ -12,9 +17,10 @@ interface InstallAppScreenProps {
 type InstallPhase = 'offer' | 'waiting' | 'installed';
 
 export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
-  const { promptInstall } = usePwaInstallPrompt();
+  const { canPrompt, promptInstall } = usePwaInstallPrompt();
   const ios = isIosSafari();
-  const [showIosHint, setShowIosHint] = useState(false);
+  const yandex = isYandexBrowser();
+  const [showHint, setShowHint] = useState(false);
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<InstallPhase>('offer');
 
@@ -24,21 +30,56 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
     return () => window.removeEventListener('appinstalled', onInstalled);
   }, []);
 
+  // If native prompt never arrives (typical Yandex), show Chrome path.
+  useEffect(() => {
+    if (ios || canPrompt) return;
+    const t = window.setTimeout(() => setShowHint(true), 800);
+    return () => window.clearTimeout(t);
+  }, [ios, canPrompt]);
+
+  async function handleChromePath() {
+    setBusy(true);
+    try {
+      const result = await shareOrCopyInstallUrl();
+      setShowHint(true);
+      if (result === 'copied') {
+        toast.message('Адрес скопирован', {
+          description: 'Откройте Chrome → вставьте ссылку → Установить',
+        });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleInstall() {
     if (ios) {
-      setShowIosHint(true);
+      setShowHint(true);
       return;
     }
 
+    // Yandex without deferred prompt: don't fake install — send to Chrome.
+    if (!canPrompt) {
+      await handleChromePath();
+      return;
+    }
+
+    // Start prompt in the click turn before any await / setState side-effects.
+    const outcomePromise = promptInstall();
     setBusy(true);
     try {
-      const outcome = await promptInstall();
+      const outcome = await outcomePromise;
       if (outcome === 'accepted') {
         setPhase('waiting');
         return;
       }
       if (outcome === 'unavailable') {
-        setShowIosHint(true);
+        setShowHint(true);
+        if (yandex) {
+          toast.message('Установка в Яндексе недоступна', {
+            description: 'Откройте сайт в Chrome',
+          });
+        }
       }
     } finally {
       setBusy(false);
@@ -46,6 +87,7 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
   }
 
   const waiting = phase === 'waiting' || phase === 'installed';
+  const useChromeCta = !ios && !canPrompt;
 
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-background px-6 py-8">
@@ -72,7 +114,9 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
               {phase === 'installed' &&
                 'Приложение на рабочем столе. Откройте его с иконки, чтобы продолжить.'}
               {phase === 'offer' &&
-                'Добавьте AI Food на телефон — быстрее открывается и удобнее, как обычное приложение.'}
+                (useChromeCta
+                  ? 'В этом браузере полноценная установка часто недоступна. Откройте сайт в Chrome.'
+                  : 'Добавьте AI Food на телефон — быстрее открывается и удобнее, как обычное приложение.')}
             </p>
           </div>
         </div>
@@ -83,7 +127,7 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
           </div>
         )}
 
-        {showIosHint && phase === 'offer' && <ManualInstallHint />}
+        {showHint && phase === 'offer' && <ManualInstallHint />}
 
         <div className="flex flex-col gap-3">
           {!waiting && (
@@ -93,12 +137,18 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
               disabled={busy}
               onClick={() => void handleInstall()}
             >
-              <Download className="h-4 w-4" aria-hidden />
+              {useChromeCta ? (
+                <Share className="h-4 w-4" aria-hidden />
+              ) : (
+                <Download className="h-4 w-4" aria-hidden />
+              )}
               {ios
-                ? showIosHint
+                ? showHint
                   ? 'Показать ещё раз'
                   : 'Как установить'
-                : 'Установить'}
+                : useChromeCta
+                  ? 'Установить через Chrome'
+                  : 'Установить'}
             </Button>
           )}
           <Button

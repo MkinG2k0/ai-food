@@ -1,27 +1,29 @@
 import { useState, type MouseEvent } from 'react';
 import { Share } from 'lucide-react';
 import { toast } from 'sonner';
-import { getManualInstallHint, openInChrome } from '../model/pwaInstallEnv';
+import {
+  getManualInstallHint,
+  shareOrCopyInstallUrl,
+} from '../model/pwaInstallEnv';
 
 /** Fallback UI when `beforeinstallprompt` is missing (iOS / Yandex / etc.). */
 export function ManualInstallHint() {
   const { kind } = getManualInstallHint();
-  const [openingChrome, setOpeningChrome] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  async function handleOpenChrome(e: MouseEvent) {
+  async function handleShareToChrome(e: MouseEvent) {
     e.preventDefault();
-    if (openingChrome) return;
-    setOpeningChrome(true);
+    if (busy) return;
+    setBusy(true);
     try {
-      const result = await openInChrome();
+      const result = await shareOrCopyInstallUrl();
       if (result === 'copied') {
         toast.message('Адрес скопирован', {
-          description:
-            'Яндекс не даёт открыть Chrome сам. Вставьте ссылку в Chrome и установите там.',
+          description: 'Откройте Chrome → вставьте ссылку → Установить',
         });
       }
     } finally {
-      setOpeningChrome(false);
+      setBusy(false);
     }
   }
 
@@ -40,22 +42,24 @@ export function ManualInstallHint() {
       ) : kind === 'yandex' ? (
         <div className="space-y-3 text-left">
           <p>
-            В Яндекс.Браузере на рабочий стол обычно попадает только ссылка, а не
-            полноценное приложение. Лучше открыть сайт в Chrome и установить
-            оттуда.
+            В Яндекс.Браузере на рабочий стол обычно попадает только ссылка.
+            Полноценное приложение ставится из Chrome.
           </p>
           <ol className="list-decimal space-y-2 pl-4">
             <li>
+              Нажмите{' '}
               <button
                 type="button"
                 className="font-medium text-primary underline underline-offset-2 disabled:opacity-60"
-                disabled={openingChrome}
-                onClick={(e) => void handleOpenChrome(e)}
+                disabled={busy}
+                onClick={(e) => void handleShareToChrome(e)}
               >
-                {openingChrome ? 'Открываем…' : 'Открыть в Chrome'}
-              </button>
+                {busy ? 'Открываем…' : 'Поделиться ссылкой'}
+              </button>{' '}
+              → выберите Chrome
             </li>
-            <li>Нажмите «Установить» в Chrome или в нашем экране установки</li>
+            <li>Либо скопируйте адрес и вставьте в Chrome вручную</li>
+            <li>В Chrome нажмите «Установить»</li>
           </ol>
         </div>
       ) : (
