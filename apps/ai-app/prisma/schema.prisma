@@ -67,6 +67,7 @@ model Meal {
   user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   timestamp            DateTime
   name                 String?
+  foodType             String?
   items                Json
   totalCalories        Float
   portions             Float?

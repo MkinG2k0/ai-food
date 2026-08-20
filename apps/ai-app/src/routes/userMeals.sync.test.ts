@@ -123,7 +123,7 @@ describe('POST /user/meals/sync', () => {
   });
 
   it('successful upsert round-trip', async () => {
-    const created = activeRow();
+    const created = activeRow({ foodType: 'bowl' });
     mocks.findMany.mockResolvedValue([created]);
 
     const res = await request(createApp())

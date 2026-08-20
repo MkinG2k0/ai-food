@@ -1,0 +1,1 @@
+ALTER TABLE "Meal" ADD COLUMN "foodType" TEXT;

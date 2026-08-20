@@ -2,6 +2,19 @@ import { z } from 'zod';
 import type { PrismaClient } from '../generated/prisma/client.js';
 
 const isoDateTime = z.string().datetime({ offset: true }).or(z.string().datetime());
+const foodTypeSchema = z.enum([
+  'salad',
+  'soup',
+  'sandwich',
+  'pizza',
+  'sushi',
+  'burger',
+  'bowl',
+  'main',
+  'snack',
+  'dessert',
+  'drink',
+]);
 
 export const mealPayloadSchema = z.object({
   id: z.string().min(1),
@@ -9,6 +22,7 @@ export const mealPayloadSchema = z.object({
   items: z.array(z.unknown()),
   totalCalories: z.number(),
   name: z.string().optional(),
+  foodType: foodTypeSchema.optional(),
   imageUri: z.string().nullable().optional(),
   imageUris: z.array(z.string()).nullable().optional(),
   status: z.string().optional(),
@@ -78,6 +92,7 @@ type MealRow = {
   id: string;
   timestamp: Date;
   name: string | null;
+  foodType: string | null;
   items: unknown;
   totalCalories: number;
   portions: number | null;
@@ -119,6 +134,9 @@ export function mealRowToPayload(row: MealRow): MealPayload {
   };
   const name = optionalString(row.name);
   if (name !== undefined) payload.name = name;
+  if (row.foodType !== null && foodTypeSchema.safeParse(row.foodType).success) {
+    payload.foodType = row.foodType as MealPayload['foodType'];
+  }
   if (row.imageUri != null) payload.imageUri = row.imageUri;
   if (Array.isArray(row.imageUris)) {
     payload.imageUris = row.imageUris as string[];
@@ -164,6 +182,7 @@ function payloadToWriteData(payload: MealPayload, userId: string) {
     userId,
     timestamp: new Date(payload.timestamp),
     name: payload.name ?? null,
+    foodType: payload.foodType ?? null,
     items: payload.items,
     totalCalories: payload.totalCalories,
     portions: payload.portions ?? null,
@@ -206,6 +225,7 @@ export async function applyMealSync(
         data: {
           timestamp: data.timestamp,
           name: data.name,
+          foodType: data.foodType,
           items: data.items as object,
           totalCalories: data.totalCalories,
           portions: data.portions,
@@ -242,6 +262,7 @@ export async function applyMealSync(
           data: {
             timestamp: data.timestamp,
             name: data.name,
+            foodType: data.foodType,
             items: data.items as object,
             totalCalories: data.totalCalories,
             portions: data.portions,
