@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button } from '@/shared/ui';
 import { isIosSafari, isYandexBrowser } from '../model/pwaInstallEnv';
 import { usePwaInstallPrompt } from '../model/usePwaInstallPrompt';
@@ -11,11 +10,20 @@ export function SettingsInstallAppButton() {
   const { canPrompt, promptInstall } = usePwaInstallPrompt();
   const ios = isIosSafari();
   const yandex = isYandexBrowser();
-  const [showHint, setShowHint] = useState(false);
+  const [showHint, setShowHint] = useState(yandex);
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    if (yandex) setShowHint(true);
+  }, [yandex]);
+
   async function handleInstall() {
-    if (ios || !canPrompt) {
+    if (ios) {
+      setShowHint(true);
+      return;
+    }
+
+    if (!canPrompt) {
       setShowHint(true);
       return;
     }
@@ -26,11 +34,6 @@ export function SettingsInstallAppButton() {
       const outcome = await outcomePromise;
       if (outcome === 'unavailable') {
         setShowHint(true);
-        if (yandex) {
-          toast.message('Установка в Яндексе недоступна', {
-            description: 'Откройте сайт в Chrome',
-          });
-        }
       }
     } finally {
       setBusy(false);

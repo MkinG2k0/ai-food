@@ -6,7 +6,7 @@ import {
   shareOrCopyInstallUrl,
 } from '../model/pwaInstallEnv';
 
-/** Fallback UI when `beforeinstallprompt` is missing (iOS / Yandex / etc.). */
+/** Fallback / advisory UI when install needs manual steps (iOS / Yandex tip / etc.). */
 export function ManualInstallHint() {
   const { kind } = getManualInstallHint();
   const [busy, setBusy] = useState(false);
@@ -40,27 +40,21 @@ export function ManualInstallHint() {
           <li>Подтвердите «Добавить»</li>
         </ol>
       ) : kind === 'yandex' ? (
-        <div className="space-y-3 text-left">
+        <div className="space-y-2 text-left">
           <p>
-            В Яндекс.Браузере на рабочий стол обычно попадает только ссылка.
-            Полноценное приложение ставится из Chrome.
+            Лучше установить через Chrome: в Яндексе на рабочий стол часто
+            попадает только ссылка, а не полноценное приложение.
           </p>
-          <ol className="list-decimal space-y-2 pl-4">
-            <li>
-              Нажмите{' '}
-              <button
-                type="button"
-                className="font-medium text-primary underline underline-offset-2 disabled:opacity-60"
-                disabled={busy}
-                onClick={(e) => void handleShareToChrome(e)}
-              >
-                {busy ? 'Открываем…' : 'Поделиться ссылкой'}
-              </button>{' '}
-              → выберите Chrome
-            </li>
-            <li>Либо скопируйте адрес и вставьте в Chrome вручную</li>
-            <li>В Chrome нажмите «Установить»</li>
-          </ol>
+          <p>
+            <button
+              type="button"
+              className="font-medium text-primary underline underline-offset-2 disabled:opacity-60"
+              disabled={busy}
+              onClick={(e) => void handleShareToChrome(e)}
+            >
+              {busy ? 'Открываем…' : 'Открыть / поделиться в Chrome'}
+            </button>
+          </p>
         </div>
       ) : (
         <p className="text-left">
