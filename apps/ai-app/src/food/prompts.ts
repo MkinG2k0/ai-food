@@ -109,7 +109,7 @@ const VISION_NUTRITION_XML_SCHEMA = `<analysis>
 </analysis>`;
 
 const TEXT_NUTRITION_XML_SCHEMA = `<analysis>
-  <foodType>salad|soup|sandwich|pizza|sushi|burger|bowl|main|snack|dessert|drink</foodType>
+  <foodType>salad|soup|sandwich|pizza|sushi|fish|burger|bowl|chicken|meat|pasta|bakery|main|snack|dessert|drink</foodType>
 
 ${VISION_NUTRITION_XML_SCHEMA.slice('<analysis>\n'.length)}`;
 
@@ -178,8 +178,8 @@ const TEXT_SYSTEM_PROMPT = `Ты ассистент по анализу пита
 ${TEXT_NUTRITION_XML_SCHEMA}
 
 ## Тип блюда (обязательно)
-- foodType — выбери ровно одну категорию: salad, soup, sandwich, pizza, sushi, burger, bowl, main, snack, dessert или drink.
-- Классифицируй весь приём пищи, а не отдельный ингредиент. Если горячее или основное блюдо не подходит к другим категориям, укажи main.
+- foodType — выбери ровно одну категорию: salad, soup, sandwich, pizza, sushi, fish, burger, bowl, chicken, meat, pasta, bakery, main, snack, dessert или drink.
+- Классифицируй весь приём пищи, а не отдельный ингредиент. fish — любая рыба и морепродукты (осетр, лосось, треска, креветки, мидии и т.п.), кроме роллов/суши; sushi — только суши/роллы/сашими-наборы; chicken — курица/птица; meat — только красное мясо (говядина/свинина/баранина/стейк), никогда рыба; pasta — паста/макароны/лапша; bakery — выпечка/хлеб/круассан. Если горячее или основное блюдо не подходит к другим категориям, укажи main.
 
 ## Правила единиц измерения (обязательно)
 - Все числовые значения в calories/protein/carbs/fat/fiber/grams — ТОЛЬКО число, без текста единиц измерения внутри самого значения (атрибут unit уже указывает единицу).

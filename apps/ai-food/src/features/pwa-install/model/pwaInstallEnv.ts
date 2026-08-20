@@ -34,6 +34,22 @@ export function getManualInstallHint(): { kind: 'ios' | 'yandex' | 'generic' } {
   return { kind: 'generic' };
 }
 
+/**
+ * Android Intent URL to open the current page in Chrome.
+ * If Chrome is missing, falls back to the https URL (or Play Store via browser).
+ */
+export function getOpenInChromeHref(href?: string): string {
+  if (typeof window === 'undefined') return href ?? '/';
+  try {
+    const url = new URL(href ?? window.location.href);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return url.href;
+    const path = `${url.host}${url.pathname}${url.search}${url.hash}`;
+    return `intent://${path}#Intent;scheme=${url.protocol.replace(':', '')};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url.href)};end`;
+  } catch {
+    return href ?? window.location.href;
+  }
+}
+
 function canInstallInThisEnvironment(): boolean {
   if (Capacitor.isNativePlatform()) return false;
   if (isRunningAsInstalledApp()) return false;

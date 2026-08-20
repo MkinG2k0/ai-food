@@ -17,6 +17,6 @@ describe('mealFoodTypeUi', () => {
 
   it('returns undefined for missing or unknown types', () => {
     expect(mealFoodTypeUi(undefined)).toBeUndefined();
-    expect(mealFoodTypeUi('pasta')).toBeUndefined();
+    expect(mealFoodTypeUi('noodles')).toBeUndefined();
   });
 });

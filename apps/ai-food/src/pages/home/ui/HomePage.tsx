@@ -57,7 +57,7 @@ export function HomePage() {
         onDaySelect={handleDaySelect}
         onWeekChange={handleWeekChange}
       />
-      <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-24">
+      <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-24 pt-0">
         <MealList selectedDate={selectedDate} />
       </main>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-end px-6 pb-safe-fab">
