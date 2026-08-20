@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import type { ApiError } from '@ai-food/shared-types';
 import {
   MealPhotoSlider,
+  mealFoodTypeUi,
   resolveMealImageUris,
   useDiaryStore,
   useMealImages,
@@ -71,6 +72,9 @@ export function MealDetailPage() {
   const currentMeal = meal;
   const mealId = currentMeal.id;
   const lightboxSrcs = imageSrcs.filter((s): s is string => Boolean(s));
+  const foodTypeUi =
+    imageUris.length === 0 ? mealFoodTypeUi(currentMeal.foodType) : undefined;
+  const FoodTypeIcon = foodTypeUi?.Icon;
 
   function handleConfirmMealDelete() {
     const deletedId = confirmMealDelete();
@@ -174,6 +178,19 @@ export function MealDetailPage() {
         {imageUris.length > 0 && (
           <MealPhotoSlider imageUris={imageUris} onOpen={handleOpenPhoto} />
         )}
+
+        {foodTypeUi && FoodTypeIcon ? (
+          <div
+            className={`flex h-16 w-16 items-center justify-center rounded-2xl ${foodTypeUi.tileClass}`}
+            aria-label={foodTypeUi.label}
+            role="img"
+          >
+            <FoodTypeIcon
+              className={`h-7 w-7 ${foodTypeUi.iconClass}`}
+              aria-hidden
+            />
+          </div>
+        ) : null}
 
         <MealSummaryEditor meal={currentMeal} />
 

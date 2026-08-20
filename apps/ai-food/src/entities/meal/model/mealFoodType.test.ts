@@ -7,10 +7,16 @@ describe('mealFoodTypeUi', () => {
     for (const foodType of FOOD_TYPES) {
       const ui = mealFoodTypeUi(foodType);
 
-      expect(ui.label).toMatch(/[А-Яа-яЁё]/);
-      expect(ui.Icon).toBeTypeOf('function');
-      expect(ui.tileClass).toMatch(/^bg-\w+-100$/);
-      expect(ui.iconClass).toMatch(/^text-\w+-700$/);
+      expect(ui).toBeDefined();
+      expect(ui?.label).toMatch(/[А-Яа-яЁё]/);
+      expect(ui?.Icon).toBeDefined();
+      expect(ui?.tileClass).toMatch(/^bg-\w+-100$/);
+      expect(ui?.iconClass).toMatch(/^text-\w+-700$/);
     }
+  });
+
+  it('returns undefined for missing or unknown types', () => {
+    expect(mealFoodTypeUi(undefined)).toBeUndefined();
+    expect(mealFoodTypeUi('pasta')).toBeUndefined();
   });
 });

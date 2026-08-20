@@ -9,6 +9,7 @@ import { useAuthStore } from '@/features/auth';
 import { useMealImage } from '../model/useMealImage';
 import { resolveMealImageUris } from '../model/resolveMealImageUris';
 import { mealDisplayName } from '../model/mealDisplayName';
+import { mealFoodTypeUi } from '../model/mealFoodType';
 import {
   mealShowsAnalyzeLoader,
   mealShowsAnalyzeRetry,
@@ -30,6 +31,11 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
   const imageSrc = useMealImage(meal.imageUri);
   const isAnalyzing = mealShowsAnalyzeLoader(meal);
   const isError = mealShowsAnalyzeRetry(meal);
+  const foodTypeUi =
+    !isAnalyzing && !isError && photoCount === 0
+      ? mealFoodTypeUi(meal.foodType)
+      : undefined;
+  const FoodTypeIcon = foodTypeUi?.Icon;
   const [analyzingStale, setAnalyzingStale] = useState(false);
   const time = new Date(meal.timestamp).toLocaleTimeString([], {
     hour: '2-digit',
@@ -131,13 +137,25 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
         <div className="meal-card-border-loader" aria-hidden />
       ) : null}
       <CardContent className="relative z-10 flex justify-between flex-auto gap-3 p-2 ">
-        <div className="relative h-20 w-20 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div
+          className={cn(
+            'relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-emerald-100',
+            foodTypeUi && `rounded-2xl ${foodTypeUi.tileClass}`,
+          )}
+          aria-label={foodTypeUi?.label}
+          role={foodTypeUi ? 'img' : undefined}
+        >
           {imageSrc ? (
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
           ) : showBorderLoader ? (
             <Loader2 className="h-6 w-6 text-emerald-600 animate-spin" />
           ) : isError || analyzingStale ? (
             <AlertCircle className="h-6 w-6 text-destructive" />
+          ) : foodTypeUi && FoodTypeIcon ? (
+            <FoodTypeIcon
+              className={`h-7 w-7 ${foodTypeUi.iconClass}`}
+              aria-hidden
+            />
           ) : (
             <Utensils className="h-6 w-6 text-emerald-600" />
           )}

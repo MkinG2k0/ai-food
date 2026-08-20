@@ -21,6 +21,7 @@ export { useMealImage } from './model/useMealImage';
 export { useMealImages } from './model/useMealImages';
 export { resolveMealImageUris } from './model/resolveMealImageUris';
 export { mealDisplayName } from './model/mealDisplayName';
+export { mealFoodTypeUi } from './model/mealFoodType';
 export {
   mealShowsAnalyzeLoader,
   mealShowsAnalyzeRetry,
