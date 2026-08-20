@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Download, Share } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Button } from '@/shared/ui';
 import { isIosSafari } from '../model/pwaInstallEnv';
 import { usePwaInstallPrompt } from '../model/usePwaInstallPrompt';
+import { ManualInstallHint } from './ManualInstallHint';
 
 /** Compact install control for Settings (after first-visit skip). */
 export function SettingsInstallAppButton() {
@@ -41,27 +42,7 @@ export function SettingsInstallAppButton() {
           Установить приложение
         </span>
       </Button>
-      {showHint && (
-        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
-          {ios ? (
-            <ol className="list-decimal space-y-2 pl-4 text-left">
-              <li>
-                Нажмите{' '}
-                <Share className="inline h-4 w-4 align-text-bottom" aria-hidden />{' '}
-                «Поделиться» внизу Safari
-              </li>
-              <li>Выберите «На экран „Домой“»</li>
-              <li>Подтвердите «Добавить»</li>
-            </ol>
-          ) : (
-            <p className="text-left">
-              В меню браузера выберите «Установить приложение» или «Добавить на
-              главный экран». Если пункта нет — откройте сайт в Chrome на
-              телефоне.
-            </p>
-          )}
-        </div>
-      )}
+      {showHint && <ManualInstallHint />}
     </div>
   );
 }

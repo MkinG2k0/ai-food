@@ -21,6 +21,19 @@ export function isIosSafari(): boolean {
   return true;
 }
 
+/** Yandex Browser (Chromium). May skip `beforeinstallprompt` — manual menu install. */
+export function isYandexBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /YaBrowser|Yowser/i.test(navigator.userAgent);
+}
+
+/** Manual steps when deferred install prompt is unavailable. */
+export function getManualInstallHint(): { kind: 'ios' | 'yandex' | 'generic' } {
+  if (isIosSafari()) return { kind: 'ios' };
+  if (isYandexBrowser()) return { kind: 'yandex' };
+  return { kind: 'generic' };
+}
+
 function canInstallInThisEnvironment(): boolean {
   if (Capacitor.isNativePlatform()) return false;
   if (isRunningAsInstalledApp()) return false;
