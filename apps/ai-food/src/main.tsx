@@ -8,8 +8,8 @@ import { App } from './app/index';
 import './app/styles/global.css';
 
 defineCustomElements(window);
-registerSW({ immediate: true });
 startPwaInstallCapture();
+registerSW({ immediate: true });
 inject();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -9,6 +9,17 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="AI Food" />
     <title>AI Food — дневник питания</title>
+    <!-- Capture beforeinstallprompt before the JS bundle loads (Yandex/Chrome may fire early). -->
+    <script>
+      window.__aifoodPwa = { deferred: null };
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__aifoodPwa.deferred = e;
+      });
+      window.addEventListener('appinstalled', function () {
+        window.__aifoodPwa.deferred = null;
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -9,6 +9,7 @@ vi.mock('@capacitor/core', () => ({
 }));
 
 import {
+  getOpenInChromeHref,
   shouldOfferPwaInstall,
   shouldShowSettingsPwaInstall,
 } from './pwaInstallEnv';
@@ -92,5 +93,16 @@ describe('shouldShowSettingsPwaInstall', () => {
       })),
     });
     expect(shouldShowSettingsPwaInstall(true)).toBe(false);
+  });
+});
+
+describe('getOpenInChromeHref', () => {
+  it('targets Chrome package without https fallback (Yandex reopens itself)', () => {
+    const href = getOpenInChromeHref(
+      'https://ai-food-mobile.vercel.app/onboarding',
+    );
+    expect(href).toContain('package=com.android.chrome');
+    expect(href).toContain('intent://ai-food-mobile.vercel.app/onboarding');
+    expect(href).not.toContain('S.browser_fallback_url');
   });
 });

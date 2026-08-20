@@ -1,14 +1,29 @@
+import { useState, type MouseEvent } from 'react';
 import { Share } from 'lucide-react';
-import {
-  getManualInstallHint,
-  getOpenInChromeHref,
-} from '../model/pwaInstallEnv';
+import { toast } from 'sonner';
+import { getManualInstallHint, openInChrome } from '../model/pwaInstallEnv';
 
 /** Fallback UI when `beforeinstallprompt` is missing (iOS / Yandex / etc.). */
 export function ManualInstallHint() {
   const { kind } = getManualInstallHint();
-  const chromeHref =
-    typeof window !== 'undefined' ? getOpenInChromeHref() : '/';
+  const [openingChrome, setOpeningChrome] = useState(false);
+
+  async function handleOpenChrome(e: MouseEvent) {
+    e.preventDefault();
+    if (openingChrome) return;
+    setOpeningChrome(true);
+    try {
+      const result = await openInChrome();
+      if (result === 'copied') {
+        toast.message('Адрес скопирован', {
+          description:
+            'Яндекс не даёт открыть Chrome сам. Вставьте ссылку в Chrome и установите там.',
+        });
+      }
+    } finally {
+      setOpeningChrome(false);
+    }
+  }
 
   return (
     <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
@@ -31,12 +46,14 @@ export function ManualInstallHint() {
           </p>
           <ol className="list-decimal space-y-2 pl-4">
             <li>
-              <a
-                href={chromeHref}
-                className="font-medium text-primary underline underline-offset-2"
+              <button
+                type="button"
+                className="font-medium text-primary underline underline-offset-2 disabled:opacity-60"
+                disabled={openingChrome}
+                onClick={(e) => void handleOpenChrome(e)}
               >
-                Открыть в Chrome
-              </a>
+                {openingChrome ? 'Открываем…' : 'Открыть в Chrome'}
+              </button>
             </li>
             <li>Нажмите «Установить» в Chrome или в нашем экране установки</li>
           </ol>

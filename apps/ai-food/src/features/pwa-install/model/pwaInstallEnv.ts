@@ -35,8 +35,9 @@ export function getManualInstallHint(): { kind: 'ios' | 'yandex' | 'generic' } {
 }
 
 /**
- * Android Intent URL to open the current page in Chrome.
- * If Chrome is missing, falls back to the https URL (or Play Store via browser).
+ * Android Intent to open the page in Chrome.
+ * Do NOT set S.browser_fallback_url to the same https URL — Yandex then
+ * "handles" the intent by reopening itself.
  */
 export function getOpenInChromeHref(href?: string): string {
   if (typeof window === 'undefined') return href ?? '/';
@@ -44,10 +45,34 @@ export function getOpenInChromeHref(href?: string): string {
     const url = new URL(href ?? window.location.href);
     if (url.protocol !== 'https:' && url.protocol !== 'http:') return url.href;
     const path = `${url.host}${url.pathname}${url.search}${url.hash}`;
-    return `intent://${path}#Intent;scheme=${url.protocol.replace(':', '')};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url.href)};end`;
+    return `intent://${path}#Intent;scheme=${url.protocol.replace(':', '')};package=com.android.chrome;end`;
   } catch {
     return href ?? window.location.href;
   }
+}
+
+/** Try Chrome Intent; if Yandex swallows it, copy URL for paste into Chrome. */
+export async function openInChrome(href?: string): Promise<'intent' | 'copied'> {
+  const url =
+    href ??
+    (typeof window !== 'undefined' ? window.location.href : '');
+  if (!url) return 'copied';
+
+  try {
+    await navigator.clipboard.writeText(url);
+  } catch {
+    // Clipboard may be blocked; still try Intent.
+  }
+
+  const intent = getOpenInChromeHref(url);
+  window.location.assign(intent);
+
+  await new Promise((r) => setTimeout(r, 600));
+  // Still in this tab → Intent was swallowed (typical for Yandex).
+  if (document.visibilityState === 'visible') {
+    return 'copied';
+  }
+  return 'intent';
 }
 
 function canInstallInThisEnvironment(): boolean {
