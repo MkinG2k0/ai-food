@@ -30,14 +30,19 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
     return () => window.removeEventListener('appinstalled', onInstalled);
   }, []);
 
-  // If native prompt never arrives (typical Yandex), show Chrome path.
+  // Yandex: always show Chrome tip. Others: only if native prompt is missing.
   useEffect(() => {
-    if (ios || canPrompt) return;
+    if (ios) return;
+    if (yandex) {
+      setShowHint(true);
+      return;
+    }
+    if (canPrompt) return;
     const t = window.setTimeout(() => setShowHint(true), 800);
     return () => window.clearTimeout(t);
-  }, [ios, canPrompt]);
+  }, [ios, yandex, canPrompt]);
 
-  async function handleChromePath() {
+  async function handleFallbackInstall() {
     setBusy(true);
     try {
       const result = await shareOrCopyInstallUrl();
@@ -58,13 +63,12 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
       return;
     }
 
-    // Yandex without deferred prompt: don't fake install — send to Chrome.
     if (!canPrompt) {
-      await handleChromePath();
+      await handleFallbackInstall();
       return;
     }
 
-    // Start prompt in the click turn before any await / setState side-effects.
+    // Keep Yandex native install; Chrome tip is shown separately above.
     const outcomePromise = promptInstall();
     setBusy(true);
     try {
@@ -75,11 +79,6 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
       }
       if (outcome === 'unavailable') {
         setShowHint(true);
-        if (yandex) {
-          toast.message('Установка в Яндексе недоступна', {
-            description: 'Откройте сайт в Chrome',
-          });
-        }
       }
     } finally {
       setBusy(false);
@@ -87,7 +86,8 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
   }
 
   const waiting = phase === 'waiting' || phase === 'installed';
-  const useChromeCta = !ios && !canPrompt;
+  // Only replace primary CTA when there is no native prompt at all.
+  const useShareCta = !ios && !canPrompt;
 
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-background px-6 py-8">
@@ -114,9 +114,11 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
               {phase === 'installed' &&
                 'Приложение на рабочем столе. Откройте его с иконки, чтобы продолжить.'}
               {phase === 'offer' &&
-                (useChromeCta
-                  ? 'В этом браузере полноценная установка часто недоступна. Откройте сайт в Chrome.'
-                  : 'Добавьте AI Food на телефон — быстрее открывается и удобнее, как обычное приложение.')}
+                (yandex
+                  ? 'Можно установить здесь, но лучше через Chrome — будет полноценное приложение, а не ссылка.'
+                  : useShareCta
+                    ? 'В этом браузере установка может быть недоступна. Откройте сайт в Chrome.'
+                    : 'Добавьте AI Food на телефон — быстрее открывается и удобнее, как обычное приложение.')}
             </p>
           </div>
         </div>
@@ -137,7 +139,7 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
               disabled={busy}
               onClick={() => void handleInstall()}
             >
-              {useChromeCta ? (
+              {useShareCta ? (
                 <Share className="h-4 w-4" aria-hidden />
               ) : (
                 <Download className="h-4 w-4" aria-hidden />
@@ -146,7 +148,7 @@ export function InstallAppScreen({ onContinue }: InstallAppScreenProps) {
                 ? showHint
                   ? 'Показать ещё раз'
                   : 'Как установить'
-                : useChromeCta
+                : useShareCta
                   ? 'Установить через Chrome'
                   : 'Установить'}
             </Button>
