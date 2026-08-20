@@ -6,6 +6,12 @@ import {
   useAuthHydrated,
   useAuthStore,
 } from '@/features/auth';
+import {
+  InstallAppScreen,
+  shouldOfferPwaInstall,
+  usePwaInstallSeenHydrated,
+  usePwaInstallSeenStore,
+} from '@/features/pwa-install';
 import { applyRemoteNutritionProfile } from '../model/applyRemoteNutritionProfile';
 import { useOnboarding } from '../model/useOnboarding';
 import { useProfileStore } from '../model/useProfileStore';
@@ -26,6 +32,9 @@ const TOTAL_STEPS = 8;
 export function OnboardingPage() {
   const hydrated = useProfileHydrated();
   const authHydrated = useAuthHydrated();
+  const installSeenHydrated = usePwaInstallSeenHydrated();
+  const installDismissed = usePwaInstallSeenStore((s) => s.dismissed);
+  const dismissInstall = usePwaInstallSeenStore((s) => s.dismiss);
   const isComplete = useProfileStore((s) => s.isComplete());
   const { step, draft, next, back, finish, skip } = useOnboarding();
 
@@ -55,8 +64,12 @@ export function OnboardingPage() {
     };
   }, [authHydrated, hydrated, isComplete]);
 
-  if (!hydrated) return null;
+  if (!hydrated || !installSeenHydrated) return null;
   if (isComplete) return <Navigate to="/" replace />;
+
+  if (shouldOfferPwaInstall(installDismissed)) {
+    return <InstallAppScreen onContinue={dismissInstall} />;
+  }
 
   const isResult = step > TOTAL_STEPS;
   const result = isResult ? calculateTargets(draft as UserProfile) : null;

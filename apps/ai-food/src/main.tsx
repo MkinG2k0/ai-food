@@ -3,11 +3,13 @@ import ReactDOM from 'react-dom/client';
 import { defineCustomElements } from '@ionic/pwa-elements/loader';
 import { registerSW } from 'virtual:pwa-register';
 import { inject } from '@vercel/analytics';
+import { startPwaInstallCapture } from '@/features/pwa-install';
 import { App } from './app/index';
 import './app/styles/global.css';
 
 defineCustomElements(window);
 registerSW({ immediate: true });
+startPwaInstallCapture();
 inject();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
