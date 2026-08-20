@@ -43,6 +43,7 @@ const sampleMeal = {
   items: [{ name: 'Рис', calories: 200, protein: 4, fat: 1, carbs: 40 }],
   totalCalories: 200,
   name: 'Обед',
+  foodType: 'bowl',
   status: 'ready',
   clientUpdatedAt: '2026-08-13T09:00:00.000Z',
 };
@@ -53,6 +54,7 @@ function activeRow(overrides: Record<string, unknown> = {}) {
     userId,
     timestamp: new Date(sampleMeal.timestamp),
     name: sampleMeal.name,
+    foodType: null,
     items: sampleMeal.items,
     totalCalories: sampleMeal.totalCalories,
     portions: null,
@@ -131,8 +133,14 @@ describe('POST /user/meals/sync', () => {
 
     expect(res.status).toBe(200);
     expect(mocks.create).toHaveBeenCalled();
+    expect(mocks.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ foodType: 'bowl' }),
+      }),
+    );
     expect(res.body.meals).toHaveLength(1);
     expect(res.body.meals[0].id).toBe('meal-1');
+    expect(res.body.meals[0].foodType).toBe('bowl');
     expect(res.body.meals[0].clientUpdatedAt).toBe(sampleMeal.clientUpdatedAt);
     expect(res.body.tombstones).toEqual([]);
   });
