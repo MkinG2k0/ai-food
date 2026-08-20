@@ -62,40 +62,33 @@ export function subscribeDeferredInstallPrompt(listener: () => void): () => void
   };
 }
 
-/** Wait for a late `beforeinstallprompt` (common after SW activates). */
-export function waitForDeferredInstall(timeoutMs = 2500): Promise<boolean> {
-  if (hasDeferredInstallPrompt()) return Promise.resolve(true);
-
-  return new Promise((resolve) => {
-    const done = (ok: boolean) => {
-      clearTimeout(timer);
-      unsub();
-      resolve(ok);
-    };
-    const unsub = subscribeDeferredInstallPrompt(() => {
-      if (hasDeferredInstallPrompt()) done(true);
-    });
-    const timer = setTimeout(() => done(hasDeferredInstallPrompt()), timeoutMs);
-  });
-}
-
-export async function promptDeferredInstall(): Promise<
+/**
+ * Show native install dialog. `prompt()` must run in the same turn as the
+ * user click — no `await` before it (breaks gesture → silent fail in Yandex/Chrome).
+ */
+export function promptDeferredInstall(): Promise<
   'accepted' | 'dismissed' | 'unavailable'
 > {
   adoptEarlyDeferred();
-  if (!deferred) {
-    const got = await waitForDeferredInstall(2500);
-    if (!got || !deferred) return 'unavailable';
-  }
+  if (!deferred) return Promise.resolve('unavailable');
 
   const current = deferred;
+  let promptPromise: Promise<void>;
   try {
-    await current.prompt();
-    const { outcome } = await current.userChoice;
-    setDeferred(null);
-    return outcome;
+    promptPromise = current.prompt();
   } catch {
     setDeferred(null);
-    return 'unavailable';
+    return Promise.resolve('unavailable');
   }
+
+  return promptPromise
+    .then(() => current.userChoice)
+    .then(({ outcome }) => {
+      setDeferred(null);
+      return outcome;
+    })
+    .catch(() => {
+      setDeferred(null);
+      return 'unavailable' as const;
+    });
 }
