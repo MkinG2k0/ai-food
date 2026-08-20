@@ -11,6 +11,7 @@ import { isNutritionResult } from './nutritionResultSchema';
 
 const sample: NutritionResult = {
   foodName: 'Бургер с сыром',
+  foodType: 'burger',
   calories: 520,
   protein: 28,
   carbs: 42,
@@ -39,6 +40,7 @@ describe('parseNutritionXml', () => {
     const parsed = parseNutritionXml(xml);
     expect(parsed).toMatchObject({
       foodName: 'Бургер с сыром',
+      foodType: 'burger',
       itemCount: 2,
       calories: 520,
       protein: 28,
@@ -68,6 +70,17 @@ describe('parseNutritionXml', () => {
   it('omits itemCount when absent', () => {
     const parsed = parseNutritionXml(nutritionResultToXml(sample));
     expect(parsed).not.toHaveProperty('itemCount');
+  });
+
+  it('keeps missing or unsupported foodType optional for legacy XML', () => {
+    const legacyXml = nutritionResultToXml({ ...sample, foodType: undefined });
+    expect(parseNutritionXml(legacyXml)).not.toHaveProperty('foodType');
+
+    const unsupportedXml = legacyXml.replace(
+      '<foodName>Бургер с сыром</foodName>',
+      '<foodName>Бургер с сыром</foodName><foodType>unknown</foodType>',
+    );
+    expect(parseNutritionXml(unsupportedXml)).not.toHaveProperty('foodType');
   });
 
   it('preserves canonical micronutrient units in round-trip', () => {
