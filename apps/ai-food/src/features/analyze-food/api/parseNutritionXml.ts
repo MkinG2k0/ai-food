@@ -1,4 +1,10 @@
-import type { MicronutrientEstimate, NutritionItem, NutritionResult } from '@ai-food/shared-types';
+import {
+  FOOD_TYPES,
+  type FoodType,
+  type MicronutrientEstimate,
+  type NutritionItem,
+  type NutritionResult,
+} from '@ai-food/shared-types';
 import {
   isNoFoodResult,
   isNutritionResult,
@@ -9,6 +15,7 @@ import {
 /** Progressive fields extracted from closed XML tags while streaming. */
 export interface PartialNutritionXml {
   foodName?: string;
+  foodType?: FoodType;
   calories?: number;
   protein?: number;
   carbs?: number;
@@ -93,6 +100,13 @@ function parseBool(raw: string | undefined): boolean | undefined {
   if (v === 'true' || v === '1' || v === 'yes') return true;
   if (v === 'false' || v === '0' || v === 'no') return false;
   return undefined;
+}
+
+function parseFoodType(raw: string | undefined): FoodType | undefined {
+  const value = raw?.trim().toLowerCase();
+  return value && FOOD_TYPES.includes(value as FoodType)
+    ? (value as FoodType)
+    : undefined;
 }
 
 function parseItemBlock(block: string): NutritionItem | null {
@@ -271,6 +285,9 @@ export function parsePartialNutritionXml(buffer: string): PartialNutritionXml {
   const foodName = extractTopLevelTag(xml, 'foodName');
   if (foodName) partial.foodName = foodName;
 
+  const foodType = parseFoodType(extractTopLevelTag(xml, 'foodType'));
+  if (foodType) partial.foodType = foodType;
+
   const itemCount = parseNumber(extractTopLevelTag(xml, 'itemCount'));
   if (itemCount !== undefined && itemCount > 0) partial.itemCount = itemCount;
 
@@ -341,6 +358,7 @@ export function parseNutritionXml(raw: string): NutritionResult | NoFoodResult {
   };
 
   if (partial.healthiness !== undefined) candidate.healthiness = partial.healthiness;
+  if (partial.foodType !== undefined) candidate.foodType = partial.foodType;
   if (partial.micronutrients !== undefined) {
     candidate.micronutrients = partial.micronutrients;
   }
@@ -505,7 +523,9 @@ ${result.disclaimers.map((d) => `    <disclaimer>${escapeXml(d)}</disclaimer>`).
       : '';
 
   return `<analysis>
-  <foodName>${escapeXml(result.foodName)}</foodName>${itemCountXml}${totalGramsXml}${portionRef}
+  <foodName>${escapeXml(result.foodName)}</foodName>${
+    result.foodType !== undefined ? `\n  <foodType>${result.foodType}</foodType>` : ''
+  }${itemCountXml}${totalGramsXml}${portionRef}
   <totals>
     <calories unit="kcal">${result.calories}</calories>
     <protein unit="g">${result.protein}</protein>

@@ -63,7 +63,7 @@ unit строго по id: vitaminA/vitaminD/vitaminB12/folate → µg; vitaminC
 Пример: vitaminA → amount 120, unit µg (не mg). vitaminC → amount 45, unit mg.
 Всегда включай все 8 id. Не используй amount_mg, граммы и не возвращай качественные level.`;
 
-const NUTRITION_XML_SCHEMA = `<analysis>
+const VISION_NUTRITION_XML_SCHEMA = `<analysis>
   <foodName>краткое название всего блюда/приёма на русском</foodName>
 
   <itemCount>число поштучных единиц (роллы/крылышки/наггетсы…): 5 роллов → 5; салат/паста/рагу → 1. НЕ равно числу items; КБЖУ на все штуки</itemCount>
@@ -108,6 +108,11 @@ const NUTRITION_XML_SCHEMA = `<analysis>
   </disclaimers>
 </analysis>`;
 
+const TEXT_NUTRITION_XML_SCHEMA = `<analysis>
+  <foodType>salad|soup|sandwich|pizza|sushi|burger|bowl|main|snack|dessert|drink</foodType>
+
+${VISION_NUTRITION_XML_SCHEMA.slice('<analysis>\n'.length)}`;
+
 const VISION_SYSTEM_PROMPT = `Ты ассистент по анализу питания по фото. Верни ТОЛЬКО один XML-документ — без markdown-обёртки (без \`\`\`xml\`\`\`), без текста до или после документа.
 
 ## Если еды нет
@@ -117,7 +122,7 @@ ${NO_FOOD_PROMPT_RULE}
 
 Верни ТОЛЬКО XML:
 
-${NUTRITION_XML_SCHEMA}
+${VISION_NUTRITION_XML_SCHEMA}
 
 ## Правила единиц измерения (обязательно)
 - Все числовые значения в calories/protein/carbs/fat/fiber/grams — ТОЛЬКО число, без текста единиц измерения внутри самого значения (атрибут unit уже указывает единицу).
@@ -170,7 +175,11 @@ const TEXT_SYSTEM_PROMPT = `Ты ассистент по анализу пита
 
 Верни ТОЛЬКО XML:
 
-${NUTRITION_XML_SCHEMA}
+${TEXT_NUTRITION_XML_SCHEMA}
+
+## Тип блюда (обязательно)
+- foodType — выбери ровно одну категорию: salad, soup, sandwich, pizza, sushi, burger, bowl, main, snack, dessert или drink.
+- Классифицируй весь приём пищи, а не отдельный ингредиент. Если горячее или основное блюдо не подходит к другим категориям, укажи main.
 
 ## Правила единиц измерения (обязательно)
 - Все числовые значения в calories/protein/carbs/fat/fiber/grams — ТОЛЬКО число, без текста единиц измерения внутри самого значения (атрибут unit уже указывает единицу).

@@ -44,6 +44,7 @@ export function applyAnalyzeResultToMeal(
     updateMeal(mealId, {
       status: 'ready',
       name: result.foodName,
+      foodType: result.foodType,
       totalCalories,
       items,
       portions,
@@ -66,6 +67,7 @@ export function applyAnalyzeResultToMeal(
   updateMeal(mealId, {
     status: 'ready',
     name: result.foodName,
+    foodType: result.foodType,
     totalCalories: result.calories,
     items: [
       {

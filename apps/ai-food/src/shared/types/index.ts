@@ -11,6 +11,22 @@ export interface FoodItem {
 
 export type MealStatus = 'analyzing' | 'ready' | 'error';
 
+export const FOOD_TYPES = [
+  'salad',
+  'soup',
+  'sandwich',
+  'pizza',
+  'sushi',
+  'burger',
+  'bowl',
+  'main',
+  'snack',
+  'dessert',
+  'drink',
+] as const;
+
+export type FoodType = (typeof FOOD_TYPES)[number];
+
 export const MICRONUTRIENT_IDS = [
   'vitaminA',
   'vitaminC',
@@ -62,6 +78,8 @@ export interface Meal {
   name?: string;
   /** Primary / first photo path; omitted when meal has no photos */
   imageUri?: string;
+  /** AI category for a text-only meal; omitted for legacy, manual, and photo meals */
+  foodType?: FoodType;
   /**
    * All photo paths (multi-angle). When present, prefer over `[imageUri]`.
    * Omitted on legacy meals that only have `imageUri`.
@@ -125,6 +143,8 @@ export interface NutritionItem {
 
 export interface NutritionResult {
   foodName: string;
+  /** AI category emitted by the text XML analysis; omitted for legacy and photo XML */
+  foodType?: FoodType;
   calories: number;
   protein: number;
   carbs: number;
