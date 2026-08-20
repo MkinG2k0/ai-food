@@ -8,7 +8,10 @@ vi.mock('@capacitor/core', () => ({
   },
 }));
 
-import { shouldOfferPwaInstall } from './pwaInstallEnv';
+import {
+  shouldOfferPwaInstall,
+  shouldShowSettingsPwaInstall,
+} from './pwaInstallEnv';
 
 describe('shouldOfferPwaInstall', () => {
   beforeEach(() => {
@@ -48,5 +51,46 @@ describe('shouldOfferPwaInstall', () => {
       })),
     });
     expect(shouldOfferPwaInstall(false)).toBe(false);
+  });
+});
+
+describe('shouldShowSettingsPwaInstall', () => {
+  beforeEach(() => {
+    isNativePlatform.mockReturnValue(false);
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+  });
+
+  it('hides before first-visit skip', () => {
+    expect(shouldShowSettingsPwaInstall(false)).toBe(false);
+  });
+
+  it('shows after skip in browser', () => {
+    expect(shouldShowSettingsPwaInstall(true)).toBe(true);
+  });
+
+  it('hides in native Capacitor app', () => {
+    isNativePlatform.mockReturnValue(true);
+    expect(shouldShowSettingsPwaInstall(true)).toBe(false);
+  });
+
+  it('hides when already running as installed PWA', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('standalone'),
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+    expect(shouldShowSettingsPwaInstall(true)).toBe(false);
   });
 });

@@ -29,6 +29,11 @@ import {
   SETTINGS_SYNC_DEBOUNCE_MS,
 } from '@/features/settings-sync';
 import { useWeightStore } from '@/features/stats';
+import {
+  SettingsInstallAppButton,
+  shouldShowSettingsPwaInstall,
+  usePwaInstallSeenStore,
+} from '@/features/pwa-install';
 import { cn, getLegalUrl } from '@/shared/lib';
 import { BottomSheet, Button, SubpageShell, TextareaWithVoice } from '@/shared/ui';
 
@@ -109,6 +114,8 @@ export function SettingsPage() {
   const termsUrl = getLegalUrl('/terms');
   const privacyUrl = getLegalUrl('/privacy');
   const refundsUrl = getLegalUrl('/refunds');
+  const installDismissed = usePwaInstallSeenStore((s) => s.dismissed);
+  const showInstallApp = shouldShowSettingsPwaInstall(installDismissed);
 
   const customInstructions = useSettingsStore((s) => s.customInstructions);
   const setCustomInstructions = useSettingsStore((s) => s.setCustomInstructions);
@@ -738,6 +745,7 @@ export function SettingsPage() {
 
         <section className="space-y-3">
           <h2 className="text-sm font-medium leading-none">О приложении</h2>
+          {showInstallApp ? <SettingsInstallAppButton /> : null}
           <Button
             variant="outline"
             className="w-full justify-between"

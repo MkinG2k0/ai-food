@@ -21,10 +21,20 @@ export function isIosSafari(): boolean {
   return true;
 }
 
-/** Offer install UI only in mobile browser (not native APK / already installed). */
-export function shouldOfferPwaInstall(dismissed: boolean): boolean {
-  if (dismissed) return false;
+function canInstallInThisEnvironment(): boolean {
   if (Capacitor.isNativePlatform()) return false;
   if (isRunningAsInstalledApp()) return false;
   return true;
+}
+
+/** Offer install UI only in mobile browser (not native APK / already installed). */
+export function shouldOfferPwaInstall(dismissed: boolean): boolean {
+  if (dismissed) return false;
+  return canInstallInThisEnvironment();
+}
+
+/** Settings: show install after user skipped the first-visit screen. */
+export function shouldShowSettingsPwaInstall(dismissed: boolean): boolean {
+  if (!dismissed) return false;
+  return canInstallInThisEnvironment();
 }
