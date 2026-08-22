@@ -328,4 +328,48 @@ describe('POST /v1/food/*', () => {
       });
     expect(res.status).toBe(400);
   });
+
+  it('analyze features flags strip vitamins/healthiness/composition from system prompt', async () => {
+    const createChat = vi.fn().mockResolvedValue({
+      controller: { abort: vi.fn() },
+      async *[Symbol.asyncIterator]() {
+        yield {
+          choices: [{ index: 0, delta: { content: 'x' }, finish_reason: null }],
+        };
+      },
+    });
+    mockOpenAI({ createChat });
+
+    await request(createApp())
+      .post('/v1/food/analyze')
+      .send({
+        description: 'яблоко',
+        features: {
+          vitamins: false,
+          healthiness: false,
+          composition: false,
+        },
+      })
+      .buffer(true)
+      .parse((response, callback) => {
+        const data: Buffer[] = [];
+        response.on('data', (part: Buffer) => data.push(part));
+        response.on('end', () => callback(null, Buffer.concat(data).toString('utf8')));
+      });
+
+    const args = createChat.mock.calls[0][0] as {
+      messages: Array<{ role: string; content: unknown }>;
+    };
+    const systemContent = args.messages[0].content;
+    const systemText =
+      typeof systemContent === 'string'
+        ? systemContent
+        : Array.isArray(systemContent)
+          ? String((systemContent[0] as { text?: string }).text ?? '')
+          : '';
+    expect(systemText).not.toMatch(/## healthiness/);
+    expect(systemText).not.toMatch(/## Микронутриенты/);
+    expect(systemText).toMatch(/ровно один item/i);
+  });
 });
+

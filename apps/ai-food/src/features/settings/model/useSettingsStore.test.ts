@@ -18,6 +18,7 @@ import {
   aiModelLabel,
   getActiveCustomInstructions,
   isGeminiModel,
+  normalizeStatsMicronutrientIds,
   temperatureForModel,
   useSettingsStore,
 } from './useSettingsStore';
@@ -197,5 +198,34 @@ describe('useSettingsStore', () => {
     });
     expect(useSettingsStore.getState().customInstructions).toHaveLength(2000);
     expect(useSettingsStore.getState().customInstructions).toBe('a'.repeat(2000));
+  });
+});
+
+describe('normalizeStatsMicronutrientIds', () => {
+  it('returns defaults for invalid/empty input', () => {
+    expect(normalizeStatsMicronutrientIds(null)).toEqual(
+      DEFAULT_STATS_MICRONUTRIENT_IDS,
+    );
+    expect(normalizeStatsMicronutrientIds(undefined)).toEqual(
+      DEFAULT_STATS_MICRONUTRIENT_IDS,
+    );
+    expect(normalizeStatsMicronutrientIds([])).toEqual(
+      DEFAULT_STATS_MICRONUTRIENT_IDS,
+    );
+    expect(normalizeStatsMicronutrientIds(['not-a-real-id'])).toEqual(
+      DEFAULT_STATS_MICRONUTRIENT_IDS,
+    );
+  });
+
+  it('dedupes and filters unknown ids', () => {
+    const result = normalizeStatsMicronutrientIds([
+      'vitaminC',
+      'iron',
+      'vitaminC',
+      'unknown',
+      42,
+      'calcium',
+    ]);
+    expect(result).toEqual(['vitaminC', 'iron', 'calcium']);
   });
 });

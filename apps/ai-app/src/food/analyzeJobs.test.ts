@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  ANALYZE_JOB_TTL_MS,
   analyzeJobOwnerKey,
   canAccessAnalyzeJob,
   completeAnalyzeJob,
@@ -14,6 +15,7 @@ import {
 describe('analyzeJobs', () => {
   afterEach(() => {
     resetAnalyzeJobs();
+    vi.useRealTimers();
   });
 
   it('createAnalyzeJob starts as running and is fetchable by id', () => {
@@ -61,4 +63,36 @@ describe('analyzeJobs', () => {
     expect(canAccessAnalyzeJob(job, 'device:other')).toBe(false);
     expect(analyzeJobOwnerKey(undefined)).toBe('anon');
   });
+
+  it('sweeps expired jobs and cleans owner+meal index', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-22T10:00:00.000Z'));
+
+    const job = createAnalyzeJob({
+      ownerKey: 'device:abc',
+      clientMealId: 'meal-ttl',
+    });
+    expect(getAnalyzeJob(job.id)?.id).toBe(job.id);
+
+    vi.advanceTimersByTime(ANALYZE_JOB_TTL_MS + 1);
+    expect(getAnalyzeJob(job.id)).toBeUndefined();
+    expect(getAnalyzeJobByClientMeal('device:abc', 'meal-ttl')).toBeUndefined();
+  });
+
+  it('evicts oldest jobs when capacity exceeds 500', () => {
+    const first = createAnalyzeJob({
+      ownerKey: 'device:first',
+      clientMealId: 'm-first',
+    });
+    for (let i = 0; i < 500; i += 1) {
+      createAnalyzeJob({ ownerKey: `device:n${i}` });
+    }
+    // createAnalyzeJob sweeps before insert: 501st insert leaves size=501;
+    // next create evicts the oldest (first).
+    createAnalyzeJob({ ownerKey: 'device:overflow' });
+
+    expect(getAnalyzeJob(first.id)).toBeUndefined();
+    expect(getAnalyzeJobByClientMeal('device:first', 'm-first')).toBeUndefined();
+  });
 });
+

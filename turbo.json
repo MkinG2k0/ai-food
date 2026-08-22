@@ -3,7 +3,7 @@
   "ui": "tui",
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "test"],
       "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*", "!.env*.local"],
       "outputs": ["dist/**", ".next/**", "src/generated/**"],
       "env": [

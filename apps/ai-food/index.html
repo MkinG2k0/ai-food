@@ -5,10 +5,18 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#30ad54" />
+    <meta name="theme-color" content="#09AF86" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="AI Food" />
     <title>AI Food — дневник питания</title>
+    <style>
+      /* Instant paint before CSS/JS — matches splash; overridden by global.css body tokens */
+      html,
+      body {
+        margin: 0;
+        background: #09AF86;
+      }
+    </style>
     <!-- Capture beforeinstallprompt before the JS bundle loads (Yandex/Chrome may fire early). -->
     <script>
       window.__aifoodPwa = { deferred: null };

@@ -14,6 +14,15 @@ const config: CapacitorConfig = {
     allowMixedContent: true, // needed when server.url is http
   },
   plugins: {
+    SplashScreen: {
+      launchAutoHide: false,
+      backgroundColor: '#09AF86',
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER',
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
     StatusBar: {
       // Capacitor: LIGHT = dark icons for light backgrounds (not Style.Dark)
       style: 'LIGHT',

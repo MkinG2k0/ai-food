@@ -41,6 +41,7 @@ const sampleSettings = {
   featureHealthiness: true,
   featureComposition: false,
   calendarRings: { kcal: true, protein: true, fat: false, carbs: false },
+  sharePhotosToFriends: true,
 };
 
 describe('POST /user/settings/sync', () => {

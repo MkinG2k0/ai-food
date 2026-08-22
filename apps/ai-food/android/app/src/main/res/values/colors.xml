@@ -15,4 +15,5 @@
     <color name="widget_week_kcal_muted">#71717A</color>
     <color name="widget_week_kcal_goal_line">#A1A1AA</color>
     <color name="status_bar_background">#FFFFFF</color>
+    <color name="splash_background">#09AF86</color>
 </resources>

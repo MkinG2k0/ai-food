@@ -10,6 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: [
         'apple-touch-icon.png',
+        'pwa-192x192.png',
+        'pwa-512x512.png',
         'screenshot-home.png',
         'screenshot-meal.png',
         'screenshot-stats.png',
@@ -24,8 +26,8 @@ export default defineConfig({
         lang: 'ru',
         display: 'standalone',
         start_url: '/',
-        theme_color: '#30ad54',
-        background_color: '#ffffff',
+        theme_color: '#09AF86',
+        background_color: '#09AF86',
         icons: [
           {
             src: 'pwa-192x192.png',

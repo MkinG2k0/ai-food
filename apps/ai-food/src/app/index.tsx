@@ -1,10 +1,13 @@
+import { BootSplash } from './BootSplash';
 import { Providers } from './providers';
 import { AppRouter } from './router';
 
 export function App() {
   return (
     <Providers>
-      <AppRouter />
+      <BootSplash>
+        <AppRouter />
+      </BootSplash>
     </Providers>
   );
 }

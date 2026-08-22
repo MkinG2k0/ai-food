@@ -4,11 +4,9 @@ import request from 'supertest';
 import { errorHandler } from '../middleware/error.js';
 
 const mocks = vi.hoisted(() => ({
-  findFirst: vi.fn(),
   findUnique: vi.fn(),
   findMany: vi.fn(),
-  create: vi.fn(),
-  update: vi.fn(),
+  upsert: vi.fn(),
   userFindUnique: vi.fn(),
   userUpdate: vi.fn(),
   verifyUserToken: vi.fn(),
@@ -64,11 +62,9 @@ describe('POST /user/weights/sync', () => {
     mocks.isDatabaseConfigured.mockReturnValue(true);
     mocks.getPrisma.mockReturnValue({
       weightEntry: {
-        findFirst: mocks.findFirst,
         findUnique: mocks.findUnique,
         findMany: mocks.findMany,
-        create: mocks.create,
-        update: mocks.update,
+        upsert: mocks.upsert,
       },
       user: {
         findUnique: mocks.userFindUnique,
@@ -79,13 +75,11 @@ describe('POST /user/weights/sync', () => {
       sub: userId,
       telegramId: '42',
     });
-    mocks.findFirst.mockResolvedValue(null);
     mocks.findUnique.mockResolvedValue(null);
     mocks.findMany.mockResolvedValue([]);
     mocks.userFindUnique.mockResolvedValue({ goalKg: null });
     mocks.userUpdate.mockResolvedValue({ goalKg: 70 });
-    mocks.create.mockImplementation(async ({ data }: { data: unknown }) => data);
-    mocks.update.mockImplementation(async ({ data }: { data: unknown }) => data);
+    mocks.upsert.mockResolvedValue({});
   });
 
   afterEach(() => vi.clearAllMocks());
@@ -115,7 +109,7 @@ describe('POST /user/weights/sync', () => {
       .send({ upserts: [sample], deletes: [], goalKg: 70 });
 
     expect(res.status).toBe(200);
-    expect(mocks.create).toHaveBeenCalled();
+    expect(mocks.upsert).toHaveBeenCalled();
     expect(mocks.userUpdate).toHaveBeenCalled();
     expect(res.body.weights).toHaveLength(1);
     expect(res.body.goalKg).toBe(70);
@@ -126,7 +120,7 @@ describe('POST /user/weights/sync', () => {
       clientUpdatedAt: new Date('2026-08-13T12:00:00.000Z'),
       kg: 80,
     });
-    mocks.findFirst.mockResolvedValue(stored);
+    mocks.findUnique.mockResolvedValue(stored);
     mocks.findMany.mockResolvedValue([stored]);
     mocks.userFindUnique.mockResolvedValue({ goalKg: null });
 
@@ -139,12 +133,12 @@ describe('POST /user/weights/sync', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.upsert).not.toHaveBeenCalled();
     expect(res.body.weights[0].kg).toBe(80);
   });
 
   it('delete tombstone', async () => {
-    mocks.findFirst.mockResolvedValue(activeRow());
+    mocks.findUnique.mockResolvedValue(activeRow());
     mocks.findMany.mockResolvedValue([
       activeRow({
         deletedAt: new Date('2026-08-13T10:00:00.000Z'),
@@ -161,6 +155,7 @@ describe('POST /user/weights/sync', () => {
       });
 
     expect(res.status).toBe(200);
+    expect(mocks.upsert).toHaveBeenCalled();
     expect(res.body.tombstones).toEqual(['w1']);
   });
 });

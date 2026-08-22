@@ -1,6 +1,6 @@
 {
   "name": "ai-food",
-  "version": "1.0.9",
+  "version": "1.0.11",
   "private": true,
   "type": "module",
   "scripts": {
@@ -26,6 +26,7 @@
     "@capacitor/filesystem": "^8",
     "@capacitor/preferences": "^8.0.0",
     "@capacitor/share": "^8.0.1",
+    "@capacitor/splash-screen": "^8",
     "@capacitor/status-bar": "^8",
     "@capgo/capacitor-speech-recognition": "^8.1.10",
     "@ionic/pwa-elements": "^3.4.0",
