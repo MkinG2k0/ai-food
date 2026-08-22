@@ -13,6 +13,7 @@ export { recordUsageEvent } from './api/recordUsageEvent';
 export { submitDataConsent } from './api/submitDataConsent';
 export { putNutritionProfile } from './api/putNutritionProfile';
 export { fetchAuthMe } from './api/fetchAuthMe';
+export { deleteAccount } from './api/deleteAccount';
 export {
   parseNutritionProfile,
   type NutritionProfilePayload,

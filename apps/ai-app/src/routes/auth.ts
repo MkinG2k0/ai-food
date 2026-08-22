@@ -234,6 +234,41 @@ authRouter.get(
   }),
 );
 
+authRouter.delete(
+  '/me',
+  asyncHandler(async (req, res) => {
+    assertAuthConfigured();
+    const header = req.header('x-user-token')?.trim();
+    if (!header) {
+      throw new ApiError(401, 'INVALID_USER_TOKEN', 'X-User-Token required.');
+    }
+
+    const payload = await verifyUserToken(header);
+    const prisma = requireDb();
+    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user) {
+      throw new ApiError(401, 'INVALID_USER_TOKEN', 'User not found.');
+    }
+
+    const userId = user.id;
+    await prisma.$transaction(async (tx) => {
+      // Payment / Device / UsageEvent lack onDelete: Cascade
+      await tx.payment.deleteMany({ where: { userId } });
+      await tx.usageEvent.updateMany({
+        where: { userId },
+        data: { userId: null },
+      });
+      await tx.device.updateMany({
+        where: { userId },
+        data: { userId: null },
+      });
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    res.status(204).send();
+  }),
+);
+
 authRouter.put(
   '/profile',
   asyncHandler(async (req, res) => {

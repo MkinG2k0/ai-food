@@ -33,9 +33,11 @@ Web/PWA + Capacitor дневник питания (monorepo `apps/ai-food` + `ap
 
 ### Out of Scope
 
-- Sync **blob-фото** приёмов — **намеренно никогда** (только URI stubs / локальный Filesystem)
+- Sync / upload **blob-фото** приёмов — **намеренно никогда** (конфиденциальность: фото не на сервере; только URI stubs / локальный Filesystem)
 - Medical-grade nutrition / on-device ML
 - Google OAuth (сейчас Telegram bot + demo)
+- iOS native / App Store — later
+- Health Connect / Apple Health; БАДы как сущность; server account-delete — пока не в scope
 
 
 ## Context
@@ -49,13 +51,14 @@ Web/PWA + Capacitor дневник питания (monorepo `apps/ai-food` + `ap
 - Канон продукта для агентов: `docs/AI-APP-FEATURES.md`
 
 **Направление:**
-- Polish GDPR export/delete; не планировать blob-фото на сервер
+- Локальные напоминания о записи еды; store-пайплайн — см. `docs/STORE-REVIEW.md`
+- Blob-фото на сервер не планировать (конфиденциальность)
 
 ## Constraints
 
 - **Tech stack**: pnpm + Turborepo; React/FSD/Vite (`ai-food`) + Express/Prisma (`ai-app`)
-- **Security**: `VITE_AI_GATEWAY_API_KEY` виден в бандле (техдолг); OpenRouter / T-Bank секреты только на сервере
-- **Persistence**: локальный кэш Preferences + Filesystem; server sync после логина для профиля/дневника/веса/избранного; **фото не на сервере**
+- **Security**: OpenRouter / T-Bank секреты только на сервере; пользовательская идентичность — `X-User-Token` (JWT). Shared `VITE_AI_GATEWAY_API_KEY` — app-level gate (не user secret), приемлемо при user auth + quota
+- **Persistence**: локальный кэш Preferences + Filesystem; server sync после логина для профиля/дневника/веса/избранного; **фото не на сервере (конфиденциальность)**
 - **Auth**: Telegram / demo; гость — только устройство
 - **Architecture**: AI через gateway food routes; user-data через `/user/*/sync` + `X-User-Token`
 - **Compatibility**: Web + Capacitor Android
@@ -65,7 +68,7 @@ Web/PWA + Capacitor дневник питания (monorepo `apps/ai-food` + `ap
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | User-data sync (meals/weight/favorites) + LWW | Restore после смены устройства без подписки | Done 2026-08-13 |
-| Фото только локально (URI stubs) | Нет blob storage / privacy / размер | Done (by design) |
+| Фото только локально (URI stubs) | **Конфиденциальность** — не храним снимки пользователей на сервере | Done (by design, permanent) |
 | Telegram auth + T-Bank license | Квоты AI; дневник бесплатно | Done |
 | AI через backend proxy | Ключ и промпты на сервере | Done |
 

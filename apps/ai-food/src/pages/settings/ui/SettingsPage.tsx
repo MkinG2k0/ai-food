@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import type { DailyTargets, DietType, UserProfile } from '@ai-food/shared-types';
 import { recoverStaleAnalyzingMeals, useDiaryStore } from '@/entities/meal';
-import { signOut, useAuthStore, useUsage } from '@/features/auth';
+import { signOut, deleteAccount, useAuthStore, useUsage } from '@/features/auth';
 import { useBillingStatus } from '@/features/billing';
 import { ReferralCodeBlock } from '@/features/referral';
 import { useFavoritesStore } from '@/features/favorites';
@@ -100,6 +100,8 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const [redoOpen, setRedoOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
   const [editTargetsOpen, setEditTargetsOpen] = useState(false);
   const [targetDraft, setTargetDraft] = useState<TargetDraft | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -158,6 +160,24 @@ export function SettingsPage() {
     signOut();
     toast.success('Вы вышли');
     navigate('/onboarding', { replace: true });
+  };
+
+  const handleDeleteAccountConfirm = async () => {
+    if (deleteAccountBusy) return;
+    setDeleteAccountBusy(true);
+    try {
+      await deleteAccount();
+      setDeleteAccountOpen(false);
+      signOut();
+      toast.success('Аккаунт удалён');
+      navigate('/onboarding', { replace: true });
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Не удалось удалить аккаунт',
+      );
+    } finally {
+      setDeleteAccountBusy(false);
+    }
   };
 
   const handleRedoConfirm = () => {
@@ -803,6 +823,15 @@ export function SettingsPage() {
               <span className="text-muted-foreground">@double_cumboy</span>
             </a>
           </Button>
+          {userToken ? (
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={() => setDeleteAccountOpen(true)}
+            >
+              Удалить аккаунт
+            </Button>
+          ) : null}
         </section>
 
         {import.meta.env.DEV && (
@@ -894,6 +923,42 @@ export function SettingsPage() {
             </Button>
             <Button className="flex-1" onClick={handleRedoConfirm}>
               Пройти заново
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={deleteAccountOpen}
+        onClose={() => {
+          if (deleteAccountBusy) return;
+          setDeleteAccountOpen(false);
+        }}
+      >
+        <div className="w-full space-y-4 px-2 py-2">
+          <h2 className="text-lg font-semibold text-foreground">
+            Удалить аккаунт?
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            С сервера будут удалены профиль, дневник, вес, избранное и подписка.
+            Фото на этом устройстве тоже очистятся. Это нельзя отменить.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              disabled={deleteAccountBusy}
+              onClick={() => setDeleteAccountOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              disabled={deleteAccountBusy}
+              onClick={() => void handleDeleteAccountConfirm()}
+            >
+              {deleteAccountBusy ? 'Удаление…' : 'Удалить'}
             </Button>
           </div>
         </div>

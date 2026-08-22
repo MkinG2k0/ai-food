@@ -122,9 +122,20 @@ stats+вес, settings, PWA, Android widgets, квоты AI + T-Bank лицен�
 
 ## Явно НЕ в продукте
 
-- Sync **файлов** фото между устройствами (**permanent** — blob storage не планируется)
-- Medical-grade nutrition
+- Sync / upload **файлов** фото приёмов на сервер — **permanent**, причина: **конфиденциальность** (снимки еды/окружения не кладём в центральное хранилище). Blob storage не планируется; в sync только URI-stubs
+- Medical-grade nutrition / UL-токсичность микронутриентов как меддиагноз
+- Health Connect / Apple Health
+- БАДы отдельным типом записи (пока не нужно)
 - UI `clearDiary` как отдельная кнопка (есть wipe при logout)
+- iOS native — пока нет (`android/` есть; App Store later)
+
+## Аккаунт
+
+- Удаление аккаунта: `DELETE /auth/me` + кнопка в настройках с подтверждением (серверные данные + локальный wipe)
+
+## Бэклог (ок делать)
+
+- Локальные напоминания «запиши еду» (push / local notifications)
 
 ---
 

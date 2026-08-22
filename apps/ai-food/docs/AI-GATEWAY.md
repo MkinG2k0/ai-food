@@ -145,16 +145,18 @@ apps/ai-app/
 └── prisma/                # User, Device, UsageEvent, Payment
 ```
 
-## Важные ограничения / техдолг
+## Важные ограничения
 
-1. **Ключ gateway на клиенте** (`VITE_AI_GATEWAY_API_KEY`) — виден в бандле. OpenRouter-ключ и `TBANK_PASSWORD` — только на сервере.
+1. **Auth:** идентичность и квоты — через `X-User-Token` (JWT после Telegram/demo). Shared `VITE_AI_GATEWAY_API_KEY` — app-level gate (не user secret); OpenRouter-ключ и `TBANK_PASSWORD` — только на сервере. Не считаем client API key блокером при user auth.
 2. **Food prompts SoT на сервере** (`src/food/*`); клиент сжимает фото и парсит ответ. Settings `aiModel` UI может оставаться, но food-вызовы его не отправляют.
-3. **Monorepo** — gateway + фронт в одном репо (`apps/ai-app`, `apps/ai-food`). Onboarding micronutrients ещё на `/v1/chat/completions`.
+3. **Фото приёмов** на gateway/S3 не сохраняются — только транзитный analyze; причина: конфиденциальность ([USER-DATA-SYNC.md](./USER-DATA-SYNC.md)).
+4. **Monorepo** — gateway + фронт в одном репо (`apps/ai-app`, `apps/ai-food`). Onboarding micronutrients ещё на `/v1/chat/completions`.
 
 ## См. также
 
 - [SUBSCRIPTION.md](./SUBSCRIPTION.md) — годовая лицензия / квоты
-- [USER-DATA-SYNC.md](./USER-DATA-SYNC.md) — sync профиля(+микро) / дневника / веса / избранного / настроек; **фото приёмов намеренно никогда не на сервере**
+- [USER-DATA-SYNC.md](./USER-DATA-SYNC.md) — sync профиля(+микро) / дневника / веса / избранного / настроек; **фото приёмов намеренно никогда не на сервере (конфиденциальность)**
+- [STORE-REVIEW.md](./STORE-REVIEW.md) — чеклист Play / App Store
 
 ## Команды (бэк)
 
