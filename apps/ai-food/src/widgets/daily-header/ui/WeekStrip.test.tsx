@@ -1,8 +1,59 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { createElement, type CSSProperties, type ReactNode } from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import type { Meal } from '@ai-food/shared-types';
 import { getWeekDays, isSameDay } from '@/shared/lib';
 import { WeekStrip, lockPanAxis, isVerticalCalendarGesture } from './WeekStrip';
+
+vi.mock('framer-motion', () => {
+  function stripMotionStyle(style?: CSSProperties & Record<string, unknown>) {
+    if (!style) return undefined;
+    const next: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(style)) {
+      if (value && typeof value === 'object' && 'get' in value) continue;
+      next[key] = value;
+    }
+    return next as CSSProperties;
+  }
+
+  function MotionDiv({
+    children,
+    className,
+    style,
+    ...rest
+  }: {
+    children?: ReactNode;
+    className?: string;
+    style?: CSSProperties & Record<string, unknown>;
+    [key: string]: unknown;
+  }) {
+    const domProps: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(rest)) {
+      if (
+        key.startsWith('data-') ||
+        key.startsWith('aria-') ||
+        key === 'id' ||
+        key === 'role'
+      ) {
+        domProps[key] = value;
+      }
+    }
+    return createElement(
+      'div',
+      { className, style: stripMotionStyle(style), ...domProps },
+      children,
+    );
+  }
+
+  return {
+    motion: { div: MotionDiv },
+    useMotionValue: (initial: number) => ({
+      get: () => initial,
+      set: vi.fn(),
+    }),
+    animate: vi.fn(() => Promise.resolve()),
+  };
+});
 
 const currentWeekDays = getWeekDays(0);
 
@@ -88,14 +139,12 @@ describe('WeekStrip', () => {
     expect(screen.getByLabelText('Календарь на месяц')).toBeInTheDocument();
   });
 
-  it('expands month grid on handle click and keeps it open after selecting a day', async () => {
+  it('expands month grid on handle click and keeps it open after selecting a day', () => {
     const { onDaySelect } = renderWeekStrip();
     fireEvent.click(screen.getByTestId('calendar-expand-handle'));
 
-    const month = await screen.findByTestId('month-calendar-grid');
-    await waitFor(() => {
-      expect(month).toHaveAttribute('data-expanded', 'true');
-    });
+    const month = screen.getByTestId('month-calendar-grid');
+    expect(month).toHaveAttribute('data-expanded', 'true');
 
     const monthDays = screen.getAllByTestId('month-day-cell');
     expect(monthDays.length).toBeGreaterThanOrEqual(28);
@@ -108,34 +157,28 @@ describe('WeekStrip', () => {
     );
   });
 
-  it('toggles month closed when handle clicked again', async () => {
+  it('toggles month closed when handle clicked again', () => {
     renderWeekStrip();
     const handle = screen.getByTestId('calendar-expand-handle');
     fireEvent.click(handle);
-    await waitFor(() => {
-      expect(screen.getByTestId('month-calendar-grid')).toHaveAttribute(
-        'data-expanded',
-        'true',
-      );
-    });
+    expect(screen.getByTestId('month-calendar-grid')).toHaveAttribute(
+      'data-expanded',
+      'true',
+    );
     fireEvent.click(handle);
-    await waitFor(() => {
-      expect(screen.getByTestId('month-calendar-grid')).toHaveAttribute(
-        'data-expanded',
-        'false',
-      );
-    });
+    expect(screen.getByTestId('month-calendar-grid')).toHaveAttribute(
+      'data-expanded',
+      'false',
+    );
   });
 
-  it('swipes between months with chevrons and keeps a horizontal viewport', async () => {
+  it('swipes between months with chevrons and keeps a horizontal viewport', () => {
     renderWeekStrip();
     fireEvent.click(screen.getByTestId('calendar-expand-handle'));
-    await waitFor(() => {
-      expect(screen.getByTestId('month-calendar-grid')).toHaveAttribute(
-        'data-expanded',
-        'true',
-      );
-    });
+    expect(screen.getByTestId('month-calendar-grid')).toHaveAttribute(
+      'data-expanded',
+      'true',
+    );
 
     const viewport = screen.getByTestId('month-strip-viewport');
     expect(viewport.className).toContain('overflow-x-hidden');
@@ -147,15 +190,11 @@ describe('WeekStrip', () => {
     const label = screen.getByTestId('month-calendar-label');
     const initialLabel = label.textContent;
     fireEvent.click(screen.getByLabelText('Следующий месяц'));
-    await waitFor(() => {
-      expect(label.textContent).not.toBe(initialLabel);
-    });
+    expect(label.textContent).not.toBe(initialLabel);
 
     const afterNext = label.textContent;
     fireEvent.click(screen.getByLabelText('Предыдущий месяц'));
-    await waitFor(() => {
-      expect(label.textContent).toBe(initialLabel);
-    });
+    expect(label.textContent).toBe(initialLabel);
     expect(afterNext).not.toBe(initialLabel);
   });
 });

@@ -36,3 +36,9 @@ apps/ai-food/android/capacitor-cordova-android-plugins/
 
 # Git worktrees
 .worktrees/
+
+# Playwright
+**/test-results/
+**/playwright-report/
+**/blob-report/
+**/playwright/.cache/

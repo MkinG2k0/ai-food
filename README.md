@@ -28,10 +28,32 @@ cp apps/ai-food/.env.example apps/ai-food/.env
 pnpm dev          # оба приложения
 pnpm dev:food     # только Vite :5173
 pnpm dev:app      # только gateway :3000
-pnpm build
-pnpm test
+pnpm build        # vitest + e2e (ai-food) + сборка
+pnpm test         # vitest + e2e (ai-food)
+pnpm test:e2e     # только Playwright e2e; первый раз: pnpm --filter ai-food exec playwright install chromium
 pnpm type-check
 ```
+
+E2E поднимает Vite сам (`webServer`), AI gateway мокается в тестах — реальный OpenRouter не нужен. UI-режим: `pnpm test:e2e:ui` (на Windows UI слушает `127.0.0.1`, не IPv6).
+
+Для демо-входа в e2e в `playwright.config.ts` задано `VITE_AUTH_MOCK=true`.
+
+### Покрытые сценарии (34 теста)
+
+| Spec | Сценарии |
+|------|----------|
+| `smoke` | старт приложения |
+| `onboarding` | онбординг |
+| `navigation` | навигация |
+| `analyze-describe` | текстовый analyze, кастом-инструкции |
+| `analyze-photo` | галерея 1/3 фото, scan gallery/shutter/photo+description, error/quota |
+| `manual-entry` | ручной ввод |
+| `diary-meal` | просмотр приёма |
+| `favorites-flow` | quick-add, toggle избранного |
+| `meal-edit` | КБЖУ, граммы, порции, состав, refine, delete |
+| `login` | UI входа, демо-login/logout, sync после login |
+| `subscribe` | цена, промо E2E10, mock checkout success/fail |
+| `settings` | профиль в настройках |
 
 ## Dokploy
 

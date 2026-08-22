@@ -150,4 +150,63 @@ describe('tbank Init / GetState', () => {
     expect(state.status).toBe('CONFIRMED');
     expect(state.paymentId).toBe('999');
   });
+
+  it('initPayment throws TBANK_INIT_FAILED when Success is false', async () => {
+    process.env.TBANK_TERMINAL_KEY = 'term';
+    process.env.TBANK_PASSWORD = 'pass';
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        Success: false,
+        Message: 'Invalid amount',
+        ErrorCode: '7',
+      }),
+    }) as unknown as typeof fetch;
+
+    await expect(
+      initPayment({
+        amount: 1,
+        orderId: 'o1',
+        customerKey: 'u1',
+        description: 'x',
+        notificationUrl: 'https://gw/n',
+        successUrl: 'https://app/ok',
+        failUrl: 'https://app/fail',
+      }),
+    ).rejects.toMatchObject({ code: 'TBANK_INIT_FAILED', message: 'Invalid amount' });
+  });
+
+  it('getPaymentState throws TBANK_GETSTATE_FAILED when Success false and no Status', async () => {
+    process.env.TBANK_TERMINAL_KEY = 'term';
+    process.env.TBANK_PASSWORD = 'pass';
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        Success: false,
+        Message: 'Payment not found',
+        ErrorCode: '101',
+      }),
+    }) as unknown as typeof fetch;
+
+    await expect(getPaymentState('404')).rejects.toMatchObject({
+      code: 'TBANK_GETSTATE_FAILED',
+      message: 'Payment not found',
+    });
+  });
+
+  it('initPayment throws TBANK_MISCONFIGURED without terminal key', async () => {
+    delete process.env.TBANK_TERMINAL_KEY;
+    process.env.TBANK_PASSWORD = 'pass';
+    await expect(
+      initPayment({
+        amount: 100,
+        orderId: 'o1',
+        customerKey: 'u1',
+        description: 'x',
+        notificationUrl: 'https://gw/n',
+        successUrl: 'https://app/ok',
+        failUrl: 'https://app/fail',
+      }),
+    ).rejects.toMatchObject({ code: 'TBANK_MISCONFIGURED' });
+  });
 });

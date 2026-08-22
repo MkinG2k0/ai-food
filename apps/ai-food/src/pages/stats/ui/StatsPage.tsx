@@ -40,7 +40,7 @@ export function StatsPage() {
     <SubpageShell
       title="Статистика"
       onBack={() => navigate('/')}
-      headerClassName="sticky top-0 z-10 bg-zinc-50/90 backdrop-blur-md"
+      headerClassName="sticky top-0 z-10 bg-zinc-50/90 backdrop-blur-sm"
       mainClassName="space-y-3 pb-10"
       actions={
         <Button

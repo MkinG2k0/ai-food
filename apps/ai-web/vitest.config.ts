@@ -10,5 +10,22 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'html', 'lcov', 'json-summary'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.d.ts',
+        'src/app/**/layout.tsx',
+        'src/app/**/page.tsx',
+      ],
+      // Admin UI mostly untested; soft floor only.
+      thresholds: {
+        lines: 10,
+        statements: 10,
+      },
+    },
   },
 });

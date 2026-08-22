@@ -213,4 +213,75 @@ describe('refineMealApi (food/refine)', () => {
     });
     expect(result.healthiness).toBeUndefined();
   });
+
+  it('rejects when gateway env is missing', async () => {
+    vi.stubEnv('VITE_AI_GATEWAY_URL', '');
+    await expect(
+      refineMealApi({ correction: 'fix', mealContext }),
+    ).rejects.toMatchObject({ code: 'ANALYSIS_FAILED', status: 500 });
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it('maps QUOTA_EXCEEDED from gateway', async () => {
+    vi.mocked(axios.post).mockRejectedValue({
+      response: { data: { code: 'QUOTA_EXCEEDED', message: 'no quota' }, status: 402 },
+    });
+    await expect(
+      refineMealApi({ correction: 'съел половину', mealContext }),
+    ).rejects.toMatchObject({ code: 'QUOTA_EXCEEDED', status: 402 });
+  });
+
+  it('maps UPSTREAM_TIMEOUT from gateway', async () => {
+    vi.mocked(axios.post).mockRejectedValue({
+      response: { data: { code: 'UPSTREAM_TIMEOUT' }, status: 504 },
+    });
+    await expect(
+      refineMealApi({ correction: 'съел половину', mealContext }),
+    ).rejects.toMatchObject({ code: 'ANALYSIS_TIMEOUT', status: 504 });
+  });
+
+  it('maps BAD_REQUEST to INVALID_IMAGE', async () => {
+    vi.mocked(axios.post).mockRejectedValue({
+      response: { data: { code: 'BAD_REQUEST', message: 'bad image' }, status: 400 },
+    });
+    await expect(
+      refineMealApi({ correction: 'съел половину', mealContext }),
+    ).rejects.toMatchObject({ code: 'INVALID_IMAGE', status: 400, message: 'bad image' });
+  });
+
+  it('rejects empty gateway content', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: { choices: [{ message: { content: '' } }] },
+    });
+    await expect(
+      refineMealApi({ correction: 'съел половину', mealContext }),
+    ).rejects.toMatchObject({ code: 'ANALYSIS_FAILED', status: 500 });
+  });
+
+  it('rejects invalid JSON content', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody('not-json-at-all'),
+    });
+    await expect(
+      refineMealApi({ correction: 'съел половину', mealContext }),
+    ).rejects.toMatchObject({ code: 'ANALYSIS_FAILED', status: 500 });
+  });
+
+  it('rejects schema-invalid nutrition payload', async () => {
+    vi.mocked(axios.post).mockResolvedValue({
+      data: gatewaySuccessBody(JSON.stringify({ foodName: 'x' })),
+    });
+    await expect(
+      refineMealApi({ correction: 'съел половину', mealContext }),
+    ).rejects.toMatchObject({ code: 'ANALYSIS_FAILED', status: 500 });
+  });
+
+  it('falls back to ANALYSIS_FAILED for unknown gateway code', async () => {
+    vi.mocked(axios.post).mockRejectedValue({
+      response: { data: { code: 'MYSTERY', message: 'boom' }, status: 500 },
+    });
+    await expect(
+      refineMealApi({ correction: 'съел половину', mealContext }),
+    ).rejects.toMatchObject({ code: 'ANALYSIS_FAILED', status: 500, message: 'boom' });
+  });
 });

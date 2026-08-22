@@ -46,7 +46,7 @@ export function FriendProfilePage() {
     <SubpageShell
       title={profile?.displayName ?? 'Профиль друга'}
       onBack={() => navigate('/friends')}
-      headerClassName="sticky top-0 z-10 bg-zinc-50/90 backdrop-blur-md"
+      headerClassName="sticky top-0 z-10 bg-zinc-50/90 backdrop-blur-sm"
       mainClassName="space-y-5 pb-10"
     >
       {isLoading ? (

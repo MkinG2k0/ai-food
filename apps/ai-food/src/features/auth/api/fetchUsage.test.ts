@@ -29,22 +29,26 @@ vi.mock('../model/quotaHeaders', () => ({
   })),
 }));
 
-vi.mock('@/shared/lib', async () => {
-  const actual = await vi.importActual<typeof import('@/shared/lib')>(
-    '@/shared/lib',
-  );
-  return {
-    ...actual,
-    getDeviceId: vi.fn(async () => 'test-device'),
-  };
-});
+vi.mock('@/shared/lib', () => ({
+  getDeviceId: vi.fn(async () => 'test-device'),
+  capacitorStorage: {
+    getItem: vi.fn(async (key: string) => storage.get(key) ?? null),
+    setItem: vi.fn(async (key: string, value: string) => {
+      storage.set(key, value);
+    }),
+    removeItem: vi.fn(async (key: string) => {
+      storage.delete(key);
+    }),
+  },
+}));
 
 describe('fetchUsage cache', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     storage.clear();
     localStorage.clear();
-    vi.resetModules();
     vi.stubEnv('VITE_AI_GATEWAY_URL', '');
+    const { clearUsageCache } = await import('./fetchUsage');
+    clearUsageCache();
   });
 
   it('defaults to GUEST_FREE_USAGE_LIMIT without network', async () => {

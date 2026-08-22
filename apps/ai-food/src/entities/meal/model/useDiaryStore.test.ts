@@ -463,4 +463,79 @@ describe('useDiaryStore', () => {
     expect(meal.items[0].grams).toBe(75);
     expect(meal.items[1].grams).toBe(60);
   });
+
+  it('updateMealItem grams-only at 1g keeps nutrient values (density sticky in UI)', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    const tinyItemMeal: Meal = {
+      id: 'tiny',
+      timestamp: '2026-06-24T12:00:00.000Z',
+      name: 'Spice',
+      items: [
+        {
+          id: 'spice',
+          name: 'Salt',
+          calories: 2,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          fiber: 0,
+          grams: 100,
+        },
+      ],
+      totalCalories: 2,
+      totalGrams: 100,
+    };
+    await act(async () => {
+      result.current.addMeal(tinyItemMeal);
+      result.current.updateMealItem('tiny', 'spice', { grams: 1 });
+    });
+    const item = result.current.meals[0].items[0];
+    expect(item.grams).toBe(1);
+    expect(item.calories).toBe(2);
+    expect(result.current.meals[0].totalGrams).toBe(1);
+  });
+
+  it('setMealTotalGrams with single 1g item preserves KBJU totals', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal({
+        id: 'g1',
+        timestamp: '2026-06-24T12:00:00.000Z',
+        name: 'Pinch',
+        items: [
+          {
+            id: 'a',
+            name: 'Spice',
+            calories: 5,
+            protein: 1,
+            carbs: 0,
+            fat: 0,
+            fiber: 0,
+            grams: 1,
+          },
+        ],
+        totalCalories: 5,
+        totalGrams: 1,
+      });
+      result.current.setMealTotalGrams('g1', 2);
+    });
+    const meal = result.current.meals[0];
+    expect(meal.totalGrams).toBe(2);
+    expect(meal.items[0].grams).toBe(2);
+    expect(meal.totalCalories).toBe(5);
+    expect(meal.items[0].calories).toBe(5);
+  });
+
+  it('redefineMealPortions after setMealPortions keeps baseline macros', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal({ ...multiItemMeal, portions: 1 });
+      result.current.setMealPortions('m1', 2);
+      result.current.redefineMealPortions('m1', 2);
+    });
+    const meal = result.current.meals[0];
+    expect(meal.portions).toBe(2);
+    expect(meal.totalCalories).toBe(1000);
+    expect(meal.items[0].calories).toBe(400);
+  });
 });
