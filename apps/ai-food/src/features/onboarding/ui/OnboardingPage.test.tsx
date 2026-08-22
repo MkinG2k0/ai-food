@@ -25,6 +25,19 @@ vi.mock('../model/useProfileHydrated', () => ({
   useProfileHydrated: () => true,
 }));
 
+vi.mock('@/features/pwa-install', () => ({
+  InstallAppScreen: () => null,
+  shouldOfferPwaInstall: () => false,
+  usePwaInstallSeenHydrated: () => true,
+  usePwaInstallSeenStore: Object.assign(
+    (selector: (state: { dismissed: boolean; dismiss: () => void }) => unknown) =>
+      selector({ dismissed: true, dismiss: vi.fn() }),
+    {
+      getState: () => ({ dismissed: true, dismiss: vi.fn() }),
+    },
+  ),
+}));
+
 vi.mock('../model/useProfileStore', () => {
   const useProfileStore = Object.assign(
     (selector: (state: { isComplete: () => boolean }) => unknown) =>

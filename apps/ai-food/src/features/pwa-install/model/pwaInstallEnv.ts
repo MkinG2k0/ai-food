@@ -3,8 +3,10 @@ import { Capacitor } from '@capacitor/core';
 /** True when the app already runs as installed PWA / home-screen icon. */
 export function isRunningAsInstalledApp(): boolean {
   if (typeof window === 'undefined') return true;
-  if (window.matchMedia('(display-mode: standalone)').matches) return true;
-  if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+  if (typeof window.matchMedia === 'function') {
+    if (window.matchMedia('(display-mode: standalone)').matches) return true;
+    if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+  }
   const nav = window.navigator as Navigator & { standalone?: boolean };
   if (nav.standalone === true) return true;
   return false;
