@@ -7,6 +7,8 @@ export interface MicronutrientWeekPoint {
   /** Sum of portion amounts in the week divided by 7 */
   dailyAvg: number;
   unit: MicronutrientUnit;
+  /** True if any ready meal in the period included this id with a finite amount */
+  hasData: boolean;
 }
 
 export function micronutrientWeekTotal(point: MicronutrientWeekPoint): number {
@@ -31,6 +33,13 @@ function emptySums(): Record<MicronutrientId, number> {
   >;
 }
 
+function emptySeen(): Record<MicronutrientId, boolean> {
+  return Object.fromEntries(MICRONUTRIENT_IDS.map((id) => [id, false])) as Record<
+    MicronutrientId,
+    boolean
+  >;
+}
+
 /**
  * Sums quantitative micronutrient amounts across ready meals in the
  * Mon→Sun week, then returns dailyAvg = sum / 7.
@@ -44,6 +53,7 @@ export function getWeeklyMicronutrientSeries(
   const days = weekDaysFor(referenceDate, weekOffset);
   const readyMeals = meals.filter((m) => (m.status ?? 'ready') === 'ready');
   const sums = emptySums();
+  const seen = emptySeen();
 
   for (const meal of readyMeals) {
     const mealDay = new Date(meal.timestamp);
@@ -57,6 +67,7 @@ export function getWeeklyMicronutrientSeries(
         continue;
       }
       sums[row.id] += amount;
+      seen[row.id] = true;
     }
   }
 
@@ -64,9 +75,10 @@ export function getWeeklyMicronutrientSeries(
     id,
     dailyAvg: sums[id] / 7,
     unit: MICRONUTRIENT_UNITS[id],
+    hasData: seen[id],
   }));
 }
 
 export function weekHasMicronutrientData(series: MicronutrientWeekPoint[]): boolean {
-  return series.some((p) => p.dailyAvg > 0);
+  return series.some((p) => p.hasData);
 }

@@ -53,7 +53,7 @@ export function applyAnalyzeFeaturesToPrompt(
       .replace(/[ \t]*<micronutrients\b[\s\S]*?<\/micronutrients>\n?/gi, '')
       .replace(/- Все микронутриенты[^\n]*\n/g, '')
       .replace(
-        /\. В реальных ответах всегда возвращай все 8 micronutrients; в примере массив может быть опущен/g,
+        /\. В реальных ответах всегда возвращай все \d+ micronutrients; в примере массив может быть опущен/g,
         '',
       )
       .replace(

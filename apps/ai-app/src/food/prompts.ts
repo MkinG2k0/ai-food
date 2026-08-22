@@ -55,13 +55,13 @@ export const NO_FOOD_PROMPT_RULE = `Если на изображении НЕТ 
 НЕ придумывай блюдо и НЕ возвращай КБЖУ для таких фото. НЕ пиши foodName вроде «Неизвестное блюдо», «Нет еды», «Человек».
 Если еда есть — верни обычную схему питания БЕЗ тега noFood.`;
 
-export const MICRONUTRIENTS_PROMPT_RULE = `micronutrients — ровно 8 элементов <micronutrient> для всей порции (оценка, не меддиагноз):
+export const MICRONUTRIENTS_PROMPT_RULE = `micronutrients — ровно 25 элементов <micronutrient> для всей порции (оценка, не меддиагноз):
 каждый: <id>, <amount>, <unit>;
-id ∈ vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium;
+id ∈ vitaminA|vitaminC|vitaminD|vitaminE|vitaminK|vitaminB1|vitaminB2|vitaminB3|vitaminB5|vitaminB6|vitaminB7|folate|vitaminB12|calcium|magnesium|zinc|iron|copper|manganese|iodine|selenium|chromium|molybdenum|potassium|phosphorus;
 amount — неотрицательное число (оценка содержания в этой порции); неизвестно → 0;
-unit строго по id: vitaminA/vitaminD/vitaminB12/folate → µg; vitaminC/iron/calcium/magnesium → mg.
+unit строго по id: vitaminA/vitaminD/vitaminK/vitaminB7/folate/vitaminB12/iodine/selenium/chromium/molybdenum → µg; vitaminC/vitaminE/vitaminB1/vitaminB2/vitaminB3/vitaminB5/vitaminB6/calcium/magnesium/zinc/iron/copper/manganese/potassium/phosphorus → mg.
 Пример: vitaminA → amount 120, unit µg (не mg). vitaminC → amount 45, unit mg.
-Всегда включай все 8 id. Не используй amount_mg, граммы и не возвращай качественные level.`;
+Всегда включай все 25 id. Не используй amount_mg, граммы и не возвращай качественные level.`;
 
 const VISION_NUTRITION_XML_SCHEMA = `<analysis>
   <foodName>краткое название всего блюда/приёма на русском</foodName>
@@ -97,7 +97,7 @@ const VISION_NUTRITION_XML_SCHEMA = `<analysis>
 
   <micronutrients>
     <micronutrient>
-      <id>vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium</id>
+      <id>vitaminA|vitaminC|vitaminD|vitaminE|vitaminK|vitaminB1|vitaminB2|vitaminB3|vitaminB5|vitaminB6|vitaminB7|folate|vitaminB12|calcium|magnesium|zinc|iron|copper|manganese|iodine|selenium|chromium|molybdenum|potassium|phosphorus</id>
       <amount>число</amount>
       <unit>mg|µg — строго по id</unit>
     </micronutrient>
@@ -272,11 +272,11 @@ export function appendDietPreference(
 }
 
 /** JSON-oriented micronutrient rule (analyze uses XML; refine stays on JSON). */
-const REFINE_MICRONUTRIENTS_RULE = `micronutrients — массив из ровно 8 объектов { "id", "amount", "unit" } для всей порции (оценка, не меддиагноз):
-id ∈ vitaminA|vitaminC|vitaminD|vitaminB12|iron|calcium|folate|magnesium;
+const REFINE_MICRONUTRIENTS_RULE = `micronutrients — массив из ровно 25 объектов { "id", "amount", "unit" } для всей порции (оценка, не меддиагноз):
+id ∈ vitaminA|vitaminC|vitaminD|vitaminE|vitaminK|vitaminB1|vitaminB2|vitaminB3|vitaminB5|vitaminB6|vitaminB7|folate|vitaminB12|calcium|magnesium|zinc|iron|copper|manganese|iodine|selenium|chromium|molybdenum|potassium|phosphorus;
 amount — неотрицательное число в канонических единицах; неизвестно → 0;
-unit строго по id: vitaminA/vitaminD/vitaminB12/folate → "µg"; vitaminC/iron/calcium/magnesium → "mg".
-Всегда включай все 8 id. Не возвращай качественные level.`;
+unit строго по id: vitaminA/vitaminD/vitaminK/vitaminB7/folate/vitaminB12/iodine/selenium/chromium/molybdenum → "µg"; vitaminC/vitaminE/vitaminB1/vitaminB2/vitaminB3/vitaminB5/vitaminB6/calcium/magnesium/zinc/iron/copper/manganese/potassium/phosphorus → "mg".
+Всегда включай все 25 id. Не возвращай качественные level.`;
 
 const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
 {
@@ -304,7 +304,7 @@ const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user pro
     }
   ],
   "micronutrients": [
-    { "id": "vitaminA"|"vitaminC"|"vitaminD"|"vitaminB12"|"iron"|"calcium"|"folate"|"magnesium", "amount": number, "unit": "mg"|"µg" }
+    { "id": "vitaminA"|"vitaminC"|"vitaminD"|"vitaminE"|"vitaminK"|"vitaminB1"|"vitaminB2"|"vitaminB3"|"vitaminB5"|"vitaminB6"|"vitaminB7"|"folate"|"vitaminB12"|"calcium"|"magnesium"|"zinc"|"iron"|"copper"|"manganese"|"iodine"|"selenium"|"chromium"|"molybdenum"|"potassium"|"phosphorus", "amount": number, "unit": "mg"|"µg" }
   ],
   "disclaimers": string[] (optional, скрытые калории / неопределённость; omit if none),
   "customContent": string (optional Markdown; include ONLY when the user correction explicitly asks to update/rewrite the extra custom answer — recipe, spiciness notes, «перепиши дополнительно», etc.; otherwise OMIT this key entirely so the client keeps the previous value)

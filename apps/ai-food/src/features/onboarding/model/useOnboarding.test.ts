@@ -82,7 +82,7 @@ describe('useOnboarding', () => {
     });
     expect(setProfileSpy.mock.calls[0][0].planStartDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(setMicronutrientTargetsSpy).toHaveBeenCalledOnce();
-    expect(setMicronutrientTargetsSpy.mock.calls[0][0]).toHaveLength(8);
+    expect(setMicronutrientTargetsSpy.mock.calls[0][0]).toHaveLength(25);
     expect(mockNavigate).toHaveBeenCalledWith('/');
     const { entries, goalKg } = useWeightStore.getState();
     expect(entries).toHaveLength(1);

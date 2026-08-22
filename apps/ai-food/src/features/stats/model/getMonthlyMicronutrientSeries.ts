@@ -12,6 +12,13 @@ function emptySums(): Record<MicronutrientId, number> {
   >;
 }
 
+function emptySeen(): Record<MicronutrientId, boolean> {
+  return Object.fromEntries(MICRONUTRIENT_IDS.map((id) => [id, false])) as Record<
+    MicronutrientId,
+    boolean
+  >;
+}
+
 /**
  * Sums micronutrients across ready meals in the elapsed month, then
  * dailyAvg = sum / distinct days with a ready meal (logged-only).
@@ -25,6 +32,7 @@ export function getMonthlyMicronutrientSeries(
   const days = monthElapsedDays(monthStart, referenceDate);
   const readyMeals = meals.filter(isReadyMeal);
   const sums = emptySums();
+  const seen = emptySeen();
   const loggedDayKeys = new Set<string>();
 
   for (const meal of readyMeals) {
@@ -40,6 +48,7 @@ export function getMonthlyMicronutrientSeries(
         continue;
       }
       sums[row.id] += amount;
+      seen[row.id] = true;
     }
   }
 
@@ -50,6 +59,6 @@ export function getMonthlyMicronutrientSeries(
     id,
     dailyAvg: loggedDays === 0 ? 0 : sums[id] / divisor,
     unit: MICRONUTRIENT_UNITS[id],
+    hasData: seen[id],
   }));
 }
-

@@ -40,9 +40,9 @@ function gatewaySuccessBody(content: string) {
 }
 
 describe('defaultMicronutrientTargets', () => {
-  it('returns all 8 ids with positive amounts and correct units', () => {
+  it('returns all catalog ids with positive amounts and correct units', () => {
     const targets = defaultMicronutrientTargets('male');
-    expect(targets).toHaveLength(8);
+    expect(targets).toHaveLength(MICRONUTRIENT_IDS.length);
     expect(targets.map((t) => t.id)).toEqual([...MICRONUTRIENT_IDS]);
     for (const row of targets) {
       expect(row.amount).toBeGreaterThan(0);
@@ -69,7 +69,7 @@ describe('micronutrientTargetsApi', () => {
     vi.clearAllMocks();
   });
 
-  it('parses valid AI JSON into 8 targets with correct units', async () => {
+  it('parses valid AI JSON into catalog targets with correct units', async () => {
     const aiRows = MICRONUTRIENT_IDS.map((id) => ({
       id,
       amount: id === 'iron' ? 18 : 50,
@@ -83,7 +83,7 @@ describe('micronutrientTargetsApi', () => {
       model: 'openai/gpt-4.1',
     });
 
-    expect(result).toHaveLength(8);
+    expect(result).toHaveLength(MICRONUTRIENT_IDS.length);
     expect(result.map((t) => t.id)).toEqual([...MICRONUTRIENT_IDS]);
     expect(result.find((t) => t.id === 'iron')?.amount).toBe(18);
     for (const row of result) {
@@ -121,7 +121,7 @@ describe('micronutrientTargetsApi', () => {
 
   it('returns defaults on invalid JSON schema', async () => {
     vi.mocked(axios.post).mockResolvedValue({
-      data: gatewaySuccessBody(JSON.stringify({ micronutrients: [{ id: 'zinc', amount: 1 }] })),
+      data: gatewaySuccessBody(JSON.stringify({ micronutrients: [{ id: 'notANutrient', amount: 1 }] })),
     });
 
     const result = await micronutrientTargetsApi(profile);

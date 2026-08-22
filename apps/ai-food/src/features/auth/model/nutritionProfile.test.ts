@@ -79,7 +79,7 @@ describe('parseNutritionProfile (client)', () => {
       ...valid,
       micronutrientTargets: [
         { id: 'iron', amount: 8, unit: 'mg' },
-        { id: 'zinc', amount: 1, unit: 'mg' },
+        { id: 'notANutrient', amount: 1, unit: 'mg' },
         { id: 'calcium', amount: 'x', unit: 'mg' },
       ],
     };

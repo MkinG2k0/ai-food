@@ -21,7 +21,7 @@ export function isNoFoodResult(value: unknown): value is NoFoodResult {
   return v.noFood === true && typeof v.reason === 'string' && v.reason.trim().length > 0;
 }
 
-/** Convert model amount_mg into canonical MicronutrientEstimate (µg for A/D/B12/folate). */
+/** Convert model amount_mg into canonical MicronutrientEstimate (µg where MICRONUTRIENT_UNITS says µg). */
 export function amountMgToCanonical(
   id: MicronutrientId,
   amountMg: number,

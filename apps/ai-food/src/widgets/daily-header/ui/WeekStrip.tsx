@@ -114,6 +114,7 @@ export function WeekStrip({
   const viewportRef = useRef<HTMLDivElement>(null);
   const monthViewportRef = useRef<HTMLDivElement>(null);
   const panOffset = useRef({ x: 0, y: 0 });
+  const panAxis = useRef<'x' | 'y' | null>(null);
   const monthDidDrag = useRef(false);
   const x = useMotionValue(0);
   const monthX = useMotionValue(0);
@@ -165,8 +166,18 @@ export function WeekStrip({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function resetPanTracking() {
+    panOffset.current = { x: 0, y: 0 };
+    panAxis.current = null;
+  }
+
   function trackPan(info: PanInfo) {
     panOffset.current = { x: info.offset.x, y: info.offset.y };
+    panAxis.current = lockPanAxis(
+      panAxis.current,
+      info.offset.x,
+      info.offset.y,
+    );
   }
 
   function markMonthDrag(info: PanInfo) {
@@ -177,6 +188,21 @@ export function WeekStrip({
     ) {
       monthDidDrag.current = true;
     }
+  }
+
+  function resolvePanOffset(info: PanInfo) {
+    const tracked = panOffset.current;
+    const ox =
+      Math.abs(tracked.x) >= Math.abs(info.offset.x) ? tracked.x : info.offset.x;
+    const oy =
+      Math.abs(tracked.y) >= Math.abs(info.offset.y) ? tracked.y : info.offset.y;
+    return { ox, oy };
+  }
+
+  function shouldToggleVertical(ox: number, oy: number) {
+    return (
+      panAxis.current === 'y' || isVerticalCalendarGesture(ox, oy)
+    );
   }
 
   function handleMonthClickCapture(event: {
@@ -198,12 +224,8 @@ export function WeekStrip({
     _event: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo,
   ) {
-    const tracked = panOffset.current;
-    const ox =
-      Math.abs(tracked.x) >= Math.abs(info.offset.x) ? tracked.x : info.offset.x;
-    const oy =
-      Math.abs(tracked.y) >= Math.abs(info.offset.y) ? tracked.y : info.offset.y;
-    if (!isVerticalCalendarGesture(ox, oy)) return;
+    const { ox, oy } = resolvePanOffset(info);
+    if (!shouldToggleVertical(ox, oy)) return;
     applyVerticalToggle(oy);
   }
 
@@ -214,6 +236,13 @@ export function WeekStrip({
     if (expanded) return;
     const slotWidth = viewportRef.current?.getBoundingClientRect().width ?? 0;
     if (!slotWidth) return;
+
+    const { ox, oy } = resolvePanOffset(info);
+    if (shouldToggleVertical(ox, oy)) {
+      animate(x, -slotWidth, { type: 'spring', stiffness: 400, damping: 30 });
+      applyVerticalToggle(oy);
+      return;
+    }
 
     if (
       info.offset.x < -SWIPE_OFFSET_THRESHOLD ||
@@ -247,6 +276,17 @@ export function WeekStrip({
     const slotWidth =
       monthViewportRef.current?.getBoundingClientRect().width ?? 0;
     if (!slotWidth) return;
+
+    const { ox, oy } = resolvePanOffset(info);
+    if (shouldToggleVertical(ox, oy)) {
+      animate(monthX, -slotWidth, {
+        type: 'spring',
+        stiffness: 400,
+        damping: 30,
+      });
+      applyVerticalToggle(oy);
+      return;
+    }
 
     if (
       info.offset.x < -SWIPE_OFFSET_THRESHOLD ||
@@ -302,9 +342,15 @@ export function WeekStrip({
   const transition = expanded ? EXPAND_TRANSITION : COLLAPSE_TRANSITION;
 
   return (
-    <div
-      className="relative z-10 mt-4 overflow-hidden rounded-2xl border border-border/60 bg-card px-2 pb-1 pt-3 shadow-sm"
+    <motion.div
+      className="relative z-10 mt-4 overflow-hidden rounded-2xl border border-border/60 bg-card px-2 pb-1 pt-3 shadow-sm touch-pan-y"
       data-testid="calendar-panel"
+      drag="y"
+      dragConstraints={{ top: 0, bottom: 0 }}
+      dragElastic={0.15}
+      onDragStart={resetPanTracking}
+      onDrag={(_event, info) => trackPan(info)}
+      onDragEnd={handleVerticalDragEnd}
     >
       {/* Both views stay mounted and crossfade heights — no empty frame */}
       <motion.div
@@ -315,14 +361,6 @@ export function WeekStrip({
             : { height: 'auto', opacity: 1 }
         }
         transition={transition}
-        drag={!expanded ? 'y' : false}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.15}
-        onDragStart={() => {
-          panOffset.current = { x: 0, y: 0 };
-        }}
-        onDrag={(_event, info) => trackPan(info)}
-        onDragEnd={handleVerticalDragEnd}
         className="overflow-hidden bg-card"
         style={{ pointerEvents: expanded ? 'none' : 'auto' }}
         aria-hidden={expanded}
@@ -338,6 +376,7 @@ export function WeekStrip({
             dragConstraints={viewportRef}
             dragElastic={0.15}
             dragMomentum={false}
+            onDragStart={resetPanTracking}
             onDrag={(_event, info) => trackPan(info)}
             onDragEnd={handleDragEnd}
             className="flex cursor-grab active:cursor-grabbing select-none"
@@ -403,14 +442,6 @@ export function WeekStrip({
             : { height: 0, opacity: 0 }
         }
         transition={transition}
-        drag={expanded ? 'y' : false}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.2}
-        onDragStart={() => {
-          panOffset.current = { x: 0, y: 0 };
-        }}
-        onDrag={(_event, info) => trackPan(info)}
-        onDragEnd={handleVerticalDragEnd}
         className="overflow-hidden bg-card"
         style={{ pointerEvents: expanded ? 'auto' : 'none' }}
         aria-hidden={!expanded}
@@ -465,6 +496,7 @@ export function WeekStrip({
               dragElastic={0.15}
               dragMomentum={false}
               onDragStart={() => {
+                resetPanTracking();
                 monthDidDrag.current = false;
               }}
               onDrag={(_event, info) => markMonthDrag(info)}
@@ -524,6 +556,6 @@ export function WeekStrip({
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}
       />
-    </div>
+    </motion.div>
   );
 }

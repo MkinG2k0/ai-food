@@ -10,18 +10,22 @@ import { defaultMicronutrientTargets } from '../model/defaultMicronutrientTarget
 
 const ID_SET = new Set<string>(MICRONUTRIENT_IDS);
 
+const ID_UNION = MICRONUTRIENT_IDS.map((id) => `"${id}"`).join('|');
+const UG_IDS = MICRONUTRIENT_IDS.filter((id) => MICRONUTRIENT_UNITS[id] === 'µg').join(', ');
+const MG_IDS = MICRONUTRIENT_IDS.filter((id) => MICRONUTRIENT_UNITS[id] === 'mg').join(', ');
+
 const SYSTEM_PROMPT = `You are a nutrition assistant. Given a user profile, return ONLY a JSON object with daily micronutrient targets (RDA-like, not medical advice).
 
 Return exactly:
 {
   "micronutrients": [
-    { "id": "vitaminA"|"vitaminC"|"vitaminD"|"vitaminB12"|"iron"|"calcium"|"folate"|"magnesium", "amount": number, "unit": "mg"|"µg" }
+    { "id": ${ID_UNION}, "amount": number, "unit": "mg"|"µg" }
   ]
 }
 
 Rules:
-- Include all 8 ids exactly once.
-- Units: vitaminA, vitaminD, vitaminB12, folate → "µg"; vitaminC, iron, calcium, magnesium → "mg".
+- Include all ${MICRONUTRIENT_IDS.length} ids exactly once.
+- Units: ${UG_IDS} → "µg"; ${MG_IDS} → "mg".
 - amount ≥ 0; use typical adult daily values adjusted for gender, age, height, weight, targetWeight, targetWeightDate, activity, goal, dietType.
 - No text outside JSON.`;
 
@@ -52,7 +56,7 @@ function extractMicronutrientsPayload(parsed: unknown): unknown {
   return undefined;
 }
 
-/** Merge AI rows with defaults so all 8 ids are present with positive amounts when possible. */
+/** Merge AI rows with defaults so all catalog ids are present with positive amounts when possible. */
 function mergeWithDefaults(
   rows: MicronutrientEstimate[],
   gender: UserProfile['gender'],

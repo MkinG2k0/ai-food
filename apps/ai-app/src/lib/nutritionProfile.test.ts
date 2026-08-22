@@ -68,7 +68,7 @@ describe('nutritionProfileBodySchema', () => {
     expect(
       nutritionProfileBodySchema.safeParse({
         ...valid,
-        micronutrientTargets: [{ id: 'zinc', amount: 1, unit: 'mg' }],
+        micronutrientTargets: [{ id: 'notANutrient', amount: 1, unit: 'mg' }],
       }).success,
     ).toBe(false);
     expect(

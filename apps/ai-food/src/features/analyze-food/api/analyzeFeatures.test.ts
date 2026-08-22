@@ -19,7 +19,7 @@ ${compositionOn}
 - bands
 
 ## Микронутриенты
-micronutrients — ровно 8 элементов
+micronutrients — ровно 25 элементов
 
 ## Язык и формат
 ok`;

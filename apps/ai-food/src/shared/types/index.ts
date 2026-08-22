@@ -32,15 +32,33 @@ export const FOOD_TYPES = [
 
 export type FoodType = (typeof FOOD_TYPES)[number];
 
+/** Full pharmacy-style catalog (~25): vitamins A–K + B1–B12, common minerals. */
 export const MICRONUTRIENT_IDS = [
   'vitaminA',
   'vitaminC',
   'vitaminD',
-  'vitaminB12',
-  'iron',
-  'calcium',
+  'vitaminE',
+  'vitaminK',
+  'vitaminB1',
+  'vitaminB2',
+  'vitaminB3',
+  'vitaminB5',
+  'vitaminB6',
+  'vitaminB7',
   'folate',
+  'vitaminB12',
+  'calcium',
   'magnesium',
+  'zinc',
+  'iron',
+  'copper',
+  'manganese',
+  'iodine',
+  'selenium',
+  'chromium',
+  'molybdenum',
+  'potassium',
+  'phosphorus',
 ] as const;
 
 export type MicronutrientId = (typeof MICRONUTRIENT_IDS)[number];
@@ -52,11 +70,28 @@ export const MICRONUTRIENT_UNITS: Record<MicronutrientId, MicronutrientUnit> = {
   vitaminA: 'µg',
   vitaminC: 'mg',
   vitaminD: 'µg',
-  vitaminB12: 'µg',
-  iron: 'mg',
-  calcium: 'mg',
+  vitaminE: 'mg',
+  vitaminK: 'µg',
+  vitaminB1: 'mg',
+  vitaminB2: 'mg',
+  vitaminB3: 'mg',
+  vitaminB5: 'mg',
+  vitaminB6: 'mg',
+  vitaminB7: 'µg',
   folate: 'µg',
+  vitaminB12: 'µg',
+  calcium: 'mg',
   magnesium: 'mg',
+  zinc: 'mg',
+  iron: 'mg',
+  copper: 'mg',
+  manganese: 'mg',
+  iodine: 'µg',
+  selenium: 'µg',
+  chromium: 'µg',
+  molybdenum: 'µg',
+  potassium: 'mg',
+  phosphorus: 'mg',
 };
 
 /** Quantitative micronutrient estimate for a meal portion (not lab values). */

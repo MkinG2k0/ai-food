@@ -81,7 +81,7 @@ describe('nutritionResultSchema micronutrients', () => {
     expect(
       isNutritionResult({
         ...base,
-        micronutrients: [{ id: 'zinc', amount: 1, unit: 'mg' }],
+        micronutrients: [{ id: 'notANutrient', amount: 1, unit: 'mg' }],
       }),
     ).toBe(false);
     expect(

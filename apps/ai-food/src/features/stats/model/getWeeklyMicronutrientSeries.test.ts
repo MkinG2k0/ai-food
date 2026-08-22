@@ -21,10 +21,11 @@ function makeMeal(partial: Partial<Meal> & Pick<Meal, 'id' | 'timestamp' | 'tota
 const TODAY = new Date(2026, 6, 16, 0, 0, 0, 0);
 
 describe('getWeeklyMicronutrientSeries', () => {
-  it('returns all eight nutrients with zero dailyAvg when empty', () => {
+  it('returns all catalog nutrients with zero dailyAvg when empty', () => {
     const series = getWeeklyMicronutrientSeries([], 0, TODAY);
-    expect(series).toHaveLength(8);
+    expect(series).toHaveLength(25);
     expect(series.every((p) => micronutrientWeekTotal(p) === 0)).toBe(true);
+    expect(series.every((p) => p.hasData === false)).toBe(true);
     expect(weekHasMicronutrientData(series)).toBe(false);
     expect(series.every((p) => p.unit === 'mg' || p.unit === 'µg')).toBe(true);
   });
@@ -76,10 +77,16 @@ describe('getWeeklyMicronutrientSeries', () => {
 
     expect(byId.vitaminC.dailyAvg).toBeCloseTo((70 + 35) / 7, 5);
     expect(byId.vitaminC.unit).toBe('mg');
+    expect(byId.vitaminC.hasData).toBe(true);
     expect(byId.iron.dailyAvg).toBeCloseTo((3 + 4) / 7, 5);
+    expect(byId.iron.hasData).toBe(true);
     expect(byId.vitaminD.dailyAvg).toBe(0);
+    expect(byId.vitaminD.hasData).toBe(true);
     expect(byId.calcium.dailyAvg).toBe(0);
+    expect(byId.calcium.hasData).toBe(false);
     expect(byId.magnesium.dailyAvg).toBe(0);
+    expect(byId.magnesium.hasData).toBe(false);
+    expect(byId.zinc.hasData).toBe(false);
     expect(weekHasMicronutrientData(series)).toBe(true);
   });
 });
