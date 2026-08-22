@@ -7,10 +7,15 @@ import {
   ArrowLeft,
   Star,
   Keyboard,
+  Lock,
+  ScanBarcode,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { BottomSheet, Button, TextareaWithVoice } from '@/shared/ui';
+import { cn } from '@/shared/lib';
 import { useSaveMeal } from '@/features/save-meal';
+import { isGenerationQuotaAvailable, useUsage } from '@/features/auth';
+import { showGenerationQuotaPaywall } from '@/features/billing';
 
 /** Max photos per meal analysis — more angles rarely help. */
 export const MAX_FOOD_IMAGES = 3;
@@ -27,6 +32,45 @@ export interface AddFoodSheetProps {
 
 type SheetMode = 'menu' | 'describe';
 
+interface GenerationActionButtonProps {
+  locked: boolean;
+  onLocked: () => void;
+  onClick: () => void;
+  icon: typeof Camera;
+  label: string;
+}
+
+function GenerationActionButton({
+  locked,
+  onLocked,
+  onClick,
+  icon: Icon,
+  label,
+}: GenerationActionButtonProps) {
+  return (
+    <Button
+      variant="outline"
+      className={cn(
+        'h-12 w-full justify-start gap-3',
+        locked && 'opacity-70',
+      )}
+      onClick={locked ? onLocked : onClick}
+      aria-label={locked ? `${label} — лимит генераций исчерпан` : label}
+    >
+      <Icon
+        className={cn(
+          'h-5 w-5',
+          locked ? 'text-muted-foreground' : 'text-emerald-600',
+        )}
+      />
+      <span className="flex-1 text-left">{label}</span>
+      {locked ? (
+        <Lock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      ) : null}
+    </Button>
+  );
+}
+
 export function AddFoodSheet({
   open,
   onClose,
@@ -34,6 +78,8 @@ export function AddFoodSheet({
   onAutoActionConsumed,
 }: AddFoodSheetProps) {
   const navigate = useNavigate();
+  const { data: usage } = useUsage();
+  const generationLocked = !isGenerationQuotaAvailable(usage);
   const [mode, setMode] = useState<SheetMode>('menu');
   const [text, setText] = useState('');
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +99,15 @@ export function AddFoodSheet({
   useEffect(() => {
     if (!open || !autoAction) return;
 
+    if (generationLocked) {
+      onAutoActionConsumedRef.current?.();
+      setMode('menu');
+      setText('');
+      onClose();
+      showGenerationQuotaPaywall(navigate);
+      return;
+    }
+
     if (autoAction === 'gallery') {
       // Defer so the hidden input is mounted with the menu mode.
       const id = window.setTimeout(() => {
@@ -66,7 +121,7 @@ export function AddFoodSheet({
       setMode('describe');
       onAutoActionConsumedRef.current?.();
     }
-  }, [open, autoAction]);
+  }, [open, autoAction, generationLocked, navigate, onClose]);
 
   const resetSheetState = () => {
     setMode('menu');
@@ -78,7 +133,16 @@ export function AddFoodSheet({
     onClose();
   };
 
+  const handleGenerationLocked = () => {
+    handleClose();
+    showGenerationQuotaPaywall(navigate);
+  };
+
   const handleImagesSelect = (files: File[]) => {
+    if (generationLocked) {
+      handleGenerationLocked();
+      return;
+    }
     if (files.length === 0) return;
     if (files.length > MAX_FOOD_IMAGES) {
       toast.message(`Можно выбрать не больше ${MAX_FOOD_IMAGES} фото`);
@@ -103,11 +167,18 @@ export function AddFoodSheet({
   };
 
   const handleCameraClick = () => {
+    if (generationLocked) return;
     handleClose();
     navigate('/scan');
   };
 
+  const handleBarcodeClick = () => {
+    handleClose();
+    navigate('/scan?mode=barcode&barcodeOnly=1');
+  };
+
   const handleDescribeClick = () => {
+    if (generationLocked) return;
     setMode('describe');
   };
 
@@ -126,6 +197,10 @@ export function AddFoodSheet({
   };
 
   const handleSubmitDescription = () => {
+    if (generationLocked) {
+      handleGenerationLocked();
+      return;
+    }
     if (text.trim()) {
       const description = text.trim();
       handleClose();
@@ -151,32 +226,40 @@ export function AddFoodSheet({
               Добавить еду
             </h2>
             <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="h-12 w-full justify-start gap-3"
+              <GenerationActionButton
+                locked={generationLocked}
+                onLocked={handleGenerationLocked}
                 onClick={handleCameraClick}
-              >
-                <Camera className="h-5 w-5 text-emerald-600" />
-                <span>Камера / Штрихкод</span>
-              </Button>
+                icon={Camera}
+                label="Камера / Штрихкод"
+              />
 
-              <Button
-                variant="outline"
-                className="h-12 w-full justify-start gap-3"
+              <GenerationActionButton
+                locked={generationLocked}
+                onLocked={handleGenerationLocked}
                 onClick={handleGalleryClick}
-              >
-                <ImageIcon className="h-5 w-5 text-emerald-600" />
-                <span>Галерея</span>
-              </Button>
+                icon={ImageIcon}
+                label="Галерея"
+              />
 
-              <Button
-                variant="outline"
-                className="h-12 w-full justify-start gap-3"
+              <GenerationActionButton
+                locked={generationLocked}
+                onLocked={handleGenerationLocked}
                 onClick={handleDescribeClick}
-              >
-                <PenLine className="h-5 w-5 text-emerald-600" />
-                <span>Описать</span>
-              </Button>
+                icon={PenLine}
+                label="Описать"
+              />
+
+              {generationLocked ? (
+                <Button
+                  variant="outline"
+                  className="h-12 w-full justify-start gap-3"
+                  onClick={handleBarcodeClick}
+                >
+                  <ScanBarcode className="h-5 w-5 text-emerald-600" />
+                  <span className="flex-1 text-left">Штрихкод</span>
+                </Button>
+              ) : null}
 
               <Button
                 variant="outline"
@@ -232,10 +315,17 @@ export function AddFoodSheet({
 
               <Button
                 onClick={handleSubmitDescription}
-                disabled={!text.trim()}
+                disabled={!text.trim() || generationLocked}
                 className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
               >
-                Отправить
+                {generationLocked ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Lock className="h-4 w-4" aria-hidden />
+                    Лимит исчерпан
+                  </span>
+                ) : (
+                  'Отправить'
+                )}
               </Button>
             </div>
           </>

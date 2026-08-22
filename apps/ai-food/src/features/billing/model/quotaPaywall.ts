@@ -18,6 +18,19 @@ export function quotaExceededPath(): '/login' | '/subscribe' {
  * Toast + navigate for QUOTA_EXCEEDED.
  * @returns true if the error was a quota exceed and navigation was triggered
  */
+function generationQuotaPaywallMessage(path: '/login' | '/subscribe'): string {
+  return path === '/subscribe'
+    ? 'Лимит бесплатных генераций исчерпан. Оформите годовую лицензию.'
+    : 'Лимит бесплатных генераций исчерпан. Войдите через Telegram.';
+}
+
+/** Proactive paywall when UI blocks billable actions before the request. */
+export function showGenerationQuotaPaywall(navigate: NavigateFunction): void {
+  const path = quotaExceededPath();
+  toast.error(generationQuotaPaywallMessage(path));
+  navigate(path);
+}
+
 export function handleQuotaExceeded(
   error: unknown,
   navigate: NavigateFunction,
@@ -26,9 +39,7 @@ export function handleQuotaExceeded(
   const path = quotaExceededPath();
   const message =
     (error as Partial<ApiError>).message ??
-    (path === '/subscribe'
-      ? 'Лимит бесплатных генераций исчерпан. Оформите годовую лицензию.'
-      : 'Лимит бесплатных генераций исчерпан. Войдите через Telegram.');
+    generationQuotaPaywallMessage(path);
   toast.error(message);
   navigate(path);
   return true;

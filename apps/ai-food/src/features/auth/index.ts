@@ -29,10 +29,12 @@ export {
   getEffectiveFreeLimit,
   GUEST_FREE_USAGE_LIMIT,
   AUTH_LOGIN_GENERATION_BONUS,
+  usageQueryKey,
   type UsageSnapshot,
 } from './api/fetchUsage';
 export { clearLocalUserDataOnSignOut } from './model/clearLocalUserDataOnSignOut';
-export { useUsage, usageQueryKey } from './model/useUsage';
+export { useUsage } from './model/useUsage';
+export { isGenerationQuotaAvailable } from './model/generationQuota';
 export { mapTelegramUserToSession } from './api/signInWithTelegram';
 export { signInWithTelegramBot } from './api/signInWithTelegramBot';
 export { signInWithDemo } from './api/signInWithDemo';

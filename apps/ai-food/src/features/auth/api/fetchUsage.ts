@@ -32,6 +32,8 @@ export type UsageSnapshot = {
 
 const USAGE_CACHE_KEY = 'ai-food-usage';
 
+export const usageQueryKey = ['usage'] as const;
+
 /** Sync memory cache for immediate UI (seeded from localStorage). */
 let memoryCache: UsageSnapshot | null = null;
 let hydratePromise: Promise<UsageSnapshot> | null = null;

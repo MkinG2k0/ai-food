@@ -31,8 +31,9 @@ type ScanMode = 'food' | 'barcode';
 export function ScanPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const barcodeOnly = searchParams.get('barcodeOnly') === '1';
   const initialMode: ScanMode =
-    searchParams.get('mode') === 'barcode' ? 'barcode' : 'food';
+    searchParams.get('mode') === 'barcode' || barcodeOnly ? 'barcode' : 'food';
 
   const [mode, setMode] = useState<ScanMode>(initialMode);
   const [torchOn, setTorchOn] = useState(false);
@@ -231,7 +232,7 @@ export function ScanPage() {
   };
 
   const handleModeChange = (next: ScanMode) => {
-    if (next === mode) return;
+    if (barcodeOnly || next === mode) return;
     captureLockRef.current.unlock();
     setCapturing(false);
     setLookupCode(null);
@@ -568,7 +569,12 @@ export function ScanPage() {
         className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-5 px-6"
         style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
       >
-        <div className="flex rounded-full bg-black/55 p-1 text-sm font-medium">
+        <div
+          className={cn(
+            'flex rounded-full bg-black/55 p-1 text-sm font-medium',
+            barcodeOnly && 'hidden',
+          )}
+        >
           <button
             type="button"
             onClick={() => handleModeChange('food')}

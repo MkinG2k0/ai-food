@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { capacitorStorage } from '@/shared/lib';
+import { capacitorStorage, queryClient } from '@/shared/lib';
+import { clearUsageCache, usageQueryKey } from '../api/fetchUsage';
 import type { TelegramSession } from './telegramSession';
 
 interface AuthState {
@@ -30,13 +31,16 @@ export const useAuthStore = create<AuthState>()(
       userToken: null,
       dataConsentAt: null,
       dataConsentVersion: null,
-      signIn: (session, userToken = null, consent) =>
+      signIn: (session, userToken = null, consent) => {
+        clearUsageCache();
         set({
           session,
           userToken,
           dataConsentAt: consent?.dataConsentAt ?? null,
           dataConsentVersion: consent?.dataConsentVersion ?? null,
-        }),
+        });
+        void queryClient.invalidateQueries({ queryKey: usageQueryKey });
+      },
       setDataConsent: (dataConsentAt, dataConsentVersion) =>
         set({ dataConsentAt, dataConsentVersion }),
       signOut: () =>

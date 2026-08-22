@@ -20,4 +20,5 @@ export {
   isQuotaExceededError,
   quotaExceededPath,
   handleQuotaExceeded,
+  showGenerationQuotaPaywall,
 } from './model/quotaPaywall';

@@ -15,15 +15,16 @@ const mockSnapshot = {
 vi.mock('../api/fetchUsage', () => ({
   fetchUsage: vi.fn(),
   getCachedUsage: vi.fn(() => mockSnapshot),
+  usageQueryKey: ['usage'] as const,
 }));
 
 vi.mock('./useAuthStore', () => ({
   useAuthStore: vi.fn(),
 }));
 
-import { fetchUsage, getCachedUsage } from '../api/fetchUsage';
+import { fetchUsage, getCachedUsage, usageQueryKey } from '../api/fetchUsage';
 import { useAuthStore } from './useAuthStore';
-import { useUsage, usageQueryKey } from './useUsage';
+import { useUsage } from './useUsage';
 
 function createWrapper() {
   const queryClient = new QueryClient({

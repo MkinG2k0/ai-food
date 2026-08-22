@@ -17,6 +17,7 @@ import {
   handleQuotaExceeded,
   isQuotaExceededError,
   quotaExceededPath,
+  showGenerationQuotaPaywall,
 } from './quotaPaywall';
 
 describe('quotaPaywall', () => {
@@ -65,5 +66,17 @@ describe('quotaPaywall', () => {
     getAuthState.mockReturnValue({ userToken: 'jwt' });
     expect(handleQuotaExceeded({ status: 402 }, navigate)).toBe(true);
     expect(navigate).toHaveBeenCalledWith('/subscribe');
+  });
+
+  it('showGenerationQuotaPaywall routes guest to login', () => {
+    const navigate = vi.fn();
+    getAuthState.mockReturnValue({ userToken: null });
+
+    showGenerationQuotaPaywall(navigate);
+
+    expect(toastError).toHaveBeenCalledWith(
+      'Лимит бесплатных генераций исчерпан. Войдите через Telegram.',
+    );
+    expect(navigate).toHaveBeenCalledWith('/login');
   });
 });

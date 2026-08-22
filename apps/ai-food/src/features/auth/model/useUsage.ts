@@ -2,11 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import {
   fetchUsage,
   getCachedUsage,
+  usageQueryKey,
   type UsageSnapshot,
 } from '../api/fetchUsage';
 import { useAuthStore } from './useAuthStore';
 
-export const usageQueryKey = ['usage'] as const;
+export { usageQueryKey };
 
 /**
  * Guest/auth quota from gateway `/usage`.
