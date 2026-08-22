@@ -39,3 +39,9 @@ export { WeightTrendChart } from './ui/WeightTrendChart';
 export { LogWeightSheet } from './ui/LogWeightSheet';
 export { UpdateGoalSheet } from './ui/UpdateGoalSheet';
 export { MicronutrientVisibilitySheet } from './ui/MicronutrientVisibilitySheet';
+export { MicronutrientDetailSheet } from './ui/MicronutrientDetailSheet';
+export {
+  getRecentMealsWithMicronutrient,
+  RECENT_MICRONUTRIENT_MEALS_DAYS,
+  type MealWithMicronutrient,
+} from './model/getRecentMealsWithMicronutrient';

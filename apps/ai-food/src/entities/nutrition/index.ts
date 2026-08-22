@@ -17,3 +17,8 @@ export {
   type MicronutrientStatus,
   type MicronutrientStatusBand,
 } from './model/micronutrientStatus';
+export {
+  MICRONUTRIENT_INFO,
+  getMicronutrientInfo,
+  type MicronutrientInfo,
+} from './model/micronutrientInfo';

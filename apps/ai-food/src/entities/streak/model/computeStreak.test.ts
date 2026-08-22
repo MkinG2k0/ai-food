@@ -41,9 +41,17 @@ function localNoon(y: number, m: number, d: number): Date {
 
 describe('localDateKey', () => {
   it('uses local calendar date, not UTC slice', () => {
-    const localEarly = new Date(2026, 7, 18, 1, 0, 0, 0);
-    expect(localDateKey(localEarly)).toBe('2026-08-18');
-    expect(localEarly.toISOString().slice(0, 10)).toBe('2026-08-17');
+    // Pick a local wall-clock that crosses the UTC day boundary for any non-zero offset.
+    // East of UTC: early morning → previous UTC day; west: late evening → next UTC day.
+    const offsetMinutes = new Date().getTimezoneOffset();
+    const localHour = offsetMinutes > 0 ? 23 : 1;
+    const local = new Date(2026, 7, 18, localHour, 0, 0, 0);
+
+    expect(localDateKey(local)).toBe('2026-08-18');
+
+    if (offsetMinutes !== 0) {
+      expect(local.toISOString().slice(0, 10)).not.toBe('2026-08-18');
+    }
   });
 });
 
