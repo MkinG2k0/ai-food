@@ -38,3 +38,4 @@ export { WeightProgressCard } from './ui/WeightProgressCard';
 export { WeightTrendChart } from './ui/WeightTrendChart';
 export { LogWeightSheet } from './ui/LogWeightSheet';
 export { UpdateGoalSheet } from './ui/UpdateGoalSheet';
+export { MicronutrientVisibilitySheet } from './ui/MicronutrientVisibilitySheet';

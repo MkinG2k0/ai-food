@@ -1,10 +1,37 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import type { MicronutrientId } from '@ai-food/shared-types';
+import { MICRONUTRIENT_IDS } from '@ai-food/shared-types';
+import { PRIORITY_MICRONUTRIENT_IDS } from '@/entities/nutrition';
 import { capacitorStorage } from '@/shared/lib';
 
 const MAX_CUSTOM_INSTRUCTIONS_LENGTH = 2000;
 
 export const DEFAULT_AI_MODEL = 'google/gemini-3-flash-preview';
+
+/** Default collapsed Stats / badges list (same as PRIORITY_MICRONUTRIENT_IDS). */
+export const DEFAULT_STATS_MICRONUTRIENT_IDS: MicronutrientId[] = [
+  ...PRIORITY_MICRONUTRIENT_IDS,
+];
+
+const MICRONUTRIENT_ID_SET = new Set<string>(MICRONUTRIENT_IDS);
+
+/** Keep known ids, dedupe; empty/invalid → defaults. */
+export function normalizeStatsMicronutrientIds(
+  value: unknown,
+): MicronutrientId[] {
+  if (!Array.isArray(value)) return [...DEFAULT_STATS_MICRONUTRIENT_IDS];
+  const out: MicronutrientId[] = [];
+  const seen = new Set<MicronutrientId>();
+  for (const item of value) {
+    if (typeof item !== 'string' || !MICRONUTRIENT_ID_SET.has(item)) continue;
+    const id = item as MicronutrientId;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out.length > 0 ? out : [...DEFAULT_STATS_MICRONUTRIENT_IDS];
+}
 
 /** Zero temperature for all models — deterministic nutrition estimates. */
 export const AI_TEMPERATURE = 0;
@@ -201,6 +228,9 @@ interface SettingsState {
   calendarRings: CalendarRingsSelection;
   setCalendarRing: (key: CalendarRingKey, enabled: boolean) => void;
   setCalendarRings: (value: CalendarRingsSelection) => void;
+  /** Micronutrients shown by default in Stats / meal badges (before «все»). */
+  statsMicronutrientIds: MicronutrientId[];
+  setStatsMicronutrientIds: (ids: MicronutrientId[]) => void;
   /** LWW clock for settings sync */
   clientUpdatedAt: string;
 }
@@ -249,11 +279,16 @@ export const useSettingsStore = create<SettingsState>()(
           calendarRings: normalizeCalendarRings(value),
           clientUpdatedAt: bumpClock(),
         }),
+      statsMicronutrientIds: [...DEFAULT_STATS_MICRONUTRIENT_IDS],
+      setStatsMicronutrientIds: (ids) =>
+        set({
+          statsMicronutrientIds: normalizeStatsMicronutrientIds(ids),
+        }),
       clientUpdatedAt: SETTINGS_EPOCH_ISO,
     }),
     {
       name: 'ai-food-settings',
-      version: 4,
+      version: 5,
       storage: createJSONStorage(() => capacitorStorage),
       migrate: (persisted, version) => {
         if (!isCalendarRingsRecord(persisted)) {
@@ -276,6 +311,15 @@ export const useSettingsStore = create<SettingsState>()(
             typeof next.sharePhotosToFriends === 'boolean'
               ? next.sharePhotosToFriends
               : true;
+        }
+        if (version < 5) {
+          next.statsMicronutrientIds = normalizeStatsMicronutrientIds(
+            next.statsMicronutrientIds,
+          );
+        } else {
+          next.statsMicronutrientIds = normalizeStatsMicronutrientIds(
+            next.statsMicronutrientIds,
+          );
         }
         return next as unknown as SettingsState;
       },

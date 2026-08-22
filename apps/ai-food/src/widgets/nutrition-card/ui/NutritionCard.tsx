@@ -10,6 +10,7 @@ interface NutritionCardProps {
 
 export function NutritionCard({ result }: NutritionCardProps) {
   const featureVitamins = useSettingsStore((s) => s.featureVitamins);
+  const statsMicronutrientIds = useSettingsStore((s) => s.statsMicronutrientIds);
 
   return (
     <Card>
@@ -49,7 +50,10 @@ export function NutritionCard({ result }: NutritionCardProps) {
           color={MACRO_BAR_CLASSES.fiber}
         />
         {featureVitamins && (
-          <MicronutrientsBadges micronutrients={result.micronutrients} />
+          <MicronutrientsBadges
+            micronutrients={result.micronutrients}
+            preferredIds={statsMicronutrientIds}
+          />
         )}
       </CardContent>
     </Card>

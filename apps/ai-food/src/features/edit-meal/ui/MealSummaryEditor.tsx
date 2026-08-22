@@ -75,6 +75,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
   const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);
   const featureHealthiness = useSettingsStore((s) => s.featureHealthiness);
   const featureVitamins = useSettingsStore((s) => s.featureVitamins);
+  const statsMicronutrientIds = useSettingsStore((s) => s.statsMicronutrientIds);
   const [portionsDraft, setPortionsDraft] = useState<string | null>(null);
   const [gramsDraft, setGramsDraft] = useState<string | null>(null);
   const [timestampPickerOpen, setTimestampPickerOpen] = useState(false);
@@ -186,7 +187,10 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
         )}
         {featureVitamins && meal.micronutrients && meal.micronutrients.length > 0 && (
           <div>
-            <MicronutrientsBadges micronutrients={meal.micronutrients} />
+            <MicronutrientsBadges
+              micronutrients={meal.micronutrients}
+              preferredIds={statsMicronutrientIds}
+            />
           </div>
         )}
       </CardHeader>

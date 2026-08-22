@@ -15,6 +15,7 @@ import { clearReferralCache } from '@/features/referral';
 import {
   DEFAULT_AI_MODEL,
   DEFAULT_CALENDAR_RINGS,
+  DEFAULT_STATS_MICRONUTRIENT_IDS,
   SETTINGS_EPOCH_ISO,
   useSettingsStore,
 } from '@/features/settings';
@@ -45,6 +46,7 @@ export function clearLocalUserDataOnSignOut(): void {
     featureHealthiness: true,
     featureComposition: true,
     calendarRings: { ...DEFAULT_CALENDAR_RINGS },
+    statsMicronutrientIds: [...DEFAULT_STATS_MICRONUTRIENT_IDS],
     clientUpdatedAt: SETTINGS_EPOCH_ISO,
   });
 

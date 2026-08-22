@@ -6,16 +6,17 @@ import {
   useReducedMotion,
   type PanInfo,
 } from 'framer-motion';
+import { Settings2 } from 'lucide-react';
 import type { Meal, MicronutrientEstimate, MicronutrientId } from '@ai-food/shared-types';
 import {
   formatMicronutrientUnit,
   getMicronutrientStatus,
   isMineralMicronutrient,
-  isPriorityMicronutrient,
   isVitaminMicronutrient,
   MICRONUTRIENT_LABELS,
 } from '@/entities/nutrition';
 import { defaultMicronutrientTargets } from '@/features/onboarding';
+import { useSettingsStore } from '@/features/settings';
 import { Button } from '@/shared/ui';
 import { formatDateRangeLabel, formatMonthLabel } from '../model/chartScale';
 import { getWeeklyCalorieSeries } from '../model/getWeeklyCalorieSeries';
@@ -26,6 +27,7 @@ import {
 } from '../model/getWeeklyMicronutrientSeries';
 import { getMonthlyMicronutrientSeries } from '../model/getMonthlyMicronutrientSeries';
 import { monthStartFor, type StatsPeriod } from '../model/monthPeriod';
+import { MicronutrientVisibilitySheet } from './MicronutrientVisibilitySheet';
 
 interface WeeklyMicronutrientsChartProps {
   meals: Meal[];
@@ -39,6 +41,23 @@ const SWIPE_OFFSET_THRESHOLD = 80;
 const SWIPE_VELOCITY_THRESHOLD = 500;
 /** Visual bar cap: 150% of daily norm */
 const PROGRESS_CAP = 1.5;
+/** 100% of daily norm as % of bar width (cap = 150%) */
+const NORM_MARKER_PCT = (1 / PROGRESS_CAP) * 100;
+
+function statusPillClass(band: ReturnType<typeof getMicronutrientStatus>['band']): string {
+  switch (band) {
+    case 'severe_deficit':
+      return 'bg-red-50 text-red-700';
+    case 'below_norm':
+      return 'bg-amber-50 text-amber-800';
+    case 'optimal':
+      return 'bg-emerald-50 text-emerald-800';
+    case 'surplus':
+      return 'bg-violet-50 text-violet-800';
+    default:
+      return 'bg-muted text-muted-foreground';
+  }
+}
 
 function formatAmount(amount: number): string {
   if (amount === 0) return '0';
@@ -66,13 +85,14 @@ function progressWidthPct(dailyAvg: number, normAmount: number): number {
 function splitSeriesGroups(
   series: MicronutrientWeekPoint[],
   showAll: boolean,
+  preferredIds: ReadonlySet<MicronutrientId>,
 ): {
   vitamins: MicronutrientWeekPoint[];
   minerals: MicronutrientWeekPoint[];
 } {
   const visible = showAll
     ? series
-    : series.filter((p) => isPriorityMicronutrient(p.id));
+    : series.filter((p) => preferredIds.has(p.id));
   return {
     vitamins: visible.filter((p) => isVitaminMicronutrient(p.id)),
     minerals: visible.filter((p) => isMineralMicronutrient(p.id)),
@@ -87,7 +107,9 @@ interface MicronutrientWeekPanelProps {
   reduceMotion: boolean | null;
   micronutrientTargets?: MicronutrientEstimate[] | null;
   showAll: boolean;
+  preferredIds: ReadonlySet<MicronutrientId>;
   onToggleShowAll: () => void;
+  onOpenSettings: () => void;
 }
 
 function MicronutrientRow({
@@ -121,22 +143,37 @@ function MicronutrientRow({
 
   return (
     <li key={point.id} className="space-y-1">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-medium text-foreground">
-          {MICRONUTRIENT_LABELS[point.id as MicronutrientId]}
-        </span>
-        <span className="text-[11px] tabular-nums text-muted-foreground">
-          {!rowHasData
-            ? 'нет данных'
-            : normAmount > 0
-              ? `${formatAmount(point.dailyAvg)} / ${formatAmount(normAmount)} ${unitLabel} · ${pctLabel}% · ${status.labelRu}`
-              : status.labelRu}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-xs font-medium text-foreground">
+            {MICRONUTRIENT_LABELS[point.id as MicronutrientId]}
+          </span>
+          <span
+            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none ${statusPillClass(status.band)}`}
+          >
+            {status.labelRu}
+          </span>
+        </div>
+        <span className="shrink-0 text-xs font-semibold tabular-nums text-foreground">
+          {pctLabel != null ? `${pctLabel}%` : '—'}
         </span>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+
+      <div className="relative h-2.5 overflow-hidden rounded-full bg-muted">
+        {/* Optimal band 80–120% of norm within the 150% scale */}
+        {normAmount > 0 ? (
+          <div
+            className="pointer-events-none absolute inset-y-0 bg-emerald-500/10"
+            style={{
+              left: `${(0.8 / PROGRESS_CAP) * 100}%`,
+              width: `${(0.4 / PROGRESS_CAP) * 100}%`,
+            }}
+            aria-hidden
+          />
+        ) : null}
         {periodHasAnyData && rowHasData && widthPct > 0 ? (
           <motion.div
-            className={`h-full rounded-full ${status.barClass}`}
+            className={`relative z-[1] h-full rounded-full ${status.barClass}`}
             initial={
               reduceMotion || !interactive
                 ? false
@@ -155,7 +192,21 @@ function MicronutrientRow({
             }
           />
         ) : null}
+        {normAmount > 0 ? (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-[2] w-px bg-foreground/35"
+            style={{ left: `${NORM_MARKER_PCT}%` }}
+            aria-hidden
+            title="Дневная норма"
+          />
+        ) : null}
       </div>
+
+      {rowHasData && normAmount > 0 ? (
+        <p className="text-[10px] tabular-nums text-muted-foreground">
+          {formatAmount(point.dailyAvg)} / {formatAmount(normAmount)} {unitLabel}
+        </p>
+      ) : null}
     </li>
   );
 }
@@ -168,7 +219,9 @@ function MicronutrientWeekPanel({
   reduceMotion,
   micronutrientTargets,
   showAll,
+  preferredIds,
   onToggleShowAll,
+  onOpenSettings,
 }: MicronutrientWeekPanelProps) {
   const series =
     period === 'month'
@@ -176,7 +229,7 @@ function MicronutrientWeekPanel({
       : getWeeklyMicronutrientSeries(meals, offset);
   const hasData = weekHasMicronutrientData(series);
   const norms = resolveNorms(micronutrientTargets);
-  const { vitamins, minerals } = splitSeriesGroups(series, showAll);
+  const { vitamins, minerals } = splitSeriesGroups(series, showAll, preferredIds);
   const rangeLabel =
     period === 'month'
       ? formatMonthLabel(monthStartFor(new Date(), offset))
@@ -265,17 +318,32 @@ function MicronutrientWeekPanel({
         ) : null}
       </div>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="mt-3 h-auto w-full py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
-        onClick={onToggleShowAll}
-        onPointerDown={(e) => e.stopPropagation()}
-        data-testid="stats-micronutrients-toggle-all"
-      >
-        {showAll ? 'Свернуть' : 'Посмотреть все'}
-      </Button>
+      <div className="mt-3 flex items-center gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-auto flex-1 py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+          onClick={onToggleShowAll}
+          onPointerDown={(e) => e.stopPropagation()}
+          data-testid="stats-micronutrients-toggle-all"
+        >
+          {showAll ? 'Свернуть' : 'Посмотреть все'}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-auto shrink-0 gap-1.5 px-2.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+          onClick={onOpenSettings}
+          onPointerDown={(e) => e.stopPropagation()}
+          aria-label="Настройка списка витаминов"
+          data-testid="stats-micronutrients-settings"
+        >
+          <Settings2 className="size-3.5" aria-hidden />
+          Настройка
+        </Button>
+      </div>
 
       <p className="mt-2 text-[11px] text-muted-foreground">
         Оценка по фото, не медицинская рекомендация
@@ -295,6 +363,9 @@ export function WeeklyMicronutrientsChart({
   const viewportRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const [showAll, setShowAll] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const statsMicronutrientIds = useSettingsStore((s) => s.statsMicronutrientIds);
+  const preferredIds = new Set(statsMicronutrientIds);
 
   function recenter() {
     const slotWidth = viewportRef.current?.getBoundingClientRect().width ?? 0;
@@ -390,13 +461,19 @@ export function WeeklyMicronutrientsChart({
                   reduceMotion={reduceMotion}
                   micronutrientTargets={micronutrientTargets}
                   showAll={showAll}
+                  preferredIds={preferredIds}
                   onToggleShowAll={() => setShowAll((v) => !v)}
+                  onOpenSettings={() => setSettingsOpen(true)}
                 />
               </div>
             );
           })}
         </motion.div>
       </div>
+      <MicronutrientVisibilitySheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </section>
   );
 }

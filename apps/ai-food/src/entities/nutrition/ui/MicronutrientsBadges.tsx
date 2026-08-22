@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import type { MicronutrientEstimate } from '@ai-food/shared-types';
+import type { MicronutrientEstimate, MicronutrientId } from '@ai-food/shared-types';
 import { Badge, Button } from '@/shared/ui';
 import {
   formatMicronutrientUnit,
   isPriorityMicronutrient,
   MICRONUTRIENT_SHORT_LABELS,
+  PRIORITY_MICRONUTRIENT_IDS,
 } from '../model/micronutrientLabels';
 import { getMicronutrientStatus } from '../model/micronutrientStatus';
 
@@ -12,6 +13,8 @@ export interface MicronutrientsBadgesProps {
   micronutrients?: MicronutrientEstimate[];
   /** Optional daily norms — subtle tint by % of norm when present */
   targets?: MicronutrientEstimate[] | null;
+  /** Ids shown before «Развернуть»; defaults to PRIORITY_MICRONUTRIENT_IDS */
+  preferredIds?: readonly MicronutrientId[];
 }
 
 function formatAmount(amount: number): string {
@@ -19,12 +22,26 @@ function formatAmount(amount: number): string {
   return amount.toFixed(1).replace(/\.0$/, '');
 }
 
+function isPreferred(
+  id: MicronutrientId,
+  preferred: ReadonlySet<MicronutrientId> | null,
+): boolean {
+  if (preferred) return preferred.has(id);
+  return isPriorityMicronutrient(id);
+}
+
 export function MicronutrientsBadges({
   micronutrients,
   targets,
+  preferredIds,
 }: MicronutrientsBadgesProps) {
   const [showAll, setShowAll] = useState(false);
   const targetById = new Map((targets ?? []).map((t) => [t.id, t]));
+  const preferredSet = preferredIds
+    ? new Set(
+        preferredIds.length > 0 ? preferredIds : PRIORITY_MICRONUTRIENT_IDS,
+      )
+    : null;
 
   const withAmount = (micronutrients ?? []).filter(
     (row) =>
@@ -35,10 +52,10 @@ export function MicronutrientsBadges({
 
   if (withAmount.length === 0) return null;
 
-  const hasExtra = withAmount.some((row) => !isPriorityMicronutrient(row.id));
+  const hasExtra = withAmount.some((row) => !isPreferred(row.id, preferredSet));
   const visible = showAll
     ? withAmount
-    : withAmount.filter((row) => isPriorityMicronutrient(row.id));
+    : withAmount.filter((row) => isPreferred(row.id, preferredSet));
 
   return (
     <div className="space-y-1.5">
