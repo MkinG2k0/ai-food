@@ -6,8 +6,26 @@ vi.mock('@/features/auth', () => ({
   },
 }));
 
+import type { FavoriteFood } from '@/features/favorites';
 import { useAuthStore } from '@/features/auth';
 import { syncFavoritesApi } from './syncFavoritesApi';
+
+function fav(
+  id: string,
+  name: string,
+  clientUpdatedAt: string,
+  totalCalories = 150,
+): FavoriteFood {
+  return {
+    id,
+    sourceMealId: `m-${id}`,
+    name,
+    items: [],
+    totalCalories,
+    createdAt: clientUpdatedAt,
+    clientUpdatedAt,
+  };
+}
 
 describe('syncFavoritesApi', () => {
   beforeEach(() => {
@@ -19,18 +37,7 @@ describe('syncFavoritesApi', () => {
 
   it('POSTs favorites payload to /user/favorites/sync', async () => {
     const body = {
-      upserts: [
-        {
-          id: 'f1',
-          name: 'Овсянка',
-          calories: 150,
-          protein: 5,
-          fat: 3,
-          carbs: 27,
-          grams: 100,
-          clientUpdatedAt: '2026-08-22T08:00:00.000Z',
-        },
-      ],
+      upserts: [fav('f1', 'Овсянка', '2026-08-22T08:00:00.000Z')],
       deletes: [],
     };
 

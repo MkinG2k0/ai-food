@@ -13,26 +13,33 @@ vi.mock('../api/syncFavoritesApi', () => ({
   syncFavoritesApi: (...args: unknown[]) => syncFavoritesApi(...args),
 }));
 
+import type { FavoriteFood } from '@/features/favorites';
 import { useFavoritesStore } from '@/features/favorites';
 import { syncFavorites } from './syncFavorites';
+
+function fav(
+  id: string,
+  name: string,
+  clientUpdatedAt: string,
+  totalCalories = 150,
+): FavoriteFood {
+  return {
+    id,
+    sourceMealId: `m-${id}`,
+    name,
+    items: [],
+    totalCalories,
+    createdAt: clientUpdatedAt,
+    clientUpdatedAt,
+  };
+}
 
 describe('syncFavorites', () => {
   beforeEach(() => {
     syncFavoritesApi.mockReset();
     getAuthState.mockReturnValue({ userToken: 'jwt' });
     useFavoritesStore.setState({
-      favorites: [
-        {
-          id: 'f1',
-          name: 'Овсянка',
-          calories: 150,
-          protein: 5,
-          fat: 3,
-          carbs: 27,
-          grams: 100,
-          clientUpdatedAt: '2026-08-22T08:00:00.000Z',
-        },
-      ],
+      favorites: [fav('f1', 'Овсянка', '2026-08-22T08:00:00.000Z')],
       pendingDeletes: [{ id: 'gone', clientUpdatedAt: '2026-08-22T07:00:00.000Z' }],
     });
   });
@@ -45,18 +52,7 @@ describe('syncFavorites', () => {
 
   it('full mode posts payload and clears pending deletes from tombstones', async () => {
     syncFavoritesApi.mockResolvedValue({
-      favorites: [
-        {
-          id: 'f1',
-          name: 'Remote oats',
-          calories: 160,
-          protein: 6,
-          fat: 3,
-          carbs: 28,
-          grams: 100,
-          clientUpdatedAt: '2026-08-22T09:00:00.000Z',
-        },
-      ],
+      favorites: [fav('f1', 'Remote oats', '2026-08-22T09:00:00.000Z', 160)],
       tombstones: ['gone'],
     });
 

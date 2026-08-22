@@ -7,7 +7,9 @@ const mockSnapshot = {
   remaining: 42,
   limit: 50,
   used: 8,
-  isAuthenticated: false,
+  authenticated: false,
+  freeGenerationLimit: 50,
+  authLoginGenerationBonus: 100,
 };
 
 vi.mock('../api/fetchUsage', () => ({
@@ -37,7 +39,9 @@ describe('useUsage', () => {
       remaining: 40,
       limit: 50,
       used: 10,
-      isAuthenticated: false,
+      authenticated: false,
+      freeGenerationLimit: 50,
+      authLoginGenerationBonus: 100,
     });
     vi.mocked(useAuthStore).mockImplementation((selector) =>
       selector({
