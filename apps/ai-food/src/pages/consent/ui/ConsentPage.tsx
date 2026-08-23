@@ -7,7 +7,7 @@ import {
   useAuthStore,
 } from '@/features/auth';
 import { getLegalUrl } from '@/shared/lib';
-import { Button } from '@/shared/ui';
+import { Button, Checkbox } from '@/shared/ui';
 
 type ConsentLocationState = {
   from?: string;
@@ -92,11 +92,10 @@ export function ConsentPage() {
         )}
 
         <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-card p-4 text-sm">
-          <input
-            type="checkbox"
-            className="mt-0.5 h-4 w-4 accent-primary"
+          <Checkbox
+            className="mt-0.5"
             checked={accepted}
-            onChange={(event) => setAccepted(event.target.checked)}
+            onCheckedChange={(value) => setAccepted(value === true)}
           />
           <span>Согласен на обработку указанных данных</span>
         </label>

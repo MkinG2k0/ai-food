@@ -39,7 +39,7 @@ import {
   usePwaInstallSeenStore,
 } from '@/features/pwa-install';
 import { cn, getLegalUrl } from '@/shared/lib';
-import { BottomSheet, Button, SubpageShell, TextareaWithVoice } from '@/shared/ui';
+import { BottomSheet, Button, Card, CardContent, Checkbox, SubpageShell, TextareaWithVoice } from '@/shared/ui';
 
 const CALENDAR_RING_TOGGLES: { key: CalendarRingKey; label: string }[] = [
   { key: 'kcal', label: 'К' },
@@ -333,100 +333,98 @@ export function SettingsPage() {
       onBack={() => navigate('/')}
       mainClassName="space-y-8"
     >
-        <section className="space-y-3">
-          {usage && (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                {usage.hasActiveSubscription ||
-                billing?.hasActiveSubscription ||
-                usage.remaining === null
-                  ? 'AI-генерации: безлимит (лицензия)'
-                  : `Осталось ${usage.remaining} из ${usage.limit} бесплатных генераций`}
-              </p>
-              {!usage.hasActiveSubscription &&
+        <section>
+          <Card>
+            <CardContent className="space-y-4 p-4">
+              {usage &&
+                !usage.hasActiveSubscription &&
                 !billing?.hasActiveSubscription &&
-                usage.remaining !== null &&
-                usage.limit > 0 && (
-                  <div
-                    className="h-2 overflow-hidden rounded-full bg-muted"
-                    role="progressbar"
-                    aria-valuemin={0}
-                    aria-valuemax={usage.limit}
-                    aria-valuenow={usage.remaining}
-                    aria-label="Остаток бесплатных генераций"
-                  >
-                    <div
-                      className="h-full rounded-full bg-primary transition-[width] duration-300"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          Math.max(0, (usage.remaining / usage.limit) * 100),
-                        )}%`,
-                      }}
-                    />
+                usage.remaining !== null && (
+                  <div className="space-y-2 border-b border-border pb-4">
+                    <p className="text-sm text-muted-foreground">
+                      {`Осталось ${usage.remaining} из ${usage.limit} бесплатных генераций`}
+                    </p>
+                    {usage.limit > 0 && (
+                      <div
+                        className="h-2 overflow-hidden rounded-full bg-muted"
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={usage.limit}
+                        aria-valuenow={usage.remaining}
+                        aria-label="Остаток бесплатных генераций"
+                      >
+                        <div
+                          className="h-full rounded-full bg-primary transition-[width] duration-300"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(0, (usage.remaining / usage.limit) * 100),
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
-            </div>
-          )}
-          <div className="space-y-3 rounded-md border border-border px-3 py-3">
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Аккаунт</p>
-              {userToken && billing ? (
-                billing.hasActiveSubscription ? (
-                  <p className="text-sm text-muted-foreground">
-                    Лицензия активна
-                    {billing.subscriptionExpiresAt
-                      ? ` до ${new Date(billing.subscriptionExpiresAt).toLocaleDateString('ru-RU')}`
-                      : ''}
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Нет активной лицензии — после бесплатного лимита нужен год
-                    доступа к AI
-                  </p>
-                )
-              ) : null}
-            </div>
-            {userToken ? <ReferralCodeBlock /> : null}
-            {session ? (
-              <>
-                <div className="flex items-center gap-3">
-                  <img
-                    src={session.photo_url}
-                    alt={session.name}
-                    className="h-10 w-10 rounded-full object-cover bg-muted"
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{session.name}</p>
-                    {session.username ? (
-                      <p className="truncate text-sm text-muted-foreground">
-                        @{session.username}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-                {userToken && billing && !billing.hasActiveSubscription ? (
-                  <Button
-                    className="w-full"
-                    onClick={() => navigate('/subscribe')}
-                  >
-                    Оформить лицензию
-                  </Button>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Аккаунт</p>
+                {userToken && billing ? (
+                  billing.hasActiveSubscription ? (
+                    <p className="text-sm text-muted-foreground">
+                      Лицензия активна
+                      {billing.subscriptionExpiresAt
+                        ? ` до ${new Date(billing.subscriptionExpiresAt).toLocaleDateString('ru-RU')}`
+                        : ''}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Нет активной лицензии — после бесплатного лимита нужен год
+                      доступа к AI
+                    </p>
+                  )
                 ) : null}
-                <Button variant="outline" className="w-full" onClick={handleSignOut}>
-                  Выйти
+              </div>
+              {userToken ? <ReferralCodeBlock /> : null}
+              {session ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={session.photo_url}
+                      alt={session.name}
+                      className="h-10 w-10 rounded-full object-cover bg-muted"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{session.name}</p>
+                      {session.username ? (
+                        <p className="truncate text-sm text-muted-foreground">
+                          @{session.username}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  {userToken && billing && !billing.hasActiveSubscription ? (
+                    <Button
+                      className="w-full"
+                      onClick={() => navigate('/subscribe')}
+                    >
+                      Оформить лицензию
+                    </Button>
+                  ) : null}
+                  <Button variant="outline" className="w-full" onClick={handleSignOut}>
+                    Выйти
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate('/login')}
+                >
+                  Войти
                 </Button>
-              </>
-            ) : (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate('/login')}
-              >
-                Войти
-              </Button>
-            )}
-          </div>
+              )}
+            </CardContent>
+          </Card>
         </section>
 
         <section className="space-y-3">
@@ -635,12 +633,11 @@ export function SettingsPage() {
                 Выключенные — скрыты и не входят в промпт (быстрее и дешевле).
               </p>
               <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-input"
+                <Checkbox
+                  className="mt-1"
                   checked={featureVitamins}
-                  onChange={(e) => {
-                    setFeatureVitamins(e.target.checked);
+                  onCheckedChange={(value) => {
+                    setFeatureVitamins(value === true);
                     queueSettingsSoon();
                   }}
                 />
@@ -654,12 +651,11 @@ export function SettingsPage() {
                 </span>
               </label>
               <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-input"
+                <Checkbox
+                  className="mt-1"
                   checked={featureHealthiness}
-                  onChange={(e) => {
-                    setFeatureHealthiness(e.target.checked);
+                  onCheckedChange={(value) => {
+                    setFeatureHealthiness(value === true);
                     queueSettingsSoon();
                   }}
                 />
@@ -671,12 +667,11 @@ export function SettingsPage() {
                 </span>
               </label>
               <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-input"
+                <Checkbox
+                  className="mt-1"
                   checked={featureComposition}
-                  onChange={(e) => {
-                    setFeatureComposition(e.target.checked);
+                  onCheckedChange={(value) => {
+                    setFeatureComposition(value === true);
                     queueSettingsSoon();
                   }}
                 />
@@ -689,12 +684,11 @@ export function SettingsPage() {
               </label>
               <div className="space-y-2">
                 <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border-input"
+                  <Checkbox
+                    className="mt-1"
                     checked={customInstructionsEnabled}
-                    onChange={(e) => {
-                      setCustomInstructionsEnabled(e.target.checked);
+                    onCheckedChange={(value) => {
+                      setCustomInstructionsEnabled(value === true);
                       queueSettingsSoon();
                     }}
                     aria-controls="custom-instructions"

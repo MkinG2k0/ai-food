@@ -35,6 +35,7 @@
     "@capacitor/status-bar": "^8",
     "@capgo/capacitor-speech-recognition": "^8.1.10",
     "@ionic/pwa-elements": "^3.4.0",
+    "@radix-ui/react-checkbox": "^1.3.11",
     "@radix-ui/react-slot": "^1.1.0",
     "@tanstack/react-query": "^5.51.1",
     "@vercel/analytics": "^2.0.1",

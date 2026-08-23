@@ -10,7 +10,7 @@ import {
   DEFAULT_STATS_MICRONUTRIENT_IDS,
   useSettingsStore,
 } from '@/features/settings';
-import { BottomSheet, Button } from '@/shared/ui';
+import { BottomSheet, Button, Checkbox } from '@/shared/ui';
 
 export interface MicronutrientVisibilitySheetProps {
   open: boolean;
@@ -32,12 +32,7 @@ function CheckboxRow({
 }) {
   return (
     <label className="flex cursor-pointer items-center gap-3 rounded-lg px-1 py-2 hover:bg-muted/60">
-      <input
-        type="checkbox"
-        className="size-4 shrink-0 rounded border-border accent-foreground"
-        checked={checked}
-        onChange={onChange}
-      />
+      <Checkbox checked={checked} onCheckedChange={() => onChange()} />
       <span className="text-sm text-foreground">{MICRONUTRIENT_LABELS[id]}</span>
     </label>
   );
