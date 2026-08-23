@@ -5,4 +5,6 @@ export type {
 } from './model/types';
 export type { MealImportAdapter } from './adapters/types';
 export { MEAL_IMPORT_ADAPTERS } from './adapters';
+export { calzenAdapter, parseCalzenReport } from './adapters/calzen';
+export { detectSource, getAdapter } from './model/detectSource';
 export { parseSpacedNumber } from './lib/parseSpacedNumber';
