@@ -28,6 +28,10 @@ import {
   queueSettingsSync,
   SETTINGS_SYNC_DEBOUNCE_MS,
 } from '@/features/settings-sync';
+import {
+  RemindersSettingsSection,
+  queueRescheduleReminders,
+} from '@/features/reminders';
 import { useWeightStore } from '@/features/stats';
 import {
   SettingsInstallAppButton,
@@ -135,6 +139,15 @@ export function SettingsPage() {
   const setFeatureComposition = useSettingsStore((s) => s.setFeatureComposition);
   const calendarRings = useSettingsStore((s) => s.calendarRings);
   const setCalendarRing = useSettingsStore((s) => s.setCalendarRing);
+  const reminders = useSettingsStore((s) => s.reminders);
+  const setRemindersEnabled = useSettingsStore((s) => s.setRemindersEnabled);
+  const setMealSlotReminder = useSettingsStore((s) => s.setMealSlotReminder);
+  const setStreakAtRiskReminder = useSettingsStore(
+    (s) => s.setStreakAtRiskReminder,
+  );
+  const setWeightWeeklyReminder = useSettingsStore(
+    (s) => s.setWeightWeeklyReminder,
+  );
 
   useEffect(() => {
     return () => {
@@ -589,6 +602,17 @@ export function SettingsPage() {
             })}
           </div>
         </section>
+
+        <RemindersSettingsSection
+          reminders={reminders}
+          setRemindersEnabled={setRemindersEnabled}
+          setMealSlot={(slot, patch) => {
+            setMealSlotReminder(slot, patch);
+            queueRescheduleReminders();
+          }}
+          setStreakAtRisk={setStreakAtRiskReminder}
+          setWeightWeekly={setWeightWeeklyReminder}
+        />
 
         <section className="space-y-3">
           <button

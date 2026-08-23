@@ -12,6 +12,7 @@ vi.mock('@capacitor/preferences', () => ({
 import {
   AI_MODEL_OPTIONS,
   DEFAULT_AI_MODEL,
+  DEFAULT_REMINDER_SETTINGS,
   DEFAULT_STATS_MICRONUTRIENT_IDS,
   AI_TEMPERATURE,
   SETTINGS_EPOCH_ISO,
@@ -41,6 +42,7 @@ beforeEach(async () => {
       carbs: false,
     },
     statsMicronutrientIds: [...DEFAULT_STATS_MICRONUTRIENT_IDS],
+    reminders: { ...DEFAULT_REMINDER_SETTINGS },
     clientUpdatedAt: SETTINGS_EPOCH_ISO,
   });
 });

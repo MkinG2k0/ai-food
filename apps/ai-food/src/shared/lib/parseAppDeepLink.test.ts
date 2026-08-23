@@ -55,6 +55,13 @@ describe('parseAppDeepLink', () => {
     );
   });
 
+  it('routes aifood://meal/<id> to meal detail', () => {
+    expect(parseAppDeepLink('aifood://meal/abc-123')).toEqual({
+      kind: 'route',
+      path: '/meal/abc-123',
+    });
+  });
+
   it('keeps existing aifood://add/* results unchanged', () => {
     expect(parseAppDeepLink('aifood://add/scan')).toEqual({
       kind: 'route',

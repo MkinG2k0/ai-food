@@ -82,5 +82,21 @@ export function parseAppDeepLink(url: string): AppDeepLinkResult | null {
     };
   }
 
+  // aifood://meal/<id> → meal detail
+  let mealId: string | null = null;
+  if (host === 'meal' && pathParts.length === 1) {
+    mealId = pathParts[0];
+  }
+  if (
+    (host === '' || host === 'meal') &&
+    pathParts.length === 2 &&
+    pathParts[0].toLowerCase() === 'meal'
+  ) {
+    mealId = pathParts[1];
+  }
+  if (mealId) {
+    return { kind: 'route', path: `/meal/${encodeURIComponent(mealId)}` };
+  }
+
   return parseAddFoodDeepLink(url);
 }

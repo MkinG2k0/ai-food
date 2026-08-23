@@ -3,6 +3,7 @@ export {
   DEFAULT_AI_MODEL,
   DEFAULT_CALENDAR_RINGS,
   DEFAULT_STATS_MICRONUTRIENT_IDS,
+  DEFAULT_REMINDER_SETTINGS,
   CALENDAR_RING_ORDER,
   AI_TEMPERATURE,
   SETTINGS_EPOCH_ISO,
@@ -19,6 +20,7 @@ export {
   useSettingsStore,
   type CalendarRingKey,
   type CalendarRingsSelection,
+  type ReminderSettings,
   type SettingsSyncPayload,
 } from './model/useSettingsStore';
 export {

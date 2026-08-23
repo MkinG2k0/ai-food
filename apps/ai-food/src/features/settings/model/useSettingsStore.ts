@@ -3,7 +3,17 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { MicronutrientId } from '@ai-food/shared-types';
 import { MICRONUTRIENT_IDS } from '@ai-food/shared-types';
 import { PRIORITY_MICRONUTRIENT_IDS } from '@/entities/nutrition';
+import { normalizeReminderSettings } from '@/features/reminders/model/computeReminderSchedule';
+import {
+  DEFAULT_REMINDER_SETTINGS,
+  type ReminderSettings,
+} from '@/features/reminders/model/types';
 import { capacitorStorage } from '@/shared/lib';
+
+export {
+  DEFAULT_REMINDER_SETTINGS,
+  type ReminderSettings,
+} from '@/features/reminders/model/types';
 
 const MAX_CUSTOM_INSTRUCTIONS_LENGTH = 2000;
 
@@ -231,6 +241,14 @@ interface SettingsState {
   /** Micronutrients shown by default in Stats / meal badges (before «все»). */
   statsMicronutrientIds: MicronutrientId[];
   setStatsMicronutrientIds: (ids: MicronutrientId[]) => void;
+  reminders: ReminderSettings;
+  setRemindersEnabled: (value: boolean) => void;
+  setMealSlotReminder: (
+    slot: 'breakfast' | 'lunch' | 'dinner',
+    patch: Partial<ReminderSettings['breakfast']>,
+  ) => void;
+  setStreakAtRiskReminder: (value: boolean) => void;
+  setWeightWeeklyReminder: (value: boolean) => void;
   /** LWW clock for settings sync */
   clientUpdatedAt: string;
 }
@@ -284,11 +302,35 @@ export const useSettingsStore = create<SettingsState>()(
         set({
           statsMicronutrientIds: normalizeStatsMicronutrientIds(ids),
         }),
+      reminders: { ...DEFAULT_REMINDER_SETTINGS },
+      setRemindersEnabled: (value) =>
+        set((s) => ({
+          reminders: { ...s.reminders, enabled: value },
+          clientUpdatedAt: bumpClock(),
+        })),
+      setMealSlotReminder: (slot, patch) =>
+        set((s) => ({
+          reminders: {
+            ...s.reminders,
+            [slot]: { ...s.reminders[slot], ...patch },
+          },
+          clientUpdatedAt: bumpClock(),
+        })),
+      setStreakAtRiskReminder: (value) =>
+        set((s) => ({
+          reminders: { ...s.reminders, streakAtRisk: value },
+          clientUpdatedAt: bumpClock(),
+        })),
+      setWeightWeeklyReminder: (value) =>
+        set((s) => ({
+          reminders: { ...s.reminders, weightWeekly: value },
+          clientUpdatedAt: bumpClock(),
+        })),
       clientUpdatedAt: SETTINGS_EPOCH_ISO,
     }),
     {
       name: 'ai-food-settings',
-      version: 5,
+      version: 6,
       storage: createJSONStorage(() => capacitorStorage),
       migrate: (persisted, version) => {
         if (!isCalendarRingsRecord(persisted)) {
@@ -320,6 +362,11 @@ export const useSettingsStore = create<SettingsState>()(
           next.statsMicronutrientIds = normalizeStatsMicronutrientIds(
             next.statsMicronutrientIds,
           );
+        }
+        if (version < 6) {
+          next.reminders = normalizeReminderSettings(next.reminders);
+        } else {
+          next.reminders = normalizeReminderSettings(next.reminders);
         }
         return next as unknown as SettingsState;
       },
