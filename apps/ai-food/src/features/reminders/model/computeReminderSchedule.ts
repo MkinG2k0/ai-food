@@ -9,6 +9,14 @@ import {
   weightWeeklyNotificationId,
 } from './notificationIds';
 import {
+  hashSeed,
+  pickAnalyzeErrorCopy,
+  pickMealReminderCopy,
+  pickStreakMilestoneCopy,
+  pickStreakRiskCopy,
+  pickWeightWeeklyCopy,
+} from './reminderCopy';
+import {
   DEFAULT_REMINDER_SETTINGS,
   type MealSlotKind,
   type ReminderScheduleInput,
@@ -27,12 +35,6 @@ const WEIGHT_SUNDAY_HOUR = 10;
 const WEIGHT_SUNDAY_MINUTE = 0;
 const DEFAULT_WINDOW_DAYS = 7;
 
-const MEAL_SLOT_LABELS: Record<MealSlotKind, string> = {
-  breakfast: 'завтрак',
-  lunch: 'обед',
-  dinner: 'ужин',
-};
-
 const MEAL_SLOT_SETTINGS: Record<
   MealSlotKind,
   keyof Pick<ReminderSettings, 'breakfast' | 'lunch' | 'dinner'>
@@ -40,6 +42,12 @@ const MEAL_SLOT_SETTINGS: Record<
   breakfast: 'breakfast',
   lunch: 'lunch',
   dinner: 'dinner',
+};
+
+const MEAL_SLOT_SEED: Record<MealSlotKind, number> = {
+  breakfast: 0,
+  lunch: 3,
+  dinner: 7,
 };
 
 function dateFromLocalKey(key: string): Date {
@@ -177,12 +185,17 @@ function scheduleMealSlots(
       const at = atLocalTime(dateKey, slotSettings.time);
       if (at.getTime() <= input.now.getTime()) continue;
 
+      const copy = pickMealReminderCopy(
+        slot,
+        hashSeed(dateKey) + dayIndex + MEAL_SLOT_SEED[slot],
+      );
+
       out.push({
         id: mealSlotNotificationId(slot, dayIndex),
         kind: `meal-${slot}`,
         at,
-        title: 'AI Food',
-        body: `Запиши ${MEAL_SLOT_LABELS[slot]}`,
+        title: copy.title,
+        body: copy.body,
         route: '/',
       });
     }
@@ -204,12 +217,17 @@ function scheduleStreakAtRisk(
   });
   if (at.getTime() <= input.now.getTime()) return;
 
+  const copy = pickStreakRiskCopy(
+    input.streakLength,
+    hashSeed(todayKey) + input.streakLength,
+  );
+
   out.push({
     id: streakRiskNotificationId(0),
     kind: 'streak-risk',
     at,
-    title: 'AI Food',
-    body: `Запиши хотя бы один приём — серия ${input.streakLength} дней`,
+    title: copy.title,
+    body: copy.body,
     route: '/',
   });
 }
@@ -244,12 +262,17 @@ function scheduleStreakMilestones(
     });
     if (at.getTime() <= input.now.getTime()) continue;
 
+    const copy = pickStreakMilestoneCopy(
+      yesterdayLength,
+      hashSeed(morningKey) + yesterdayLength,
+    );
+
     out.push({
       id: streakMilestoneNotificationId(dayIndex),
       kind: 'streak-milestone',
       at,
-      title: 'AI Food',
-      body: `Вчера серия выросла до ${yesterdayLength} 🔥`,
+      title: copy.title,
+      body: copy.body,
       route: '/',
     });
   }
@@ -278,12 +301,14 @@ function scheduleWeightWeekly(
     });
     if (at.getTime() <= input.now.getTime()) continue;
 
+    const copy = pickWeightWeeklyCopy(hashSeed(dateKey) + dayIndex);
+
     out.push({
       id: weightWeeklyNotificationId(dayIndex),
       kind: 'weight-weekly',
       at,
-      title: 'AI Food',
-      body: 'Запиши вес — отслеживай прогресс',
+      title: copy.title,
+      body: copy.body,
       route: '/',
     });
     break;
@@ -298,12 +323,13 @@ function scheduleAnalyzeErrors(
 
   for (const meal of input.analyzeErrorMeals) {
     const at = new Date(input.now.getTime() + 1_000);
+    const copy = pickAnalyzeErrorCopy(hashSeed(meal.id));
     out.push({
       id: analyzeErrorNotificationId(meal.id),
       kind: 'analyze-error',
       at,
-      title: 'AI Food',
-      body: 'Не удалось разобрать приём — нажми, чтобы повторить',
+      title: copy.title,
+      body: copy.body,
       route: `/meal/${meal.id}`,
     });
   }

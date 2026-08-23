@@ -81,7 +81,11 @@ describe('computeReminderSchedule', () => {
     });
     const breakfast = scheduled.find((s) => s.kind === 'meal-breakfast');
     expect(breakfast).toBeDefined();
-    expect(breakfast!.body).toBe('Запиши завтрак');
+    expect(breakfast!.title.length).toBeGreaterThan(0);
+    expect(breakfast!.body.length).toBeGreaterThan(10);
+    expect(`${breakfast!.title} ${breakfast!.body}`.toLowerCase()).toMatch(
+      /завтрак|утро|кофе/,
+    );
     expect(breakfast!.at.getHours()).toBe(8);
     expect(breakfast!.at.getMinutes()).toBe(30);
   });
@@ -105,7 +109,8 @@ describe('computeReminderSchedule', () => {
     });
     const risk = scheduled.find((s) => s.kind === 'streak-risk');
     expect(risk).toBeDefined();
-    expect(risk!.body).toContain('серия 5 дней');
+    expect(risk!.body).toMatch(/5/);
+    expect(risk!.body.toLowerCase()).toMatch(/сери/);
   });
 
   it('skips streak at risk when today has ready meal', () => {
