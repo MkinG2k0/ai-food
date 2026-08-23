@@ -16,7 +16,9 @@ const MONTHS: Record<string, string> = {
   'РЅРѕСЏ': '11',
   'РґРµРє': '12',
 };
-
+const MONTHS_BY_LOWER: Record<string, string> = Object.fromEntries(
+  Object.entries(MONTHS).map(([key, value]) => [key.toLowerCase(), value]),
+);
 const DAY_HEADER =
   /^(Р’СЃ|РџРЅ|Р’С‚|РЎСЂ|Р§С‚|РџС‚|РЎР±)\s+(\d{1,2})\s+(СЏРЅРІ|С„РµРІ|РјР°СЂ|Р°РїСЂ|РјР°Р№|РёСЋРЅ|РёСЋР»|Р°РІРі|СЃРµРЅ|РѕРєС‚|РЅРѕСЏ|РґРµРє)/i;
 const MEAL_START = /^(\d{1,2}):(\d{2})\s+(.+)$/;
@@ -45,7 +47,7 @@ export function parseCalzenReport(text: string): ImportedMealDraft[] {
 
     const day = line.match(DAY_HEADER);
     if (day) {
-      const month = MONTHS[day[3]];
+      const month = MONTHS_BY_LOWER[day[3].toLowerCase()];
       currentDate = month ? `${year}-${month}-${day[2].padStart(2, '0')}` : null;
       pendingName = null;
       continue;

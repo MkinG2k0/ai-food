@@ -68,4 +68,30 @@ describe('calzenAdapter.parse', () => {
     const meals = calzenAdapter.parse(fixture);
     expect(meals.every((m) => m.date !== '2026-07-29')).toBe(true);
   });
+
+  it('parses day headers with atypical month casing', () => {
+    const lines = fixture.split(/\r?\n/);
+    const monthToken = lines[3].match(/\d{1,2}\s+(\S+)/)?.[1] ?? '';
+    const dayHeader = lines[3]
+      .replace('28', '15')
+      .replace(monthToken, monthToken.toUpperCase());
+    const macroLine = lines[5];
+
+    const text = [
+      lines[0],
+      lines[1],
+      lines[2],
+      dayHeader,
+      '12:00 test meal',
+      macroLine,
+    ].join('\n');
+
+    const meals = calzenAdapter.parse(text);
+    expect(meals).toHaveLength(1);
+    expect(meals[0]).toMatchObject({
+      date: '2026-07-15',
+      time: '12:00',
+      name: 'test meal',
+    });
+  });
 });
