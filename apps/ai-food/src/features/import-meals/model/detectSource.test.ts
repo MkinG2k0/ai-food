@@ -3,7 +3,7 @@ import { detectSource } from './detectSource';
 
 describe('detectSource', () => {
   it('returns calzen for CalZen header', () => {
-    expect(detectSource('CalZen\nРѕС‚С‡С‘С‚ Рѕ РїРёС‚Р°РЅРёРё 2026 Рі. calzen.ai\nР”РќР•Р’РќРРљ РџРРўРђРќРРЇ')).toBe(
+    expect(detectSource('CalZen\nотчёт о питании 2026 г. calzen.ai\nДНЕВНИК ПИТАНИЯ')).toBe(
       'calzen',
     );
   });

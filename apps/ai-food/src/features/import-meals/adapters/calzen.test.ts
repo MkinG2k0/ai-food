@@ -26,14 +26,14 @@ describe('calzenAdapter.parse', () => {
     expect(meals[0]).toEqual({
       date: '2026-07-28',
       time: '01:33',
-      name: 'Р№РѕРіСѓСЂС‚ СЃ С€РѕРєРѕР»Р°РґРЅС‹Рј РїРµС‡РµРЅСЊРµРј',
+      name: 'йогурт с шоколадным печеньем',
       calories: 254,
       protein: 6,
       fat: 10,
       carbs: 34,
       fiber: 1,
     });
-    expect(meals[1].name).toContain('вЂ¦');
+    expect(meals[1].name).toContain('…');
     expect(meals[3]).toMatchObject({
       date: '2026-07-30',
       time: '12:20',
@@ -55,7 +55,7 @@ describe('calzenAdapter.parse', () => {
     const split = meals.find((m) => m.time === '14:09');
     expect(split).toMatchObject({
       date: '2026-08-17',
-      name: 'Р±СѓС‚РµСЂР±СЂРѕРґ СЃ СЃР°Р»СЏРјРё Рё СЃР»РёРІРѕС‡РЅС‹Рј РјР°СЃР»РѕРј, С‡РµСЂРЅС‹Р№ С‡Р°Р№',
+      name: 'бутерброд с салями и сливочным маслом, черный чай',
       calories: 290,
       protein: 7,
       fat: 17,
@@ -71,10 +71,9 @@ describe('calzenAdapter.parse', () => {
 
   it('parses day headers with atypical month casing', () => {
     const lines = fixture.split(/\r?\n/);
-    const monthToken = lines[3].match(/\d{1,2}\s+(\S+)/)?.[1] ?? '';
     const dayHeader = lines[3]
       .replace('28', '15')
-      .replace(monthToken, monthToken.toUpperCase());
+      .replace('июл', 'ИЮЛ');
     const macroLine = lines[5];
 
     const text = [

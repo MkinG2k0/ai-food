@@ -3,38 +3,37 @@ import type { ImportedMealDraft } from '../model/types';
 import type { MealImportAdapter } from './types';
 
 const MONTHS: Record<string, string> = {
-  'СЏРЅРІ': '01',
-  'С„РµРІ': '02',
-  'РјР°СЂ': '03',
-  'Р°РїСЂ': '04',
-  'РјР°Р№': '05',
-  'РёСЋРЅ': '06',
-  'РёСЋР»': '07',
-  'Р°РІРі': '08',
-  'СЃРµРЅ': '09',
-  'РѕРєС‚': '10',
-  'РЅРѕСЏ': '11',
-  'РґРµРє': '12',
+  янв: '01',
+  фев: '02',
+  мар: '03',
+  апр: '04',
+  май: '05',
+  июн: '06',
+  июл: '07',
+  авг: '08',
+  сен: '09',
+  окт: '10',
+  ноя: '11',
+  дек: '12',
 };
 const MONTHS_BY_LOWER: Record<string, string> = Object.fromEntries(
   Object.entries(MONTHS).map(([key, value]) => [key.toLowerCase(), value]),
 );
 const DAY_HEADER =
-  /^(Р’СЃ|РџРЅ|Р’С‚|РЎСЂ|Р§С‚|РџС‚|РЎР±)\s+(\d{1,2})\s+(СЏРЅРІ|С„РµРІ|РјР°СЂ|Р°РїСЂ|РјР°Р№|РёСЋРЅ|РёСЋР»|Р°РІРі|СЃРµРЅ|РѕРєС‚|РЅРѕСЏ|РґРµРє)/i;
+  /^(Вс|Пн|Вт|Ср|Чт|Пт|Сб)\s+(\d{1,2})\s+(янв|фев|мар|апр|май|июн|июл|авг|сен|окт|ноя|дек)/i;
 const MEAL_START = /^(\d{1,2}):(\d{2})\s+(.+)$/;
 const MACROS =
-  /Р‘\s*([\d\s]+)\s*В·\s*Р–\s*([\d\s]+)\s*В·\s*РЈ\s*([\d\s]+)\s*В·\s*РљР»\s*([\d\s]+)\s*Рі\s+([\d\s]+)\s*РєРєР°Р»/i;
+  /Б\s*([\d\s]+)\s*·\s*Ж\s*([\d\s]+)\s*·\s*У\s*([\d\s]+)\s*·\s*Кл\s*([\d\s]+)\s*г\s+([\d\s]+)\s*ккал/i;
 
 function detect(text: string): boolean {
   return (
     /calzen/i.test(text) &&
-    (/Р”РќР•Р’РќРРљ\s+РџРРўРђРќРРЇ/i.test(text) ||
-      /РѕС‚С‡С‘С‚\s+Рѕ\s+РїРёС‚Р°РЅРёРё/i.test(text))
+    (/ДНЕВНИК\s+ПИТАНИЯ/i.test(text) || /отчёт\s+о\s+питании/i.test(text))
   );
 }
 
 export function parseCalzenReport(text: string): ImportedMealDraft[] {
-  const year = text.match(/(20\d{2})\s*Рі/)?.[1];
+  const year = text.match(/(20\d{2})\s*г/)?.[1];
   if (!year) return [];
 
   const meals: ImportedMealDraft[] = [];
