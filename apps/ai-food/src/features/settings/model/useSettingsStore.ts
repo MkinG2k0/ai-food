@@ -163,14 +163,9 @@ export function getAnalyzeFeaturesFromSettings(): {
   };
 }
 
-/**
- * Custom instructions text to send to AI, or empty when the toggle is off.
- * The stored textarea value is never cleared by the toggle.
- */
+/** Custom instructions text to send to AI, or empty when the field is blank. */
 export function getActiveCustomInstructions(): string {
-  const s = useSettingsStore.getState();
-  if (!s.customInstructionsEnabled) return '';
-  return s.customInstructions.trim();
+  return useSettingsStore.getState().customInstructions.trim();
 }
 
 /** Epoch clock — loses LWW to any real server/client edit. */

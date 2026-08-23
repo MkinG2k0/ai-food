@@ -9,13 +9,7 @@ import {
 import { analyzeFoodApi } from '../api/analyzeFoodApi';
 
 export function useAnalyzeFood(image: File | null) {
-  const customInstructionsEnabled = useSettingsStore(
-    (s) => s.customInstructionsEnabled,
-  );
-  const customInstructionsRaw = useSettingsStore((s) => s.customInstructions);
-  const customInstructions = customInstructionsEnabled
-    ? customInstructionsRaw
-    : '';
+  const customInstructions = useSettingsStore((s) => s.customInstructions);
   const featureVitamins = useSettingsStore((s) => s.featureVitamins);
   const featureHealthiness = useSettingsStore((s) => s.featureHealthiness);
   const featureComposition = useSettingsStore((s) => s.featureComposition);

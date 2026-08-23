@@ -96,16 +96,15 @@ describe('useSettingsStore', () => {
     expect(useSettingsStore.getState().customInstructions).toBe('дай рецепт');
   });
 
-  it('getActiveCustomInstructions returns empty when disabled', async () => {
+  it('getActiveCustomInstructions trims whitespace and returns empty when blank', async () => {
     await act(async () => {
       useSettingsStore.getState().setCustomInstructions('  веган  ');
-      useSettingsStore.getState().setCustomInstructionsEnabled(false);
-    });
-    expect(getActiveCustomInstructions()).toBe('');
-    await act(async () => {
-      useSettingsStore.getState().setCustomInstructionsEnabled(true);
     });
     expect(getActiveCustomInstructions()).toBe('веган');
+    await act(async () => {
+      useSettingsStore.getState().setCustomInstructions('   ');
+    });
+    expect(getActiveCustomInstructions()).toBe('');
   });
   it('defaults feature flags to enabled', () => {
     expect(useSettingsStore.getState().featureVitamins).toBe(true);

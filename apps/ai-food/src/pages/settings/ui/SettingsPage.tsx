@@ -125,12 +125,6 @@ export function SettingsPage() {
 
   const customInstructions = useSettingsStore((s) => s.customInstructions);
   const setCustomInstructions = useSettingsStore((s) => s.setCustomInstructions);
-  const customInstructionsEnabled = useSettingsStore(
-    (s) => s.customInstructionsEnabled,
-  );
-  const setCustomInstructionsEnabled = useSettingsStore(
-    (s) => s.setCustomInstructionsEnabled,
-  );
   const featureVitamins = useSettingsStore((s) => s.featureVitamins);
   const setFeatureVitamins = useSettingsStore((s) => s.setFeatureVitamins);
   const featureHealthiness = useSettingsStore((s) => s.featureHealthiness);
@@ -683,47 +677,29 @@ export function SettingsPage() {
                 </span>
               </label>
               <div className="space-y-2">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <Checkbox
-                    className="mt-1"
-                    checked={customInstructionsEnabled}
-                    onCheckedChange={(value) => {
-                      setCustomInstructionsEnabled(value === true);
-                      queueSettingsSoon();
-                    }}
-                    aria-controls="custom-instructions"
-                  />
-                  <span className="space-y-0.5">
-                    <span className="block text-sm font-medium">
-                      Кастомные инструкции
-                    </span>
-                    <span className="block text-sm text-muted-foreground">
-                      Укажите предпочтения для анализа (диета, единицы) и
-                      дополнительные запросы к блюду (рецепт, острота и т.п.).
-                      Ответ на доп. запросы появится на карточке приёма в
-                      формате Markdown. Выключенные инструкции не отправляются
-                      в AI; текст сохраняется.
-                    </span>
-                  </span>
-                </label>
-                {customInstructionsEnabled && (
-                  <>
-                    <TextareaWithVoice
-                      id="custom-instructions"
-                      value={customInstructions}
-                      maxLength={2000}
-                      placeholder="Например: я веган; дай краткий рецепт"
-                      onChange={(e) => {
-                        setCustomInstructions(e.target.value);
-                        queueSettingsSoon();
-                      }}
-                      className="min-h-32"
-                    />
-                    <p className="text-xs text-muted-foreground text-right">
-                      {customInstructions.length}/2000
-                    </p>
-                  </>
-                )}
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">Кастомные инструкции</p>
+                  <p className="text-sm text-muted-foreground">
+                    Укажите предпочтения для анализа (диета, единицы) и
+                    дополнительные запросы к блюду (рецепт, острота и т.п.).
+                    Ответ на доп. запросы появится на карточке приёма в
+                    формате Markdown. Пустое поле не отправляется в AI.
+                  </p>
+                </div>
+                <TextareaWithVoice
+                  id="custom-instructions"
+                  value={customInstructions}
+                  maxLength={2000}
+                  placeholder="Например: я веган; дай краткий рецепт"
+                  onChange={(e) => {
+                    setCustomInstructions(e.target.value);
+                    queueSettingsSoon();
+                  }}
+                  className="min-h-32"
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  {customInstructions.length}/2000
+                </p>
               </div>
             </>
           )}

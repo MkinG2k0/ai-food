@@ -88,10 +88,9 @@ describe('useMealCustomContent', () => {
     expect(result.current.slides.length).toBeGreaterThan(0);
   });
 
-  it('does not fetch when custom instructions are disabled', async () => {
+  it('does not fetch when custom instructions are empty', async () => {
     useSettingsStore.setState({
-      customInstructionsEnabled: false,
-      customInstructions: 'ignored',
+      customInstructions: '   ',
     });
 
     const { result } = renderHook(() => useMealCustomContent('meal-1'), {

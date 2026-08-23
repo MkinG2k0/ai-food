@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ApiError, Meal, MealCustomContentEntry } from '@ai-food/shared-types';
 import { useDiaryStore } from '@/entities/meal';
-import { useSettingsStore } from '@/features/settings';
+import { getActiveCustomInstructions } from '@/features/settings';
 import { fetchMealCustomContentApi } from '../api/fetchMealCustomContentApi';
 import { resolveCustomContentSlides } from './resolveCustomContentSlides';
 
@@ -27,13 +27,7 @@ function buildMealContext(meal: Meal) {
 export function useMealCustomContent(mealId: string | undefined) {
   const meal = useDiaryStore((s) => s.meals.find((m) => m.id === mealId));
   const updateMeal = useDiaryStore((s) => s.updateMeal);
-  const customInstructionsEnabled = useSettingsStore(
-    (s) => s.customInstructionsEnabled,
-  );
-  const customInstructionsRaw = useSettingsStore((s) => s.customInstructions);
-  const instructions = customInstructionsEnabled
-    ? customInstructionsRaw.trim()
-    : '';
+  const instructions = getActiveCustomInstructions();
   const mealReady =
     !!meal &&
     meal.status !== 'analyzing' &&
