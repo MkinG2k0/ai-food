@@ -9,6 +9,13 @@ export { calzenAdapter, parseCalzenReport } from './adapters/calzen';
 export { detectSource, getAdapter } from './model/detectSource';
 export { timestampFromLocalDateTime } from './model/timestampFromLocalDateTime';
 export { buildImportedMeal } from './model/buildImportedMeal';
+export { useImportMealsStore } from './model/useImportMealsStore';
+export {
+  commitImport,
+  parseImportText,
+  useImportPreviewRows,
+  type ParseImportTextResult,
+} from './model/useImportMeals';
 export { parseSpacedNumber } from './lib/parseSpacedNumber';
 export {
   markImportDuplicates,
