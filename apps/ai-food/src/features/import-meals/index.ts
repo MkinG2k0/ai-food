@@ -23,3 +23,5 @@ export {
   mealDedupeKeyFromParts,
 } from './lib/dedupeMeals';
 export { extractPdfText, groupPdfTextItems } from './lib/pdfText';
+export { ImportMealsPreview } from './ui/ImportMealsPreview';
+export type { ImportMealsPreviewProps } from './ui/ImportMealsPreview';

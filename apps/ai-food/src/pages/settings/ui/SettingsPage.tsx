@@ -24,6 +24,10 @@ import {
   type CalendarRingKey,
 } from '@/features/settings';
 import {
+  extractPdfText,
+  parseImportText,
+} from '@/features/import-meals';
+import {
   flushSettingsSync,
   queueSettingsSync,
   SETTINGS_SYNC_DEBOUNCE_MS,
@@ -115,7 +119,9 @@ export function SettingsPage() {
     typeof parseAppDataExport
   > | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [mealImportBusy, setMealImportBusy] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const mealImportInputRef = useRef<HTMLInputElement>(null);
 
   const termsUrl = getLegalUrl('/terms');
   const privacyUrl = getLegalUrl('/privacy');
@@ -318,6 +324,30 @@ export function SettingsPage() {
     setImportOpen(false);
     setPendingImport(null);
     toast.success('Данные импортированы');
+  };
+
+  const handleMealImportFile = async (file: File | undefined) => {
+    if (!file) return;
+    setMealImportBusy(true);
+    try {
+      const data = await file.arrayBuffer();
+      const text = await extractPdfText(data);
+      const result = parseImportText(text);
+      if (!result.ok) {
+        toast.error(
+          result.error === 'unsupported'
+            ? 'Этот формат пока не поддерживается'
+            : 'В отчёте нет записей о еде',
+        );
+        return;
+      }
+      navigate('/import-meals');
+    } catch {
+      toast.error('Не удалось прочитать файл');
+    } finally {
+      setMealImportBusy(false);
+      if (mealImportInputRef.current) mealImportInputRef.current.value = '';
+    }
   };
 
   return (
@@ -735,6 +765,13 @@ export function SettingsPage() {
                 className="hidden"
                 onChange={(e) => void handleImportFile(e.target.files?.[0])}
               />
+              <input
+                ref={mealImportInputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                className="hidden"
+                onChange={(e) => void handleMealImportFile(e.target.files?.[0])}
+              />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
                   variant="outline"
@@ -752,6 +789,21 @@ export function SettingsPage() {
                 >
                   Импорт JSON
                 </Button>
+              </div>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={mealImportBusy || backupBusy}
+                  onClick={() => mealImportInputRef.current?.click()}
+                >
+                  {mealImportBusy
+                    ? 'Читаем отчёт…'
+                    : 'Импорт из другого приложения'}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Пока поддерживается CalZen (PDF-отчёт о питании).
+                </p>
               </div>
             </>
           )}

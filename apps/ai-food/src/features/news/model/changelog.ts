@@ -13,6 +13,17 @@ export interface NewsRelease {
 /** User-facing changelog; newest first. Update manually when shipping features. */
 export const NEWS_CHANGELOG: NewsRelease[] = [
   {
+    date: '2026-08-24',
+    title: 'Импорт дневника',
+    emoji: '📥',
+    items: [
+      {
+        emoji: '📄',
+        text: 'Импорт приёмов из PDF-отчёта CalZen — в Настройки → Данные',
+      },
+    ],
+  },
+  {
     date: '2026-08-19',
     title: 'Виджеты серий и съёмка',
     emoji: '📱',

@@ -10,6 +10,7 @@ import { NewsPage } from '@/pages/news';
 import { FavoritesPage } from '@/pages/favorites';
 import { FriendsPage, FriendProfilePage } from '@/pages/friends';
 import { ManualEntryPage } from '@/pages/manual-entry';
+import { ImportMealsPage } from '@/pages/import-meals';
 import { BarcodePage } from '@/pages/barcode';
 import { ScanPage } from '@/pages/scan';
 import { LoginPage } from '@/pages/login';
@@ -102,6 +103,14 @@ const router = createBrowserRouter([
         element: (
           <ConsentGuard>
             <ProfileGuard><ManualEntryPage /></ProfileGuard>
+          </ConsentGuard>
+        ),
+      },
+      {
+        path: '/import-meals',
+        element: (
+          <ConsentGuard>
+            <ProfileGuard><ImportMealsPage /></ProfileGuard>
           </ConsentGuard>
         ),
       },
