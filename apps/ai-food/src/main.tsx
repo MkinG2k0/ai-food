@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Capacitor } from '@capacitor/core';
 import { defineCustomElements } from '@ionic/pwa-elements/loader';
 import { registerSW } from 'virtual:pwa-register';
 import { inject } from '@vercel/analytics';
@@ -9,7 +10,10 @@ import './app/styles/global.css';
 
 defineCustomElements(window);
 startPwaInstallCapture();
-registerSW({ immediate: true });
+// Service worker is for browser/PWA only. On Android WebView it can cache stale JS.
+if (!Capacitor.isNativePlatform()) {
+  registerSW({ immediate: true });
+}
 inject();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

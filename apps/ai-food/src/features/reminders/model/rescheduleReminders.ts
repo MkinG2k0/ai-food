@@ -16,9 +16,11 @@ import { useRemindersRuntimeStore } from './useRemindersRuntimeStore';
 let rescheduleLock: Promise<void> = Promise.resolve();
 
 export function queueRescheduleReminders(): void {
-  rescheduleLock = rescheduleLock.then(() => rescheduleReminders()).catch(() => {
-    /* swallow — next trigger retries */
-  });
+  rescheduleLock = rescheduleLock
+    .then(() => rescheduleReminders())
+    .catch((error) => {
+      console.warn('[reminders] reschedule failed:', error);
+    });
 }
 
 export async function rescheduleReminders(): Promise<void> {
@@ -29,10 +31,11 @@ export async function rescheduleReminders(): Promise<void> {
   }
 
   const permission = await checkNotificationPermission();
-  if (permission !== 'granted') {
+  if (permission === 'denied') {
     await cancelManagedReminders();
     return;
   }
+  if (permission !== 'granted') return;
 
   const now = new Date();
   const meals = useDiaryStore.getState().meals;
@@ -82,22 +85,4 @@ export async function rescheduleReminders(): Promise<void> {
   ) {
     runtime.markMilestoneNotified(milestoneKey);
   }
-}
-
-export async function maybeRequestReminderPermissionAfterOnboarding(): Promise<void> {
-  const settings = useSettingsStore.getState().reminders;
-  if (!settings.enabled) return;
-
-  const profile = useProfileStore.getState().profile;
-  if (!profile) return;
-
-  const runtime = useRemindersRuntimeStore.getState();
-  if (runtime.permissionPromptShown) return;
-
-  const { requestNotificationPermission } = await import(
-    './localNotificationsNative'
-  );
-  runtime.markPermissionPromptShown();
-  await requestNotificationPermission();
-  queueRescheduleReminders();
 }

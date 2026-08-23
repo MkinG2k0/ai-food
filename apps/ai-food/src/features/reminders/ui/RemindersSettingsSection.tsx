@@ -1,12 +1,17 @@
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Bell, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/shared/lib';
-import { Checkbox } from '@/shared/ui';
+import { Button, Checkbox } from '@/shared/ui';
 import {
   checkNotificationPermission,
   isNativeRemindersSupported,
-  requestNotificationPermission,
+  openExactAlarmSettings,
+  openNotificationSettings,
 } from '../model/localNotificationsNative';
+import { requestReminderPermissionFromUserGesture } from '../model/reminderPermissionFlow';
 import { queueRescheduleReminders } from '../model/rescheduleReminders';
 import type { MealSlotReminderSettings, ReminderSettings } from '../model/types';
 
@@ -135,29 +140,99 @@ export function RemindersSettingsSection({
   setWeightWeekly,
 }: RemindersSettingsSectionProps) {
   const [open, setOpen] = useState(false);
+  const [permissionBusy, setPermissionBusy] = useState(false);
   const [permission, setPermission] = useState<'granted' | 'denied' | 'prompt'>(
     'prompt',
   );
+  const nativeOnly = isNativeRemindersSupported();
 
-  useEffect(() => {
+  const refreshPermission = () => {
     if (!isNativeRemindersSupported()) {
       setPermission('granted');
       return;
     }
     void checkNotificationPermission().then(setPermission);
+  };
+
+  useEffect(() => {
+    refreshPermission();
   }, [reminders.enabled]);
+
+  useEffect(() => {
+    if (!nativeOnly) return;
+
+    let handle: { remove: () => Promise<void> } | undefined;
+    let removed = false;
+
+    void App.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) refreshPermission();
+    }).then((listener) => {
+      if (removed) {
+        void listener.remove();
+        return;
+      }
+      handle = listener;
+    });
+
+    return () => {
+      removed = true;
+      void handle?.remove();
+    };
+  }, [nativeOnly]);
 
   const handleMasterToggle = async (enabled: boolean) => {
     setRemindersEnabled(enabled);
     if (enabled && isNativeRemindersSupported()) {
-      const state = await requestNotificationPermission();
+      const state = await requestReminderPermissionFromUserGesture();
       setPermission(state);
     }
     queueRescheduleReminders();
   };
 
+  const handleToggleOpen = () => {
+    setOpen((wasOpen) => {
+      const next = !wasOpen;
+      if (next && nativeOnly) {
+        refreshPermission();
+      }
+      return next;
+    });
+  };
+
+  const handleAllowNotifications = async () => {
+    if (!nativeOnly) {
+      toast.error('Уведомления доступны только в приложении на Android');
+      return;
+    }
+
+    setPermissionBusy(true);
+    try {
+      const state = await requestReminderPermissionFromUserGesture();
+      setPermission(state);
+
+      if (state === 'granted') {
+        toast.success('Уведомления разрешены');
+        queueRescheduleReminders();
+        return;
+      }
+
+      toast.warning('Включите уведомления в настройках Android');
+      await openNotificationSettings();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Не удалось запросить разрешение';
+      toast.error(message);
+      try {
+        await openNotificationSettings();
+      } catch {
+        // ignore
+      }
+    } finally {
+      setPermissionBusy(false);
+    }
+  };
+
   const summary = reminderStatusSummary(reminders);
-  const nativeOnly = isNativeRemindersSupported();
 
   return (
     <section className="space-y-3">
@@ -165,7 +240,7 @@ export function RemindersSettingsSection({
         type="button"
         className="flex w-full items-center justify-between gap-3 text-left"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggleOpen}
       >
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-medium leading-none">Напоминания</h2>
@@ -183,17 +258,59 @@ export function RemindersSettingsSection({
 
       {open ? (
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {nativeOnly
-              ? 'Локально на этом устройстве, не синхронизируются.'
-              : 'Работают в Android-приложении. В браузере настройки сохраняются, уведомления не приходят.'}
-          </p>
+          {!nativeOnly ? (
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Локальные напоминания работают в Android-приложении.
+            </p>
+          ) : null}
+
+          {permission !== 'granted' && nativeOnly ? (
+            <div className="space-y-2">
+              <Button
+                type="button"
+                className="w-full"
+                disabled={permissionBusy}
+                onClick={() => void handleAllowNotifications()}
+              >
+                {permissionBusy
+                  ? 'Запрашиваем…'
+                  : permission === 'denied'
+                    ? 'Запросить снова'
+                    : 'Разрешить уведомления'}
+              </Button>
+              {permission === 'denied' ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => void openNotificationSettings()}
+                >
+                  Открыть настройки уведомлений
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
 
           {permission === 'denied' && nativeOnly ? (
             <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-              Уведомления запрещены в системе. Включите их для AI Food в настройках
-              Android.
+              Уведомления запрещены. Включите их для AI Food в системных настройках.
             </p>
+          ) : null}
+
+          {permission === 'granted' && nativeOnly && Capacitor.getPlatform() === 'android' ? (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Для точного времени включите «Будильники и напоминания» для AI Food.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-8 w-full text-xs"
+                onClick={() => void openExactAlarmSettings()}
+              >
+                Открыть настройки будильников
+              </Button>
+            </div>
           ) : null}
 
           <div className="overflow-hidden rounded-lg border border-border bg-background">

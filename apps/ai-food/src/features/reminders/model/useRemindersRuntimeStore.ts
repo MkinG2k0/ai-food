@@ -7,12 +7,10 @@ interface RemindersRuntimeState {
   lastTimezoneOffsetMinutes: number | null;
   notifiedMilestoneKeys: string[];
   backgroundAnalyzeMealIds: string[];
-  permissionPromptShown: boolean;
   recordForeground: (at?: Date) => void;
   recordBackgroundAnalyzing: (mealIds: string[]) => void;
   clearBackgroundAnalyzing: () => void;
   markMilestoneNotified: (key: string) => void;
-  markPermissionPromptShown: () => void;
   setTimezoneOffset: (offsetMinutes: number) => boolean;
 }
 
@@ -23,7 +21,6 @@ export const useRemindersRuntimeStore = create<RemindersRuntimeState>()(
       lastTimezoneOffsetMinutes: null,
       notifiedMilestoneKeys: [],
       backgroundAnalyzeMealIds: [],
-      permissionPromptShown: false,
       recordForeground: (at = new Date()) => {
         set({ lastForegroundAt: at.toISOString() });
       },
@@ -37,9 +34,6 @@ export const useRemindersRuntimeStore = create<RemindersRuntimeState>()(
         const current = get().notifiedMilestoneKeys;
         if (current.includes(key)) return;
         set({ notifiedMilestoneKeys: [...current, key] });
-      },
-      markPermissionPromptShown: () => {
-        set({ permissionPromptShown: true });
       },
       setTimezoneOffset: (offsetMinutes) => {
         const prev = get().lastTimezoneOffsetMinutes;

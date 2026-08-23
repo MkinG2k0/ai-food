@@ -8,13 +8,13 @@ import { useSettingsStore } from '@/features/settings';
 import { useWeightStore } from '@/features/stats';
 import { useStreakStore } from '@/features/streak';
 import {
+  tryAutoRequestReminderPermission,
+} from '../model/reminderPermissionFlow';
+import { queueRescheduleReminders } from '../model/rescheduleReminders';
+import {
   checkNotificationPermission,
   isNativeRemindersSupported,
 } from '../model/localNotificationsNative';
-import {
-  maybeRequestReminderPermissionAfterOnboarding,
-  queueRescheduleReminders,
-} from '../model/rescheduleReminders';
 import { useRemindersRuntimeStore } from '../model/useRemindersRuntimeStore';
 
 /**
@@ -70,7 +70,12 @@ export function ReminderLifecycle() {
       useRemindersRuntimeStore.getState().recordForeground();
       useRemindersRuntimeStore.getState().setTimezoneOffset(new Date().getTimezoneOffset());
       useRemindersRuntimeStore.getState().clearBackgroundAnalyzing();
-      queueRescheduleReminders();
+      void checkNotificationPermission().then((state) => {
+        setPermission(state);
+        if (state === 'granted') {
+          queueRescheduleReminders();
+        }
+      });
     };
 
     const onBackground = () => {
@@ -94,23 +99,30 @@ export function ReminderLifecycle() {
     const unsubWeight = useWeightStore.subscribe(schedule);
     const unsubStreak = useStreakStore.subscribe(schedule);
 
+    const tryAutoPermission = () => {
+      tryAutoRequestReminderPermission();
+    };
+
     const unsubDiaryHydration =
       useDiaryStore.persist.onFinishHydration(() => {
         onForeground();
-        void maybeRequestReminderPermissionAfterOnboarding();
+        tryAutoPermission();
       });
     const unsubSettingsHydration =
-      useSettingsStore.persist.onFinishHydration(schedule);
+      useSettingsStore.persist.onFinishHydration(() => {
+        schedule();
+        tryAutoPermission();
+      });
     const unsubProfileHydration = useProfileStore.persist.onFinishHydration(
       () => {
-        void maybeRequestReminderPermissionAfterOnboarding();
+        tryAutoPermission();
         schedule();
       },
     );
 
     if (useDiaryStore.persist.hasHydrated()) {
       onForeground();
-      void maybeRequestReminderPermissionAfterOnboarding();
+      tryAutoPermission();
     } else {
       schedule();
     }
@@ -152,6 +164,11 @@ export function ReminderLifecycle() {
     };
   }, []);
 
-  void permission;
+  useEffect(() => {
+    if (permission === 'granted') {
+      queueRescheduleReminders();
+    }
+  }, [permission]);
+
   return null;
 }

@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   server: {
     // Point native shell to local Vite dev server during development.
     // Comment this out (or remove) before a production native build.
-    // url: 'http://localhost:5173',
+    // url: ' http://192.168.0.199:5173',
     cleartext: true, // allow http on Android debug builds
   },
   android: {
@@ -30,6 +30,7 @@ const config: CapacitorConfig = {
     },
     LocalNotifications: {
       iconColor: '#09AF86',
+      smallIcon: 'ic_stat_notification',
     },
   },
 };

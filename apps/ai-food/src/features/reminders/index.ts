@@ -21,7 +21,15 @@ export {
   REMINDER_CHANNEL_ID,
 } from './model/localNotificationsNative';
 export {
+  areReminderStoresHydrated,
+  canAutoRequestReminderPermission,
+  maybeAutoRequestReminderPermission,
   maybeRequestReminderPermissionAfterOnboarding,
+  requestReminderPermissionFromUserGesture,
+  requestReminderPermissionWithReschedule,
+  tryAutoRequestReminderPermission,
+} from './model/reminderPermissionFlow';
+export {
   queueRescheduleReminders,
   rescheduleReminders,
 } from './model/rescheduleReminders';
