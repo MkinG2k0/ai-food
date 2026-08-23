@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Dev: весь проект",
+      "type": "shell",
+      "command": "pnpm dev",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      }
+    },
+    {
+      "label": "Android: Build + Sync",
+      "type": "shell",
+      "command": "pnpm --filter ai-food run build:mobile",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "clear": true
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Android: Sync",
+      "type": "shell",
+      "command": "pnpm --filter ai-food run cap:sync",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": false,
+        "clear": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}

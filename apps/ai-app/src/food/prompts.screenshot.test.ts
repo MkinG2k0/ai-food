@@ -5,6 +5,7 @@ import {
   ANALYSIS_PROMPT,
   ANALYSIS_PROMPT_MULTI,
   ANALYZE_COMPOSITION_PROMPT_RULE,
+  FOREGROUND_SUBJECT_PROMPT_RULE,
   buildAnalyzeVisionUserText,
   selectAnalyzeSystemPrompt,
 } from './prompts.js';
@@ -130,5 +131,28 @@ describe('vision prompts: screenshot dish composition splits when composition is
     expect(prompt).not.toContain(ANALYZE_COMPOSITION_PROMPT_RULE);
     expect(prompt).not.toContain(SCREENSHOT_SPLIT_SENTENCE);
     expectScreenshotIsFood(prompt);
+  });
+});
+
+describe('vision prompts: foreground subject only, ignore background food', () => {
+  it('vision system prompt requires foreground-only analysis', () => {
+    const prompt = selectAnalyzeSystemPrompt(true);
+    expect(prompt).toContain(FOREGROUND_SUBJECT_PROMPT_RULE);
+    expect(prompt).toMatch(/ПЕРЕДНЕМ ПЛАНЕ/);
+    expect(prompt).toMatch(/заднем плане/);
+    expect(prompt).toMatch(/НЕ суммируй «всё съедобное в кадре»/);
+    expect(prompt).not.toMatch(/включи все компоненты всех блюд/);
+  });
+
+  it('text-only prompt has no foreground-subject section', () => {
+    const prompt = selectAnalyzeSystemPrompt(false);
+    expect(prompt).not.toContain(FOREGROUND_SUBJECT_PROMPT_RULE);
+    expect(prompt).not.toMatch(/ПЕРЕДНЕМ ПЛАНЕ/);
+  });
+
+  it('vision user text reminds to ignore background food', () => {
+    expect(ANALYSIS_PROMPT).toMatch(/переднем плане/i);
+    expect(ANALYSIS_PROMPT).toMatch(/заднем плане/i);
+    expect(ANALYSIS_PROMPT_MULTI).toMatch(/переднем плане/i);
   });
 });
