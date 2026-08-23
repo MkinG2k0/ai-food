@@ -22,3 +22,4 @@ export {
   mealDedupeKeyFromMeal,
   mealDedupeKeyFromParts,
 } from './lib/dedupeMeals';
+export { extractPdfText, groupPdfTextItems } from './lib/pdfText';
