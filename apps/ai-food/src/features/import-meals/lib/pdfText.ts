@@ -1,10 +1,7 @@
 import * as pdfjs from 'pdfjs-dist';
+import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-// pdfjs-dist v5 ships the Vite-compatible worker as an ESM module.
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
 type PositionedTextItem = {
   str: string;
@@ -59,13 +56,17 @@ export function groupPdfTextItems(items: PdfTextItem[]): string {
 
 export async function extractPdfText(data: ArrayBuffer): Promise<string> {
   const doc = await pdfjs.getDocument({ data }).promise;
-  const pages: string[] = [];
+  try {
+    const pages: string[] = [];
 
-  for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
-    const page = await doc.getPage(pageNumber);
-    const content = await page.getTextContent();
-    pages.push(groupPdfTextItems(content.items));
+    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
+      const page = await doc.getPage(pageNumber);
+      const content = await page.getTextContent();
+      pages.push(groupPdfTextItems(content.items));
+    }
+
+    return pages.filter(Boolean).join('\n');
+  } finally {
+    await Promise.resolve(doc.destroy?.());
   }
-
-  return pages.filter(Boolean).join('\n');
 }

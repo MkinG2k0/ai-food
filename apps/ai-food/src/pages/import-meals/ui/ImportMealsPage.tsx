@@ -9,6 +9,9 @@ import {
 } from '@/features/import-meals';
 import { SubpageShell } from '@/shared/ui';
 
+/** Bumps on each mount; cleanup only clears when no newer mount exists (StrictMode-safe). */
+let importMealsPageMountGen = 0;
+
 export function ImportMealsPage() {
   const navigate = useNavigate();
   const drafts = useImportMealsStore((state) => state.drafts);
@@ -21,6 +24,17 @@ export function ImportMealsPage() {
       navigate('/settings', { replace: true });
     }
   }, [drafts.length, navigate]);
+
+  useEffect(() => {
+    const gen = ++importMealsPageMountGen;
+    return () => {
+      window.setTimeout(() => {
+        if (gen === importMealsPageMountGen) {
+          useImportMealsStore.getState().clear();
+        }
+      }, 0);
+    };
+  }, []);
 
   const handleBack = () => {
     clear();
