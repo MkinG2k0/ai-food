@@ -1,6 +1,6 @@
 {
   "name": "ai-food",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
+    "pretest:e2e": "playwright install --with-deps chromium",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui --ui-host 127.0.0.1",
     "test:e2e:headed": "playwright test --headed",
