@@ -8,6 +8,7 @@ const setStyle = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@capacitor/core', () => ({
   Capacitor: { isNativePlatform: () => false },
+  registerPlugin: vi.fn(() => ({})),
 }));
 
 vi.mock('@capacitor/splash-screen', () => ({

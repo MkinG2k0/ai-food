@@ -19,6 +19,7 @@ vi.mock('@capacitor/core', () => ({
     isNativePlatform: () => isNativePlatform,
     convertFileSrc: (uri: string) => `capacitor://${uri}`,
   },
+  registerPlugin: vi.fn(() => ({})),
 }));
 
 import { saveMealImage, getMealImageSrc, loadMealImageAsFile } from './mealImage';

@@ -21,6 +21,7 @@ vi.mock('@capacitor/core', () => ({
   Capacitor: {
     getPlatform: () => 'web',
   },
+  registerPlugin: vi.fn(() => ({})),
 }));
 
 import { submitSupportReportApi } from './submitSupportReportApi';

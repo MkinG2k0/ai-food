@@ -8,7 +8,7 @@ import {
   DEFAULT_REMINDER_SETTINGS,
   type ReminderSettings,
 } from '@/features/reminders/model/types';
-import { capacitorStorage } from '@/shared/lib';
+import { capacitorStorage } from '@/shared/lib/capacitorStorage';
 
 export {
   DEFAULT_REMINDER_SETTINGS,

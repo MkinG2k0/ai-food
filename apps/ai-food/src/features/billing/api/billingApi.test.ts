@@ -4,6 +4,7 @@ vi.mock('@capacitor/core', () => ({
   Capacitor: {
     isNativePlatform: vi.fn(() => false),
   },
+  registerPlugin: vi.fn(() => ({})),
 }));
 
 vi.mock('@/features/auth', () => ({

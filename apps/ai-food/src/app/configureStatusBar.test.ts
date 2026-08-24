@@ -8,6 +8,7 @@ vi.mock('@capacitor/core', () => ({
   Capacitor: {
     isNativePlatform: () => isNativePlatform(),
   },
+  registerPlugin: vi.fn(() => ({})),
 }));
 
 vi.mock('@capacitor/status-bar', () => ({
