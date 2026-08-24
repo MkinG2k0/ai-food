@@ -179,7 +179,7 @@ export default function AdminSupportReportsPage() {
     <div className="admin-stack">
       <PageHeader
         title="Обращения"
-        description="Сообщения об ошибках и обратная связь из приложения."
+        subtitle="Сообщения об ошибках и обратная связь из приложения."
       />
 
       {listQuery.isError ? (
