@@ -8,6 +8,7 @@ import {
   CreditCardOutlined,
   HeartOutlined,
   LogoutOutlined,
+  MessageOutlined,
   TagsOutlined,
   UserOutlined,
   WalletOutlined,
@@ -19,6 +20,7 @@ const { Content, Header, Sider } = Layout;
 const menuItems = [
   { icon: <BarChartOutlined />, key: '/admin', label: 'Обзор' },
   { icon: <ApiOutlined />, key: '/admin/requests', label: 'Запросы' },
+  { icon: <MessageOutlined />, key: '/admin/support-reports', label: 'Обращения' },
   { icon: <HeartOutlined />, key: '/admin/health', label: 'Стабильность' },
   { icon: <TagsOutlined />, key: '/admin/pricing', label: 'Цены и лимиты' },
   {
@@ -37,6 +39,7 @@ const menuItems = [
 const pageTitles: Record<string, string> = {
   '/admin': 'Обзор',
   '/admin/requests': 'Запросы',
+  '/admin/support-reports': 'Обращения',
   '/admin/health': 'Стабильность',
   '/admin/pricing': 'Цены и лимиты',
   '/admin/users': 'Пользователи',

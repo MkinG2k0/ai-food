@@ -13,6 +13,7 @@ import {
 import { queueRescheduleReminders } from '../model/rescheduleReminders';
 import {
   checkNotificationPermission,
+  clearDeliveredNotifications,
   isNativeRemindersSupported,
 } from '../model/localNotificationsNative';
 import { useRemindersRuntimeStore } from '../model/useRemindersRuntimeStore';
@@ -67,6 +68,7 @@ export function ReminderLifecycle() {
     };
 
     const onForeground = () => {
+      void clearDeliveredNotifications();
       useRemindersRuntimeStore.getState().recordForeground();
       useRemindersRuntimeStore.getState().setTimezoneOffset(new Date().getTimezoneOffset());
       useRemindersRuntimeStore.getState().clearBackgroundAnalyzing();

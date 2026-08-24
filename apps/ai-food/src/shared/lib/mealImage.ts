@@ -1,5 +1,6 @@
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
+import { appDebugLog } from './appDebugLog';
 
 const MEAL_IMAGES_DIR = 'meal-images';
 
@@ -13,9 +14,18 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export async function saveMealImage(file: File): Promise<string> {
+  const t0 = performance.now();
   const data = await fileToBase64(file);
+  const base64Ms = performance.now() - t0;
   const path = `${MEAL_IMAGES_DIR}/${crypto.randomUUID()}.jpg`;
+  const tWrite = performance.now();
   await Filesystem.writeFile({ path, data, directory: Directory.Data, recursive: true });
+  const writeMs = performance.now() - tWrite;
+  appDebugLog('photo', 'saveMealImage', performance.now() - t0, {
+    base64Ms: Math.round(base64Ms),
+    writeFileMs: Math.round(writeMs),
+    bytes: file.size,
+  });
   return path;
 }
 

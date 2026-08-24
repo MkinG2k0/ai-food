@@ -95,15 +95,13 @@ describe('applyPartialAnalyzeResultToMeal', () => {
     });
   });
 
-  it('optionally updates itemCount/totalGrams', () => {
+  it('optionally updates totalGrams', () => {
     applyPartialAnalyzeResultToMeal('meal-1', {
       calories: 100,
-      itemCount: 3,
       totalGrams: 250,
     });
 
     const meal = useDiaryStore.getState().meals[0];
-    expect(meal.portions).toBe(3);
     expect(meal.totalGrams).toBe(250);
     expect(meal.status).toBe('analyzing');
   });

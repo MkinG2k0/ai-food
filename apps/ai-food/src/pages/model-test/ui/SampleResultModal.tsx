@@ -109,9 +109,6 @@ export function SampleResultModal({
                 {result.totalGrams != null ? (
                   <Badge variant="outline">{Math.round(result.totalGrams)} г</Badge>
                 ) : null}
-                {result.itemCount != null ? (
-                  <Badge variant="outline">порций: {result.itemCount}</Badge>
-                ) : null}
                 {result.healthiness != null ? (
                   <Badge variant="outline">
                     полезность {result.healthiness}/10

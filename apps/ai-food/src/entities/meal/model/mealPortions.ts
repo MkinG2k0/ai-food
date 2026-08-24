@@ -3,8 +3,8 @@ import { sanitizeNutrient, sumItemCalories } from './mealNutritionMath';
 import { sanitizeGrams } from './mealGrams';
 
 export const DEFAULT_PORTIONS = 1;
-export const PORTION_STEP = 0.5;
-export const MIN_PORTIONS = 0.5;
+export const PORTION_STEP = 0.25;
+export const MIN_PORTIONS = 0.25;
 export const MAX_PORTIONS = 20;
 
 /** Resolve persisted or legacy meal portions. */
@@ -12,16 +12,18 @@ export function resolveMealPortions(meal: Pick<Meal, 'portions'>): number {
   return normalizePortions(meal.portions ?? DEFAULT_PORTIONS);
 }
 
-/** Clamp and snap to 0.5 steps. */
+/** Clamp and snap to 0.25 steps. */
 export function normalizePortions(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_PORTIONS;
   const snapped = Math.round(value / PORTION_STEP) * PORTION_STEP;
-  return Math.min(MAX_PORTIONS, Math.max(MIN_PORTIONS, snapped));
+  const rounded = Math.round(snapped * 100) / 100;
+  return Math.min(MAX_PORTIONS, Math.max(MIN_PORTIONS, rounded));
 }
 
 export function formatPortions(portions: number): string {
   const n = normalizePortions(portions);
-  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+  if (Number.isInteger(n)) return String(n);
+  return String(Number(n.toFixed(2)));
 }
 
 /** Scale all item nutrients/grams by ratio and return with new totalCalories. */

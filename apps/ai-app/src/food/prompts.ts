@@ -17,13 +17,6 @@ export const FOOD_NAME_PROMPT_RULE =
 export const COMPOSITION_PROMPT_RULE =
   'Состав (items): составные/слойные блюда (бургер, сэндвич, ролл, шаурма, пицца с начинкой, салат-сборка) всегда разбивай на видимые ингредиенты/слои. Пример: бургер → отдельные item «Булка», «Котлета», «Сыр», «Салат», «Помидор» — не оставляй один item «Гамбургер»/«Бургер», когда на фото видны слои. Простые однородные продукты (картофель фри, яблоко, стакан сока, йогурт/сок/молоко в упаковке, батончик) — один item допустим; не разбивай упакованный продукт на ингредиенты с физической этикетки. Если это скриншот и на экране читается состав/ингредиенты блюда (доставка, карточка блюда) — разбивай items по этому списку, а не одним item с названием блюда. foodName = название всего приёма; item/name = атомарные компоненты — не дублируй название составного блюда как единственный item, если видны части.';
 
-export const ITEM_COUNT_PROMPT_RULE = `itemCount — число съедобных единиц, которые обычно считают ПОШТУЧНО (не «одна тарелка = 1»).
-Считай поштучно, если продукт принято считать штуками — даже когда все лежат на одной тарелке/в одной миске: роллы/суши/онигири, крылышки, наггетсы, пельмени/вареники/гёдза, печенье, яйца, бургеры, сосиски, яблоки. Пример: 5 роллов на тарелке → itemCount=5; 8 крылышек → itemCount=8; 6 наггетсов → itemCount=6.
-КБЖУ, fiber, totalGrams и grams в items — всегда на ВСЕ видимые штуки целиком (сумма), НЕ на одну штуку.
-itemCount = 1, если блюдо НЕ считают поштучно: салат, паста, рагу, суп, каша, пюре, мясо/рыба кусками в соусе как одно блюдо, гарнир дольками, однородное содержимое миски/контейнера.
-itemCount = 1 для одной упаковки продукта (стаканчик йогурта, бутылка/пакет сока, батончик) — даже если упаковка закрыта.
-НЕ равно длине массива items (items = состав/ингредиенты/слои, не штуки). НЕ считай слои ролла, листья салата, дольки гарнира как itemCount.`;
-
 export const PACKAGED_FOOD_PROMPT_RULE = `## Упакованные продукты (йогурт, сок, молоко, творожок, батончик, консервы, чипсы и т.п.)
 Закрытая или открытая упаковка с пищевым продуктом / напитком — это ЕДА, НЕ noFood.
 Приоритет данных:
@@ -73,8 +66,6 @@ unit строго по id: vitaminA/vitaminD/vitaminK/vitaminB7/folate/vitaminB1
 
 const VISION_NUTRITION_XML_SCHEMA = `<analysis>
   <foodName>краткое название всего блюда/приёма на русском</foodName>
-
-  <itemCount>число поштучных единиц (роллы/крылышки/наггетсы…): 5 роллов → 5; салат/паста/рагу → 1. НЕ равно числу items; КБЖУ на все штуки</itemCount>
 
   <totalGrams>оценка веса всего блюда в граммах (сумма items[].grams); только число</totalGrams>
 
@@ -145,7 +136,6 @@ ${FOREGROUND_SUBJECT_PROMPT_RULE}
 
 ## Порция и граммы (обязательно)
 - grams обязателен для каждого item.
-${ITEM_COUNT_PROMPT_RULE}
 - totalGrams — оценка веса объекта съёмки в граммах (обычно ≈ сумма items[].grams); без еды с заднего плана.
 - Якоря: тарелка ≈ 22–27 см; столовая ложка ≈ 15 мл; банка; бутылка 0.5 л; вес/объём с этикетки упаковки.
 - Оценивай видимую порцию объекта съёмки, а не «стандартную порцию из меню» и не всё съедобное в кадре.
@@ -202,7 +192,6 @@ ${PACKAGED_FOOD_PROMPT_RULE}
 
 ## Порция и граммы (обязательно)
 - grams обязателен для каждого item.
-${ITEM_COUNT_PROMPT_RULE}
 - totalGrams — оценка веса ВСЕГО блюда в граммах (обычно ≈ сумма items[].grams).
 - Если размер порции в описании неясен — оцени типичную порцию, укажи это в portionReference.
 - Якоря: тарелка ≈ 22–27 см; столовая ложка ≈ 15 мл; банка; бутылка 0.5 л; вес/объём с упаковки если указан.
@@ -291,7 +280,6 @@ unit строго по id: vitaminA/vitaminD/vitaminK/vitaminB7/folate/vitaminB1
 const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
 {
   "foodName": string (краткое название всего блюда/приёма на русском),
-  "itemCount": number (поштучные единицы: 5 роллов → 5; 8 крылышек → 8; салат/паста/рагу → 1; КБЖУ на все штуки; НЕ равно длине items),
   "totalGrams": number (оценка веса всего блюда в граммах; обычно ≈ сумма items[].grams),
   "calories": number (суммарные килокалории — сумма items; one decimal when not whole, e.g. 5.5),
   "protein": number (grams, сумма по составу; one decimal when not whole, e.g. 5.5),
@@ -321,11 +309,10 @@ const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user pro
 }
 ${FOOD_NAME_PROMPT_RULE}
 ${COMPOSITION_PROMPT_RULE}
-${ITEM_COUNT_PROMPT_RULE}
 ${PACKAGED_FOOD_PROMPT_RULE}
 ${REFINE_MICRONUTRIENTS_RULE}
 ${MACRO_DECIMAL_PROMPT_RULE}
-Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update itemCount when the correction changes how many countable units were eaten (e.g. «съел 3 из 5 роллов» → itemCount=3; KBJU for those units). Update totalGrams to match the revised dish weight.
+Apply the user correction fully: portion scaling («съел половину»), ingredient substitutions, and free-text rewrites. Keep Russian names. Top-level calories/protein/carbs/fat/fiber must match the sum of items. Update totalGrams to match the revised dish weight.
 If the correction is NOT a meal edit (not about portion, ingredients, swaps, composition, calories of THIS dish — e.g. math, code, identity, jokes, bare numbers without food intent) — return ONLY JSON {"offTopic":true,"reason":"..."} instead of NutritionResult. Never invent a new meal for off-topic input.
 Do not include any text outside the JSON object. No markdown fences.`;
 

@@ -4,14 +4,14 @@ const config: CapacitorConfig = {
   appId: 'com.aifood.app',
   appName: 'AI Food',
   webDir: 'dist',
-  server: {
-    // Point native shell to local Vite dev server during development.
-    // Comment this out (or remove) before a production native build.
-    // url: ' http://192.168.0.199:5173',
-    cleartext: true, // allow http on Android debug builds
-  },
+  // Dev live-reload (HTTP LAN): uncomment url — but getUserMedia won't work (not secure).
+  // For camera live-preview use packaged webDir (no server.url) or HTTPS.
+  // server: {
+  //   url: 'http://192.168.0.199:5173',
+  //   cleartext: true,
+  // },
   android: {
-    allowMixedContent: true, // needed when server.url is http
+    allowMixedContent: true,
   },
   plugins: {
     SplashScreen: {

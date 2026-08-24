@@ -36,16 +36,18 @@ describe('mealPortions', () => {
   });
 
   it('snaps and clamps portions', () => {
-    expect(normalizePortions(1.2)).toBe(1);
-    expect(normalizePortions(1.3)).toBe(1.5);
-    expect(normalizePortions(0)).toBe(0.5);
+    expect(normalizePortions(1.2)).toBe(1.25);
+    expect(normalizePortions(1.3)).toBe(1.25);
+    expect(normalizePortions(0)).toBe(0.25);
     expect(normalizePortions(100)).toBe(20);
     expect(normalizePortions(Number.NaN)).toBe(1);
   });
 
-  it('formats integer and half portions', () => {
+  it('formats integer and quarter portions', () => {
     expect(formatPortions(1)).toBe('1');
     expect(formatPortions(1.5)).toBe('1.5');
+    expect(formatPortions(1.25)).toBe('1.25');
+    expect(formatPortions(0.75)).toBe('0.75');
   });
 
   it('scales items by portion ratio', () => {

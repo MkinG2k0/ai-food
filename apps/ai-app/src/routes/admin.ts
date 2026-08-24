@@ -8,6 +8,10 @@ import {
 import { countWindow, statsByType } from '../lib/gatewayRequestStats.js';
 import { parseGatewayRequestListQuery } from '../lib/parseGatewayRequestListQuery.js';
 import { normalizePromoCode } from '../lib/promos.js';
+import {
+  parseSupportReportListQuery,
+  supportReportResponse,
+} from '../lib/supportReport.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import { getQuotaLimits } from '../lib/quota.js';
 import {
@@ -75,6 +79,8 @@ function userResponse(user: {
 }) {
   return {
     id: user.id,
+    isGuest: false as const,
+    deviceId: null as string | null,
     telegramId: user.telegramId,
     username: user.username,
     firstName: user.firstName,
@@ -84,6 +90,30 @@ function userResponse(user: {
     dataConsentVersion: user.dataConsentVersion ?? null,
     createdAt: user.createdAt?.toISOString() ?? undefined,
     ...subscriptionPublicFields(user),
+  };
+}
+
+/** Guest device (no Telegram account yet) as a users-list / detail row. */
+function guestResponse(device: {
+  id: string;
+  deviceId: string;
+  createdAt: Date;
+}) {
+  return {
+    id: device.id,
+    isGuest: true as const,
+    deviceId: device.deviceId,
+    telegramId: '',
+    username: null,
+    firstName: 'Гость',
+    lastName: null,
+    photoUrl: null,
+    dataConsentAt: null,
+    dataConsentVersion: null,
+    createdAt: device.createdAt.toISOString(),
+    subscriptionStatus: 'none' as const,
+    subscriptionExpiresAt: null,
+    hasActiveSubscription: false,
   };
 }
 
@@ -153,6 +183,32 @@ async function usageCountsForUserIds(
   }
   return map;
 }
+
+async function usageCountsForDeviceIds(
+  prisma: ReturnType<typeof requireDb>,
+  deviceRowIds: string[],
+): Promise<Map<string, UsageCounts>> {
+  const map = new Map<string, UsageCounts>();
+  for (const id of deviceRowIds) map.set(id, emptyUsageCounts());
+  if (deviceRowIds.length === 0) return map;
+
+  const rows = await prisma.usageEvent.groupBy({
+    by: ['deviceId', 'kind'],
+    where: { deviceId: { in: deviceRowIds } },
+    _count: { _all: true },
+  });
+
+  for (const row of rows) {
+    const counts = map.get(row.deviceId) ?? emptyUsageCounts();
+    if (row.kind in counts) {
+      counts[row.kind as keyof UsageCounts] += row._count._all;
+    }
+    map.set(row.deviceId, counts);
+  }
+  return map;
+}
+
+const USERS_LIST_LIMIT = 100;
 
 function paymentResponse(payment: {
   id: string;
@@ -627,6 +683,120 @@ adminRouter.get(
 );
 
 adminRouter.get(
+  '/support-reports',
+  asyncHandler(async (req, res) => {
+    const prisma = requireDb();
+    const { page, pageSize, status } = parseSupportReportListQuery(
+      req.query as Record<string, unknown>,
+    );
+    const where = status ? { status } : {};
+    const skip = (page - 1) * pageSize;
+
+    const [rows, total] = await Promise.all([
+      prisma.supportReport.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        include: {
+          user: {
+            select: {
+              id: true,
+              telegramId: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              photoUrl: true,
+            },
+          },
+        },
+      }),
+      prisma.supportReport.count({ where }),
+    ]);
+
+    res.json({
+      items: rows.map((row) => {
+        const response = supportReportResponse(row);
+        const { images, ...rest } = response;
+        return { ...rest, imageCount: images.length };
+      }),
+      total,
+      page,
+      pageSize,
+    });
+  }),
+);
+
+adminRouter.get(
+  '/support-reports/:id',
+  asyncHandler(async (req, res) => {
+    const prisma = requireDb();
+    const id = req.params.id;
+    const report = await prisma.supportReport.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            telegramId: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            photoUrl: true,
+          },
+        },
+      },
+    });
+    if (!report) {
+      throw new ApiError(404, 'NOT_FOUND', 'Support report not found.');
+    }
+    res.json(supportReportResponse(report));
+  }),
+);
+
+adminRouter.patch(
+  '/support-reports/:id/status',
+  asyncHandler(async (req, res) => {
+    const prisma = requireDb();
+    const id = req.params.id;
+    const status = req.body?.status;
+    if (status !== 'new' && status !== 'read' && status !== 'resolved') {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid status.');
+    }
+
+    try {
+      const updated = await prisma.supportReport.update({
+        where: { id },
+        data: { status },
+        include: {
+          user: {
+            select: {
+              id: true,
+              telegramId: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              photoUrl: true,
+            },
+          },
+        },
+      });
+      res.json(supportReportResponse(updated));
+    } catch (error) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'P2025'
+      ) {
+        throw new ApiError(404, 'NOT_FOUND', 'Support report not found.');
+      }
+      throw error;
+    }
+  }),
+);
+
+adminRouter.get(
   '/payments',
   asyncHandler(async (_req, res) => {
     const prisma = requireDb();
@@ -698,19 +868,58 @@ adminRouter.get(
           }
         : {}),
       orderBy: { createdAt: 'desc' },
-      take: 20,
+      take: USERS_LIST_LIMIT,
     });
-    const countsByUser = await usageCountsForUserIds(
-      prisma,
-      users.map((user) => user.id),
-    );
+    const guestDevices = await prisma.device.findMany({
+      where: {
+        userId: null,
+        ...(query
+          ? {
+              OR: [
+                { id: { equals: query } },
+                { deviceId: { equals: query } },
+                {
+                  deviceId: {
+                    contains: query,
+                    mode: 'insensitive' as const,
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: USERS_LIST_LIMIT,
+    });
 
-    res.json({
-      users: users.map((user) => ({
+    const [countsByUser, countsByDevice] = await Promise.all([
+      usageCountsForUserIds(
+        prisma,
+        users.map((user) => user.id),
+      ),
+      usageCountsForDeviceIds(
+        prisma,
+        guestDevices.map((device) => device.id),
+      ),
+    ]);
+
+    const rows = [
+      ...users.map((user) => ({
         ...userResponse(user),
         usageCounts: countsByUser.get(user.id) ?? emptyUsageCounts(),
+        _sortAt: user.createdAt.getTime(),
       })),
-    });
+      ...guestDevices.map((device) => ({
+        ...guestResponse(device),
+        usageCounts: countsByDevice.get(device.id) ?? emptyUsageCounts(),
+        _sortAt: device.createdAt.getTime(),
+      })),
+    ]
+      .sort((a, b) => b._sortAt - a._sortAt)
+      .slice(0, USERS_LIST_LIMIT)
+      .map(({ _sortAt: _, ...row }) => row);
+
+    res.json({ users: rows });
   }),
 );
 
@@ -719,30 +928,58 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     const prisma = requireDb();
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
-    if (!user) {
+    if (user) {
+      const [countsByUser, payments, recentEvents] = await Promise.all([
+        usageCountsForUserIds(prisma, [user.id]),
+        prisma.payment.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+          include: {
+            user: {
+              select: {
+                id: true,
+                telegramId: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        }),
+        prisma.usageEvent.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: 'desc' },
+          take: 100,
+          include: { device: { select: { deviceId: true } } },
+        }),
+      ]);
+
+      res.json({
+        user: userResponse(user),
+        usageCounts: countsByUser.get(user.id) ?? emptyUsageCounts(),
+        payments: payments.map(paymentResponse),
+        recentEvents: recentEvents.map((event) => ({
+          id: event.id,
+          kind: event.kind,
+          deviceId: event.device.deviceId,
+          createdAt: event.createdAt.toISOString(),
+        })),
+      });
+      return;
+    }
+
+    const device = await prisma.device.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!device || device.userId) {
       throw new ApiError(404, 'NOT_FOUND', 'User not found.');
     }
 
-    const [countsByUser, payments, recentEvents] = await Promise.all([
-      usageCountsForUserIds(prisma, [user.id]),
-      prisma.payment.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-        include: {
-          user: {
-            select: {
-              id: true,
-              telegramId: true,
-              username: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-        },
-      }),
+    const [countsByDevice, recentEvents] = await Promise.all([
+      usageCountsForDeviceIds(prisma, [device.id]),
       prisma.usageEvent.findMany({
-        where: { userId: user.id },
+        where: { deviceId: device.id },
         orderBy: { createdAt: 'desc' },
         take: 100,
         include: { device: { select: { deviceId: true } } },
@@ -750,9 +987,9 @@ adminRouter.get(
     ]);
 
     res.json({
-      user: userResponse(user),
-      usageCounts: countsByUser.get(user.id) ?? emptyUsageCounts(),
-      payments: payments.map(paymentResponse),
+      user: guestResponse(device),
+      usageCounts: countsByDevice.get(device.id) ?? emptyUsageCounts(),
+      payments: [],
       recentEvents: recentEvents.map((event) => ({
         id: event.id,
         kind: event.kind,

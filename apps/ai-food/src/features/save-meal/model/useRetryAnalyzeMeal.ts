@@ -57,6 +57,8 @@ export function useRetryAnalyzeMeal() {
       aiModel,
     });
 
+    if (signal.aborted) return;
+
     try {
       const analyzeOptions = {
         customInstructions,
@@ -76,6 +78,8 @@ export function useRetryAnalyzeMeal() {
         },
       };
       const response = await queryClient.fetchQuery({
+        // AI calls are expensive; terminal errors (no-food, quota) must not auto-retry.
+        retry: false,
         queryKey:
           images.length > 0
             ? [

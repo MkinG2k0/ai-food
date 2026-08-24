@@ -1,6 +1,6 @@
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import type { ApiError, FoodItem, Meal } from '@ai-food/shared-types';
-import { normalizePortions, resolveItemGrams, sumItemGrams, useDiaryStore } from '@/entities/meal';
+import { resolveItemGrams, sumItemGrams, useDiaryStore } from '@/entities/meal';
 import { refineMealApi } from '@/features/analyze-food';
 import { usageQueryKey } from '@/features/auth';
 import { useProfileStore } from '@/features/onboarding';
@@ -128,9 +128,6 @@ export function useRefineMeal() {
       items,
       totalCalories,
       status: 'ready',
-      ...(result.itemCount !== undefined
-        ? { portions: normalizePortions(result.itemCount) }
-        : {}),
       totalGrams:
         result.totalGrams !== undefined
           ? result.totalGrams

@@ -14,6 +14,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);
         registerPlugin(KbjuWidgetPlugin.class);
+        registerPlugin(TelegramSupportPlugin.class);
         super.onCreate(savedInstanceState);
         // Camera <video> preview must autoplay without a user gesture; otherwise
         // Android WebView leaves a giant Play overlay on a paused element.

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -24,7 +24,6 @@ import {
   type CalendarRingKey,
 } from '@/features/settings';
 import {
-  extractPdfText,
   parseImportText,
 } from '@/features/import-meals';
 import {
@@ -32,6 +31,8 @@ import {
   queueSettingsSync,
   SETTINGS_SYNC_DEBOUNCE_MS,
 } from '@/features/settings-sync';
+import { DebugLogsSheet } from '@/features/debug';
+import { ReportIssueSheet } from '@/features/report-issue';
 import {
   RemindersSettingsSection,
   queueRescheduleReminders,
@@ -42,7 +43,7 @@ import {
   shouldShowSettingsPwaInstall,
   usePwaInstallSeenStore,
 } from '@/features/pwa-install';
-import { cn, getLegalUrl } from '@/shared/lib';
+import { cn, getLegalUrl, useTripleTap, appDebugLog, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from '@/shared/lib';
 import { BottomSheet, Button, Card, CardContent, Checkbox, SubpageShell, TextareaWithVoice } from '@/shared/ui';
 
 const CALENDAR_RING_TOGGLES: { key: CalendarRingKey; label: string }[] = [
@@ -120,6 +121,8 @@ export function SettingsPage() {
   > | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
   const [mealImportBusy, setMealImportBusy] = useState(false);
+  const [debugLogsOpen, setDebugLogsOpen] = useState(false);
+  const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
   const mealImportInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,6 +151,18 @@ export function SettingsPage() {
   const setWeightWeeklyReminder = useSettingsStore(
     (s) => s.setWeightWeeklyReminder,
   );
+  const debugMode = useSettingsStore((s) => s.debugMode);
+  const toggleDebugMode = useSettingsStore((s) => s.toggleDebugMode);
+
+  const handleDebugModeToggle = useCallback(() => {
+    const enabled = toggleDebugMode();
+    toast.message(enabled ? 'Debug режим включён' : 'Debug режим выключён');
+    if (enabled) {
+      appDebugLog('app', 'debug mode enabled');
+    }
+  }, [toggleDebugMode]);
+
+  const handleAboutHeadingTap = useTripleTap(handleDebugModeToggle);
 
   useEffect(() => {
     return () => {
@@ -331,6 +346,7 @@ export function SettingsPage() {
     setMealImportBusy(true);
     try {
       const data = await file.arrayBuffer();
+      const { extractPdfText } = await import('@/features/import-meals/lib/pdfText');
       const text = await extractPdfText(data);
       const result = parseImportText(text);
       if (!result.ok) {
@@ -810,7 +826,17 @@ export function SettingsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-medium leading-none">О приложении</h2>
+          <h2
+            className="text-sm font-medium leading-none select-none"
+            onClick={handleAboutHeadingTap}
+          >
+            О приложении
+            {debugMode ? (
+              <span className="ml-2 text-xs font-normal text-amber-600">
+                debug
+              </span>
+            ) : null}
+          </h2>
           {showInstallApp ? <SettingsInstallAppButton /> : null}
           <Button
             variant="outline"
@@ -859,16 +885,34 @@ export function SettingsPage() {
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </Button>
           )}
+          <Button
+            variant="outline"
+            className="w-full justify-between"
+            onClick={() => setReportIssueOpen(true)}
+          >
+            Сообщить об ошибке
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </Button>
           <Button variant="outline" className="w-full justify-between" asChild>
             <a
-              href="https://t.me/double_cumboy"
+              href={SUPPORT_TELEGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
             >
               Поддержка
-              <span className="text-muted-foreground">@double_cumboy</span>
+              <span className="text-muted-foreground">{SUPPORT_TELEGRAM_LABEL}</span>
             </a>
           </Button>
+          {debugMode ? (
+            <Button
+              variant="outline"
+              className="w-full justify-between"
+              onClick={() => setDebugLogsOpen(true)}
+            >
+              Логи
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </Button>
+          ) : null}
           {userToken ? (
             <Button
               variant="destructive"
@@ -1044,6 +1088,16 @@ export function SettingsPage() {
           </div>
         </div>
       </BottomSheet>
+
+      <DebugLogsSheet
+        open={debugLogsOpen}
+        onClose={() => setDebugLogsOpen(false)}
+      />
+
+      <ReportIssueSheet
+        open={reportIssueOpen}
+        onClose={() => setReportIssueOpen(false)}
+      />
     </>
   );
 }

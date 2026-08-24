@@ -5,6 +5,7 @@ import type {
   NutritionResult,
 } from '@ai-food/shared-types';
 import { compressImageForAi } from '@/shared/lib';
+import { appDebugLog } from '@/shared/lib/appDebugLog';
 import {
   getQuotaHeaders,
   resolveAnalyzeUsageKind,
@@ -131,12 +132,17 @@ export async function analyzeFoodApi(
 
   let imageDataUrls: string[] = [];
   if (images.length > 0) {
+    const tPrep = performance.now();
     imageDataUrls = await Promise.all(
       images.map(async (file) => {
         const compressed = await compressImageForAi(file);
         return fileToDataUrl(compressed);
       }),
     );
+    appDebugLog('analyze', 'prepare dataURL', performance.now() - tPrep, {
+      count: images.length,
+      chars: imageDataUrls.reduce((n, s) => n + s.length, 0),
+    });
   }
 
   const startTime = Date.now();
@@ -171,6 +177,7 @@ export async function analyzeFoodApi(
   let rawContent: string;
   try {
     try {
+      const tNet = performance.now();
       const streamed = await streamFoodAnalyze({
         gatewayUrl,
         apiKey,
@@ -188,6 +195,9 @@ export async function analyzeFoodApi(
           ...(options?.clientMealId ? { clientMealId: options.clientMealId } : {}),
           features,
         },
+      });
+      appDebugLog('analyze', 'network stream', performance.now() - tNet, {
+        job: String(streamed.jobId ?? jobId ?? '-').slice(0, 8),
       });
       jobId = streamed.jobId ?? jobId;
       rawContent = streamed.content;

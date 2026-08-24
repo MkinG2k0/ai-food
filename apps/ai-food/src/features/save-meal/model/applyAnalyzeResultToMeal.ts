@@ -1,6 +1,6 @@
 import type { FoodItem, NutritionResult } from '@ai-food/shared-types';
 import {
-  normalizePortions,
+  DEFAULT_PORTIONS,
   resolveItemGrams,
   scaleItemsGramsToTotal,
   sumItemGrams,
@@ -14,8 +14,6 @@ export function applyAnalyzeResultToMeal(
   fallbackItemId?: string,
 ): void {
   const updateMeal = useDiaryStore.getState().updateMeal;
-  const portions = normalizePortions(result.itemCount ?? 1);
-
   if (result.items.length > 0) {
     let items: FoodItem[] = result.items.map((item) => ({
       id: crypto.randomUUID(),
@@ -47,7 +45,7 @@ export function applyAnalyzeResultToMeal(
       foodType: result.foodType,
       totalCalories,
       items,
-      portions,
+      portions: DEFAULT_PORTIONS,
       totalGrams,
       healthiness: result.healthiness,
       confidence: result.confidence,
@@ -81,7 +79,7 @@ export function applyAnalyzeResultToMeal(
         grams: fallbackGrams,
       },
     ],
-    portions,
+    portions: DEFAULT_PORTIONS,
     totalGrams: fallbackGrams,
     healthiness: result.healthiness,
     confidence: result.confidence,

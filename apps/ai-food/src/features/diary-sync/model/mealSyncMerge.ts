@@ -27,6 +27,22 @@ function newerOrEqual(a: string | undefined, b: string | undefined): boolean {
  * Merge local meals with remote active meals + optional tombstones that carry clocks.
  * Server tombstone ids alone are handled by applySyncResponse (server already LWW'd).
  */
+function preserveLocalAnalyzeFields(cur: Meal, remote: Meal): Meal {
+  let merged = remote;
+  if (cur.analyzeJobId && !remote.analyzeJobId) {
+    merged = { ...merged, analyzeJobId: cur.analyzeJobId };
+  }
+  // Photo blobs stay on device — stale server stubs must not wipe local paths.
+  if (cur.imageUri && !remote.imageUri) {
+    merged = {
+      ...merged,
+      imageUri: cur.imageUri,
+      imageUris: cur.imageUris ?? [cur.imageUri],
+    };
+  }
+  return merged;
+}
+
 export function mergeMealsLww(
   local: Meal[],
   remote: Meal[],
@@ -37,11 +53,7 @@ export function mergeMealsLww(
   for (const m of remote) {
     const cur = byId.get(m.id);
     if (!cur || newerOrEqual(m.clientUpdatedAt, cur.clientUpdatedAt)) {
-      const merged =
-        cur?.analyzeJobId && !m.analyzeJobId
-          ? { ...m, analyzeJobId: cur.analyzeJobId }
-          : m;
-      byId.set(m.id, merged);
+      byId.set(m.id, cur ? preserveLocalAnalyzeFields(cur, m) : m);
     }
   }
   for (const t of tombstones) {

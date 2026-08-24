@@ -21,6 +21,8 @@ type UsageCounts = {
 
 type AdminUser = {
   id: string;
+  isGuest?: boolean;
+  deviceId?: string | null;
   telegramId: string;
   username: string | null;
   firstName: string | null;
@@ -91,13 +93,16 @@ export default function UsersPage() {
         render: (_, user) => {
           const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
           return (
-            <Typography.Text strong>
-              {name || user.username || 'Без имени'}
-            </Typography.Text>
+            <Space size={8}>
+              <Typography.Text strong>
+                {name || user.username || 'Без имени'}
+              </Typography.Text>
+              {user.isGuest ? <Tag>Гость</Tag> : null}
+            </Space>
           );
         },
         title: 'Имя',
-        width: 180,
+        width: 200,
       },
       {
         dataIndex: 'username',
@@ -107,18 +112,22 @@ export default function UsersPage() {
         width: 160,
       },
       {
-        dataIndex: 'telegramId',
         key: 'telegramId',
-        title: 'Telegram ID',
-        width: 160,
+        render: (_, user) =>
+          user.isGuest ? user.deviceId || '—' : user.telegramId || '—',
+        title: 'Telegram / Device',
+        width: 180,
       },
       {
         key: 'subscription',
-        render: (_, user) => (
-          <Tag color={user.hasActiveSubscription ? 'success' : 'default'}>
-            {user.hasActiveSubscription ? 'Активна' : 'Не активна'}
-          </Tag>
-        ),
+        render: (_, user) =>
+          user.isGuest ? (
+            <Tag>Гость</Tag>
+          ) : (
+            <Tag color={user.hasActiveSubscription ? 'success' : 'default'}>
+              {user.hasActiveSubscription ? 'Активна' : 'Не активна'}
+            </Tag>
+          ),
         title: 'Подписка',
         width: 130,
       },
@@ -146,14 +155,17 @@ export default function UsersPage() {
       },
       {
         key: 'consent',
-        render: (_, user) => (
-          <>
-            <Tag color={user.dataConsentAt ? 'success' : 'default'}>
-              {user.dataConsentAt ? 'Да' : 'Нет'}
-            </Tag>
-            {user.dataConsentAt ? formatDate(user.dataConsentAt) : null}
-          </>
-        ),
+        render: (_, user) =>
+          user.isGuest ? (
+            <Tag>Нет</Tag>
+          ) : (
+            <>
+              <Tag color={user.dataConsentAt ? 'success' : 'default'}>
+                {user.dataConsentAt ? 'Да' : 'Нет'}
+              </Tag>
+              {user.dataConsentAt ? formatDate(user.dataConsentAt) : null}
+            </>
+          ),
         title: 'Согласие',
         width: 220,
       },
@@ -212,10 +224,45 @@ export default function UsersPage() {
 
   const users = usersQuery.data?.users ?? [];
 
+  const totals = useMemo(() => {
+    const empty: UsageCounts = {
+      analyze_photo: 0,
+      analyze_text: 0,
+      analyze_photo_text: 0,
+      refine: 0,
+      manual: 0,
+      barcode: 0,
+      analyze: 0,
+    };
+    const usage = users.reduce(
+      (acc, user) => ({
+        analyze_photo: acc.analyze_photo + user.usageCounts.analyze_photo,
+        analyze_text: acc.analyze_text + user.usageCounts.analyze_text,
+        analyze_photo_text:
+          acc.analyze_photo_text + user.usageCounts.analyze_photo_text,
+        refine: acc.refine + user.usageCounts.refine,
+        manual: acc.manual + user.usageCounts.manual,
+        barcode: acc.barcode + user.usageCounts.barcode,
+        analyze: acc.analyze + user.usageCounts.analyze,
+      }),
+      empty,
+    );
+    const aiTotal = aiGenerationTotal(usage);
+    const activeSubscriptions = users.filter(
+      (user) => user.hasActiveSubscription,
+    ).length;
+    return {
+      activeSubscriptions,
+      aiCost: aiTotal * rate,
+      aiTotal,
+      usage,
+    };
+  }, [rate, users]);
+
   return (
     <>
       <PageHeader
-        subtitle="Аккаунты, согласие и сколько ИИ-лимитов потратил каждый пользователь"
+        subtitle="Аккаунты, гости без входа, согласие и расход ИИ-лимитов"
         title="Пользователи"
       />
       <Flex gap={16} wrap="wrap" align="flex-end" style={{ marginBottom: 16 }}>
@@ -223,7 +270,7 @@ export default function UsersPage() {
           allowClear
           enterButton="Найти"
           onSearch={(value) => setQuery(value.trim())}
-          placeholder="ID, Telegram ID или имя пользователя"
+          placeholder="ID, Telegram ID, Device ID или username"
           style={{ maxWidth: 420, width: '100%' }}
         />
         <Space align="center">
@@ -238,7 +285,9 @@ export default function UsersPage() {
               value={costPerGeneration}
               onChange={(value) =>
                 setCostPerGeneration(
-                  typeof value === 'number' ? value : DEFAULT_COST_PER_GENERATION,
+                  typeof value === 'number'
+                    ? value
+                    : DEFAULT_COST_PER_GENERATION,
                 )
               }
               style={{ width: 100 }}
@@ -271,8 +320,61 @@ export default function UsersPage() {
           showTotal: (total) => `Всего ${total}`,
         }}
         rowKey="id"
-        scroll={{ x: 1900 }}
+        scroll={{ x: 2000 }}
         size="middle"
+        summary={() => (
+          <Table.Summary fixed>
+            <Table.Summary.Row>
+              <Table.Summary.Cell index={0}>
+                <Typography.Text strong>Итого</Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={1} />
+              <Table.Summary.Cell index={2} />
+              <Table.Summary.Cell index={3}>
+                <Typography.Text strong>
+                  {totals.activeSubscriptions} акт.
+                </Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={4}>
+                <Typography.Text strong>{totals.aiTotal}</Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={5}>
+                <Typography.Text strong>
+                  {formatRub(totals.aiCost)}
+                </Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={6} />
+              <Table.Summary.Cell index={7}>
+                <Typography.Text strong>
+                  {totals.usage.analyze_photo}
+                </Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={8}>
+                <Typography.Text strong>
+                  {totals.usage.analyze_text}
+                </Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={9}>
+                <Typography.Text strong>
+                  {totals.usage.analyze_photo_text}
+                </Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={10}>
+                <Typography.Text strong>{totals.usage.refine}</Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={11}>
+                <Typography.Text strong>{totals.usage.manual}</Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={12}>
+                <Typography.Text strong>{totals.usage.barcode}</Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={13}>
+                <Typography.Text strong>{totals.usage.analyze}</Typography.Text>
+              </Table.Summary.Cell>
+              <Table.Summary.Cell index={14} />
+            </Table.Summary.Row>
+          </Table.Summary>
+        )}
       />
     </>
   );

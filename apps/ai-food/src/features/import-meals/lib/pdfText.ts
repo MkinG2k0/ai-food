@@ -1,8 +1,3 @@
-import * as pdfjs from 'pdfjs-dist';
-import pdfWorkerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
-pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
-
 type PositionedTextItem = {
   str: string;
   transform: ArrayLike<number>;
@@ -54,7 +49,24 @@ export function groupPdfTextItems(items: PdfTextItem[]): string {
     .join('\n');
 }
 
+let pdfjsReady: Promise<typeof import('pdfjs-dist')> | null = null;
+
+async function getPdfJs() {
+  if (!pdfjsReady) {
+    pdfjsReady = (async () => {
+      const pdfjs = await import('pdfjs-dist');
+      const { default: workerSrc } = await import(
+        'pdfjs-dist/build/pdf.worker.min.mjs?url'
+      );
+      pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+      return pdfjs;
+    })();
+  }
+  return pdfjsReady;
+}
+
 export async function extractPdfText(data: ArrayBuffer): Promise<string> {
+  const pdfjs = await getPdfJs();
   const doc = await pdfjs.getDocument({ data }).promise;
   try {
     const pages: string[] = [];

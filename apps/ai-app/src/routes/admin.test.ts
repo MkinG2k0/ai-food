@@ -61,6 +61,13 @@ type MockUsageEvent = {
   createdAt: Date;
 };
 
+type MockDevice = {
+  id: string;
+  deviceId: string;
+  userId: string | null;
+  createdAt: Date;
+};
+
 describe('admin routes', () => {
   let settings: {
     id: number;
@@ -74,6 +81,7 @@ describe('admin routes', () => {
   let payments: MockPayment[];
   let promos: MockPromo[];
   let usageEvents: MockUsageEvent[];
+  let devices: MockDevice[];
   let prisma: ReturnType<typeof createMockPrisma>;
 
   function createMockPrisma() {
@@ -288,22 +296,64 @@ describe('admin routes', () => {
         findMany: vi.fn(
           async ({
             where,
+            orderBy,
+            take,
           }: {
-            where: { userId: { in: string[] } };
+            where?: {
+              userId?: { in: string[] } | null;
+              OR?: Array<{
+                id?: { equals: string };
+                deviceId?: { equals: string; contains?: string; mode?: string };
+              }>;
+            };
+            orderBy?: { createdAt: 'desc' | 'asc' };
+            take?: number;
             select?: { id: boolean; userId: boolean };
-          }) => {
-            const userIds = where.userId.in;
-            const byDevice = new Map<string, string>();
-            for (const event of usageEvents) {
-              if (event.userId && userIds.includes(event.userId)) {
-                byDevice.set(event.deviceId, event.userId);
-              }
+          } = {}) => {
+            if (where?.userId && typeof where.userId === 'object' && 'in' in where.userId) {
+              const userIds = where.userId.in;
+              return devices.filter(
+                (device) => device.userId && userIds.includes(device.userId),
+              );
             }
-            return [...byDevice.entries()].map(([id, userId]) => ({
-              id,
-              userId,
-            }));
+
+            let rows = devices.filter((device) => device.userId == null);
+            if (where?.OR?.length) {
+              const q = where.OR;
+              rows = rows.filter((device) =>
+                q.some((clause) => {
+                  if (clause.id?.equals && device.id === clause.id.equals) {
+                    return true;
+                  }
+                  if (
+                    clause.deviceId?.equals &&
+                    device.deviceId === clause.deviceId.equals
+                  ) {
+                    return true;
+                  }
+                  if (
+                    clause.deviceId?.contains &&
+                    device.deviceId
+                      .toLowerCase()
+                      .includes(clause.deviceId.contains.toLowerCase())
+                  ) {
+                    return true;
+                  }
+                  return false;
+                }),
+              );
+            }
+            rows = [...rows].sort((a, b) =>
+              orderBy?.createdAt === 'asc'
+                ? a.createdAt.getTime() - b.createdAt.getTime()
+                : b.createdAt.getTime() - a.createdAt.getTime(),
+            );
+            return typeof take === 'number' ? rows.slice(0, take) : rows;
           },
+        ),
+        findUnique: vi.fn(
+          async ({ where }: { where: { id: string } }) =>
+            devices.find((device) => device.id === where.id) ?? null,
         ),
       },
       gatewayRequest: {
@@ -343,14 +393,17 @@ describe('admin routes', () => {
         ),
         groupBy: vi.fn(
           async ({
+            by,
             where,
           }: {
+            by?: string[];
             where: {
               OR?: Array<{
                 userId?: { in: string[] };
                 deviceId?: { in: string[] };
               }>;
               userId?: { in: string[] };
+              deviceId?: { in: string[] };
             };
           }) => {
             const userIds =
@@ -358,17 +411,30 @@ describe('admin routes', () => {
               where.OR?.find((c) => c.userId)?.userId?.in ??
               [];
             const deviceIds =
-              where.OR?.find((c) => c.deviceId)?.deviceId?.in ?? [];
+              where.deviceId?.in ??
+              where.OR?.find((c) => c.deviceId)?.deviceId?.in ??
+              [];
             const counts = new Map<string, number>();
             for (const event of usageEvents) {
               const matchUser =
                 event.userId != null && userIds.includes(event.userId);
               const matchDevice = deviceIds.includes(event.deviceId);
               if (!matchUser && !matchDevice) continue;
-              const key = `${event.userId ?? ''}:${event.kind}:${event.deviceId}`;
+              const key =
+                by?.length === 2 && by[0] === 'deviceId'
+                  ? `${event.deviceId}:${event.kind}`
+                  : `${event.userId ?? ''}:${event.kind}:${event.deviceId}`;
               counts.set(key, (counts.get(key) ?? 0) + 1);
             }
             return [...counts].map(([key, count]) => {
+              if (by?.length === 2 && by[0] === 'deviceId') {
+                const [deviceId, kind] = key.split(':');
+                return {
+                  deviceId,
+                  kind,
+                  _count: { _all: count },
+                };
+              }
               const [userId, kind, deviceId] = key.split(':');
               return {
                 userId: userId || null,
@@ -389,6 +455,7 @@ describe('admin routes', () => {
           }: {
             where?: {
               userId?: string;
+              deviceId?: string;
               createdAt?: { gte?: Date };
             };
             orderBy?: { createdAt: 'desc' | 'asc' };
@@ -398,7 +465,9 @@ describe('admin routes', () => {
           }) => {
             let rows = usageEvents;
             if (where?.createdAt?.gte) {
-              rows = rows.filter((event) => event.createdAt >= where.createdAt!.gte!);
+              rows = rows.filter(
+                (event) => event.createdAt >= where.createdAt!.gte!,
+              );
             }
             if (select) {
               return rows.map((event) => ({
@@ -406,8 +475,12 @@ describe('admin routes', () => {
                 createdAt: event.createdAt,
               }));
             }
+            if (where?.deviceId) {
+              rows = rows.filter((event) => event.deviceId === where.deviceId);
+            } else if (where?.userId !== undefined) {
+              rows = rows.filter((event) => event.userId === where.userId);
+            }
             return rows
-              .filter((event) => event.userId === where?.userId)
               .sort((a, b) =>
                 orderBy?.createdAt === 'asc'
                   ? a.createdAt.getTime() - b.createdAt.getTime()
@@ -415,13 +488,13 @@ describe('admin routes', () => {
               )
               .slice(0, take)
               .map((event) => ({
-              id: event.id,
-              kind: event.kind,
-              deviceId: event.deviceId,
-              createdAt: event.createdAt,
-              ...(include?.device
-                ? { device: { deviceId: event.clientDeviceId } }
-                : {}),
+                id: event.id,
+                kind: event.kind,
+                deviceId: event.deviceId,
+                createdAt: event.createdAt,
+                ...(include?.device
+                  ? { device: { deviceId: event.clientDeviceId } }
+                  : {}),
               }));
           },
         ),
@@ -436,6 +509,20 @@ describe('admin routes', () => {
     process.env.SUBSCRIPTION_DURATION_DAYS = '365';
     settings = null;
     promos = [];
+    devices = [
+      {
+        id: 'device-row-1',
+        deviceId: 'client-device-1',
+        userId: 'user-1',
+        createdAt: new Date('2026-07-01T10:00:00.000Z'),
+      },
+      {
+        id: 'device-row-guest',
+        deviceId: 'guest-client-device',
+        userId: null,
+        createdAt: new Date('2026-08-06T08:00:00.000Z'),
+      },
+    ];
     usageEvents = [
       {
         id: 'usage-1',
@@ -460,6 +547,22 @@ describe('admin routes', () => {
         deviceId: 'device-row-1',
         clientDeviceId: 'client-device-1',
         createdAt: new Date('2026-08-05T13:00:00.000Z'),
+      },
+      {
+        id: 'usage-guest-1',
+        userId: null,
+        kind: 'analyze_photo',
+        deviceId: 'device-row-guest',
+        clientDeviceId: 'guest-client-device',
+        createdAt: new Date('2026-08-06T09:00:00.000Z'),
+      },
+      {
+        id: 'usage-guest-2',
+        userId: null,
+        kind: 'analyze_text',
+        deviceId: 'device-row-guest',
+        clientDeviceId: 'guest-client-device',
+        createdAt: new Date('2026-08-06T10:00:00.000Z'),
       },
     ];
     payments = [
@@ -759,7 +862,7 @@ describe('admin routes', () => {
         ],
       },
       orderBy: { createdAt: 'desc' },
-      take: 20,
+      take: 100,
     });
     expect(response.body.users[0]).toMatchObject({
       id: 'user-1',
@@ -770,18 +873,77 @@ describe('admin routes', () => {
     });
   });
 
+  it('GET /admin/users includes guest devices without login', async () => {
+    const response = await request(createApp())
+      .get('/admin/users')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    const guest = response.body.users.find(
+      (row: { id: string }) => row.id === 'device-row-guest',
+    );
+    expect(guest).toMatchObject({
+      id: 'device-row-guest',
+      isGuest: true,
+      deviceId: 'guest-client-device',
+      firstName: 'Гость',
+      hasActiveSubscription: false,
+      usageCounts: {
+        analyze_photo: 1,
+        analyze_text: 1,
+        analyze_photo_text: 0,
+        refine: 0,
+        manual: 0,
+        barcode: 0,
+        analyze: 0,
+      },
+    });
+  });
+
+  it('GET /admin/users/:id returns guest device detail', async () => {
+    const response = await request(createApp())
+      .get('/admin/users/device-row-guest')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body.user).toMatchObject({
+      id: 'device-row-guest',
+      isGuest: true,
+      deviceId: 'guest-client-device',
+      firstName: 'Гость',
+    });
+    expect(response.body.usageCounts).toMatchObject({
+      analyze_photo: 1,
+      analyze_text: 1,
+    });
+    expect(response.body.payments).toEqual([]);
+    expect(response.body.recentEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'usage-guest-2',
+          kind: 'analyze_text',
+          deviceId: 'guest-client-device',
+        }),
+      ]),
+    );
+  });
+
   it('GET /admin/users includes usageCounts and consent', async () => {
     const response = await request(createApp())
       .get('/admin/users')
       .set('X-Admin-Key', 'test-admin');
 
     expect(response.status).toBe(200);
-    expect(response.body.users[0]).toMatchObject({
+    const user = response.body.users.find(
+      (row: { id: string }) => row.id === 'user-1',
+    );
+    expect(user).toMatchObject({
       id: 'user-1',
       photoUrl: 'https://example.com/alice.jpg',
       dataConsentAt: '2026-08-01T09:00:00.000Z',
       dataConsentVersion: 'v1',
       createdAt: '2026-07-01T10:00:00.000Z',
+      isGuest: false,
       usageCounts: {
         analyze_photo: 2,
         analyze_text: 0,

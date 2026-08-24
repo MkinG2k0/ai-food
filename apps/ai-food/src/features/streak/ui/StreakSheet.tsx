@@ -374,7 +374,7 @@ function StreakSheetContent({
   const variants = buildVariants(reducedMotion);
 
   return (
-    <div className="max-h-[min(92dvh,56rem)] overflow-x-hidden overflow-y-auto px-1 pb-4">
+    <div className="max-h-[calc(85dvh-3rem)] overflow-x-hidden overflow-y-auto overscroll-contain px-1 pb-2">
       <motion.div
         className="space-y-4 overflow-hidden"
         variants={variants.container}
@@ -447,7 +447,7 @@ export function StreakSheet({ open, onClose, snapshot }: StreakSheetProps) {
     <BottomSheet
       open={open}
       onClose={onClose}
-      className="pb-[env(safe-area-inset-bottom)]"
+      className="max-h-[85dvh] overflow-hidden pb-[max(2rem,calc(env(safe-area-inset-bottom)+1.25rem))]"
     >
       {open ? <StreakSheetContent snapshot={snapshot} onClose={onClose} /> : null}
     </BottomSheet>

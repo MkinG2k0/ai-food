@@ -9,6 +9,7 @@ import {
   withPluginTimeout,
 } from './appSettingsNative';
 import {
+  analyzeErrorNotificationId,
   REMINDER_CANCEL_ID_MAX,
   REMINDER_CANCEL_ID_MIN,
 } from './notificationIds';
@@ -107,6 +108,20 @@ async function areNotificationsEnabled(): Promise<boolean> {
   return value;
 }
 
+/** Removes all notifications currently shown in the system tray. */
+export async function clearDeliveredNotifications(): Promise<void> {
+  if (!isNativeRemindersSupported()) return;
+  try {
+    const { LocalNotifications } = await getLocalNotifications();
+    await withPluginTimeout(
+      LocalNotifications.removeAllDeliveredNotifications(),
+      'LocalNotifications.removeAllDeliveredNotifications',
+    );
+  } catch (error) {
+    console.warn('[reminders] clear delivered failed:', error);
+  }
+}
+
 export async function cancelManagedReminders(): Promise<void> {
   if (!isNativeRemindersSupported()) return;
   const { LocalNotifications } = await getLocalNotifications();
@@ -170,7 +185,6 @@ export async function applyReminderSchedule(
 
 export async function cancelAnalyzeErrorReminder(mealId: string): Promise<void> {
   if (!isNativeRemindersSupported()) return;
-  const { analyzeErrorNotificationId } = await import('./notificationIds');
   const { LocalNotifications } = await getLocalNotifications();
   await LocalNotifications.cancel({
     notifications: [{ id: analyzeErrorNotificationId(mealId) }],

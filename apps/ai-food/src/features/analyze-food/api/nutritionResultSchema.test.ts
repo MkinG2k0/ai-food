@@ -23,12 +23,6 @@ describe('nutritionResultSchema micronutrients', () => {
     expect(isNutritionResult(base)).toBe(true);
   });
 
-  it('accepts optional positive itemCount', () => {
-    expect(isNutritionResult({ ...base, itemCount: 2 })).toBe(true);
-    expect(isNutritionResult({ ...base, itemCount: 0 })).toBe(false);
-    expect(isNutritionResult({ ...base, itemCount: -1 })).toBe(false);
-  });
-
   it('accepts optional non-negative totalGrams', () => {
     expect(isNutritionResult({ ...base, totalGrams: 350 })).toBe(true);
     expect(isNutritionResult({ ...base, totalGrams: 0 })).toBe(true);

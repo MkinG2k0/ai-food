@@ -246,6 +246,10 @@ interface SettingsState {
   setWeightWeeklyReminder: (value: boolean) => void;
   /** LWW clock for settings sync */
   clientUpdatedAt: string;
+  /** Local-only diagnostics (triple-tap «О приложении»). Not synced to server. */
+  debugMode: boolean;
+  setDebugMode: (value: boolean) => void;
+  toggleDebugMode: () => boolean;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -322,10 +326,20 @@ export const useSettingsStore = create<SettingsState>()(
           clientUpdatedAt: bumpClock(),
         })),
       clientUpdatedAt: SETTINGS_EPOCH_ISO,
+      debugMode: false,
+      setDebugMode: (value) => set({ debugMode: value }),
+      toggleDebugMode: () => {
+        let next = false;
+        set((s) => {
+          next = !s.debugMode;
+          return { debugMode: next };
+        });
+        return next;
+      },
     }),
     {
       name: 'ai-food-settings',
-      version: 6,
+      version: 7,
       storage: createJSONStorage(() => capacitorStorage),
       migrate: (persisted, version) => {
         if (!isCalendarRingsRecord(persisted)) {
@@ -362,6 +376,9 @@ export const useSettingsStore = create<SettingsState>()(
           next.reminders = normalizeReminderSettings(next.reminders);
         } else {
           next.reminders = normalizeReminderSettings(next.reminders);
+        }
+        if (version < 7) {
+          next.debugMode = typeof next.debugMode === 'boolean' ? next.debugMode : false;
         }
         return next as unknown as SettingsState;
       },

@@ -35,7 +35,7 @@ export function useAnalyzeFood(image: File | null) {
       }),
     enabled: image !== null,
     staleTime: 0,
-    retry: 2,
+    retry: false,
     gcTime: 5 * 60 * 1000,
   });
 }

@@ -27,7 +27,6 @@ export interface PartialNutritionXml {
   micronutrients?: MicronutrientEstimate[];
   noFood?: boolean;
   reason?: string;
-  itemCount?: number;
   totalGrams?: number;
   portionReference?: string;
   addedSugar?: number;
@@ -288,9 +287,6 @@ export function parsePartialNutritionXml(buffer: string): PartialNutritionXml {
   const foodType = parseFoodType(extractTopLevelTag(xml, 'foodType'));
   if (foodType) partial.foodType = foodType;
 
-  const itemCount = parseNumber(extractTopLevelTag(xml, 'itemCount'));
-  if (itemCount !== undefined && itemCount > 0) partial.itemCount = itemCount;
-
   const totalGrams = parseNumber(extractTopLevelTag(xml, 'totalGrams'));
   if (totalGrams !== undefined && totalGrams >= 0) partial.totalGrams = totalGrams;
 
@@ -363,7 +359,6 @@ export function parseNutritionXml(raw: string): NutritionResult | NoFoodResult {
     candidate.micronutrients = partial.micronutrients;
   }
   if (partial.confidence !== undefined) candidate.confidence = partial.confidence;
-  if (partial.itemCount !== undefined) candidate.itemCount = partial.itemCount;
   if (partial.totalGrams !== undefined) candidate.totalGrams = partial.totalGrams;
   if (partial.portionReference !== undefined) {
     candidate.portionReference = partial.portionReference;
@@ -416,10 +411,6 @@ export function legacyNutritionResultToXml(result: NutritionResult): string {
 
   return `<analysis>
   <foodName>${escapeXml(result.foodName)}</foodName>${
-    result.itemCount !== undefined
-      ? `\n  <itemCount>${result.itemCount}</itemCount>`
-      : ''
-  }${
     result.totalGrams !== undefined
       ? `\n  <totalGrams>${result.totalGrams}</totalGrams>`
       : ''
@@ -494,11 +485,6 @@ ${result.disclaimers.map((d) => `    <disclaimer>${escapeXml(d)}</disclaimer>`).
       ? `\n  <portionReference>${escapeXml(result.portionReference)}</portionReference>`
       : '';
 
-  const itemCountXml =
-    result.itemCount !== undefined
-      ? `\n  <itemCount>${result.itemCount}</itemCount>`
-      : '';
-
   const totalGramsXml =
     result.totalGrams !== undefined
       ? `\n  <totalGrams>${result.totalGrams}</totalGrams>`
@@ -525,7 +511,7 @@ ${result.disclaimers.map((d) => `    <disclaimer>${escapeXml(d)}</disclaimer>`).
   return `<analysis>
   <foodName>${escapeXml(result.foodName)}</foodName>${
     result.foodType !== undefined ? `\n  <foodType>${result.foodType}</foodType>` : ''
-  }${itemCountXml}${totalGramsXml}${portionRef}
+  }${totalGramsXml}${portionRef}
   <totals>
     <calories unit="kcal">${result.calories}</calories>
     <protein unit="g">${result.protein}</protein>

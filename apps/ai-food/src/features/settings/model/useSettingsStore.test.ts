@@ -146,6 +146,15 @@ describe('useSettingsStore', () => {
     ]);
   });
 
+  it('toggleDebugMode flips local debug flag without bumping sync clock', () => {
+    const before = useSettingsStore.getState().clientUpdatedAt;
+    expect(useSettingsStore.getState().debugMode).toBe(false);
+    expect(useSettingsStore.getState().toggleDebugMode()).toBe(true);
+    expect(useSettingsStore.getState().debugMode).toBe(true);
+    expect(useSettingsStore.getState().toggleDebugMode()).toBe(false);
+    expect(useSettingsStore.getState().clientUpdatedAt).toBe(before);
+  });
+
   it('persists under storage key ai-food-settings', () => {
     expect(useSettingsStore.persist.getOptions().name).toBe('ai-food-settings');
   });

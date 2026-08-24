@@ -134,11 +134,6 @@ export function isNutritionResult(value: unknown): value is NutritionResult {
     }
   }
   if (v.portionReference !== undefined && typeof v.portionReference !== 'string') return false;
-  if (v.itemCount !== undefined) {
-    if (typeof v.itemCount !== 'number' || !Number.isFinite(v.itemCount) || v.itemCount <= 0) {
-      return false;
-    }
-  }
   if (v.totalGrams !== undefined) {
     if (typeof v.totalGrams !== 'number' || !Number.isFinite(v.totalGrams) || v.totalGrams < 0) {
       return false;

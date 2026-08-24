@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Camera } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 import { ImageIcon, PenLine, X, Zap, ZapOff } from 'lucide-react';
@@ -17,10 +18,26 @@ import {
   useProductByBarcode,
   useSaveBarcodeMeal,
 } from '@/features/scan-barcode';
-import { useSaveMeal } from '@/features/save-meal';
+import {
+  beginAnalyzingMeal,
+  cancelAnalyzingMeal,
+  persistMealImages,
+  runMealAnalyze,
+  runMealAnalyzeWithFile,
+  useSaveMeal,
+} from '@/features/save-meal';
 import { TextareaWithVoice, Button, SubpageShell } from '@/shared/ui';
-import { AI_IMAGE_MAX_SIDE, cn } from '@/shared/lib';
-import { jpegFileFromCanvas, snapshotVideoFrame } from '../lib/captureVideoFrame';
+import {
+  AI_IMAGE_MAX_SIDE,
+  appDebugLog,
+  cn,
+  takePhotoAsFile,
+} from '@/shared/lib';
+import {
+  jpegFileFromCanvas,
+  snapshotVideoFrame,
+  warmJpegEncoder,
+} from '../lib/captureVideoFrame';
 import { createCaptureLock } from '../lib/createCaptureLock';
 import { drawVideoContain } from '../lib/drawVideoContain';
 import { isLivePreviewPainting } from '../lib/isLivePreviewPainting';
@@ -39,6 +56,11 @@ export function ScanPage() {
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  /**
+   * Live getUserMedia failed (common on http://LAN-IP — not a secure context).
+   * Food shutter then uses @capacitor/camera takePhoto.
+   */
+  const [nativeCaptureOnly, setNativeCaptureOnly] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [description, setDescription] = useState('');
@@ -55,6 +77,7 @@ export function ScanPage() {
   const captureLockRef = useRef(createCaptureLock());
 
   const submitFood = useSaveMeal();
+  const queryClient = useQueryClient();
   const saveBarcodeMeal = useSaveBarcodeMeal();
   const { data, error, isFetching, isSuccess, isError } =
     useProductByBarcode(lookupCode);
@@ -65,8 +88,9 @@ export function ScanPage() {
   /**
    * Shared getUserMedia for food + barcode (letterboxed canvas preview).
    * Native ML Kit decodes frames from the same stream — no fullscreen startScan.
+   * When preview is unavailable (nativeCaptureOnly), still show the scan chrome.
    */
-  const cameraActive = !pendingPhoto && !showBarcodeConfirm;
+  const cameraActive = !pendingPhoto && !showBarcodeConfirm && !nativeCaptureOnly;
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +100,10 @@ export function ScanPage() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    warmJpegEncoder();
   }, []);
 
   const stopStream = useCallback(() => {
@@ -153,16 +181,59 @@ export function ScanPage() {
           return;
         }
 
+        warmJpegEncoder();
+
         const track = stream.getVideoTracks()[0];
         const capabilities = track?.getCapabilities?.() as
           | (MediaTrackCapabilities & { torch?: boolean })
           | undefined;
         setTorchSupported(Boolean(capabilities?.torch));
-      } catch {
-        if (!cancelled) {
-          setCameraError('Камера недоступна');
-          toast.error('Не удалось открыть камеру');
+      } catch (err) {
+        if (cancelled) return;
+        const name =
+          err && typeof err === 'object' && 'name' in err
+            ? String((err as { name: unknown }).name)
+            : '';
+        const message =
+          err instanceof Error
+            ? err.message
+            : err && typeof err === 'object' && 'message' in err
+              ? String((err as { message: unknown }).message)
+              : String(err);
+        const secure = window.isSecureContext;
+        const hasMd = Boolean(navigator.mediaDevices?.getUserMedia);
+        appDebugLog('photo', 'camera FAIL', undefined, {
+          secure: secure ? 1 : 0,
+          gUM: hasMd ? 1 : 0,
+          name: name || '-',
+          msg: message.slice(0, 60),
+          host: location.host,
+        });
+
+        if (Capacitor.isNativePlatform() && message !== 'camera-permission') {
+          // http://192.168.x.x is not a secure context → getUserMedia blocked.
+          setNativeCaptureOnly(true);
+          setCameraError(null);
+          toast.message(
+            'Live-камера недоступна по HTTP (LAN). Затвор откроет системную камеру.',
+            { duration: 6000 },
+          );
+          return;
         }
+
+        setNativeCaptureOnly(false);
+        setCameraError(
+          message === 'camera-permission'
+            ? 'Нет доступа к камере'
+            : !secure
+              ? 'Камера недоступна: нужен HTTPS или localhost'
+              : 'Камера недоступна',
+        );
+        toast.error(
+          message === 'camera-permission'
+            ? 'Нет доступа к камере'
+            : `Камера: ${name || message || 'ошибка'}`,
+        );
       }
     };
 
@@ -285,9 +356,10 @@ export function ScanPage() {
   };
 
   const handleShutter = async () => {
-    if (cameraError || capturing) return;
+    if (capturing) return;
 
     if (mode === 'barcode') {
+      if (cameraError || nativeCaptureOnly) return;
       const video = videoRef.current;
       if (!video) return;
       video.pause();
@@ -305,7 +377,32 @@ export function ScanPage() {
       return;
     }
 
+    // Native / LAN HTTP: no getUserMedia preview → system camera.
+    if (nativeCaptureOnly || cameraError) {
+      if (!Capacitor.isNativePlatform()) return;
+      setCapturing(true);
+      const shutterT0 = performance.now();
+      try {
+        const file = await takePhotoAsFile();
+        appDebugLog('photo', 'native takePhoto', performance.now() - shutterT0, {
+          bytes: file?.size ?? 0,
+        });
+        if (!file) return;
+        const handle = beginAnalyzingMeal();
+        navigate('/');
+        void runMealAnalyzeWithFile(queryClient, handle, file);
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : 'Не удалось сделать снимок',
+        );
+      } finally {
+        setCapturing(false);
+      }
+      return;
+    }
+
     await captureLockRef.current.run(async () => {
+      const shutterT0 = performance.now();
       const video = videoRef.current;
       if (!video) {
         captureLockRef.current.unlock();
@@ -314,9 +411,11 @@ export function ScanPage() {
       }
       video.pause();
       setCapturing(true);
+      const tSnap = performance.now();
       const canvas = snapshotVideoFrame(video, {
         maxSide: AI_IMAGE_MAX_SIDE,
       });
+      appDebugLog('photo', 'snapshot', performance.now() - tSnap);
       if (!canvas) {
         captureLockRef.current.unlock();
         setCapturing(false);
@@ -325,21 +424,50 @@ export function ScanPage() {
         return;
       }
 
-      const submit = submitFood;
+      const tCard = performance.now();
+      const handle = beginAnalyzingMeal();
+      stopStream();
+      navigate('/');
+      appDebugLog('photo', 'card+nav', performance.now() - tCard, {
+        since: Math.round(performance.now() - shutterT0),
+      });
+
+      const tJpeg = performance.now();
       void jpegFileFromCanvas(canvas).then((file) => {
+        appDebugLog('photo', 'jpegEncode', performance.now() - tJpeg, {
+          since: Math.round(performance.now() - shutterT0),
+          bytes: file?.size ?? 0,
+        });
         if (!file) {
+          cancelAnalyzingMeal(handle.mealId);
           toast.error('Не удалось сделать снимок');
           return;
         }
-        void submit({ image: file });
+        persistMealImages(handle.mealId, [file]);
+        void runMealAnalyze(queryClient, handle, { image: file });
       });
-      stopStream();
-      navigate('/');
     });
   };
 
   const handlePenCapture = async () => {
-    if (mode !== 'food' || cameraError || capturing) return;
+    if (mode !== 'food' || capturing) return;
+
+    if (nativeCaptureOnly || cameraError) {
+      if (!Capacitor.isNativePlatform()) return;
+      setCapturing(true);
+      try {
+        const file = await takePhotoAsFile();
+        if (!file) return;
+        beginPendingDescription(file);
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : 'Не удалось сделать снимок',
+        );
+      } finally {
+        setCapturing(false);
+      }
+      return;
+    }
 
     await captureLockRef.current.run(async () => {
       const video = videoRef.current;
@@ -482,9 +610,13 @@ export function ScanPage() {
   }
 
   const barcodeDecodeActive =
-    mode === 'barcode' && !cameraError && !lookupCode && !capturing;
+    mode === 'barcode' &&
+    !cameraError &&
+    !nativeCaptureOnly &&
+    !lookupCode &&
+    !capturing;
   const nativeBarcodeActive = nativeMlKit && barcodeDecodeActive;
-  const torchDisabled = !torchSupported;
+  const torchDisabled = !torchSupported || nativeCaptureOnly;
 
   return (
     <div className="relative h-svh overflow-hidden bg-black text-white">
@@ -502,6 +634,16 @@ export function ScanPage() {
         {cameraError ? (
           <div className="flex h-full items-center justify-center px-6 text-center text-sm text-white/80">
             {cameraError}
+          </div>
+        ) : nativeCaptureOnly ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-sm text-white/80">
+            <p>
+              Live-preview недоступен по HTTP ({location.host}).
+            </p>
+            <p className="text-white/60">
+              Затвор откроет системную камеру. Для live-превью — HTTPS или
+              localhost.
+            </p>
           </div>
         ) : (
           <>

@@ -32,6 +32,8 @@ type UsageCounts = {
 
 type AdminUser = {
   id: string;
+  isGuest?: boolean;
+  deviceId?: string | null;
   telegramId: string;
   username: string | null;
   firstName: string | null;
@@ -181,6 +183,7 @@ export default function UserDetailPage() {
 
   const data = userQuery.data;
   const user = data?.user;
+  const isGuest = Boolean(user?.isGuest);
   const name = user
     ? [user.firstName, user.lastName].filter(Boolean).join(' ')
     : '';
@@ -188,9 +191,17 @@ export default function UserDetailPage() {
   return (
     <>
       <PageHeader
-        extra={<Button onClick={() => router.push('/admin/users')}>К списку</Button>}
-        subtitle={user ? name || user.username || user.telegramId : 'Карточка аккаунта'}
-        title="Пользователь"
+        extra={
+          <Button onClick={() => router.push('/admin/users')}>К списку</Button>
+        }
+        subtitle={
+          user
+            ? isGuest
+              ? user.deviceId || user.id
+              : name || user.username || user.telegramId
+            : 'Карточка аккаунта'
+        }
+        title={isGuest ? 'Гость' : 'Пользователь'}
       />
       {userQuery.error ? (
         <Alert
@@ -204,25 +215,46 @@ export default function UserDetailPage() {
         {user ? (
           <Descriptions bordered column={{ lg: 2, md: 2, sm: 1, xs: 1 }}>
             <Descriptions.Item label="Пользователь">
-              <Avatar src={user.photoUrl} style={{ marginRight: 8 }}>
+              <Avatar src={user.photoUrl ?? undefined} style={{ marginRight: 8 }}>
                 {(user.firstName || user.username || '?').slice(0, 1)}
               </Avatar>
-              {name || 'Без имени'}
+              {name || (isGuest ? 'Гость' : 'Без имени')}
+              {isGuest ? (
+                <Tag style={{ marginLeft: 8 }}>Без входа</Tag>
+              ) : null}
             </Descriptions.Item>
-            <Descriptions.Item label="Username">
-              {user.username ? `@${user.username}` : '—'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Telegram ID">
-              {user.telegramId}
-            </Descriptions.Item>
+            {isGuest ? (
+              <Descriptions.Item label="Device ID">
+                {user.deviceId || '—'}
+              </Descriptions.Item>
+            ) : (
+              <Descriptions.Item label="Username">
+                {user.username ? `@${user.username}` : '—'}
+              </Descriptions.Item>
+            )}
+            {isGuest ? (
+              <Descriptions.Item label="Telegram ID">—</Descriptions.Item>
+            ) : (
+              <Descriptions.Item label="Telegram ID">
+                {user.telegramId}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Внутренний ID">
               {user.id}
             </Descriptions.Item>
             <Descriptions.Item label="Подписка">
-              <Tag color={user.hasActiveSubscription ? 'success' : 'default'}>
-                {user.hasActiveSubscription ? 'Активна' : 'Не активна'}
-              </Tag>
-              до {formatDate(user.subscriptionExpiresAt)}
+              {isGuest ? (
+                <Tag>Гость</Tag>
+              ) : (
+                <>
+                  <Tag
+                    color={user.hasActiveSubscription ? 'success' : 'default'}
+                  >
+                    {user.hasActiveSubscription ? 'Активна' : 'Не активна'}
+                  </Tag>
+                  до {formatDate(user.subscriptionExpiresAt)}
+                </>
+              )}
             </Descriptions.Item>
             <Descriptions.Item label="Согласие">
               {user.dataConsentAt
@@ -241,35 +273,39 @@ export default function UserDetailPage() {
           Статистика генераций
         </Typography.Title>
         <Row gutter={[16, 16]}>
-          {(Object.keys(usageLabels) as Array<keyof UsageCounts>).map((kind) => (
-            <Col key={kind} lg={6} md={8} sm={12} xs={24}>
-              <Card className="admin-stat-card" size="small">
-                <Statistic
-                  loading={userQuery.isLoading}
-                  title={usageLabels[kind]}
-                  value={data?.usageCounts[kind] ?? 0}
-                />
-              </Card>
-            </Col>
-          ))}
+          {(Object.keys(usageLabels) as Array<keyof UsageCounts>).map(
+            (kind) => (
+              <Col key={kind} lg={6} md={8} sm={12} xs={24}>
+                <Card className="admin-stat-card" size="small">
+                  <Statistic
+                    loading={userQuery.isLoading}
+                    title={usageLabels[kind]}
+                    value={data?.usageCounts[kind] ?? 0}
+                  />
+                </Card>
+              </Col>
+            ),
+          )}
         </Row>
       </div>
 
-      <div>
-        <Typography.Title className="admin-section-title" level={4}>
-          Платежи
-        </Typography.Title>
-        <Table<Payment>
-          columns={paymentColumns}
-          dataSource={data?.payments ?? []}
-          loading={userQuery.isLoading}
-          locale={{ emptyText: 'Платежей нет' }}
-          pagination={{ pageSize: 10 }}
-          rowKey="id"
-          scroll={{ x: 900 }}
-          size="middle"
-        />
-      </div>
+      {!isGuest ? (
+        <div>
+          <Typography.Title className="admin-section-title" level={4}>
+            Платежи
+          </Typography.Title>
+          <Table<Payment>
+            columns={paymentColumns}
+            dataSource={data?.payments ?? []}
+            loading={userQuery.isLoading}
+            locale={{ emptyText: 'Платежей нет' }}
+            pagination={{ pageSize: 10 }}
+            rowKey="id"
+            scroll={{ x: 900 }}
+            size="middle"
+          />
+        </div>
+      ) : null}
 
       <div>
         <Typography.Title className="admin-section-title" level={4}>

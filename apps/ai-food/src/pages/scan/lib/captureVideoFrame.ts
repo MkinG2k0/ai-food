@@ -53,6 +53,26 @@ export function jpegFileFromCanvas(
   });
 }
 
+/** Prime JPEG encoder so the first shutter toBlob is not a cold stall on WebView. */
+export function warmJpegEncoder(): void {
+  const run = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 768;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    void canvas.toBlob(() => undefined, 'image/jpeg', 0.92);
+  };
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(run);
+  } else {
+    requestAnimationFrame(run);
+  }
+}
+
 /**
  * Grab current video frame as a JPEG File.
  * Optionally downscale longest edge (faster on mobile WebView).

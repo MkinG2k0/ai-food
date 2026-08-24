@@ -82,4 +82,58 @@ describe('syncDiaryMeals', () => {
     expect(state.meals[0].name).toBe('Remote');
     expect(state.pendingDeletes).toEqual([]);
   });
+
+  it('applies sync response onto latest local state, not the request snapshot', async () => {
+    useDiaryStore.setState({
+      meals: [
+        {
+          id: 'm1',
+          timestamp: '2026-08-22T08:00:00.000Z',
+          clientUpdatedAt: '2026-08-22T08:00:00.000Z',
+          items: [],
+          totalCalories: 100,
+          status: 'analyzing',
+          name: 'Анализ…',
+        },
+      ],
+      pendingDeletes: [],
+      selectedDate: new Date(),
+    });
+
+    let releaseSync!: () => void;
+    const syncGate = new Promise<void>((resolve) => {
+      releaseSync = resolve;
+    });
+
+    syncMealsApi.mockImplementation(async () => {
+      await syncGate;
+      return {
+        meals: [
+          {
+            id: 'm1',
+            timestamp: '2026-08-22T08:00:00.000Z',
+            clientUpdatedAt: '2026-08-22T08:00:00.000Z',
+            items: [],
+            totalCalories: 100,
+            status: 'analyzing',
+            name: 'Анализ…',
+          },
+        ],
+        tombstones: [],
+      };
+    });
+
+    const syncPromise = syncDiaryMeals({ mode: 'upsert', mealIds: ['m1'] });
+
+    useDiaryStore.getState().updateMeal('m1', {
+      imageUri: 'meal-images/late.jpg',
+      imageUris: ['meal-images/late.jpg'],
+    });
+
+    releaseSync();
+    await syncPromise;
+
+    const meal = useDiaryStore.getState().meals.find((m) => m.id === 'm1');
+    expect(meal?.imageUri).toBe('meal-images/late.jpg');
+  });
 });

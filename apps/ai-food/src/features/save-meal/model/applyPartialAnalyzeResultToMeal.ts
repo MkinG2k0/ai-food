@@ -1,5 +1,5 @@
 import type { FoodItem } from '@ai-food/shared-types';
-import { normalizePortions, useDiaryStore } from '@/entities/meal';
+import { useDiaryStore } from '@/entities/meal';
 import type { PartialNutritionXml } from '@/features/analyze-food';
 
 /**
@@ -24,7 +24,6 @@ export function applyPartialAnalyzeResultToMeal(
     partial.carbs !== undefined ||
     partial.fat !== undefined ||
     partial.fiber !== undefined ||
-    partial.itemCount !== undefined ||
     partial.totalGrams !== undefined;
 
   if (!hasScalars) return;
@@ -57,9 +56,6 @@ export function applyPartialAnalyzeResultToMeal(
     name: partial.foodName ?? meal?.name,
     totalCalories: calories,
     items: [item],
-    ...(partial.itemCount !== undefined
-      ? { portions: normalizePortions(partial.itemCount) }
-      : {}),
     ...(partial.totalGrams !== undefined ? { totalGrams: partial.totalGrams } : {}),
     healthiness: partial.healthiness ?? meal?.healthiness,
     confidence: partial.confidence ?? meal?.confidence,

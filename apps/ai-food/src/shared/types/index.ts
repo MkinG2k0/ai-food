@@ -196,12 +196,6 @@ export interface NutritionResult {
   healthiness?: number;
   items: NutritionItem[];
   /**
-   * Count of discrete edible units (pieces/rolls/wings) when food is usually counted that way.
-   * Not the length of `items` (composition). Maps to Meal.portions.
-   * Omitted when model skips — treat as 1.
-   */
-  itemCount?: number;
-  /**
    * Estimated total dish weight in grams (sum of visible food).
    * Display-only on the client; omitted when model skips.
    */

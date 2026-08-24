@@ -29,7 +29,7 @@ describe('compressImageForAi', () => {
       'createImageBitmap',
       vi.fn().mockRejectedValue(new Error('decode failed')),
     );
-    const file = new File(['x'], 'food.jpg', { type: 'image/jpeg' });
+    const file = new File(['x'], 'gallery.jpg', { type: 'image/jpeg' });
     await expect(compressImageForAi(file)).resolves.toBe(file);
   });
 
@@ -66,6 +66,39 @@ describe('compressImageForAi', () => {
       'image/jpeg',
       AI_IMAGE_JPEG_QUALITY,
     );
+    expect(bitmap.close).toHaveBeenCalled();
+  });
+
+  it('skips shutter jpeg without decode or re-encode', async () => {
+    const createImageBitmap = vi.fn();
+    vi.stubGlobal('createImageBitmap', createImageBitmap);
+
+    const original = new File([new Uint8Array(90_000)], 'food-1734567890123.jpg', {
+      type: 'image/jpeg',
+    });
+    const result = await compressImageForAi(original);
+
+    expect(result).toBe(original);
+    expect(createImageBitmap).not.toHaveBeenCalled();
+  });
+
+  it('skips re-encode when jpeg already fits maxSide and size budget', async () => {
+    const bitmap = mockBitmap(1024, 768);
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(bitmap));
+
+    const toBlob = vi.fn();
+    vi.spyOn(document, 'createElement').mockReturnValue({
+      getContext: vi.fn(),
+      toBlob,
+    } as unknown as HTMLCanvasElement);
+
+    const original = new File([new Uint8Array(90_000)], 'gallery.jpg', {
+      type: 'image/jpeg',
+    });
+    const result = await compressImageForAi(original);
+
+    expect(result).toBe(original);
+    expect(toBlob).not.toHaveBeenCalled();
     expect(bitmap.close).toHaveBeenCalled();
   });
 

@@ -335,7 +335,7 @@ describe('useDiaryStore', () => {
     expect(result.current.meals[0]).toMatchObject(emptyMeal);
   });
 
-  it('setMealPortions scales items, grams and totalCalories by 0.5 steps', async () => {
+  it('setMealPortions scales items, grams and totalCalories by 0.25 steps', async () => {
     const { result } = renderHook(() => useDiaryStore());
     await act(async () => {
       result.current.addMeal({ ...multiItemMeal, portions: 1 });
@@ -349,17 +349,17 @@ describe('useDiaryStore', () => {
     expect(meal.totalCalories).toBe(750);
   });
 
-  it('setMealPortions treats missing portions as 1 and clamps to min 0.5', async () => {
+  it('setMealPortions treats missing portions as 1 and clamps to min 0.25', async () => {
     const { result } = renderHook(() => useDiaryStore());
     await act(async () => {
       result.current.addMeal(multiItemMeal);
-      result.current.setMealPortions('m1', 0.5);
+      result.current.setMealPortions('m1', 0.25);
     });
     const meal = result.current.meals[0];
-    expect(meal.portions).toBe(0.5);
-    expect(meal.items[0].calories).toBe(100);
-    expect(meal.items[1].calories).toBe(150);
-    expect(meal.totalCalories).toBe(250);
+    expect(meal.portions).toBe(0.25);
+    expect(meal.items[0].calories).toBe(50);
+    expect(meal.items[1].calories).toBe(75);
+    expect(meal.totalCalories).toBe(125);
   });
 
   it('setMealPortions is no-op when portions unchanged after normalize', async () => {

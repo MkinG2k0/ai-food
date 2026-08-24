@@ -15,6 +15,28 @@ export {
 export type { MonthGridDay } from './dateUtils';
 export { saveMealImage, saveMealImageFromUrl, getMealImageSrc, loadMealImageAsFile } from './mealImage';
 export {
+  appDebugLog,
+  bindAppDebugEnabled,
+  buildAppDebugReport,
+  clearAppDebugLog,
+  copyAppDebugReport,
+  isAppDebugEnabled,
+  shareAppDebugReportViaTelegram,
+  subscribeAppDebugLog,
+  type AppDebugCategory,
+} from './appDebugLog';
+export {
+  SUPPORT_TELEGRAM_LABEL,
+  SUPPORT_TELEGRAM_TEXT_LIMIT,
+  SUPPORT_TELEGRAM_URL,
+  SUPPORT_TELEGRAM_USERNAME,
+  buildSupportTelegramNativeUrl,
+  buildSupportTelegramWebUrl,
+  openSupportTelegramWithText,
+  trimTextForTelegramDraft,
+} from './supportTelegram';
+export { useTripleTap } from './useTripleTap';
+export {
   compressImageForAi,
   AI_IMAGE_MAX_SIDE,
   AI_IMAGE_JPEG_QUALITY,

@@ -20,6 +20,7 @@ import { userFavoritesRouter } from './routes/userFavorites.js';
 import { userSettingsRouter } from './routes/userSettings.js';
 import { userStreakRouter } from './routes/userStreak.js';
 import { userFriendsRouter } from './routes/userFriends.js';
+import { userSupportReportsRouter } from './routes/userSupportReports.js';
 
 export function createApp() {
   const app = express();
@@ -27,7 +28,7 @@ export function createApp() {
   app.use(
     cors({
       origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: [
         'Content-Type',
         'Authorization',
@@ -54,6 +55,7 @@ export function createApp() {
   app.use('/user/settings', userSettingsRouter);
   app.use('/user/streak', userStreakRouter);
   app.use('/user/friends', userFriendsRouter);
+  app.use('/user/support-reports', userSupportReportsRouter);
 
   const v1 = express.Router();
   v1.use(requireApiKey);

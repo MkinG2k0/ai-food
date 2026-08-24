@@ -3,9 +3,11 @@ import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { useSaveMeal } from './useSaveMeal';
+import { beginAnalyzingMeal, cancelAnalyzingMeal } from './analyzingMeal';
 import { mealShowsAnalyzeLoader, mealShowsAnalyzeRetry, useDiaryStore } from '@/entities/meal';
 import { isSameDay } from '@/shared/lib';
 import { analyzeFoodApi } from '@/features/analyze-food';
+import { saveMealImage } from '@/shared/lib';
 
 vi.mock('@/features/analyze-food', () => ({
   analyzeFoodApi: vi.fn().mockResolvedValue({
@@ -55,6 +57,10 @@ describe('useSaveMeal', () => {
   beforeEach(() => {
     useDiaryStore.setState({ meals: [], selectedDate: new Date() });
     vi.mocked(analyzeFoodApi).mockClear();
+    vi.mocked(saveMealImage).mockClear();
+    vi.mocked(saveMealImage).mockImplementation(async (file: File) => {
+      return `meal-images/${file.name}`;
+    });
     vi.mocked(analyzeFoodApi).mockResolvedValue({
       result: {
         foodName: 'Test Food',
@@ -126,6 +132,83 @@ describe('useSaveMeal', () => {
     const meal = useDiaryStore.getState().meals[0];
     expect(meal).toBeDefined();
     expect(isSameDay(new Date(meal.timestamp), past)).toBe(true);
+  });
+
+  it('shows analyzing meal before meal image is persisted', async () => {
+    let resolveSave!: (path: string) => void;
+    const delayedSave = new Promise<string>((resolve) => {
+      resolveSave = resolve;
+    });
+    vi.mocked(saveMealImage).mockReturnValueOnce(delayedSave);
+
+    let resolveAnalyze!: (value: Awaited<ReturnType<typeof analyzeFoodApi>>) => void;
+    vi.mocked(analyzeFoodApi).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveAnalyze = resolve;
+      }),
+    );
+
+    const { result } = renderHook(() => useSaveMeal(), { wrapper: createWrapper() });
+    const file = new File(['fake'], 'food.jpg', { type: 'image/jpeg' });
+
+    let submitDone = false;
+    await act(async () => {
+      void result.current({ image: file }).then(() => {
+        submitDone = true;
+      });
+      await Promise.resolve();
+    });
+
+    const pending = useDiaryStore.getState().meals[0];
+    expect(pending.status).toBe('analyzing');
+    expect(pending.imageUri).toBeUndefined();
+    expect(submitDone).toBe(false);
+    expect(analyzeFoodApi).toHaveBeenCalled();
+
+    await act(async () => {
+      resolveSave('meal-images/food.jpg');
+      await Promise.resolve();
+    });
+
+    expect(useDiaryStore.getState().meals[0].imageUri).toBe('meal-images/food.jpg');
+
+    await act(async () => {
+      resolveAnalyze({
+        result: {
+          foodName: 'Test Food',
+          calories: 300,
+          protein: 20,
+          carbs: 30,
+          fat: 10,
+          fiber: 5,
+          confidence: 0.9,
+          healthiness: 7,
+          items: [
+            {
+              name: 'Test Food',
+              calories: 300,
+              protein: 20,
+              carbs: 30,
+              fat: 10,
+            },
+          ],
+        },
+        processingTime: 100,
+      });
+      await Promise.resolve();
+    });
+
+    expect(useDiaryStore.getState().meals[0].status).toBe('ready');
+    expect(submitDone).toBe(true);
+  });
+
+  it('beginAnalyzingMeal shows card before JPEG file exists', () => {
+    const handle = beginAnalyzingMeal();
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.id).toBe(handle.mealId);
+    expect(meal.status).toBe('analyzing');
+    cancelAnalyzingMeal(handle.mealId);
+    expect(useDiaryStore.getState().meals).toHaveLength(0);
   });
 
   it('passes all images to analyzeFoodApi and saves all uris in diary', async () => {

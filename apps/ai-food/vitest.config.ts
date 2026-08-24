@@ -1,8 +1,18 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { readFileSync } from 'node:fs';
+
+const appVersion = (
+  JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8')) as {
+    version: string;
+  }
+).version;
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
+  },
   plugins: [react()],
   test: {
     environment: 'jsdom',
