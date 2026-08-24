@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { compressImageForAi, cn } from '@/shared/lib';
+import { compressImageForAi, cn, fileToImageDataUrl } from '@/shared/lib';
 import { BottomSheet, Button, TextareaWithVoice } from '@/shared/ui';
+import { pickSupportReportImagesFromGallery } from '../lib/pickSupportReportImages';
 import { submitSupportReportApi } from '../api/submitSupportReportApi';
 import {
   DEFAULT_SUPPORT_REPORT_TYPE,
@@ -12,21 +14,6 @@ import {
   SUPPORT_REPORT_TYPES,
   type SupportReportType,
 } from '../model/supportReportTypes';
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-        return;
-      }
-      reject(new Error('Не удалось прочитать файл'));
-    };
-    reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
-    reader.readAsDataURL(file);
-  });
-}
 
 export interface ReportIssueSheetProps {
   open: boolean;
@@ -55,11 +42,15 @@ export function ReportIssueSheet({ open, onClose }: ReportIssueSheetProps) {
   };
 
   const handlePickImages = () => {
+    if (Capacitor.isNativePlatform()) {
+      void handleNativePickImages();
+      return;
+    }
     inputRef.current?.click();
   };
 
-  const handleFiles = async (fileList: FileList | null | undefined) => {
-    if (!fileList?.length) return;
+  const appendImageFiles = async (files: File[]) => {
+    if (files.length === 0) return;
 
     const remaining = MAX_SUPPORT_REPORT_IMAGES - images.length;
     if (remaining <= 0) {
@@ -67,22 +58,43 @@ export function ReportIssueSheet({ open, onClose }: ReportIssueSheetProps) {
       return;
     }
 
-    const files = Array.from(fileList).slice(0, remaining);
+    const limited = files.slice(0, remaining);
+    const next = await Promise.all(
+      limited.map(async (file) => {
+        const compressed = await compressImageForAi(file, {
+          maxSide: 1280,
+          quality: 0.75,
+        });
+        const preview = await fileToImageDataUrl(compressed);
+        return {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          preview,
+        };
+      }),
+    );
+    setImages((prev) => [...prev, ...next]);
+  };
+
+  const handleNativePickImages = async () => {
+    const remaining = MAX_SUPPORT_REPORT_IMAGES - images.length;
+    if (remaining <= 0) {
+      toast.error(`Можно прикрепить не больше ${MAX_SUPPORT_REPORT_IMAGES} фото`);
+      return;
+    }
+
     try {
-      const next = await Promise.all(
-        files.map(async (file) => {
-          const compressed = await compressImageForAi(file, {
-            maxSide: 1280,
-            quality: 0.75,
-          });
-          const preview = await fileToDataUrl(compressed);
-          return {
-            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            preview,
-          };
-        }),
-      );
-      setImages((prev) => [...prev, ...next]);
+      const files = await pickSupportReportImagesFromGallery(remaining);
+      await appendImageFiles(files);
+    } catch {
+      toast.error('Не удалось выбрать фото');
+    }
+  };
+
+  const handleFiles = async (fileList: FileList | null | undefined) => {
+    if (!fileList?.length) return;
+
+    try {
+      await appendImageFiles(Array.from(fileList));
     } catch {
       toast.error('Не удалось обработать фото');
     } finally {

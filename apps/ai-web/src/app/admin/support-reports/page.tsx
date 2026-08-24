@@ -6,8 +6,10 @@ import type { ColumnsType } from 'antd/es/table';
 import {
   Alert,
   Button,
+  Descriptions,
   Image,
   Modal,
+  Segmented,
   Select,
   Space,
   Table,
@@ -226,6 +228,7 @@ export default function AdminSupportReportsPage() {
       />
 
       <Modal
+        centered
         open={Boolean(selectedId)}
         title="Обращение"
         width={720}
@@ -239,73 +242,104 @@ export default function AdminSupportReportsPage() {
         {detailQuery.isLoading ? (
           <Typography.Text type="secondary">Загрузка…</Typography.Text>
         ) : detailQuery.data ? (
-          <div className="admin-stack">
-            <Space wrap>
-              <Tag>{TYPE_LABELS[detailQuery.data.type]}</Tag>
-              <Tag color={STATUS_COLORS[detailQuery.data.status]}>
-                {STATUS_LABELS[detailQuery.data.status]}
-              </Tag>
+          <div className="support-report-detail">
+            <div className="support-report-detail__meta">
+              <Space wrap size={[8, 8]}>
+                <Tag>{TYPE_LABELS[detailQuery.data.type]}</Tag>
+                <Tag color={STATUS_COLORS[detailQuery.data.status]}>
+                  {STATUS_LABELS[detailQuery.data.status]}
+                </Tag>
+              </Space>
               <Typography.Text type="secondary">
                 {new Date(detailQuery.data.createdAt).toLocaleString('ru-RU')}
               </Typography.Text>
-            </Space>
-
-            <div>
-              <Typography.Text strong>Пользователь: </Typography.Text>
-              <Typography.Text>
-                {formatUserLabel(detailQuery.data.user, detailQuery.data.deviceId)}
-              </Typography.Text>
             </div>
 
-            {(detailQuery.data.platform || detailQuery.data.appVersion) && (
-              <div>
-                <Typography.Text strong>Клиент: </Typography.Text>
-                <Typography.Text>
+            <Descriptions
+              size="small"
+              column={1}
+              colon={false}
+              className="support-report-detail__info"
+            >
+              <Descriptions.Item label="Пользователь">
+                {formatUserLabel(detailQuery.data.user, detailQuery.data.deviceId)}
+              </Descriptions.Item>
+              {(detailQuery.data.platform || detailQuery.data.appVersion) && (
+                <Descriptions.Item label="Клиент">
                   {[detailQuery.data.platform, detailQuery.data.appVersion]
                     .filter(Boolean)
                     .join(' · ')}
-                </Typography.Text>
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            <section className="support-report-detail__section">
+              <Typography.Text
+                type="secondary"
+                className="support-report-detail__label"
+              >
+                Сообщение
+              </Typography.Text>
+              <div className="support-report-detail__message">
+                {detailQuery.data.message}
               </div>
-            )}
+            </section>
 
-            <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>
-              {detailQuery.data.message}
-            </Typography.Paragraph>
+            <section className="support-report-detail__section">
+              <Typography.Text
+                type="secondary"
+                className="support-report-detail__label"
+              >
+                Фото
+                {detailQuery.data.images.length > 0
+                  ? ` · ${detailQuery.data.images.length}`
+                  : ''}
+              </Typography.Text>
+              {detailQuery.data.images.length > 0 ? (
+                <Image.PreviewGroup>
+                  <div className="support-report-detail__photos">
+                    {detailQuery.data.images.map((src, index) => (
+                      <Image
+                        key={`${detailQuery.data!.id}-${index}`}
+                        src={src}
+                        alt={`Фото ${index + 1}`}
+                        width={160}
+                        height={160}
+                        className="support-report-detail__photo"
+                      />
+                    ))}
+                  </div>
+                </Image.PreviewGroup>
+              ) : (
+                <Typography.Text type="secondary">
+                  Фото не прикреплены
+                </Typography.Text>
+              )}
+            </section>
 
-            {detailQuery.data.images.length > 0 ? (
-              <Image.PreviewGroup>
-                <Space wrap>
-                  {detailQuery.data.images.map((src, index) => (
-                    <Image
-                      key={`${detailQuery.data!.id}-${index}`}
-                      src={src}
-                      alt={`Фото ${index + 1}`}
-                      width={120}
-                      height={120}
-                      style={{ objectFit: 'cover', borderRadius: 8 }}
-                    />
-                  ))}
-                </Space>
-              </Image.PreviewGroup>
-            ) : null}
-
-            <Space wrap>
-              {(['new', 'read', 'resolved'] as const).map((status) => (
-                <Button
-                  key={status}
-                  type={
-                    detailQuery.data?.status === status ? 'primary' : 'default'
-                  }
-                  loading={statusMutation.isPending}
-                  onClick={() => {
-                    if (!selectedId) return;
-                    statusMutation.mutate({ id: selectedId, status });
-                  }}
-                >
-                  {STATUS_LABELS[status]}
-                </Button>
-              ))}
-            </Space>
+            <section className="support-report-detail__section support-report-detail__status">
+              <Typography.Text
+                type="secondary"
+                className="support-report-detail__label"
+              >
+                Статус
+              </Typography.Text>
+              <Segmented<SupportReportStatus>
+                block
+                value={detailQuery.data.status}
+                disabled={statusMutation.isPending}
+                options={(
+                  ['new', 'read', 'resolved'] as const
+                ).map((status) => ({
+                  value: status,
+                  label: STATUS_LABELS[status],
+                }))}
+                onChange={(status) => {
+                  if (!selectedId || status === detailQuery.data?.status) return;
+                  statusMutation.mutate({ id: selectedId, status });
+                }}
+              />
+            </section>
           </div>
         ) : (
           <Alert type="error" showIcon message="Обращение не найдено" />

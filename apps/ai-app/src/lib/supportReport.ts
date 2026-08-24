@@ -13,7 +13,7 @@ export const SUPPORT_REPORT_STATUSES = ['new', 'read', 'resolved'] as const;
 
 export type SupportReportStatus = (typeof SUPPORT_REPORT_STATUSES)[number];
 
-const DATA_URL_RE = /^data:image\/(?:jpeg|jpg|png|webp);base64,/i;
+const DATA_URL_RE = /^data:image\/[\w.+-]+;base64,/i;
 
 export const createSupportReportBodySchema = z.object({
   type: z.enum(SUPPORT_REPORT_TYPES).default('other'),

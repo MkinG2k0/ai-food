@@ -1,4 +1,5 @@
 export { cn } from './utils';
+export { fileToImageDataUrl } from './fileToImageDataUrl';
 export { formatCalories, formatMacro, formatDate } from './formatters';
 export { queryClient } from './queryClient';
 export {

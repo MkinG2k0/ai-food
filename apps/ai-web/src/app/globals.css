@@ -91,6 +91,72 @@ body {
   gap: 16px;
 }
 
+.admin-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.support-report-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.support-report-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.support-report-detail__info .ant-descriptions-item-label {
+  width: 112px;
+  color: var(--ant-color-text-secondary);
+}
+
+.support-report-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.support-report-detail__label {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.support-report-detail__message {
+  padding: 12px 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+  font-size: 15px;
+  border-radius: 10px;
+  background: var(--ant-color-fill-quaternary);
+  border: 1px solid var(--ant-color-border-secondary);
+}
+
+.support-report-detail__photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.support-report-detail__photo {
+  overflow: hidden;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--ant-color-border-secondary);
+}
+
+.support-report-detail__status {
+  padding-top: 4px;
+  border-top: 1px solid var(--ant-color-border-secondary);
+}
+
 .admin-section-title {
   margin: 0 0 12px !important;
 }
