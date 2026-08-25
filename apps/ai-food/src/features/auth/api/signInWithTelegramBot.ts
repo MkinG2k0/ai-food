@@ -3,6 +3,7 @@ import type { AuthLoginResult } from '../model/authLoginResult';
 import { parseNutritionProfile } from '../model/nutritionProfile';
 import { useAuthStore } from '../model/useAuthStore';
 import { mapTelegramUserToSession } from './signInWithTelegram';
+import { openTelegramBotDeepLink } from './openTelegramBotDeepLink';
 
 type TelegramGatewayUser = {
   id: string;
@@ -19,7 +20,17 @@ type TelegramGatewayUser = {
 
 type TelegramBotLoginOptions = {
   signal?: AbortSignal;
-  openLink?: (url: string) => void;
+  /**
+   * Window from `prepareTelegramLoginPopup()` — must be opened
+   * synchronously in the click handler before awaiting this function.
+   */
+  popup?: Window | null;
+  /** Always called with botDeepLink once /start succeeds (for manual `<a>`). */
+  onDeepLinkReady?: (url: string) => void;
+  /** Invoked when auto-open failed; UI should emphasize the manual link. */
+  onNeedsManualOpen?: (url: string) => void;
+  /** Test seam / override. Return false if open failed. */
+  openLink?: (url: string) => boolean | void;
 };
 
 export async function signInWithTelegramBot(
@@ -45,14 +56,26 @@ export async function signInWithTelegramBot(
   };
 
   if (!startRes.ok || !start.challengeId || !start.botDeepLink) {
+    try {
+      opts?.popup?.close();
+    } catch {
+      // ignore
+    }
     throw new Error(
       start.message ?? `Не удалось начать вход (${startRes.status})`,
     );
   }
 
-  (opts?.openLink ?? ((url: string) => window.open(url, '_blank')))(
-    start.botDeepLink,
-  );
+  opts?.onDeepLinkReady?.(start.botDeepLink);
+
+  const opened =
+    opts?.openLink != null
+      ? opts.openLink(start.botDeepLink) !== false
+      : openTelegramBotDeepLink(start.botDeepLink, opts?.popup) === 'opened';
+
+  if (!opened) {
+    opts?.onNeedsManualOpen?.(start.botDeepLink);
+  }
 
   const deadline = Date.now() + 5 * 60 * 1000;
   while (Date.now() < deadline) {

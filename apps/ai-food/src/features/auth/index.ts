@@ -37,5 +37,9 @@ export { useUsage } from './model/useUsage';
 export { isGenerationQuotaAvailable } from './model/generationQuota';
 export { mapTelegramUserToSession } from './api/signInWithTelegram';
 export { signInWithTelegramBot } from './api/signInWithTelegramBot';
+export {
+  openTelegramBotDeepLink,
+  prepareTelegramLoginPopup,
+} from './api/openTelegramBotDeepLink';
 export { signInWithDemo } from './api/signInWithDemo';
 export { TelegramBotLoginButton } from './ui/TelegramBotLoginButton';

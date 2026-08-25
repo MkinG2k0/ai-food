@@ -77,16 +77,26 @@ describe('signInWithTelegramBot', () => {
         ),
       );
     vi.stubGlobal('fetch', fetchMock);
-    const openLink = vi.fn();
+    const openLink = vi.fn(() => true);
+    const onDeepLinkReady = vi.fn();
+    const onNeedsManualOpen = vi.fn();
     const { signInWithTelegramBot } = await import('./signInWithTelegramBot');
 
-    const resultPromise = signInWithTelegramBot({ openLink });
+    const resultPromise = signInWithTelegramBot({
+      openLink,
+      onDeepLinkReady,
+      onNeedsManualOpen,
+    });
     await vi.advanceTimersByTimeAsync(3_000);
     const result = await resultPromise;
 
     expect(openLink).toHaveBeenCalledWith(
       'https://t.me/example_bot?start=challenge-1',
     );
+    expect(onDeepLinkReady).toHaveBeenCalledWith(
+      'https://t.me/example_bot?start=challenge-1',
+    );
+    expect(onNeedsManualOpen).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
       'https://gateway.example/auth/telegram/start',
@@ -113,5 +123,46 @@ describe('signInWithTelegramBot', () => {
       },
       nutritionProfile,
     });
+  });
+
+  it('notifies manual open when auto-open is blocked and still completes login', async () => {
+    const user = {
+      id: 'user-1',
+      telegramId: '42',
+      username: 'ada',
+      name: 'Ada Lovelace',
+    };
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            challengeId: 'challenge-2',
+            botDeepLink: 'https://t.me/example_bot?start=challenge-2',
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ status: 'ok', token: 'jwt-2', user }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const onNeedsManualOpen = vi.fn();
+    const { signInWithTelegramBot } = await import('./signInWithTelegramBot');
+
+    const resultPromise = signInWithTelegramBot({
+      openLink: () => false,
+      onNeedsManualOpen,
+    });
+    await vi.advanceTimersByTimeAsync(1_500);
+    await resultPromise;
+
+    expect(onNeedsManualOpen).toHaveBeenCalledWith(
+      'https://t.me/example_bot?start=challenge-2',
+    );
+    expect(signIn).toHaveBeenCalled();
   });
 });
