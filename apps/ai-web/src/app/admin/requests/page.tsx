@@ -71,10 +71,10 @@ type GatewayRequestList = {
 };
 
 const REQUEST_TYPE_LABELS: Record<string, string> = {
-  food_analyze: 'Анализ',
+  food_analyze: 'Анализ еды',
   food_refine: 'Уточнение',
   food_ask: 'Вопрос',
-  chat_completions: 'Chat',
+  chat_completions: 'Chat (общий)',
   embeddings: 'Embeddings',
   models: 'Models',
 };
@@ -146,7 +146,7 @@ export default function AdminRequestsPage() {
       {
         dataIndex: 'okCount',
         key: 'okCount',
-        title: 'OK',
+        title: 'Успешно',
       },
       {
         dataIndex: 'errorCount',
@@ -154,40 +154,50 @@ export default function AdminRequestsPage() {
         title: 'Ошибки',
       },
       {
-        dataIndex: 'avgTtfbMs',
-        key: 'avgTtfbMs',
-        render: formatMs,
-        title: 'TTFB avg',
+        title: 'Старт ответа',
+        children: [
+          {
+            dataIndex: 'avgTtfbMs',
+            key: 'avgTtfbMs',
+            render: formatMs,
+            title: 'среднее',
+          },
+          {
+            dataIndex: 'p50TtfbMs',
+            key: 'p50TtfbMs',
+            render: formatMs,
+            title: 'типичный',
+          },
+          {
+            dataIndex: 'p95TtfbMs',
+            key: 'p95TtfbMs',
+            render: formatMs,
+            title: 'медл. 5%',
+          },
+        ],
       },
       {
-        dataIndex: 'p50TtfbMs',
-        key: 'p50TtfbMs',
-        render: formatMs,
-        title: 'TTFB p50',
-      },
-      {
-        dataIndex: 'p95TtfbMs',
-        key: 'p95TtfbMs',
-        render: formatMs,
-        title: 'TTFB p95',
-      },
-      {
-        dataIndex: 'avgDurationMs',
-        key: 'avgDurationMs',
-        render: formatMs,
-        title: 'Duration avg',
-      },
-      {
-        dataIndex: 'p50DurationMs',
-        key: 'p50DurationMs',
-        render: formatMs,
-        title: 'Duration p50',
-      },
-      {
-        dataIndex: 'p95DurationMs',
-        key: 'p95DurationMs',
-        render: formatMs,
-        title: 'Duration p95',
+        title: 'Полное время',
+        children: [
+          {
+            dataIndex: 'avgDurationMs',
+            key: 'avgDurationMs',
+            render: formatMs,
+            title: 'среднее',
+          },
+          {
+            dataIndex: 'p50DurationMs',
+            key: 'p50DurationMs',
+            render: formatMs,
+            title: 'типичный',
+          },
+          {
+            dataIndex: 'p95DurationMs',
+            key: 'p95DurationMs',
+            render: formatMs,
+            title: 'медл. 5%',
+          },
+        ],
       },
     ],
     [],
@@ -195,7 +205,7 @@ export default function AdminRequestsPage() {
 
   const detailColumns: ColumnsType<GatewayRequestRow> = [
     {
-      title: 'Время',
+      title: 'Когда',
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (v: string) => new Date(v).toLocaleString('ru-RU'),
@@ -205,34 +215,38 @@ export default function AdminRequestsPage() {
       dataIndex: 'ok',
       key: 'ok',
       render: (ok: boolean) =>
-        ok ? <Tag color="success">OK</Tag> : <Tag color="error">Ошибка</Tag>,
+        ok ? (
+          <Tag color="success">Успешно</Tag>
+        ) : (
+          <Tag color="error">Ошибка</Tag>
+        ),
     },
     {
-      title: 'TTFB',
+      title: 'Старт ответа',
       dataIndex: 'ttfbMs',
       key: 'ttfbMs',
       render: formatMs,
     },
     {
-      title: 'Duration',
+      title: 'Полное время',
       dataIndex: 'durationMs',
       key: 'durationMs',
       render: formatMs,
     },
     {
-      title: 'Stream',
+      title: 'Поток (SSE)',
       dataIndex: 'stream',
       key: 'stream',
       render: (v: boolean) => (v ? 'да' : 'нет'),
     },
     {
-      title: 'userId',
+      title: 'Пользователь',
       dataIndex: 'userId',
       key: 'userId',
       render: (v) => v ?? '—',
     },
     {
-      title: 'deviceId',
+      title: 'Устройство',
       dataIndex: 'deviceId',
       key: 'deviceId',
       render: (v) => v ?? '—',
@@ -256,7 +270,7 @@ export default function AdminRequestsPage() {
   return (
     <>
       <PageHeader
-        subtitle="Объём и latency OpenRouter-прокси по типам"
+        subtitle="Сколько вызовов AI ушло через gateway и как долго они отвечали"
         title="Запросы"
       />
       {statsQuery.error ? (
@@ -321,7 +335,12 @@ export default function AdminRequestsPage() {
         <Typography.Title className="admin-section-title" level={4}>
           По типам за 30 дней
         </Typography.Title>
+        <Typography.Paragraph type="secondary" style={{ marginTop: -4 }}>
+          Старт ответа — до первого байта; полное время — до конца. Типичный =
+          половина запросов не медленнее; медл. 5% — хвост самых долгих.
+        </Typography.Paragraph>
         <Table<RequestTypeStats>
+          bordered
           columns={requestTypeColumns}
           dataSource={data?.requests?.byType ?? []}
           loading={statsQuery.isLoading}
@@ -335,7 +354,7 @@ export default function AdminRequestsPage() {
       {!seriesQuery.error ? (
         <div>
           <Typography.Title className="admin-section-title" level={4}>
-            Объём за 7 дней
+            Сколько запросов в день
           </Typography.Title>
           <Row className="admin-stat-row" gutter={[16, 16]}>
             <Col lg={12} md={16} sm={24} xs={24}>
@@ -345,10 +364,10 @@ export default function AdminRequestsPage() {
                 loading={seriesQuery.isLoading}
                 summary={
                   <Typography.Text type="secondary">
-                    За 7 дней: всего {requestSparkTotal}
+                    За 7 дней суммарно: {requestSparkTotal}
                   </Typography.Text>
                 }
-                title="Запросы"
+                title="Число запросов по дням"
                 yFields={[
                   { key: 'total', label: 'Всего' },
                   { key: 'food_analyze', label: 'Анализ' },

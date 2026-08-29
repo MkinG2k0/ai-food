@@ -9,6 +9,9 @@ function withHttps(hostOrUrl: string): string {
 }
 
 function resolveSiteUrl(): string {
+  const siteUrl = process.env.SITE_URL?.trim();
+  if (siteUrl) return withHttps(siteUrl);
+
   const vercelUrl = process.env.VERCEL_URL?.trim();
   if (vercelUrl) return withHttps(vercelUrl);
 

@@ -263,14 +263,14 @@ export default function AdminHealthPage() {
                 loading={seriesQuery.isLoading}
                 summary={
                   <Typography.Text type="secondary">
-                    Duration p50 / p95 (мс)
+                    Полное время ответа: типичный (p50) и медленные 5% (p95)
                   </Typography.Text>
                 }
-                title="Duration p50 / p95"
+                title="Время ответа, мс"
                 valueFormatter={(n) => `${Math.round(n)} мс`}
                 yFields={[
-                  { key: 'p50DurationMs', label: 'p50' },
-                  { key: 'p95DurationMs', label: 'p95' },
+                  { key: 'p50DurationMs', label: 'типичный' },
+                  { key: 'p95DurationMs', label: 'медленные 5%' },
                 ]}
               />
             </Col>
@@ -281,14 +281,14 @@ export default function AdminHealthPage() {
                 loading={seriesQuery.isLoading}
                 summary={
                   <Typography.Text type="secondary">
-                    TTFB p50 / p95 (мс)
+                    До первого байта: типичный (p50) и медленные 5% (p95)
                   </Typography.Text>
                 }
-                title="TTFB p50 / p95"
+                title="Старт ответа (TTFB), мс"
                 valueFormatter={(n) => `${Math.round(n)} мс`}
                 yFields={[
-                  { key: 'p50TtfbMs', label: 'p50' },
-                  { key: 'p95TtfbMs', label: 'p95' },
+                  { key: 'p50TtfbMs', label: 'типичный' },
+                  { key: 'p95TtfbMs', label: 'медленные 5%' },
                 ]}
               />
             </Col>

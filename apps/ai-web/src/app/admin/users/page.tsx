@@ -4,7 +4,16 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
-import { Flex, Input, InputNumber, Space, Table, Tag, Typography } from 'antd';
+import {
+  Checkbox,
+  Flex,
+  Input,
+  InputNumber,
+  Space,
+  Table,
+  Tag,
+  Typography,
+} from 'antd';
 
 import { PageHeader } from '@/components/PageHeader';
 import { adminApi } from '@/lib/adminApi';
@@ -42,6 +51,7 @@ type UsersResponse = {
 };
 
 const DEFAULT_COST_PER_GENERATION = 0.32;
+const PRIVATE_MASK = '••••••';
 
 /** AI-billable generations: photo + text + photo+text + refine (без ручного/ШК/legacy). */
 function aiGenerationTotal(counts: UsageCounts): number {
@@ -72,6 +82,7 @@ const formatRub = (value: number) =>
 export default function UsersPage() {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [privateMode, setPrivateMode] = useState(false);
   const [costPerGeneration, setCostPerGeneration] = useState(
     DEFAULT_COST_PER_GENERATION,
   );
@@ -91,6 +102,14 @@ export default function UsersPage() {
       {
         key: 'name',
         render: (_, user) => {
+          if (privateMode) {
+            return (
+              <Space size={8}>
+                <Typography.Text strong>{PRIVATE_MASK}</Typography.Text>
+                {user.isGuest ? <Tag>Гость</Tag> : null}
+              </Space>
+            );
+          }
           const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
           return (
             <Space size={8}>
@@ -107,14 +126,23 @@ export default function UsersPage() {
       {
         dataIndex: 'username',
         key: 'username',
-        render: (username: string | null) => (username ? `@${username}` : '—'),
+        render: (username: string | null) =>
+          privateMode
+            ? PRIVATE_MASK
+            : username
+              ? `@${username}`
+              : '—',
         title: 'Username',
         width: 160,
       },
       {
         key: 'telegramId',
         render: (_, user) =>
-          user.isGuest ? user.deviceId || '—' : user.telegramId || '—',
+          privateMode
+            ? PRIVATE_MASK
+            : user.isGuest
+              ? user.deviceId || '—'
+              : user.telegramId || '—',
         title: 'Telegram / Device',
         width: 180,
       },
@@ -155,17 +183,22 @@ export default function UsersPage() {
       },
       {
         key: 'consent',
-        render: (_, user) =>
-          user.isGuest ? (
-            <Tag>Нет</Tag>
-          ) : (
+        render: (_, user) => {
+          if (privateMode) {
+            return PRIVATE_MASK;
+          }
+          if (user.isGuest) {
+            return <Tag>Нет</Tag>;
+          }
+          return (
             <>
               <Tag color={user.dataConsentAt ? 'success' : 'default'}>
                 {user.dataConsentAt ? 'Да' : 'Нет'}
               </Tag>
               {user.dataConsentAt ? formatDate(user.dataConsentAt) : null}
             </>
-          ),
+          );
+        },
         title: 'Согласие',
         width: 220,
       },
@@ -214,12 +247,13 @@ export default function UsersPage() {
       {
         dataIndex: 'createdAt',
         key: 'createdAt',
-        render: formatDate,
+        render: (value?: string | null) =>
+          privateMode ? PRIVATE_MASK : formatDate(value),
         title: 'Создан',
         width: 180,
       },
     ],
-    [rate],
+    [privateMode, rate],
   );
 
   const users = usersQuery.data?.users ?? [];
@@ -300,6 +334,12 @@ export default function UsersPage() {
             />
           </Space.Compact>
         </Space>
+        <Checkbox
+          checked={privateMode}
+          onChange={(e) => setPrivateMode(e.target.checked)}
+        >
+          Приватный режим
+        </Checkbox>
       </Flex>
       <Table<AdminUser>
         columns={columns}
@@ -310,10 +350,14 @@ export default function UsersPage() {
             ? usersQuery.error.message
             : 'Пользователи не найдены',
         }}
-        onRow={(user) => ({
-          onClick: () => router.push(`/admin/users/${user.id}`),
-          style: { cursor: 'pointer' },
-        })}
+        onRow={(user) =>
+          privateMode
+            ? {}
+            : {
+                onClick: () => router.push(`/admin/users/${user.id}`),
+                style: { cursor: 'pointer' },
+              }
+        }
         pagination={{
           pageSize: 10,
           showSizeChanger: true,

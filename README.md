@@ -6,6 +6,7 @@ Turborepo monorepo: фронт дневника питания + AI Gateway.
 |---------|------|------|
 | `ai-food` | `apps/ai-food` | Vite + React + Capacitor |
 | `openrouter-gateway` | `apps/ai-app` | Express → OpenRouter, auth, quota, billing, user-data sync |
+| `ai-web` | `apps/ai-web` | Next.js лендинг + admin UI |
 
 После входа данные аккаунта (дневник, профиль, вес, избранное) синхронизируются между устройствами. **Фото приёмов не синкаются** — остаются в Filesystem на устройстве. Подробнее: [`apps/ai-food/docs/USER-DATA-SYNC.md`](./apps/ai-food/docs/USER-DATA-SYNC.md).
 
@@ -15,19 +16,22 @@ Turborepo monorepo: фронт дневника питания + AI Gateway.
 pnpm install
 cp apps/ai-app/.env.example apps/ai-app/.env
 cp apps/ai-food/.env.example apps/ai-food/.env
+cp apps/ai-web/.env.example apps/ai-web/.env
 ```
 
-Заполни ключи. **Два отдельных `.env`** — не объединять:
+Заполни ключи. **Отдельные `.env`** — не объединять:
 
 - `apps/ai-app/.env` — `OPENROUTER_API_KEY`, `API_KEY`, `DATABASE_URL`, …
 - `apps/ai-food/.env` — только `VITE_*` (`VITE_AI_GATEWAY_URL=http://127.0.0.1:3000`, …)
+- `apps/ai-web/.env` — `ADMIN_*`, `AI_GATEWAY_URL`, `SITE_URL`
 
 ## Scripts
 
 ```bash
-pnpm dev          # оба приложения
+pnpm dev          # turbo pipeline
 pnpm dev:food     # только Vite :5173
 pnpm dev:app      # только gateway :3000
+pnpm dev:web      # только Next.js :3001
 pnpm build        # vitest + e2e (ai-food) + сборка
 pnpm test         # vitest + e2e (ai-food)
 pnpm test:e2e     # только Playwright e2e; первый раз: pnpm --filter ai-food exec playwright install chromium
@@ -57,12 +61,13 @@ E2E поднимает Vite сам (`webServer`), AI gateway мокается в
 
 ## Dokploy
 
-Два Application из одного репо — см. [docs/DOKPLOY.md](./docs/DOKPLOY.md).
+Три Application из одного репо — см. [docs/DOKPLOY.md](./docs/DOKPLOY.md).
 
 | App | Build Path | Docker File | Port |
 |-----|------------|-------------|------|
 | Gateway | `/apps/ai-app` | `Dockerfile` | 3000 |
 | Frontend | `/apps/ai-food` | `Dockerfile` | 80 |
+| Web / Admin | `/apps/ai-web` | `Dockerfile` | 3001 |
 
 ## Git
 
