@@ -5,7 +5,9 @@ import {
   buildAdminStatsSeries,
   clampSeriesDays,
 } from '../lib/adminStatsSeries.js';
+import { loadOverviewAnalytics } from '../lib/adminOverviewAnalytics.js';
 import { countWindow, statsByType } from '../lib/gatewayRequestStats.js';
+import { collectOpenRouterAdminSnapshot } from '../lib/openrouterAdminClient.js';
 import { parseGatewayRequestListQuery } from '../lib/parseGatewayRequestListQuery.js';
 import { normalizePromoCode } from '../lib/promos.js';
 import {
@@ -139,9 +141,75 @@ function emptyUsageCounts(): UsageCounts {
   };
 }
 
+type UsageDateRange = {
+  from?: Date;
+  to?: Date;
+};
+
+/** Accepts YYYY-MM-DD (UTC day) or full ISO; empty → undefined (all time). */
+function parseUsageDateBound(
+  raw: unknown,
+  field: 'from' | 'to',
+): Date | undefined {
+  if (raw === undefined || raw === null || raw === '') return undefined;
+  if (typeof raw !== 'string') {
+    throw new ApiError(
+      400,
+      'VALIDATION_ERROR',
+      `${field} must be a date string (YYYY-MM-DD or ISO).`,
+    );
+  }
+  const dayOnly = /^(\d{4}-\d{2}-\d{2})$/.exec(raw.trim());
+  if (dayOnly) {
+    return new Date(
+      field === 'from'
+        ? `${dayOnly[1]}T00:00:00.000Z`
+        : `${dayOnly[1]}T23:59:59.999Z`,
+    );
+  }
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new ApiError(
+      400,
+      'VALIDATION_ERROR',
+      `${field} must be a valid date (YYYY-MM-DD or ISO).`,
+    );
+  }
+  return parsed;
+}
+
+function parseUsageDateRange(query: {
+  from?: unknown;
+  to?: unknown;
+}): UsageDateRange {
+  const from = parseUsageDateBound(query.from, 'from');
+  const to = parseUsageDateBound(query.to, 'to');
+  if (from && to && from.getTime() > to.getTime()) {
+    throw new ApiError(
+      400,
+      'VALIDATION_ERROR',
+      'from must be less than or equal to to.',
+    );
+  }
+  return { from, to };
+}
+
+function usageCreatedAtWhere(
+  range: UsageDateRange | undefined,
+): { createdAt?: { gte?: Date; lte?: Date } } {
+  if (!range?.from && !range?.to) return {};
+  return {
+    createdAt: {
+      ...(range.from ? { gte: range.from } : {}),
+      ...(range.to ? { lte: range.to } : {}),
+    },
+  };
+}
+
 async function usageCountsForUserIds(
   prisma: ReturnType<typeof requireDb>,
   userIds: string[],
+  range?: UsageDateRange,
 ): Promise<Map<string, UsageCounts>> {
   const map = new Map<string, UsageCounts>();
   for (const id of userIds) map.set(id, emptyUsageCounts());
@@ -161,6 +229,7 @@ async function usageCountsForUserIds(
   const rows = await prisma.usageEvent.groupBy({
     by: ['userId', 'kind', 'deviceId'],
     where: {
+      ...usageCreatedAtWhere(range),
       OR: [
         { userId: { in: userIds } },
         ...(deviceIds.length > 0 ? [{ deviceId: { in: deviceIds } }] : []),
@@ -187,6 +256,7 @@ async function usageCountsForUserIds(
 async function usageCountsForDeviceIds(
   prisma: ReturnType<typeof requireDb>,
   deviceRowIds: string[],
+  range?: UsageDateRange,
 ): Promise<Map<string, UsageCounts>> {
   const map = new Map<string, UsageCounts>();
   for (const id of deviceRowIds) map.set(id, emptyUsageCounts());
@@ -194,7 +264,10 @@ async function usageCountsForDeviceIds(
 
   const rows = await prisma.usageEvent.groupBy({
     by: ['deviceId', 'kind'],
-    where: { deviceId: { in: deviceRowIds } },
+    where: {
+      deviceId: { in: deviceRowIds },
+      ...usageCreatedAtWhere(range),
+    },
     _count: { _all: true },
   });
 
@@ -298,6 +371,34 @@ adminRouter.get(
       },
     });
     res.json(health);
+  }),
+);
+
+adminRouter.get(
+  '/openrouter',
+  asyncHandler(async (_req, res) => {
+    const prisma = getPrisma();
+    const snapshot = await collectOpenRouterAdminSnapshot({
+      countBillableGenerations30d: async () => {
+        if (!prisma) return 0;
+        const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        return prisma.usageEvent.count({
+          where: {
+            createdAt: { gte: since },
+            kind: {
+              in: [
+                'analyze',
+                'analyze_photo',
+                'analyze_text',
+                'analyze_photo_text',
+                'refine',
+              ],
+            },
+          },
+        });
+      },
+    });
+    res.json(snapshot);
   }),
 );
 
@@ -514,6 +615,7 @@ adminRouter.get(
 
     const [
       usersTotal,
+      guestsWithScansTotal,
       activeSubscriptions,
       confirmedPayments,
       usageAnalyzeLast7Days,
@@ -523,6 +625,15 @@ adminRouter.get(
       gatewayRows,
     ] = await Promise.all([
       prisma.user.count(),
+      // Гости: device без аккаунта, у которых был хотя бы один анализ еды.
+      prisma.device.count({
+        where: {
+          userId: null,
+          usageEvents: {
+            some: { kind: { startsWith: 'analyze' } },
+          },
+        },
+      }),
       prisma.user.count({
         where: {
           subscriptionStatus: 'active',
@@ -566,8 +677,16 @@ adminRouter.get(
 
     const last7 = gatewayRows.filter((r) => r.createdAt >= last7Days);
 
+    const analytics = await loadOverviewAnalytics(prisma, {
+      now,
+      guestsWithScans: guestsWithScansTotal,
+      usersTotal,
+    });
+
     res.json({
       usersTotal,
+      guestsWithScansTotal,
+      usersAndGuestsTotal: usersTotal + guestsWithScansTotal,
       activeSubscriptions,
       paymentsConfirmedCount: confirmedPayments._count,
       paymentsConfirmedSumKopecks: confirmedPayments._sum.amount ?? 0,
@@ -580,6 +699,7 @@ adminRouter.get(
         last30Days: countWindow(gatewayRows),
         byType: statsByType(gatewayRows),
       },
+      analytics,
     });
   }),
 );
@@ -854,6 +974,7 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     const prisma = requireDb();
     const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const usageRange = parseUsageDateRange(req.query);
     const users = await prisma.user.findMany({
       ...(query
         ? {
@@ -896,10 +1017,12 @@ adminRouter.get(
       usageCountsForUserIds(
         prisma,
         users.map((user) => user.id),
+        usageRange,
       ),
       usageCountsForDeviceIds(
         prisma,
         guestDevices.map((device) => device.id),
+        usageRange,
       ),
     ]);
 

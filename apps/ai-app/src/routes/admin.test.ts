@@ -3,11 +3,17 @@ import request from 'supertest';
 
 const mockGetPrisma = vi.fn();
 const mockIsDatabaseConfigured = vi.fn();
+const mockCollectOpenRouter = vi.fn();
 
 vi.mock('../lib/prisma.js', () => ({
   getPrisma: (...args: unknown[]) => mockGetPrisma(...args),
   isDatabaseConfigured: (...args: unknown[]) =>
     mockIsDatabaseConfigured(...args),
+}));
+
+vi.mock('../lib/openrouterAdminClient.js', () => ({
+  collectOpenRouterAdminSnapshot: (...args: unknown[]) =>
+    mockCollectOpenRouter(...args),
 }));
 
 import { createApp } from '../app.js';
@@ -35,6 +41,7 @@ type MockPayment = {
   tbankPaymentId: string | null;
   tbankOrderId: string;
   paidAt: Date | null;
+  referralGrantedAt: Date | null;
   createdAt: Date;
 };
 
@@ -114,11 +121,29 @@ describe('admin routes', () => {
           async ({
             select,
           }: {
-            select?: { createdAt?: boolean };
-          } = {}) =>
-            select?.createdAt
-              ? users.map((user) => ({ createdAt: user.createdAt }))
-              : [users[0]],
+            select?: {
+              createdAt?: boolean;
+              id?: boolean;
+              subscriptionStatus?: boolean;
+              subscriptionExpiresAt?: boolean;
+            };
+          } = {}) => {
+            if (select?.createdAt && !select?.id) {
+              return users.map((user) => ({ createdAt: user.createdAt }));
+            }
+            if (
+              select?.id &&
+              select?.subscriptionStatus &&
+              select?.subscriptionExpiresAt
+            ) {
+              return users.map((user) => ({
+                id: user.id,
+                subscriptionStatus: user.subscriptionStatus,
+                subscriptionExpiresAt: user.subscriptionExpiresAt,
+              }));
+            }
+            return [users[0]];
+          },
         ),
         findUnique: vi.fn(
           async ({ where }: { where: { id: string } }) =>
@@ -189,6 +214,10 @@ describe('admin routes', () => {
               amount?: boolean;
               paidAt?: boolean;
               createdAt?: boolean;
+              userId?: boolean;
+              status?: boolean;
+              promoCode?: boolean;
+              referralGrantedAt?: boolean;
             };
           } = {}) => {
             const filtered = payments.filter((payment) => {
@@ -202,6 +231,17 @@ describe('admin routes', () => {
                 : b.createdAt.getTime() - a.createdAt.getTime(),
             );
             const sliced = typeof take === 'number' ? sorted.slice(0, take) : sorted;
+            if (select?.userId && select?.status) {
+              return sliced.map((payment) => ({
+                userId: payment.userId,
+                amount: payment.amount,
+                status: payment.status,
+                promoCode: payment.promoCode,
+                referralGrantedAt: payment.referralGrantedAt,
+                paidAt: payment.paidAt,
+                createdAt: payment.createdAt,
+              }));
+            }
             if (select) {
               return sliced.map((payment) => ({
                 amount: payment.amount,
@@ -293,6 +333,32 @@ describe('admin routes', () => {
         fn(prisma),
       ),
       device: {
+        count: vi.fn(
+          async ({
+            where,
+          }: {
+            where?: {
+              userId?: null;
+              usageEvents?: {
+                some?: { kind?: { startsWith: string } };
+              };
+            };
+          } = {}) => {
+            let rows = devices.filter((device) =>
+              where?.userId === null ? device.userId == null : true,
+            );
+            if (where?.usageEvents?.some?.kind?.startsWith) {
+              const prefix = where.usageEvents.some.kind.startsWith;
+              const withScan = new Set(
+                usageEvents
+                  .filter((event) => event.kind.startsWith(prefix))
+                  .map((event) => event.deviceId),
+              );
+              rows = rows.filter((device) => withScan.has(device.id));
+            }
+            return rows.length;
+          },
+        ),
         findMany: vi.fn(
           async ({
             where,
@@ -404,6 +470,7 @@ describe('admin routes', () => {
               }>;
               userId?: { in: string[] };
               deviceId?: { in: string[] };
+              createdAt?: { gte?: Date; lte?: Date };
             };
           }) => {
             const userIds =
@@ -416,6 +483,18 @@ describe('admin routes', () => {
               [];
             const counts = new Map<string, number>();
             for (const event of usageEvents) {
+              if (
+                where.createdAt?.gte &&
+                event.createdAt < where.createdAt.gte
+              ) {
+                continue;
+              }
+              if (
+                where.createdAt?.lte &&
+                event.createdAt > where.createdAt.lte
+              ) {
+                continue;
+              }
               const matchUser =
                 event.userId != null && userIds.includes(event.userId);
               const matchDevice = deviceIds.includes(event.deviceId);
@@ -461,13 +540,26 @@ describe('admin routes', () => {
             orderBy?: { createdAt: 'desc' | 'asc' };
             take?: number;
             include?: { device?: { select: { deviceId: boolean } } };
-            select?: { kind?: boolean; createdAt?: boolean };
+            select?: {
+              kind?: boolean;
+              createdAt?: boolean;
+              userId?: boolean;
+              deviceId?: boolean;
+            };
           }) => {
             let rows = usageEvents;
             if (where?.createdAt?.gte) {
               rows = rows.filter(
                 (event) => event.createdAt >= where.createdAt!.gte!,
               );
+            }
+            if (select?.userId || select?.deviceId) {
+              return rows.map((event) => ({
+                kind: event.kind,
+                userId: event.userId,
+                deviceId: event.deviceId,
+                createdAt: event.createdAt,
+              }));
             }
             if (select) {
               return rows.map((event) => ({
@@ -575,6 +667,7 @@ describe('admin routes', () => {
         tbankPaymentId: 'tb-1',
         tbankOrderId: 'pay-confirmed',
         paidAt: new Date('2026-08-01T12:00:00.000Z'),
+        referralGrantedAt: null,
         createdAt: new Date('2026-08-01T11:00:00.000Z'),
       },
       {
@@ -586,6 +679,7 @@ describe('admin routes', () => {
         tbankPaymentId: null,
         tbankOrderId: 'pay-pending',
         paidAt: null,
+        referralGrantedAt: null,
         createdAt: new Date('2026-08-02T11:00:00.000Z'),
       },
     ];
@@ -699,8 +793,10 @@ describe('admin routes', () => {
       .set('X-Admin-Key', 'test-admin');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({
+    expect(response.body).toMatchObject({
       usersTotal: 2,
+      guestsWithScansTotal: 1,
+      usersAndGuestsTotal: 3,
       activeSubscriptions: 2,
       paymentsConfirmedCount: 3,
       paymentsConfirmedSumKopecks: 45_000,
@@ -712,6 +808,42 @@ describe('admin routes', () => {
         last7Days: { count: 0, okCount: 0, errorCount: 0 },
         last30Days: { count: 0, okCount: 0, errorCount: 0 },
         byType: [],
+      },
+      analytics: {
+        funnel: {
+          guestsWithScans: 1,
+          users: 2,
+          payingUsers: expect.any(Number),
+          userToPayRate: expect.anything(),
+        },
+        revenue: {
+          last7DaysKopecks: expect.any(Number),
+          last30DaysKopecks: expect.any(Number),
+        },
+        paymentsByStatus: {
+          pending: expect.any(Number),
+          confirmed: expect.any(Number),
+          rejected: expect.any(Number),
+          refunded: expect.any(Number),
+        },
+        promo: {
+          confirmedCount: expect.any(Number),
+          confirmedSumKopecks: expect.any(Number),
+        },
+        referral: { confirmedCount: expect.any(Number) },
+        subscriptions: {
+          active: expect.any(Number),
+          expiringSoon7Days: expect.any(Number),
+          expiredOrInactive: expect.any(Number),
+        },
+        product: {
+          dau: expect.any(Number),
+          wau: expect.any(Number),
+          usageMix30d: expect.any(Object),
+          analyzeAuthShare30d: expect.any(Object),
+          quotaExhausted: expect.any(Object),
+          retention: expect.any(Object),
+        },
       },
     });
     expect(response.body.requests).toMatchObject({
@@ -726,6 +858,14 @@ describe('admin routes', () => {
         errorCount: expect.any(Number),
       },
       byType: expect.any(Array),
+    });
+    expect(prisma.device.count).toHaveBeenCalledWith({
+      where: {
+        userId: null,
+        usageEvents: {
+          some: { kind: { startsWith: 'analyze' } },
+        },
+      },
     });
   });
 
@@ -956,6 +1096,47 @@ describe('admin routes', () => {
     });
   });
 
+  it('GET /admin/users filters usageCounts by from/to date range', async () => {
+    const response = await request(createApp())
+      .get('/admin/users?from=2026-08-05&to=2026-08-05')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    const user = response.body.users.find(
+      (row: { id: string }) => row.id === 'user-1',
+    );
+    expect(user).toMatchObject({
+      id: 'user-1',
+      usageCounts: {
+        analyze_photo: 1,
+        refine: 1,
+        analyze_text: 0,
+        analyze_photo_text: 0,
+        manual: 0,
+        barcode: 0,
+        analyze: 0,
+      },
+    });
+    const guest = response.body.users.find(
+      (row: { id: string }) => row.id === 'device-row-guest',
+    );
+    expect(guest).toMatchObject({
+      usageCounts: {
+        analyze_photo: 0,
+        analyze_text: 0,
+      },
+    });
+  });
+
+  it('GET /admin/users rejects invalid from/to range', async () => {
+    const response = await request(createApp())
+      .get('/admin/users?from=2026-08-10&to=2026-08-01')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('VALIDATION_ERROR');
+  });
+
   it('GET /admin/users/:id returns payments and recentEvents', async () => {
     const response = await request(createApp())
       .get('/admin/users/user-1')
@@ -1168,6 +1349,7 @@ describe('admin routes', () => {
         tbankPaymentId: 'tb-promo-1',
         tbankOrderId: 'pay-promo-1',
         paidAt: new Date('2026-08-03T12:00:00.000Z'),
+        referralGrantedAt: null,
         createdAt: new Date('2026-08-03T11:00:00.000Z'),
       },
       {
@@ -1179,6 +1361,7 @@ describe('admin routes', () => {
         tbankPaymentId: 'tb-promo-2',
         tbankOrderId: 'pay-promo-2',
         paidAt: new Date('2026-08-04T12:00:00.000Z'),
+        referralGrantedAt: null,
         createdAt: new Date('2026-08-04T11:00:00.000Z'),
       },
       {
@@ -1190,6 +1373,7 @@ describe('admin routes', () => {
         tbankPaymentId: null,
         tbankOrderId: 'pay-promo-pending',
         paidAt: null,
+        referralGrantedAt: null,
         createdAt: new Date('2026-08-05T11:00:00.000Z'),
       },
     );
@@ -1264,5 +1448,105 @@ describe('admin routes', () => {
   it('GET /admin/promos rejects requests without admin key', async () => {
     const response = await request(createApp()).get('/admin/promos');
     expect(response.status).toBe(401);
+  });
+});
+
+describe('GET /admin/openrouter', () => {
+  const snapshot = {
+    fetchedAt: '2026-08-29T12:00:00.000Z',
+    fx: { usdRub: 90, asOf: '2026-08-29', source: 'frankfurter-cbr' as const },
+    credits: { totalCredits: 100, totalUsage: 20, available: 80 },
+    key: null,
+    spend: {
+      last7DaysUsd: 5,
+      last30DaysUsd: 15,
+      last7DaysRub: 450,
+      last30DaysRub: 1350,
+      requests30d: 100,
+      promptTokens30d: 1000,
+      completionTokens30d: 500,
+      reasoningTokens30d: 0,
+    },
+    avgCostPerGeneration: { usd: 0.15, rub: 13.5, generations30d: 100 },
+    runway: {
+      avgDailySpendUsd: 0.5,
+      daysLeft: 160,
+      monthsLeft: 5.3,
+      basedOn: '30d' as const,
+    },
+    seriesDaily: [],
+    byModel: [],
+  };
+
+  let prisma: ReturnType<typeof createMockPrismaForOpenrouter>;
+
+  function createMockPrismaForOpenrouter() {
+    return {
+      usageEvent: {
+        count: vi.fn(async () => 42),
+      },
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.ADMIN_API_KEY = 'test-admin';
+    prisma = createMockPrismaForOpenrouter();
+    mockGetPrisma.mockReturnValue(prisma);
+    mockIsDatabaseConfigured.mockReturnValue(true);
+    mockCollectOpenRouter.mockImplementation(
+      async (options: {
+        countBillableGenerations30d: () => Promise<number>;
+      }) => {
+        await options.countBillableGenerations30d();
+        return snapshot;
+      },
+    );
+  });
+
+  afterEach(() => {
+    delete process.env.ADMIN_API_KEY;
+  });
+
+  it('rejects requests without admin key', async () => {
+    const response = await request(createApp()).get('/admin/openrouter');
+    expect(response.status).toBe(401);
+    expect(response.body.code).toBe('UNAUTHORIZED');
+  });
+
+  it('returns cost analytics snapshot', async () => {
+    const response = await request(createApp())
+      .get('/admin/openrouter')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      credits: snapshot.credits,
+      spend: snapshot.spend,
+      runway: snapshot.runway,
+      avgCostPerGeneration: snapshot.avgCostPerGeneration,
+    });
+    expect(mockCollectOpenRouter).toHaveBeenCalledOnce();
+  });
+
+  it('counts billable generations with explicit kind list', async () => {
+    await request(createApp())
+      .get('/admin/openrouter')
+      .set('X-Admin-Key', 'test-admin');
+
+    expect(prisma.usageEvent.count).toHaveBeenCalledWith({
+      where: {
+        createdAt: { gte: expect.any(Date) },
+        kind: {
+          in: [
+            'analyze',
+            'analyze_photo',
+            'analyze_text',
+            'analyze_photo_text',
+            'refine',
+          ],
+        },
+      },
+    });
   });
 });
