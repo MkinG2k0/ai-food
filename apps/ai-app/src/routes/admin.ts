@@ -8,6 +8,7 @@ import {
 import { loadOverviewAnalytics } from '../lib/adminOverviewAnalytics.js';
 import { countWindow, statsByType } from '../lib/gatewayRequestStats.js';
 import { collectOpenRouterAdminSnapshot } from '../lib/openrouterAdminClient.js';
+import { utcCompletedDaysWindow } from '../lib/openrouterAdminAnalytics.js';
 import { parseGatewayRequestListQuery } from '../lib/parseGatewayRequestListQuery.js';
 import { normalizePromoCode } from '../lib/promos.js';
 import {
@@ -378,13 +379,15 @@ adminRouter.get(
   '/openrouter',
   asyncHandler(async (_req, res) => {
     const prisma = getPrisma();
+    const now = new Date();
     const snapshot = await collectOpenRouterAdminSnapshot({
-      countBillableGenerations30d: async () => {
+      now: () => now,
+      countBillableGenerations30d: async (snapshotNow) => {
         if (!prisma) return 0;
-        const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const { start, end } = utcCompletedDaysWindow(snapshotNow, 30);
         return prisma.usageEvent.count({
           where: {
-            createdAt: { gte: since },
+            createdAt: { gte: start, lt: end },
             kind: {
               in: [
                 'analyze',

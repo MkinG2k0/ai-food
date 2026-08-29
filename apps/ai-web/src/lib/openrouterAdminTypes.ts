@@ -32,8 +32,8 @@ export type OpenRouterAdminSnapshot = {
     isFreeTier: boolean;
   } | null;
   spend: {
-    last7DaysUsd: number;
-    last30DaysUsd: number;
+    last7DaysUsd: number | null;
+    last30DaysUsd: number | null;
     last7DaysRub: number | null;
     last30DaysRub: number | null;
     requests30d: number;

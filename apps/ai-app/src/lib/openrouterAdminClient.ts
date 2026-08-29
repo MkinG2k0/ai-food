@@ -18,11 +18,15 @@ const FX_URL =
 
 type FetchError = 'timeout' | 'upstream_error';
 
+type ActivityFetchResult =
+  | { ok: true; items: OpenRouterActivityItem[] }
+  | { ok: false };
+
 type CollectOptions = {
   fetchImpl?: typeof fetch;
   now?: () => Date;
   getEnv?: (k: string) => string | undefined;
-  countBillableGenerations30d: () => Promise<number>;
+  countBillableGenerations30d: (now: Date) => Promise<number>;
   cache?: {
     get(): OpenRouterAdminSnapshot | null;
     set(s: OpenRouterAdminSnapshot): void;
@@ -33,6 +37,19 @@ let moduleCache: { at: number; value: OpenRouterAdminSnapshot } | null = null;
 
 export function resetOpenRouterAdminCacheForTests() {
   moduleCache = null;
+}
+
+function unavailableSpend(): OpenRouterAdminSnapshot['spend'] {
+  return {
+    last7DaysUsd: null,
+    last30DaysUsd: null,
+    last7DaysRub: null,
+    last30DaysRub: null,
+    requests30d: 0,
+    promptTokens30d: 0,
+    completionTokens30d: 0,
+    reasoningTokens30d: 0,
+  };
 }
 
 async function fetchJson<T>(
@@ -141,10 +158,10 @@ export async function collectOpenRouterAdminSnapshot(
     };
   })();
 
-  const activityPromise = (async () => {
+  const activityPromise = (async (): Promise<ActivityFetchResult> => {
     if (!managementKey) {
       setError(errors, 'activity', 'missing_management_key');
-      return [] as OpenRouterActivityItem[];
+      return { ok: false };
     }
     const result = await fetchJson<{ data: Record<string, unknown>[] }>(
       fetchImpl,
@@ -153,9 +170,9 @@ export async function collectOpenRouterAdminSnapshot(
     );
     if (!result.ok) {
       setError(errors, 'activity', result.error);
-      return [] as OpenRouterActivityItem[];
+      return { ok: false };
     }
-    return result.data.data.map(mapActivityItem);
+    return { ok: true, items: result.data.data.map(mapActivityItem) };
   })();
 
   const keyPromise = (async () => {
@@ -191,30 +208,45 @@ export async function collectOpenRouterAdminSnapshot(
     };
   })();
 
-  const [credits, activityItems, key, fx, generations30d] = await Promise.all([
+  const [credits, activityResult, key, fx, generations30d] = await Promise.all([
     creditsPromise,
     activityPromise,
     keyPromise,
     fxPromise,
-    options.countBillableGenerations30d(),
+    options.countBillableGenerations30d(now),
   ]);
 
   const usdRub = fx?.usdRub ?? null;
-  const { spend, seriesDaily, byModel } = buildSpendFromActivity(
-    activityItems,
-    now,
-    usdRub,
-  );
-  const avgCostPerGeneration = buildAvgCostPerGeneration(
-    spend.last30DaysUsd,
-    generations30d,
-    usdRub,
-  );
-  const runway = buildRunway(
-    credits?.available ?? null,
-    spend.last7DaysUsd,
-    spend.last30DaysUsd,
-  );
+  const activityAvailable = activityResult.ok;
+
+  const { spend, seriesDaily, byModel } = activityAvailable
+    ? buildSpendFromActivity(activityResult.items, now, usdRub)
+    : {
+        spend: unavailableSpend(),
+        seriesDaily: [],
+        byModel: [],
+      };
+
+  const avgCostPerGeneration = activityAvailable
+    ? buildAvgCostPerGeneration(
+        spend.last30DaysUsd,
+        generations30d,
+        usdRub,
+      )
+    : { usd: null, rub: null, generations30d };
+
+  const runway = activityAvailable
+    ? buildRunway(
+        credits?.available ?? null,
+        spend.last7DaysUsd,
+        spend.last30DaysUsd,
+      )
+    : {
+        avgDailySpendUsd: null,
+        daysLeft: null,
+        monthsLeft: null,
+        basedOn: null,
+      };
 
   const snapshot: OpenRouterAdminSnapshot = {
     fetchedAt: now.toISOString(),

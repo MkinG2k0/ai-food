@@ -340,6 +340,10 @@ export async function loadOverviewAnalytics(
     usersTotal: number;
   },
 ): Promise<OverviewAnalytics> {
+  const usageSince = new Date(
+    input.now.getTime() - 90 * 24 * 60 * 60 * 1000,
+  );
+
   const [payments, users, guestDevices, usageEvents, quota] =
     await Promise.all([
       prisma.payment.findMany({
@@ -365,6 +369,7 @@ export async function loadOverviewAnalytics(
         select: { id: true },
       }),
       prisma.usageEvent.findMany({
+        where: { createdAt: { gte: usageSince } },
         select: {
           kind: true,
           userId: true,

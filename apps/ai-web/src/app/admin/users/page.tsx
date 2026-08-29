@@ -54,13 +54,14 @@ type UsersResponse = {
 
 const PRIVATE_MASK = '••••••';
 
-/** AI-billable generations: photo + text + photo+text + refine (без ручного/ШК/legacy). */
+/** AI-billable generations: photo + text + photo+text + refine + legacy analyze. */
 function aiGenerationTotal(counts: UsageCounts): number {
   return (
     counts.analyze_photo +
     counts.analyze_text +
     counts.analyze_photo_text +
-    counts.refine
+    counts.refine +
+    counts.analyze
   );
 }
 

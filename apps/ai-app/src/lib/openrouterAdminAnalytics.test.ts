@@ -50,6 +50,25 @@ describe('buildSpendFromActivity', () => {
     expect(byModel[0].model).toBe('google/gemini-3-flash-preview');
     expect(byModel[0].usageUsd).toBe(3.5);
     expect(seriesDaily.find((d) => d.date === '2026-08-28')?.usageUsd).toBe(2);
+    expect(seriesDaily).toHaveLength(30);
+    expect(seriesDaily.some((d) => d.date === '2026-08-29')).toBe(false);
+  });
+
+  it('excludes in-progress UTC day from spend totals', () => {
+    const items = [
+      {
+        date: '2026-08-29',
+        model: 'google/gemini-3-flash-preview',
+        usage: 99,
+        requests: 1,
+        prompt_tokens: 1,
+        completion_tokens: 1,
+        reasoning_tokens: 0,
+      },
+    ];
+    const { spend } = buildSpendFromActivity(items, now, 90);
+    expect(spend.last7DaysUsd).toBe(0);
+    expect(spend.last30DaysUsd).toBe(0);
   });
 });
 
@@ -63,6 +82,13 @@ describe('buildAvgCostPerGeneration', () => {
   });
   it('returns null costs when generations is 0', () => {
     expect(buildAvgCostPerGeneration(4, 0, 90).usd).toBeNull();
+  });
+  it('returns null costs when spend is unavailable', () => {
+    expect(buildAvgCostPerGeneration(null, 100, 90)).toEqual({
+      usd: null,
+      rub: null,
+      generations30d: 100,
+    });
   });
 });
 
@@ -81,6 +107,9 @@ describe('buildRunway', () => {
       avgDailySpendUsd: 0.1,
       daysLeft: 300,
     });
+  });
+  it('returns null days when spend is unavailable', () => {
+    expect(buildRunway(10, null, null).daysLeft).toBeNull();
   });
   it('returns null days when spend is zero', () => {
     expect(buildRunway(10, 0, 0).daysLeft).toBeNull();

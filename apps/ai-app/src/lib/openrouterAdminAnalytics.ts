@@ -17,15 +17,32 @@ function daysAgoKey(now: Date, days: number): string {
   return utcDayKey(t);
 }
 
-function enumerateUtcDays(startKey: string, endKey: string): string[] {
+/** UTC calendar days in [startKey, endExclusiveKey). */
+function enumerateUtcDaysHalfOpen(
+  startKey: string,
+  endExclusiveKey: string,
+): string[] {
   const days: string[] = [];
   const cursor = new Date(`${startKey}T00:00:00.000Z`);
-  const end = new Date(`${endKey}T00:00:00.000Z`);
-  while (cursor <= end) {
+  const end = new Date(`${endExclusiveKey}T00:00:00.000Z`);
+  while (cursor < end) {
     days.push(utcDayKey(cursor));
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return days;
+}
+
+/** Last N completed UTC days: [todayUTC - N days, todayUTC). */
+export function utcCompletedDaysWindow(
+  now: Date,
+  days: number,
+): { start: Date; end: Date } {
+  const end = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - days);
+  return { start, end };
 }
 
 export function buildSpendFromActivity(
@@ -33,9 +50,9 @@ export function buildSpendFromActivity(
   now: Date,
   usdRub: number | null,
 ) {
+  const today = utcDayKey(now);
   const start7 = daysAgoKey(now, 7);
   const start30 = daysAgoKey(now, 30);
-  const today = utcDayKey(now);
 
   let last7DaysUsd = 0;
   let last30DaysUsd = 0;
@@ -59,8 +76,8 @@ export function buildSpendFromActivity(
   >();
 
   for (const item of items) {
-    const in7d = item.date >= start7 && item.date <= today;
-    const in30d = item.date >= start30 && item.date <= today;
+    const in7d = item.date >= start7 && item.date < today;
+    const in30d = item.date >= start30 && item.date < today;
 
     if (in7d) {
       last7DaysUsd += item.usage;
@@ -96,7 +113,7 @@ export function buildSpendFromActivity(
     }
   }
 
-  const seriesDaily = enumerateUtcDays(start30, today).map((date) => {
+  const seriesDaily = enumerateUtcDaysHalfOpen(start30, today).map((date) => {
     const entry = dailyMap.get(date);
     return {
       date,
@@ -134,11 +151,11 @@ export function buildSpendFromActivity(
 }
 
 export function buildAvgCostPerGeneration(
-  spend30dUsd: number,
+  spend30dUsd: number | null,
   generations30d: number,
   usdRub: number | null,
 ) {
-  if (generations30d <= 0) {
+  if (spend30dUsd == null || generations30d <= 0) {
     return { usd: null, rub: null, generations30d };
   }
   const usd = spend30dUsd / generations30d;
@@ -158,10 +175,14 @@ export type RunwayResult = {
 
 export function buildRunway(
   available: number | null,
-  last7DaysUsd: number,
-  last30DaysUsd: number,
+  last7DaysUsd: number | null,
+  last30DaysUsd: number | null,
 ): RunwayResult {
-  if (available == null) {
+  if (
+    available == null ||
+    last7DaysUsd == null ||
+    last30DaysUsd == null
+  ) {
     return {
       avgDailySpendUsd: null,
       daysLeft: null,

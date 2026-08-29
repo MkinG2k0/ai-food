@@ -1496,9 +1496,9 @@ describe('GET /admin/openrouter', () => {
     mockIsDatabaseConfigured.mockReturnValue(true);
     mockCollectOpenRouter.mockImplementation(
       async (options: {
-        countBillableGenerations30d: () => Promise<number>;
+        countBillableGenerations30d: (now: Date) => Promise<number>;
       }) => {
-        await options.countBillableGenerations30d();
+        await options.countBillableGenerations30d(new Date('2026-08-29T12:00:00.000Z'));
         return snapshot;
       },
     );
@@ -1529,24 +1529,28 @@ describe('GET /admin/openrouter', () => {
     expect(mockCollectOpenRouter).toHaveBeenCalledOnce();
   });
 
-  it('counts billable generations with explicit kind list', async () => {
+  it('counts billable generations over completed UTC 30-day window', async () => {
     await request(createApp())
       .get('/admin/openrouter')
       .set('X-Admin-Key', 'test-admin');
 
-    expect(prisma.usageEvent.count).toHaveBeenCalledWith({
-      where: {
-        createdAt: { gte: expect.any(Date) },
-        kind: {
-          in: [
-            'analyze',
-            'analyze_photo',
-            'analyze_text',
-            'analyze_photo_text',
-            'refine',
-          ],
-        },
-      },
+    const call = prisma.usageEvent.count.mock.calls[0]?.[0];
+    expect(call?.where?.kind).toEqual({
+      in: [
+        'analyze',
+        'analyze_photo',
+        'analyze_text',
+        'analyze_photo_text',
+        'refine',
+      ],
     });
+    const createdAt = call?.where?.createdAt as { gte: Date; lt: Date };
+    expect(createdAt.gte).toBeInstanceOf(Date);
+    expect(createdAt.lt).toBeInstanceOf(Date);
+    expect(createdAt.lt.getTime() - createdAt.gte.getTime()).toBe(
+      30 * 24 * 60 * 60 * 1000,
+    );
+    expect(createdAt.lt.getUTCHours()).toBe(0);
+    expect(createdAt.gte.getUTCHours()).toBe(0);
   });
 });
