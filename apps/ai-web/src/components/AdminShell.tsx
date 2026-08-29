@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   ApiOutlined,
   BarChartOutlined,
+  CloudOutlined,
   CreditCardOutlined,
   HeartOutlined,
   LogoutOutlined,
@@ -22,6 +23,7 @@ const menuItems = [
   { icon: <ApiOutlined />, key: '/admin/requests', label: 'Запросы' },
   { icon: <MessageOutlined />, key: '/admin/support-reports', label: 'Обращения' },
   { icon: <HeartOutlined />, key: '/admin/health', label: 'Стабильность' },
+  { icon: <CloudOutlined />, key: '/admin/openrouter', label: 'OpenRouter' },
   { icon: <TagsOutlined />, key: '/admin/pricing', label: 'Цены и лимиты' },
   {
     icon: <UserOutlined />,
@@ -41,6 +43,7 @@ const pageTitles: Record<string, string> = {
   '/admin/requests': 'Запросы',
   '/admin/support-reports': 'Обращения',
   '/admin/health': 'Стабильность',
+  '/admin/openrouter': 'OpenRouter',
   '/admin/pricing': 'Цены и лимиты',
   '/admin/users': 'Пользователи',
   '/admin/payments': 'Платежи',
