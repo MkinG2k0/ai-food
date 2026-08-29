@@ -1,11 +1,16 @@
 export {
   fetchProductByBarcode,
   OffProductError,
+  getOffProductErrorMessage,
   normalizeBarcode,
   parseServingGrams,
   defaultBarcodeGrams,
 } from './api/fetchProductByBarcode';
-export type { OffProduct, OffNutritionPer100g } from './api/fetchProductByBarcode';
+export type {
+  OffProduct,
+  OffNutritionPer100g,
+  OffProductErrorCode,
+} from './api/fetchProductByBarcode';
 export { buildBarcodeMeal, scaleOffProductToItem } from './api/mapOffProductToMeal';
 export { useProductByBarcode } from './model/useProductByBarcode';
 export { useSaveBarcodeMeal } from './model/useSaveBarcodeMeal';

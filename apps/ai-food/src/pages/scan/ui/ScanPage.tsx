@@ -9,10 +9,10 @@ import {
   BarcodeProductConfirm,
   LiveBarcodeScan,
   NativeMlKitBarcodeScan,
-  OffProductError,
   detectBarcodeInFile,
   detectBarcodeInVideo,
   detectBarcodeInVideoWithMlKit,
+  getOffProductErrorMessage,
   isNativeMlKitBarcodeAvailable,
   normalizeBarcode,
   useProductByBarcode,
@@ -289,11 +289,7 @@ export function ScanPage() {
 
   useEffect(() => {
     if (!isError || !error) return;
-    const message =
-      error instanceof OffProductError
-        ? error.message
-        : 'Не удалось загрузить продукт';
-    toast.error(message);
+    toast.error(getOffProductErrorMessage(error));
     setLookupCode(null);
   }, [isError, error]);
 

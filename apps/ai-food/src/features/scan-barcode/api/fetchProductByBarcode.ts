@@ -39,9 +39,17 @@ interface OffApiProduct {
 
 interface OffApiResponse {
   status: number;
+  status_verbose?: string;
   code?: string;
   product?: OffApiProduct;
 }
+
+const OFF_MESSAGES = {
+  NOT_FOUND: 'Продукт не найден',
+  NO_NUTRITION: 'У продукта нет данных КБЖУ',
+  NETWORK: 'Нет сети или база продуктов недоступна',
+  INVALID: 'Введите корректный штрихкод',
+} as const;
 
 const OFF_FIELDS = [
   'product_name',
@@ -127,20 +135,58 @@ export function mapOffApiToProduct(
   };
 }
 
+export type OffProductErrorCode =
+  | 'NOT_FOUND'
+  | 'NO_NUTRITION'
+  | 'NETWORK'
+  | 'INVALID';
+
 export class OffProductError extends Error {
-  constructor(
-    message: string,
-    public readonly code: 'NOT_FOUND' | 'NO_NUTRITION' | 'NETWORK' | 'INVALID',
-  ) {
+  readonly code: OffProductErrorCode;
+
+  constructor(code: OffProductErrorCode, message = OFF_MESSAGES[code]) {
     super(message);
     this.name = 'OffProductError';
+    this.code = code;
+    Object.setPrototypeOf(this, OffProductError.prototype);
+  }
+}
+
+/** User-facing Russian text for barcode lookup failures. */
+export function getOffProductErrorMessage(error: unknown): string {
+  if (error instanceof OffProductError) return error.message;
+  if (
+    error &&
+    typeof error === 'object' &&
+    'name' in error &&
+    (error as { name: unknown }).name === 'OffProductError' &&
+    'code' in error &&
+    typeof (error as { code: unknown }).code === 'string'
+  ) {
+    const code = (error as { code: string }).code as OffProductErrorCode;
+    if (code in OFF_MESSAGES) return OFF_MESSAGES[code];
+  }
+  return 'Не удалось загрузить продукт';
+}
+
+function isOffNotFoundPayload(data: OffApiResponse): boolean {
+  if (data.status === 0) return true;
+  const verbose = data.status_verbose?.toLowerCase() ?? '';
+  return verbose.includes('not found') || verbose.includes('no code');
+}
+
+async function readOffResponse(response: Response): Promise<OffApiResponse> {
+  try {
+    return (await response.json()) as OffApiResponse;
+  } catch {
+    throw new OffProductError('NETWORK');
   }
 }
 
 export async function fetchProductByBarcode(rawCode: string): Promise<OffProduct> {
   const code = normalizeBarcode(rawCode);
   if (code.length < 8) {
-    throw new OffProductError('Введите корректный штрихкод', 'INVALID');
+    throw new OffProductError('INVALID');
   }
 
   let response: Response;
@@ -154,21 +200,29 @@ export async function fetchProductByBarcode(rawCode: string): Promise<OffProduct
       },
     );
   } catch {
-    throw new OffProductError('Нет сети или Open Food Facts недоступен', 'NETWORK');
+    throw new OffProductError('NETWORK');
   }
 
+  // OFF v2 returns HTTP 404 + JSON { status: 0, status_verbose: "product not found" }
+  // when the barcode is missing — treat as NOT_FOUND, not a network failure.
   if (!response.ok) {
-    throw new OffProductError('Ошибка ответа Open Food Facts', 'NETWORK');
+    if (response.status === 404) {
+      const data = await readOffResponse(response);
+      if (isOffNotFoundPayload(data) || !data.product) {
+        throw new OffProductError('NOT_FOUND');
+      }
+    }
+    throw new OffProductError('NETWORK');
   }
 
-  const data = (await response.json()) as OffApiResponse;
-  if (data.status !== 1 || !data.product) {
-    throw new OffProductError('Продукт не найден в Open Food Facts', 'NOT_FOUND');
+  const data = await readOffResponse(response);
+  if (data.status !== 1 || !data.product || isOffNotFoundPayload(data)) {
+    throw new OffProductError('NOT_FOUND');
   }
 
   const mapped = mapOffApiToProduct(code, data.product);
   if (!mapped) {
-    throw new OffProductError('У продукта нет данных КБЖУ', 'NO_NUTRITION');
+    throw new OffProductError('NO_NUTRITION');
   }
 
   return mapped;
