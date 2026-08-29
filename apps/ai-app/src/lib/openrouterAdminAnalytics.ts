@@ -149,17 +149,24 @@ export function buildAvgCostPerGeneration(
   };
 }
 
+export type RunwayResult = {
+  avgDailySpendUsd: number | null;
+  daysLeft: number | null;
+  monthsLeft: number | null;
+  basedOn: '7d' | '30d' | null;
+};
+
 export function buildRunway(
   available: number | null,
   last7DaysUsd: number,
   last30DaysUsd: number,
-) {
+): RunwayResult {
   if (available == null) {
     return {
       avgDailySpendUsd: null,
       daysLeft: null,
       monthsLeft: null,
-      basedOn: null as const,
+      basedOn: null,
     };
   }
   let avg = last7DaysUsd / 7;
