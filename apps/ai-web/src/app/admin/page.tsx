@@ -158,13 +158,23 @@ function formatRunway(runway: OpenRouterAdminSnapshot['runway']): string {
         : String(Math.round(runway.monthsLeft));
     return `≈ ${days} дн. · ${months} мес.`;
   }
-  if (
-    runway.avgDailySpendUsd == null ||
-    runway.avgDailySpendUsd < 1e-9
-  ) {
+  if (runway.avgDailySpendUsd == null) {
+    return '—';
+  }
+  if (runway.daysLeft == null && runway.avgDailySpendUsd < 1e-9) {
     return 'баланс не расходуется';
   }
   return '—';
+}
+
+function formatActivityError(code: string): string {
+  if (code === 'missing_management_key') {
+    return 'Задайте OPENROUTER_MANAGEMENT_API_KEY в ai-app, чтобы видеть расходы и историю.';
+  }
+  if (code === 'timeout') {
+    return 'OpenRouter не ответил вовремя при загрузке истории расходов.';
+  }
+  return 'Не удалось загрузить историю расходов OpenRouter.';
 }
 
 function Section({
@@ -544,6 +554,15 @@ export default function AdminPage() {
           <Alert
             description="Задайте OPENROUTER_MANAGEMENT_API_KEY в ai-app, чтобы видеть баланс и расходы."
             message="Management API key не настроен"
+            showIcon
+            style={{ marginBottom: 12 }}
+            type="warning"
+          />
+        ) : null}
+        {or?.errors?.activity ? (
+          <Alert
+            description={formatActivityError(or.errors.activity)}
+            message="Данные расходов недоступны"
             showIcon
             style={{ marginBottom: 12 }}
             type="warning"

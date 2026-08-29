@@ -54,10 +54,23 @@ function formatRunway(runway: OpenRouterAdminSnapshot['runway']): string {
         : String(Math.round(runway.monthsLeft));
     return `≈ ${days} дн. · ${months} мес.`;
   }
-  if (runway.avgDailySpendUsd == null || runway.avgDailySpendUsd < 1e-9) {
+  if (runway.avgDailySpendUsd == null) {
+    return '—';
+  }
+  if (runway.daysLeft == null && runway.avgDailySpendUsd < 1e-9) {
     return 'баланс не расходуется';
   }
   return '—';
+}
+
+function formatActivityError(code: string): string {
+  if (code === 'missing_management_key') {
+    return 'Задайте OPENROUTER_MANAGEMENT_API_KEY в ai-app, чтобы видеть расходы и историю.';
+  }
+  if (code === 'timeout') {
+    return 'OpenRouter не ответил вовремя при загрузке истории расходов.';
+  }
+  return 'Не удалось загрузить историю расходов OpenRouter.';
 }
 
 function formatFxSource(source: 'frankfurter-cbr'): string {
@@ -73,6 +86,7 @@ export default function AdminOpenRouterPage() {
   });
 
   const or = openrouterQuery.data;
+  const activityAvailable = or?.spend.last30DaysUsd != null;
   const availableUsd = or?.credits?.available;
   const availableRub =
     availableUsd != null && or?.fx?.usdRub != null
@@ -114,6 +128,16 @@ export default function AdminOpenRouterPage() {
         <Alert
           description="Задайте OPENROUTER_MANAGEMENT_API_KEY в ai-app, чтобы видеть баланс и расходы."
           message="Management API key не настроен"
+          showIcon
+          style={{ marginBottom: 12 }}
+          type="warning"
+        />
+      ) : null}
+
+      {or?.errors?.activity ? (
+        <Alert
+          description={formatActivityError(or.errors.activity)}
+          message="Данные расходов недоступны"
           showIcon
           style={{ marginBottom: 12 }}
           type="warning"
@@ -283,20 +307,30 @@ export default function AdminOpenRouterPage() {
           </Typography.Title>
           <Row className="admin-stat-row" gutter={[16, 16]}>
             <Col span={24}>
-              <SparklineCard
-                data={spendSpark}
-                height={180}
-                loading={openrouterQuery.isLoading}
-                summary={
+              {activityAvailable ? (
+                <SparklineCard
+                  data={spendSpark}
+                  height={180}
+                  loading={openrouterQuery.isLoading}
+                  summary={
+                    <Typography.Text type="secondary">
+                      За 30 дней: {formatUsd(totalSpend30d)} · запросов{' '}
+                      {formatInt(totalRequests30d)}
+                    </Typography.Text>
+                  }
+                  title="Расход, USD"
+                  valueFormatter={formatUsd}
+                  yFields={[{ key: 'usageUsd', label: 'Расход' }]}
+                />
+              ) : (
+                <Card className="admin-stat-card" size="small">
                   <Typography.Text type="secondary">
-                    За 30 дней: {formatUsd(totalSpend30d)} · запросов{' '}
-                    {formatInt(totalRequests30d)}
+                    {openrouterQuery.isLoading
+                      ? 'Загрузка…'
+                      : 'История расходов недоступна'}
                   </Typography.Text>
-                }
-                title="Расход, USD"
-                valueFormatter={formatUsd}
-                yFields={[{ key: 'usageUsd', label: 'Расход' }]}
-              />
+                </Card>
+              )}
             </Col>
           </Row>
         </div>
@@ -355,7 +389,9 @@ export default function AdminOpenRouterPage() {
               <Statistic
                 loading={openrouterQuery.isLoading}
                 title="Prompt"
-                value={formatInt(or?.spend.promptTokens30d)}
+                value={formatInt(
+                  activityAvailable ? or?.spend.promptTokens30d : null,
+                )}
               />
             </Card>
           </Col>
@@ -364,7 +400,9 @@ export default function AdminOpenRouterPage() {
               <Statistic
                 loading={openrouterQuery.isLoading}
                 title="Completion"
-                value={formatInt(or?.spend.completionTokens30d)}
+                value={formatInt(
+                  activityAvailable ? or?.spend.completionTokens30d : null,
+                )}
               />
             </Card>
           </Col>
@@ -373,7 +411,9 @@ export default function AdminOpenRouterPage() {
               <Statistic
                 loading={openrouterQuery.isLoading}
                 title="Reasoning"
-                value={formatInt(or?.spend.reasoningTokens30d)}
+                value={formatInt(
+                  activityAvailable ? or?.spend.reasoningTokens30d : null,
+                )}
               />
             </Card>
           </Col>
