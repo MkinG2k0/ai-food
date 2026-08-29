@@ -6,17 +6,19 @@ import { useQuery } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import {
   Checkbox,
+  DatePicker,
   Flex,
   Input,
-  InputNumber,
   Space,
   Table,
   Tag,
   Typography,
 } from 'antd';
+import type { Dayjs } from 'dayjs';
 
 import { PageHeader } from '@/components/PageHeader';
 import { adminApi } from '@/lib/adminApi';
+import type { OpenRouterAdminSnapshot } from '@/lib/openrouterAdminTypes';
 
 type UsageCounts = {
   analyze_photo: number;
@@ -50,7 +52,6 @@ type UsersResponse = {
   users: AdminUser[];
 };
 
-const DEFAULT_COST_PER_GENERATION = 0.32;
 const PRIVATE_MASK = '••••••';
 
 /** AI-billable generations: photo + text + photo+text + refine (без ручного/ШК/legacy). */
@@ -79,23 +80,53 @@ const formatRub = (value: number) =>
     style: 'currency',
   }).format(value);
 
+const formatUsd = (value: number) =>
+  new Intl.NumberFormat('en-US', {
+    currency: 'USD',
+    maximumFractionDigits: 2,
+    style: 'currency',
+  }).format(value);
+
+function formatAiCost(
+  generations: number,
+  rateRub: number | null,
+  rateUsd: number | null,
+): string {
+  if (rateRub != null) {
+    return formatRub(generations * rateRub);
+  }
+  if (rateUsd != null) {
+    return formatUsd(generations * rateUsd);
+  }
+  return '—';
+}
+
 export default function UsersPage() {
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [privateMode, setPrivateMode] = useState(false);
-  const [costPerGeneration, setCostPerGeneration] = useState(
-    DEFAULT_COST_PER_GENERATION,
-  );
+  const from = dateRange?.[0]?.format('YYYY-MM-DD') ?? null;
+  const to = dateRange?.[1]?.format('YYYY-MM-DD') ?? null;
   const usersQuery = useQuery({
-    queryKey: ['admin', 'users', query],
-    queryFn: () =>
-      adminApi<UsersResponse>(`users?q=${encodeURIComponent(query)}`),
+    queryKey: ['admin', 'users', query, from, to],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (query) params.set('q', query);
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      const qs = params.toString();
+      return adminApi<UsersResponse>(qs ? `users?${qs}` : 'users');
+    },
   });
-
-  const rate =
-    typeof costPerGeneration === 'number' && Number.isFinite(costPerGeneration)
-      ? Math.max(0, costPerGeneration)
-      : DEFAULT_COST_PER_GENERATION;
+  const openrouterQuery = useQuery({
+    queryKey: ['admin', 'openrouter'],
+    queryFn: () => adminApi<OpenRouterAdminSnapshot>('openrouter'),
+    staleTime: 60_000,
+  });
+  const rateRub = openrouterQuery.data?.avgCostPerGeneration.rub ?? null;
+  const rateUsd = openrouterQuery.data?.avgCostPerGeneration.usd ?? null;
+  const fx = openrouterQuery.data?.fx ?? null;
 
   const columns: ColumnsType<AdminUser> = useMemo(
     () => [
@@ -175,11 +206,22 @@ export default function UsersPage() {
       {
         key: 'aiCost',
         render: (_, user) =>
-          formatRub(aiGenerationTotal(user.usageCounts) * rate),
+          formatAiCost(aiGenerationTotal(user.usageCounts), rateRub, rateUsd),
         sorter: (a, b) =>
           aiGenerationTotal(a.usageCounts) - aiGenerationTotal(b.usageCounts),
-        title: 'Расход ≈',
-        width: 120,
+        title: (
+          <>
+            Расход ≈
+            <Typography.Text
+              type="secondary"
+              style={{ display: 'block', fontSize: 11, fontWeight: 'normal' }}
+            >
+              ≈ {rateRub?.toFixed(4) ?? '—'} ₽ / gen · курс {fx?.usdRub ?? '—'}{' '}
+              (ЦБ {fx?.asOf ?? '—'})
+            </Typography.Text>
+          </>
+        ),
+        width: 200,
       },
       {
         key: 'consent',
@@ -253,7 +295,7 @@ export default function UsersPage() {
         width: 180,
       },
     ],
-    [privateMode, rate],
+    [fx?.asOf, fx?.usdRub, privateMode, rateRub, rateUsd],
   );
 
   const users = usersQuery.data?.users ?? [];
@@ -287,11 +329,11 @@ export default function UsersPage() {
     ).length;
     return {
       activeSubscriptions,
-      aiCost: aiTotal * rate,
+      aiCost: formatAiCost(aiTotal, rateRub, rateUsd),
       aiTotal,
       usage,
     };
-  }, [rate, users]);
+  }, [rateRub, rateUsd, users]);
 
   return (
     <>
@@ -308,31 +350,18 @@ export default function UsersPage() {
           style={{ maxWidth: 420, width: '100%' }}
         />
         <Space align="center">
-          <Typography.Text type="secondary">
-            Коэф. ₽ / ИИ-генерация
-          </Typography.Text>
-          <Space.Compact>
-            <InputNumber
-              min={0}
-              step={0.01}
-              precision={2}
-              value={costPerGeneration}
-              onChange={(value) =>
-                setCostPerGeneration(
-                  typeof value === 'number'
-                    ? value
-                    : DEFAULT_COST_PER_GENERATION,
-                )
-              }
-              style={{ width: 100 }}
-            />
-            <Input
-              readOnly
-              tabIndex={-1}
-              value="₽"
-              style={{ width: 40, pointerEvents: 'none' }}
-            />
-          </Space.Compact>
+          <Typography.Text type="secondary">Период расхода</Typography.Text>
+          <DatePicker.RangePicker
+            allowClear
+            format="DD.MM.YYYY"
+            placeholder={['От', 'До']}
+            value={dateRange}
+            onChange={(dates) =>
+              setDateRange(
+                dates?.[0] && dates?.[1] ? [dates[0], dates[1]] : null,
+              )
+            }
+          />
         </Space>
         <Checkbox
           checked={privateMode}
@@ -383,9 +412,7 @@ export default function UsersPage() {
                 <Typography.Text strong>{totals.aiTotal}</Typography.Text>
               </Table.Summary.Cell>
               <Table.Summary.Cell index={5}>
-                <Typography.Text strong>
-                  {formatRub(totals.aiCost)}
-                </Typography.Text>
+                <Typography.Text strong>{totals.aiCost}</Typography.Text>
               </Table.Summary.Cell>
               <Table.Summary.Cell index={6} />
               <Table.Summary.Cell index={7}>
