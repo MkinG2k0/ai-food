@@ -2,6 +2,7 @@ export {
   NEWS_CHANGELOG,
   formatNewsDate,
   getLatestNewsRelease,
+  shouldDismissLatestNewsOnSuppress,
   shouldShowLatestNews,
   type NewsItem,
   type NewsRelease,

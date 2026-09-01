@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NEWS_CHANGELOG, shouldShowLatestNews, getLatestNewsRelease } from './changelog';
+import { NEWS_CHANGELOG, shouldShowLatestNews, getLatestNewsRelease, shouldDismissLatestNewsOnSuppress } from './changelog';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -45,6 +45,26 @@ describe('shouldShowLatestNews', () => {
 
   it('hides when changelog is empty', () => {
     expect(shouldShowLatestNews(null, undefined)).toBe(false);
+  });
+});
+
+describe('shouldDismissLatestNewsOnSuppress', () => {
+  it('dismisses when suppressed and release is unseen', () => {
+    expect(shouldDismissLatestNewsOnSuppress(true, null, '2026-08-19')).toBe(
+      true,
+    );
+  });
+
+  it('does not dismiss when not suppressed', () => {
+    expect(shouldDismissLatestNewsOnSuppress(false, null, '2026-08-19')).toBe(
+      false,
+    );
+  });
+
+  it('does not dismiss when release was already seen', () => {
+    expect(
+      shouldDismissLatestNewsOnSuppress(true, '2026-08-19', '2026-08-19'),
+    ).toBe(false);
   });
 });
 

@@ -1,7 +1,9 @@
+import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BottomSheet, Button } from '@/shared/ui';
 import {
   getLatestNewsRelease,
+  shouldDismissLatestNewsOnSuppress,
   shouldShowLatestNews,
 } from '../model/changelog';
 import { useNewsSeenHydrated } from '../model/useNewsSeenHydrated';
@@ -20,14 +22,28 @@ export function LatestNewsSheet({ suppressed = false }: { suppressed?: boolean }
     !suppressed &&
     shouldShowLatestNews(lastSeenDate, latest?.date);
 
-  function dismiss() {
+  const dismiss = useCallback(() => {
     if (latest) dismissLatest(latest.date);
-  }
+  }, [dismissLatest, latest]);
+
+  useEffect(() => {
+    if (!latest) return;
+    if (
+      shouldDismissLatestNewsOnSuppress(suppressed, lastSeenDate, latest.date)
+    ) {
+      dismissLatest(latest.date);
+    }
+  }, [suppressed, lastSeenDate, latest, dismissLatest]);
 
   if (!latest) return null;
 
   return (
-    <BottomSheet open={open} onClose={dismiss}>
+    <BottomSheet
+      open={open}
+      onClose={dismiss}
+      portal={false}
+      containerClassName="z-10"
+    >
       <div className="flex max-h-[min(92dvh,56rem)] flex-col gap-4 px-1">
         <div>
           <p className="text-lg font-semibold tracking-tight">Что нового</p>

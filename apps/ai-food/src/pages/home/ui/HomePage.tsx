@@ -60,16 +60,6 @@ export function HomePage() {
       <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-24 pt-0">
         <MealList selectedDate={selectedDate} />
       </main>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-end px-6 pb-safe-fab">
-        <Button
-          size="icon"
-          className="pointer-events-auto h-14 w-14 rounded-full shadow-lg"
-          onClick={() => setIsAddOpen(true)}
-          aria-label="Добавить еду"
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-      </div>
       <AddFoodSheet
         open={isAddOpen}
         onClose={() => {
@@ -80,6 +70,16 @@ export function HomePage() {
         onAutoActionConsumed={() => setAutoAction(null)}
       />
       <LatestNewsSheet suppressed={isAddOpen} />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-end px-6 pb-safe-fab">
+        <Button
+          size="icon"
+          className="pointer-events-auto h-14 w-14 rounded-full shadow-lg"
+          onClick={() => setIsAddOpen(true)}
+          aria-label="Добавить еду"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
     </div>
   );
 }

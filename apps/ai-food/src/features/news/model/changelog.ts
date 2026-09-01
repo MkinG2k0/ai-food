@@ -466,3 +466,12 @@ export function shouldShowLatestNews(
 ): boolean {
   return Boolean(latestDate) && lastSeenDate !== latestDate;
 }
+
+/** When another home overlay opens, mark the release seen so it does not return. */
+export function shouldDismissLatestNewsOnSuppress(
+  suppressed: boolean,
+  lastSeenDate: string | null,
+  latestDate: string | undefined,
+): boolean {
+  return suppressed && shouldShowLatestNews(lastSeenDate, latestDate);
+}
