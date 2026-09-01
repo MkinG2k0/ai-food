@@ -28,6 +28,7 @@ test.describe('favorites flow', () => {
   test('toggle избранного на детальной странице', async ({
     diaryPage: page,
   }) => {
+    await dismissBlockingSheets(page);
     await page.getByRole('button', { name: /Овсянка с ягодами/ }).click();
     await expect(page).toHaveURL(/\/meal\/e2e-meal-1/);
 

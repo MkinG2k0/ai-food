@@ -1,4 +1,4 @@
-import { test, expect, waitForHome } from './fixtures/test';
+import { test, expect, waitForHome, dismissBlockingSheets } from './fixtures/test';
 import { getCapturedAnalyzeBodies, overrideAnalyzeRoute } from './fixtures/gateway-mock';
 import {
   mockGetUserMedia,
@@ -32,10 +32,20 @@ test.describe('analyze photo', () => {
     await expect(
       page.getByText('Куриный салат с рисом').first(),
     ).toBeVisible({ timeout: 30_000 });
+    await dismissBlockingSheets(page);
     const mealCard = page.getByRole('button', { name: /Куриный салат с рисом/ });
-    await expect(
-      mealCard.locator('span.absolute.bottom-1.right-1', { hasText: '3' }),
-    ).toBeVisible();
+    const badge = mealCard.locator('span.absolute.bottom-1.right-1', {
+      hasText: '3',
+    });
+    await expect
+      .poll(
+        async () => {
+          await dismissBlockingSheets(page);
+          return badge.isVisible().catch(() => false);
+        },
+        { timeout: 30_000 },
+      )
+      .toBe(true);
   });
 
   test('scan: галерея без камеры возвращает на главную', async ({

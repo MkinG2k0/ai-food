@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures/test';
+import { test, expect, dismissBlockingSheets } from './fixtures/test';
 
 test.describe('diary meal', () => {
   test('засеянный приём виден в дневнике и открывается', async ({
@@ -6,6 +6,7 @@ test.describe('diary meal', () => {
   }) => {
     await expect(page.getByText('Овсянка с ягодами')).toBeVisible();
 
+    await dismissBlockingSheets(page);
     await page.getByRole('button', { name: /Овсянка с ягодами/ }).click();
     await expect(page).toHaveURL(/\/meal\/e2e-meal-1/);
     await expect(
