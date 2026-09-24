@@ -11,13 +11,14 @@ export function analyzeErrorPatch(
     typeof (error as ApiError).code === 'string'
   ) {
     const analyzeErrorCode = (error as ApiError).code;
+    const clearJob =
+      isTerminalMealAnalyzeError(analyzeErrorCode) ||
+      analyzeErrorCode === 'ANALYSIS_TIMEOUT';
     return {
       status: 'error',
       analyzeErrorCode,
       // Drop durable job id so the card is not treated as still in-flight.
-      ...(isTerminalMealAnalyzeError(analyzeErrorCode)
-        ? { analyzeJobId: undefined }
-        : {}),
+      ...(clearJob ? { analyzeJobId: undefined } : {}),
     };
   }
   return { status: 'error' };

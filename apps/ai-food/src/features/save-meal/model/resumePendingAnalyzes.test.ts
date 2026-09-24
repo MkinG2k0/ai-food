@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from '@testing-library/react';
 import type { Meal, NutritionResult } from '@ai-food/shared-types';
-import { useDiaryStore } from '@/entities/meal';
+import { mealShowsAnalyzeRetry, useDiaryStore } from '@/entities/meal';
 import { resetMealAnalyzeInFlight } from '@/entities/meal/model/analyzeInFlight';
 
 vi.mock('@capacitor/preferences', () => ({
@@ -124,6 +124,25 @@ describe('resumePendingAnalyzes', () => {
     expect(waitForAnalyzeJob).toHaveBeenCalled();
     expect(retry).toHaveBeenCalledWith('meal-1');
     expect(useDiaryStore.getState().meals[0].status).toBe('analyzing');
+  });
+
+  it('turns a timed-out resumed job into an immediate retry state', async () => {
+    useDiaryStore.setState({ meals: [analyzingMeal()] });
+    waitForAnalyzeJob.mockRejectedValue({
+      code: 'ANALYSIS_TIMEOUT',
+      status: 504,
+      message: 'timed out',
+    });
+    const retry = vi.fn();
+
+    await resumePendingAnalyzes(retry);
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(retry).not.toHaveBeenCalled();
+    expect(meal.status).toBe('error');
+    expect(meal.analyzeErrorCode).toBe('ANALYSIS_TIMEOUT');
+    expect(meal.analyzeJobId).toBeUndefined();
+    expect(mealShowsAnalyzeRetry(meal)).toBe(true);
   });
 
   it('does not resume a terminal no-food meal even if analyzeJobId is leftover', async () => {

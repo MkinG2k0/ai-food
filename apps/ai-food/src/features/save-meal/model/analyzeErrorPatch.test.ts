@@ -16,6 +16,20 @@ describe('analyzeErrorPatch', () => {
     });
   });
 
+  it('clears analyzeJobId for ANALYSIS_TIMEOUT', () => {
+    expect(
+      analyzeErrorPatch({
+        message: 'Analysis timed out.',
+        code: 'ANALYSIS_TIMEOUT',
+        status: 504,
+      }),
+    ).toEqual({
+      status: 'error',
+      analyzeErrorCode: 'ANALYSIS_TIMEOUT',
+      analyzeJobId: undefined,
+    });
+  });
+
   it('keeps analyzeJobId for generic failures so resume can poll', () => {
     expect(
       analyzeErrorPatch({

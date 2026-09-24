@@ -218,6 +218,6 @@ async function runMealAnalyzeCore(
       { code },
     );
   } finally {
-    endMealAnalyze(mealId);
+    endMealAnalyze(mealId, signal);
   }
 }

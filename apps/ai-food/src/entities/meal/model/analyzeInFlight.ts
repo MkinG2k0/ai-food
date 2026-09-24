@@ -11,7 +11,8 @@ export function beginMealAnalyze(mealId: string): AbortSignal {
   return controller.signal;
 }
 
-export function endMealAnalyze(mealId: string): void {
+export function endMealAnalyze(mealId: string, signal?: AbortSignal): void {
+  if (signal && controllers.get(mealId)?.signal !== signal) return;
   controllers.delete(mealId);
   inFlightMealIds.delete(mealId);
 }

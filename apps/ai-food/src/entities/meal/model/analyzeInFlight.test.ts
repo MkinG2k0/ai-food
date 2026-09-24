@@ -43,6 +43,19 @@ describe('analyzeInFlight', () => {
     expect(getMealAnalyzeSignal('meal-1')).toBe(second);
   });
 
+  it('does not let an older attempt unregister the current attempt', () => {
+    const first = beginMealAnalyze('meal-1');
+    const second = beginMealAnalyze('meal-1');
+
+    endMealAnalyze('meal-1', first);
+
+    expect(isMealAnalyzeInFlight('meal-1')).toBe(true);
+    expect(getMealAnalyzeSignal('meal-1')).toBe(second);
+
+    abortMealAnalyze('meal-1');
+    expect(second.aborted).toBe(true);
+  });
+
   it('abortMealAnalyze is a no-op when meal is not analyzing', () => {
     expect(() => abortMealAnalyze('missing')).not.toThrow();
   });

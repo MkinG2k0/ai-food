@@ -23,6 +23,7 @@ export { resolveMealImageUris } from './model/resolveMealImageUris';
 export { mealDisplayName } from './model/mealDisplayName';
 export { mealFoodTypeUi } from './model/mealFoodType';
 export {
+  ANALYZING_STALE_MS,
   mealShowsAnalyzeLoader,
   mealShowsAnalyzeRetry,
   holdPendingAnalyzeStatus,

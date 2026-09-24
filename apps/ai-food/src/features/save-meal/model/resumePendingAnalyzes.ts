@@ -50,7 +50,7 @@ async function resumeAnalyzeJob(
       queueDiarySync({ mode: 'upsert', mealIds: [meal.id] });
     }
   } finally {
-    endMealAnalyze(meal.id);
+    endMealAnalyze(meal.id, signal);
   }
   if (retryAfter) {
     await retryMeal(meal.id);

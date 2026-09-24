@@ -255,6 +255,71 @@ describe('useRetryAnalyzeMeal', () => {
     expect(useDiaryStore.getState().meals[0].status).toBe('error');
   });
 
+  it('clears leftover analyzeJobId when retry starts before API resolves', async () => {
+    let resolveAnalyze!: (value: Awaited<ReturnType<typeof analyzeFoodApi>>) => void;
+    const analyzePromise = new Promise<Awaited<ReturnType<typeof analyzeFoodApi>>>(
+      (resolve) => {
+        resolveAnalyze = resolve;
+      },
+    );
+    vi.mocked(analyzeFoodApi).mockReturnValue(analyzePromise);
+
+    useDiaryStore.setState({
+      meals: [
+        errorMeal({
+          name: 'суп',
+          analyzeJobId: 'job-old',
+          analyzeErrorCode: 'ANALYSIS_TIMEOUT',
+        }),
+      ],
+    });
+
+    const { result } = renderHook(() => useRetryAnalyzeMeal(), {
+      wrapper: createWrapper(),
+    });
+
+    let retryPromise!: Promise<void>;
+    await act(async () => {
+      retryPromise = result.current('meal-1');
+      await Promise.resolve();
+    });
+
+    const mealDuringAnalyze = useDiaryStore.getState().meals[0];
+    expect(mealDuringAnalyze.status).toBe('analyzing');
+    expect(mealDuringAnalyze.analyzeJobId).toBeUndefined();
+    expect(mealDuringAnalyze.analyzeErrorCode).toBeUndefined();
+
+    await act(async () => {
+      resolveAnalyze({
+        result: {
+          foodName: 'Retried Food',
+          calories: 400,
+          protein: 25,
+          carbs: 40,
+          fat: 12,
+          fiber: 6,
+          confidence: 0.92,
+          healthiness: 7,
+          items: [
+            {
+              name: 'Retried Food',
+              calories: 400,
+              protein: 25,
+              carbs: 40,
+              fat: 12,
+              fiber: 6,
+              grams: 200,
+            },
+          ],
+        },
+        processingTime: 100,
+      });
+      await retryPromise;
+    });
+
+    expect(useDiaryStore.getState().meals[0].status).toBe('ready');
+  });
+
   it('leaves status error when image load returns null', async () => {
     vi.mocked(loadMealImageAsFile).mockResolvedValue(null);
     useDiaryStore.setState({
