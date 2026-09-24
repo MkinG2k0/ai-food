@@ -43,6 +43,20 @@ export {
   AI_IMAGE_JPEG_QUALITY,
 } from './compressImage';
 export { capacitorStorage } from './capacitorStorage';
+export {
+  THEME_OPTIONS,
+  THEME_STORAGE_KEY,
+  applyResolvedTheme,
+  applyThemePreference,
+  getSystemTheme,
+  isThemePreference,
+  readStoredTheme,
+  resolveTheme,
+  themeBackground,
+  writeStoredTheme,
+  type ResolvedTheme,
+  type ThemePreference,
+} from './theme';
 export { takePhotoAsFile, mediaResultToFile } from './takePhoto';
 export { useSpeechToText } from './useSpeechToText';
 export type { UseSpeechToTextOptions } from './useSpeechToText';

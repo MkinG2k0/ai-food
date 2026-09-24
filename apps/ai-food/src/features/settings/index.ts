@@ -23,6 +23,7 @@ export {
   type ReminderSettings,
   type SettingsSyncPayload,
 } from './model/useSettingsStore';
+export { useThemeStore } from './model/useThemeStore';
 export {
   APP_DATA_EXPORT_VERSION,
   AppDataBackupError,

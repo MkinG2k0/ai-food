@@ -21,6 +21,7 @@ import {
   readJsonFile,
   snapshotFromExport,
   useSettingsStore,
+  useThemeStore,
   type CalendarRingKey,
 } from '@/features/settings';
 import {
@@ -43,7 +44,15 @@ import {
   shouldShowSettingsPwaInstall,
   usePwaInstallSeenStore,
 } from '@/features/pwa-install';
-import { cn, getLegalUrl, useTripleTap, appDebugLog, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from '@/shared/lib';
+import {
+  cn,
+  getLegalUrl,
+  useTripleTap,
+  appDebugLog,
+  SUPPORT_TELEGRAM_LABEL,
+  SUPPORT_TELEGRAM_URL,
+  THEME_OPTIONS,
+} from '@/shared/lib';
 import { BottomSheet, Button, Card, CardContent, Checkbox, SubpageShell, TextareaWithVoice } from '@/shared/ui';
 
 const CALENDAR_RING_TOGGLES: { key: CalendarRingKey; label: string }[] = [
@@ -153,6 +162,8 @@ export function SettingsPage() {
   );
   const debugMode = useSettingsStore((s) => s.debugMode);
   const toggleDebugMode = useSettingsStore((s) => s.toggleDebugMode);
+  const themePreference = useThemeStore((s) => s.preference);
+  const setThemePreference = useThemeStore((s) => s.setPreference);
 
   const handleDebugModeToggle = useCallback(() => {
     const enabled = toggleDebugMode();
@@ -465,6 +476,38 @@ export function SettingsPage() {
               )}
             </CardContent>
           </Card>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium leading-none">Оформление</h2>
+          <p className="text-sm text-muted-foreground">
+            Светлая, тёмная или как в системе.
+          </p>
+          <div
+            className="flex rounded-lg border border-input p-1 gap-1"
+            role="group"
+            aria-label="Тема оформления"
+          >
+            {THEME_OPTIONS.map((option) => {
+              const selected = themePreference === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={selected}
+                  className={cn(
+                    'flex-1 rounded-md px-2 py-2 text-sm font-medium transition-colors',
+                    selected
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                  onClick={() => setThemePreference(option.value)}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
         </section>
 
         <section className="space-y-3">

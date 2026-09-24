@@ -55,7 +55,7 @@ function MacroBar({
       )}
     >
       <div
-        className="h-full rounded-full bg-emerald-500"
+        className="h-full rounded-full bg-kbju-kcal"
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -206,7 +206,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
               aria-label="Калории блюда"
               className={cn(
                 inputClassName,
-                'text-2xl font-semibold text-emerald-600',
+                'text-2xl font-semibold text-kbju-kcal',
               )}
               value={formatItemGrams(meal.totalCalories)}
               onChange={(e) =>

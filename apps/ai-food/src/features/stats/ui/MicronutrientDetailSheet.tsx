@@ -50,13 +50,13 @@ function formatMealWhen(iso: string): string {
 function statusPillClass(band: ReturnType<typeof getMicronutrientStatus>['band']): string {
   switch (band) {
     case 'severe_deficit':
-      return 'bg-red-50 text-red-700';
+      return 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300';
     case 'below_norm':
-      return 'bg-amber-50 text-amber-800';
+      return 'bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300';
     case 'optimal':
-      return 'bg-emerald-50 text-emerald-800';
+      return 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300';
     case 'surplus':
-      return 'bg-violet-50 text-violet-800';
+      return 'bg-violet-50 text-violet-800 dark:bg-violet-950/50 dark:text-violet-300';
     default:
       return 'bg-muted text-muted-foreground';
   }

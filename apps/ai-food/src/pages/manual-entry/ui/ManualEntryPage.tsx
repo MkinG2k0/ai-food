@@ -132,7 +132,7 @@ export function ManualEntryPage() {
       onBack={() => navigate(-1)}
       mainClassName="space-y-6 pb-28"
       footer={
-        <div className="sticky bottom-0 border-t border-border/70 bg-zinc-50 px-4 py-4">
+        <div className="sticky bottom-0 border-t border-border/70 bg-background px-4 py-4">
           <Button
             type="button"
             className="w-full bg-emerald-600 text-white hover:bg-emerald-700"

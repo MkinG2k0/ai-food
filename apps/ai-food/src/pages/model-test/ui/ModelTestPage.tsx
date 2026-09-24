@@ -143,8 +143,8 @@ export function ModelTestPage() {
     : null;
 
   return (
-    <div className="min-h-dvh bg-zinc-50">
-      <header className="sticky top-0 z-10 flex items-center gap-2 bg-zinc-50/95 px-4 pt-safe-header pb-3 backdrop-blur">
+    <div className="min-h-dvh bg-background">
+      <header className="sticky top-0 z-10 flex items-center gap-2 bg-background/95 px-4 pt-safe-header pb-3 backdrop-blur">
         <Button
           variant="ghost"
           size="icon"

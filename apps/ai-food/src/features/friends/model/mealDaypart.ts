@@ -18,26 +18,26 @@ const DAYPART_UI: Record<
   breakfast: {
     label: 'Завтрак',
     Icon: Coffee,
-    tileClass: 'bg-amber-100',
-    iconClass: 'text-amber-700',
+    tileClass: 'bg-amber-500/15',
+    iconClass: 'text-amber-700 dark:text-amber-300',
   },
   lunch: {
     label: 'Обед',
     Icon: Utensils,
-    tileClass: 'bg-emerald-100',
-    iconClass: 'text-emerald-700',
+    tileClass: 'bg-emerald-500/15',
+    iconClass: 'text-emerald-700 dark:text-emerald-300',
   },
   dinner: {
     label: 'Ужин',
     Icon: Moon,
-    tileClass: 'bg-indigo-100',
-    iconClass: 'text-indigo-700',
+    tileClass: 'bg-indigo-500/15',
+    iconClass: 'text-indigo-700 dark:text-indigo-300',
   },
   snack: {
     label: 'Перекус',
     Icon: Cookie,
-    tileClass: 'bg-rose-100',
-    iconClass: 'text-rose-700',
+    tileClass: 'bg-rose-500/15',
+    iconClass: 'text-rose-700 dark:text-rose-300',
   },
 };
 

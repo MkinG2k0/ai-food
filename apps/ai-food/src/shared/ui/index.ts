@@ -33,6 +33,7 @@ export {
   RING_COLORS,
   MACRO_COLORS,
   MACRO_BAR_CLASSES,
+  MACRO_BADGE_CLASSES,
   KBJU_RING_ORDER,
   dayCellSizeForRingCount,
   type KbjuRingKey,

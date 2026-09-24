@@ -36,7 +36,8 @@ export function getMicronutrientStatus(
       ratio,
       labelRu: 'дефицит',
       barClass: 'bg-red-500',
-      badgeClass: 'bg-red-50 text-red-800 border-red-100',
+      badgeClass:
+        'bg-red-50 text-red-800 border-red-100 dark:bg-red-950/50 dark:text-red-300 dark:border-red-900',
     };
   }
 
@@ -46,7 +47,8 @@ export function getMicronutrientStatus(
       ratio,
       labelRu: 'ниже нормы',
       barClass: 'bg-amber-500',
-      badgeClass: 'bg-amber-50 text-amber-800 border-amber-100',
+      badgeClass:
+        'bg-amber-50 text-amber-800 border-amber-100 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-900',
     };
   }
 
@@ -56,7 +58,8 @@ export function getMicronutrientStatus(
       ratio,
       labelRu: 'норма',
       barClass: 'bg-emerald-500',
-      badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-100',
+      badgeClass:
+        'bg-emerald-50 text-emerald-800 border-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900',
     };
   }
 
@@ -65,6 +68,7 @@ export function getMicronutrientStatus(
     ratio,
     labelRu: 'профицит',
     barClass: 'bg-violet-500',
-    badgeClass: 'bg-violet-50 text-violet-800 border-violet-100',
+    badgeClass:
+      'bg-violet-50 text-violet-800 border-violet-100 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-900',
   };
 }

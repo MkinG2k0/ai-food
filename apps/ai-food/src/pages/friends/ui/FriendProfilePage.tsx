@@ -8,8 +8,8 @@ import {
   friendsErrorMessage,
   useFriendProfile,
 } from '@/features/friends';
-import { RING_COLORS, SubpageShell } from '@/shared/ui';
 import { FriendWeightChart } from './FriendWeightChart';
+import { SubpageShell } from '@/shared/ui';
 
 export function FriendProfilePage() {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ export function FriendProfilePage() {
     <SubpageShell
       title={profile?.displayName ?? 'Профиль друга'}
       onBack={() => navigate('/friends')}
-      headerClassName="sticky top-0 z-10 bg-zinc-50/90 backdrop-blur-sm"
+      headerClassName="sticky top-0 z-10 bg-background/90 backdrop-blur-sm"
       mainClassName="space-y-5 pb-10"
     >
       {isLoading ? (
@@ -118,40 +118,16 @@ export function FriendProfilePage() {
                   Дневные цели
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  <span
-                    className="rounded-full px-2.5 py-1 text-xs font-medium tabular-nums"
-                    style={{
-                      backgroundColor: `${RING_COLORS.kcal}18`,
-                      color: RING_COLORS.kcal,
-                    }}
-                  >
+                  <span className="rounded-full bg-kbju-kcal-soft px-2.5 py-1 text-xs font-medium tabular-nums text-kbju-kcal-fg">
                     {profile.targets.kcal} ккал
                   </span>
-                  <span
-                    className="rounded-full px-2.5 py-1 text-xs font-medium tabular-nums"
-                    style={{
-                      backgroundColor: `${RING_COLORS.protein}22`,
-                      color: '#E11D48',
-                    }}
-                  >
+                  <span className="rounded-full bg-kbju-protein-soft px-2.5 py-1 text-xs font-medium tabular-nums text-kbju-protein-fg">
                     Б {profile.targets.protein}
                   </span>
-                  <span
-                    className="rounded-full px-2.5 py-1 text-xs font-medium tabular-nums"
-                    style={{
-                      backgroundColor: `${RING_COLORS.fat}22`,
-                      color: '#D97706',
-                    }}
-                  >
+                  <span className="rounded-full bg-kbju-fat-soft px-2.5 py-1 text-xs font-medium tabular-nums text-kbju-fat-fg">
                     Ж {profile.targets.fat}
                   </span>
-                  <span
-                    className="rounded-full px-2.5 py-1 text-xs font-medium tabular-nums"
-                    style={{
-                      backgroundColor: `${RING_COLORS.carbs}22`,
-                      color: '#0284C7',
-                    }}
-                  >
+                  <span className="rounded-full bg-kbju-carbs-soft px-2.5 py-1 text-xs font-medium tabular-nums text-kbju-carbs-fg">
                     У {profile.targets.carbs}
                   </span>
                 </div>

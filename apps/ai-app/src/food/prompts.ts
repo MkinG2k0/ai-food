@@ -62,7 +62,24 @@ id ∈ vitaminA|vitaminC|vitaminD|vitaminE|vitaminK|vitaminB1|vitaminB2|vitaminB
 amount — неотрицательное число (оценка содержания в этой порции); неизвестно → 0;
 unit строго по id: vitaminA/vitaminD/vitaminK/vitaminB7/folate/vitaminB12/iodine/selenium/chromium/molybdenum → µg; vitaminC/vitaminE/vitaminB1/vitaminB2/vitaminB3/vitaminB5/vitaminB6/calcium/magnesium/zinc/iron/copper/manganese/potassium/phosphorus → mg.
 Пример: vitaminA → amount 120, unit µg (не mg). vitaminC → amount 45, unit mg.
+Если доза указана в IU/МЕ/ue/iu — переведи в канонический unit и НЕ оставляй IU в amount:
+vitaminD (D2/D3): 1 IU = 0.025 µg (пример: 5000 IU → vitaminD amount 125, unit µg);
+vitaminA (ретинол): 1 IU = 0.3 µg;
+vitaminE: 1 IU ≈ 0.67 mg.
 Всегда включай все 25 id. Не используй amount_mg, граммы и не возвращай качественные level.`;
+
+/** Text «Описать»: витамины / БАД / минералы как учёт приёма (не noFood). */
+export const SUPPLEMENTS_TEXT_PROMPT_RULE = `## Витамины, БАД и минералы (обязательно для текстового описания)
+Приём витаминов/БАД/минералов/омега-3 и т.п. — это учёт приёма, НЕ noFood.
+Распознавай формулировки вроде «принял D3», «витамин C 500 мг», «5000ue D3», «5000 IU D3», «омега-3», «магний B6», «мультивитамины».
+Правила:
+1. foodName — короткое человекочитаемое название на русском: «Витамин D3 5000 МЕ», «Витамин C 500 мг», «Магний B6», «Омега-3». Запрещено сырое «5000ue D3», «5000iu d3», латиница-только без «Витамин»/понятного имени.
+2. Нормализуй опечатки единиц: ue/iu/IU → МЕ в foodName; mcg/мкг → мкг в foodName при необходимости.
+3. foodType = snack; один item с тем же смыслом, что foodName; grams — типичная капсула/таблетка ≈ 0.5–1 г (или указанный вес).
+4. КБЖУ почти нулевые (calories/protein/carbs/fat/fiber ≈ 0), если это не масляная капсула с заметной калорийностью (тогда оцени жир/ккал честно).
+5. Дозу перенеси в соответствующий micronutrient (D3/D2 → vitaminD; C → vitaminC; A → vitaminA; E → vitaminE; B12 → vitaminB12 и т.д.) с конвертацией IU→канонический unit (см. раздел микронутриентов). Остальные id → 0.
+6. Мультивитамины без состава — оцени типичный суточный комплекс осторожно и укажи disclaimer о приблизительности; не выдумывай бренд.
+7. portionReference: «доза из описания пользователя» или «типичная капсула/таблетка».`;
 
 const VISION_NUTRITION_XML_SCHEMA = `<analysis>
   <foodName>краткое название всего блюда/приёма на русском</foodName>
@@ -164,14 +181,15 @@ ${MICRONUTRIENTS_PROMPT_RULE}
 const TEXT_SYSTEM_PROMPT = `Ты ассистент по анализу питания по текстовому описанию. Верни ТОЛЬКО один XML-документ — без markdown-обёртки (без \`\`\`xml\`\`\`), без текста до или после документа.
 
 ## Если еды нет в описании
-Если пользователь не описал съедобную еду или напиток — верни ТОЛЬКО:
+Если пользователь не описал съедобную еду, напиток, витамин/БАД/минерал — верни ТОЛЬКО:
 <analysis>
   <noFood>true</noFood>
   <reason>кратко на русском, почему в описании нет еды</reason>
 </analysis>
-НЕ придумывай блюдо и НЕ возвращай КБЖУ. Если еда описана — верни обычную схему питания БЕЗ тега noFood.
+НЕ придумывай блюдо и НЕ возвращай КБЖУ. Если еда, напиток или витамин/БАД описаны — верни обычную схему питания БЕЗ тега noFood.
+НЕ noFood: приём витаминов, БАД, минералов, омега-3 и т.п. (см. раздел витаминов).
 
-## Если еда или напиток описаны
+## Если еда, напиток или витамин/БАД описаны
 
 Верни ТОЛЬКО XML:
 
@@ -180,6 +198,7 @@ ${TEXT_NUTRITION_XML_SCHEMA}
 ## Тип блюда (обязательно)
 - foodType — выбери ровно одну категорию: salad, soup, sandwich, pizza, sushi, fish, burger, bowl, chicken, meat, pasta, bakery, main, snack, dessert или drink.
 - Классифицируй весь приём пищи, а не отдельный ингредиент. fish — любая рыба и морепродукты (осетр, лосось, треска, креветки, мидии и т.п.), кроме роллов/суши; sushi — только суши/роллы/сашими-наборы; chicken — курица/птица; meat — только красное мясо (говядина/свинина/баранина/стейк), никогда рыба; pasta — паста/макароны/лапша; bakery — выпечка/хлеб/круассан. Если горячее или основное блюдо не подходит к другим категориям, укажи main.
+- Витамины/БАД/минералы → foodType = snack.
 
 ## Правила единиц измерения (обязательно)
 - Все числовые значения в calories/protein/carbs/fat/fiber/grams — ТОЛЬКО число, без текста единиц измерения внутри самого значения (атрибут unit уже указывает единицу).
@@ -189,6 +208,8 @@ ${MACRO_DECIMAL_PROMPT_RULE}
 ${ANALYZE_FOOD_NAME_PROMPT_RULE} ${ANALYZE_COMPOSITION_PROMPT_RULE}
 
 ${PACKAGED_FOOD_PROMPT_RULE}
+
+${SUPPLEMENTS_TEXT_PROMPT_RULE}
 
 ## Порция и граммы (обязательно)
 - grams обязателен для каждого item.
@@ -202,11 +223,13 @@ ${PACKAGED_FOOD_PROMPT_RULE}
 
 ## healthiness
 healthiness (целое 1–10) основан на: Б/Ж/У, добавленном сахаре, степени обработки, клетчатке/овощах. Будь honest.
+Для чистых витаминов/БАД без калорий — healthiness обычно 8–10 (это не еда, а добавка).
 
 ## Краевые случаи
 - Несколько блюд в описании → все компоненты в items; foodName = общий приём пищи.
 - Упакованный продукт в описании (йогурт, сок и т.п.) → анализируй как продукт, один item.
-- Пустое / бессмысленное описание без еды → noFood.
+- Витамин/БАД в описании (в т.ч. «5000ue D3», «принял D3») → анализируй как приём добавки (см. раздел витаминов), НЕ noFood.
+- Пустое / бессмысленное описание без еды и без добавок → noFood.
 
 ## Микронутриенты
 ${MICRONUTRIENTS_PROMPT_RULE}
@@ -275,6 +298,7 @@ const REFINE_MICRONUTRIENTS_RULE = `micronutrients — массив из ров�
 id ∈ vitaminA|vitaminC|vitaminD|vitaminE|vitaminK|vitaminB1|vitaminB2|vitaminB3|vitaminB5|vitaminB6|vitaminB7|folate|vitaminB12|calcium|magnesium|zinc|iron|copper|manganese|iodine|selenium|chromium|molybdenum|potassium|phosphorus;
 amount — неотрицательное число в канонических единицах; неизвестно → 0;
 unit строго по id: vitaminA/vitaminD/vitaminK/vitaminB7/folate/vitaminB12/iodine/selenium/chromium/molybdenum → "µg"; vitaminC/vitaminE/vitaminB1/vitaminB2/vitaminB3/vitaminB5/vitaminB6/calcium/magnesium/zinc/iron/copper/manganese/potassium/phosphorus → "mg".
+Если доза в IU/МЕ: vitaminD 1 IU = 0.025 µg; vitaminA 1 IU = 0.3 µg; vitaminE 1 IU ≈ 0.67 mg.
 Всегда включай все 25 id. Не возвращай качественные level.`;
 
 const SYSTEM_PROMPT_BASE = `You are a nutrition analysis assistant. The user provides a current meal snapshot and a free-text correction. Return ONLY a complete updated JSON NutritionResult (not a diff) with these exact fields:
@@ -401,8 +425,8 @@ export function buildAnalyzeTextUserPrompt(
   composition: boolean,
 ): string {
   return composition
-    ? `Пользователь описал приём пищи текстом: «${description}». Оцени порцию/типичную порцию. Разбей состав на items с обязательными grams. Учти способ приготовления, если упомянут. Не выдумывай еду, если её нет. Верни только XML по схеме.`
-    : `Пользователь описал приём пищи текстом: «${description}». Оцени порцию/типичную порцию. Верни ровно один item на всё блюдо (без разбивки на ингредиенты) с обязательными grams. Учти способ приготовления, если упомянут. Не выдумывай еду, если её нет. Верни только XML по схеме.`;
+    ? `Пользователь описал приём пищи или витамин/БАД текстом: «${description}». Оцени порцию/типичную порцию (для добавок — дозу). Если это витамин/БАД — нормализуй foodName (напр. «Витамин D3 5000 МЕ»), переведи IU/МЕ в micronutrients. Разбей состав на items с обязательными grams (добавка = один item). Учти способ приготовления, если упомянут. Не выдумывай еду, если её нет. Верни только XML по схеме.`
+    : `Пользователь описал приём пищи или витамин/БАД текстом: «${description}». Оцени порцию/типичную порцию (для добавок — дозу). Если это витамин/БАД — нормализуй foodName (напр. «Витамин D3 5000 МЕ»), переведи IU/МЕ в micronutrients. Верни ровно один item на всё блюдо/добавку с обязательными grams. Учти способ приготовления, если упомянут. Не выдумывай еду, если её нет. Верни только XML по схеме.`;
 }
 
 export function buildAnalyzeVisionUserText(

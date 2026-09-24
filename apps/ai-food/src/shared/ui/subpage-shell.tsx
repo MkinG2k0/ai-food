@@ -13,7 +13,7 @@ export interface SubpageShellProps {
   footer?: ReactNode;
 }
 
-/** Единый каркас внутренних страниц: отступы как на главной (bg-zinc-50, px-4, pt-safe-header). */
+/** Единый каркас внутренних страниц: отступы как на главной (bg-background, px-4, pt-safe-header). */
 export function SubpageShell({
   title,
   onBack,
@@ -24,7 +24,7 @@ export function SubpageShell({
   footer,
 }: SubpageShellProps) {
   return (
-    <div className="flex min-h-dvh flex-col bg-zinc-50">
+    <div className="flex min-h-dvh flex-col bg-background">
       <header
         className={cn(
           'flex items-center px-4 pt-safe-header pb-3',

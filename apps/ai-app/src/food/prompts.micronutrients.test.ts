@@ -18,6 +18,7 @@ describe('analyze prompts: canonical micronutrient units (P0)', () => {
     );
     expect(MICRONUTRIENTS_PROMPT_RULE).not.toMatch(/приводи к миллиграммам/i);
     expect(MICRONUTRIENTS_PROMPT_RULE).not.toMatch(/1 мкг = 0\.001 мг/);
+    expect(MICRONUTRIENTS_PROMPT_RULE).toMatch(/1 IU = 0\.025 µg/);
   });
 
   it('vision and text prompts use canonical micronutrient schema, not mg-only conversion', () => {

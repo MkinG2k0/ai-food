@@ -10,13 +10,36 @@
     <meta name="apple-mobile-web-app-title" content="AI Food" />
     <title>AI Food — дневник питания</title>
     <style>
-      /* Instant paint before CSS/JS — matches splash; overridden by global.css body tokens */
+      /* Instant paint before CSS/JS — brand splash; theme script may override */
       html,
       body {
         margin: 0;
         background: #09AF86;
       }
+      html.dark,
+      html.dark body {
+        background: #09090b;
+      }
     </style>
+    <!-- Apply saved theme before paint to avoid light/dark flicker -->
+    <script>
+      (function () {
+        try {
+          var key = 'ai-food-theme';
+          var pref = localStorage.getItem(key) || 'system';
+          var dark =
+            pref === 'dark' ||
+            (pref !== 'light' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var root = document.documentElement;
+          if (dark) root.classList.add('dark');
+          else root.classList.remove('dark');
+          root.style.colorScheme = dark ? 'dark' : 'light';
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', dark ? '#09090b' : '#09AF86');
+        } catch (e) {}
+      })();
+    </script>
     <!-- Capture beforeinstallprompt before the JS bundle loads (Yandex/Chrome may fire early). -->
     <script>
       window.__aifoodPwa = { deferred: null };
