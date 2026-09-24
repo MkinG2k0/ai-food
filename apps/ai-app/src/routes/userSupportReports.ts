@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ApiError } from '../../lib/errors.js';
+import { notifyAdminNewSupportReport } from '../lib/notifyAdminSupportReport.js';
 import {
   createSupportReportBodySchema,
   supportReportResponse,
@@ -29,6 +30,17 @@ function requireDb() {
   return prisma;
 }
 
+function userDisplayName(user: {
+  firstName: string | null;
+  username: string | null;
+}): string | null {
+  const name = user.firstName?.trim();
+  if (name) return name;
+  const username = user.username?.trim();
+  if (username) return `@${username.replace(/^@/, '')}`;
+  return null;
+}
+
 async function resolveReporter(req: {
   header(name: string): string | undefined;
 }) {
@@ -46,6 +58,7 @@ async function resolveReporter(req: {
   }
 
   let userId: string | null = null;
+  let displayName: string | null = null;
   if (userToken) {
     const payload = await verifyUserToken(userToken);
     const prisma = requireDb();
@@ -54,9 +67,10 @@ async function resolveReporter(req: {
       throw new ApiError(401, 'INVALID_USER_TOKEN', 'User not found.');
     }
     userId = user.id;
+    displayName = userDisplayName(user);
   }
 
-  return { userId, deviceId: deviceId ?? null };
+  return { userId, deviceId: deviceId ?? null, displayName };
 }
 
 userSupportReportsRouter.post(
@@ -80,6 +94,22 @@ userSupportReportsRouter.post(
         appVersion: parsed.data.appVersion ?? null,
         platform: parsed.data.platform ?? null,
       },
+    });
+
+    const images = Array.isArray(created.images) ? created.images : [];
+    void notifyAdminNewSupportReport({
+      id: created.id,
+      type: created.type,
+      message: created.message,
+      platform: created.platform,
+      appVersion: created.appVersion,
+      imageCount: images.length,
+      userId: created.userId,
+      deviceId: created.deviceId,
+      userDisplayName: reporter.displayName,
+    }).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('[support-reports] notifyAdmin failed:', message);
     });
 
     res.status(201).json(supportReportResponse(created));

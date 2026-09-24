@@ -35,6 +35,8 @@
 | `PUBLIC_GATEWAY_URL` | публичный HTTPS origin этого сервиса |
 | `PUBLIC_APP_URL` | origin фронта (`ai-food`) для T-Bank redirects |
 | `TELEGRAM_*` / `TBANK_*` | по необходимости |
+| `ADMIN_TELEGRAM_CHAT_ID` | опц.: Telegram chat id(s) для уведов о новых «Обращениях» |
+| `PUBLIC_ADMIN_URL` | опц.: origin ai-web (ссылка в уведе) |
 
 При старте контейнер гоняет `prisma migrate deploy`, затем сервер.
 

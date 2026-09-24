@@ -4,6 +4,7 @@ import request from 'supertest';
 const mockGetPrisma = vi.fn();
 const mockIsDatabaseConfigured = vi.fn();
 const mockVerifyUserToken = vi.fn();
+const mockNotifyAdmin = vi.fn();
 
 vi.mock('../lib/prisma.js', () => ({
   getPrisma: (...args: unknown[]) => mockGetPrisma(...args),
@@ -14,6 +15,10 @@ vi.mock('../lib/prisma.js', () => ({
 vi.mock('../lib/jwt.js', () => ({
   assertAuthConfigured: vi.fn(),
   verifyUserToken: (...args: unknown[]) => mockVerifyUserToken(...args),
+}));
+
+vi.mock('../lib/notifyAdminSupportReport.js', () => ({
+  notifyAdminNewSupportReport: (...args: unknown[]) => mockNotifyAdmin(...args),
 }));
 
 import { createApp } from '../app.js';
@@ -39,11 +44,17 @@ describe('user support reports', () => {
     reports = [];
     mockIsDatabaseConfigured.mockReturnValue(true);
     mockVerifyUserToken.mockResolvedValue({ sub: 'user-1' });
+    mockNotifyAdmin.mockResolvedValue(undefined);
     mockGetPrisma.mockReturnValue({
       user: {
         findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
           where.id === 'user-1'
-            ? { id: 'user-1', telegramId: '123' }
+            ? {
+                id: 'user-1',
+                telegramId: '123',
+                firstName: 'Кама',
+                username: 'kama',
+              }
             : null,
         ),
       },
@@ -98,6 +109,16 @@ describe('user support reports', () => {
     expect(res.body.type).toBe('bug');
     expect(res.body.userId).toBe('user-1');
     expect(reports).toHaveLength(1);
+    expect(mockNotifyAdmin).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'report-1',
+        type: 'bug',
+        message: 'Не сохраняется приём',
+        userDisplayName: 'Кама',
+        platform: 'android',
+        appVersion: '1.2.3',
+      }),
+    );
   });
 
   it('POST /user/support-reports accepts guest device id', async () => {
