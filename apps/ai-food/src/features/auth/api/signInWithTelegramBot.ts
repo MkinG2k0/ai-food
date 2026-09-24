@@ -30,7 +30,7 @@ type TelegramBotLoginOptions = {
   /** Invoked when auto-open failed; UI should emphasize the manual link. */
   onNeedsManualOpen?: (url: string) => void;
   /** Test seam / override. Return false if open failed. */
-  openLink?: (url: string) => boolean | void;
+  openLink?: (url: string) => boolean | void | Promise<boolean | void>;
 };
 
 export async function signInWithTelegramBot(
@@ -70,8 +70,9 @@ export async function signInWithTelegramBot(
 
   const opened =
     opts?.openLink != null
-      ? opts.openLink(start.botDeepLink) !== false
-      : openTelegramBotDeepLink(start.botDeepLink, opts?.popup) === 'opened';
+      ? (await Promise.resolve(opts.openLink(start.botDeepLink))) !== false
+      : (await openTelegramBotDeepLink(start.botDeepLink, opts?.popup)) ===
+        'opened';
 
   if (!opened) {
     opts?.onNeedsManualOpen?.(start.botDeepLink);

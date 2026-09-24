@@ -139,7 +139,7 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
       <CardContent className="relative z-10 flex justify-between flex-auto gap-3 p-2 ">
         <div
           className={cn(
-            'relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-emerald-100',
+            'relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-kbju-kcal-soft',
             foodTypeUi && `rounded-2xl ${foodTypeUi.tileClass}`,
           )}
           aria-label={foodTypeUi?.label}
@@ -148,7 +148,7 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
           {imageSrc ? (
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
           ) : showBorderLoader ? (
-            <Loader2 className="h-6 w-6 text-emerald-600 animate-spin" />
+            <Loader2 className="h-6 w-6 text-kbju-kcal animate-spin" />
           ) : isError || analyzingStale ? (
             <AlertCircle className="h-6 w-6 text-destructive" />
           ) : foodTypeUi && FoodTypeIcon ? (
@@ -157,7 +157,7 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
               aria-hidden
             />
           ) : (
-            <Utensils className="h-6 w-6 text-emerald-600" />
+            <Utensils className="h-6 w-6 text-kbju-kcal" />
           )}
           {photoCount > 1 && (
             <span className="absolute bottom-1 right-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white">

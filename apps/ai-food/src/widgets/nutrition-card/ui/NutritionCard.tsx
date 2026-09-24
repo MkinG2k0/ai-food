@@ -16,7 +16,7 @@ export function NutritionCard({ result }: NutritionCardProps) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg leading-tight">{result.foodName}</CardTitle>
-        <p className="text-3xl font-bold text-emerald-600 mt-1">
+        <p className="text-3xl font-bold text-kbju-kcal mt-1">
           {formatCalories(result.calories)}
         </p>
       </CardHeader>

@@ -839,6 +839,12 @@ describe('admin routes', () => {
         product: {
           dau: expect.any(Number),
           wau: expect.any(Number),
+          activity: {
+            today: expect.any(Number),
+            last3Days: expect.any(Number),
+            last7Days: expect.any(Number),
+            last30Days: expect.any(Number),
+          },
           usageMix30d: expect.any(Object),
           analyzeAuthShare30d: expect.any(Object),
           quotaExhausted: expect.any(Object),

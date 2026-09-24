@@ -295,10 +295,10 @@ export function SubscribePage() {
       onBack={() => navigate(-1)}
       mainClassName={cn('space-y-5', promoOpen ? 'pb-56' : 'pb-44')}
       footer={
-        <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 border-t border-border/80 bg-zinc-50/95 px-4 pt-3 pb-safe backdrop-blur-sm">
+        <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 border-t border-border/80 bg-background/95 px-4 pt-3 pb-safe backdrop-blur-sm">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-gradient-to-t from-zinc-50/95 to-transparent"
+            className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-gradient-to-t from-background/95 to-transparent"
           />
           <section className="mb-2.5 space-y-2">
             <button

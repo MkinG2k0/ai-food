@@ -60,11 +60,11 @@ function FavoriteCard({
       className="relative cursor-pointer overflow-hidden"
     >
       <CardContent className="relative z-10 flex justify-between flex-auto gap-3 p-2">
-        <div className="relative h-20 w-20 rounded-md bg-emerald-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="relative h-20 w-20 rounded-md bg-kbju-kcal-soft flex items-center justify-center flex-shrink-0 overflow-hidden">
           {imageSrc ? (
             <img src={imageSrc} alt="" className="h-full w-full object-cover" />
           ) : (
-            <Utensils className="h-6 w-6 text-emerald-600" />
+            <Utensils className="h-6 w-6 text-kbju-kcal" />
           )}
           {photoCount > 1 && (
             <span className="absolute bottom-1 right-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white">

@@ -1,4 +1,4 @@
-import { Badge, MACRO_COLORS } from '@/shared/ui';
+import { Badge, MACRO_BADGE_CLASSES, MACRO_COLORS } from '@/shared/ui';
 import { useAnimatedNumber } from '@/shared/lib';
 
 export interface FoodMacrosBadgesProps {
@@ -79,7 +79,7 @@ function CompactMacros({
 
   return (
     <div className="flex min-w-0 flex-col gap-1 overflow-hidden">
-      <div className="flex shrink-0 items-baseline gap-1 text-emerald-700">
+      <div className="flex shrink-0 items-baseline gap-1 text-kbju-kcal-fg">
         <span className="text-lg font-semibold tabular-nums leading-none">
           {animatedCalories}
         </span>
@@ -148,14 +148,14 @@ function BadgeMacros({
     <div className="flex flex-nowrap gap-0.5 overflow-hidden">
       <Badge
         variant="secondary"
-        className="shrink-0 gap-0.5 px-1.5 bg-emerald-50 text-emerald-700 border-emerald-100 font-semibold"
+        className={`shrink-0 gap-0.5 px-1.5 font-semibold ${MACRO_BADGE_CLASSES.kcal}`}
       >
         <span className="tabular-nums">{animatedCalories}</span>
         <span>ккал</span>
       </Badge>
       <Badge
         variant="secondary"
-        className="shrink-0 gap-0.5 px-1.5 bg-rose-50 text-rose-700 border-rose-100 font-semibold"
+        className={`shrink-0 gap-0.5 px-1.5 font-semibold ${MACRO_BADGE_CLASSES.protein}`}
       >
         <span>Б</span>
         <span className="tabular-nums">{animatedProtein}</span>
@@ -163,7 +163,7 @@ function BadgeMacros({
       </Badge>
       <Badge
         variant="secondary"
-        className="shrink-0 gap-0.5 px-1.5 bg-amber-50 text-amber-700 border-amber-100 font-semibold"
+        className={`shrink-0 gap-0.5 px-1.5 font-semibold ${MACRO_BADGE_CLASSES.fat}`}
       >
         <span>Ж</span>
         <span className="tabular-nums">{animatedFat}</span>
@@ -171,7 +171,7 @@ function BadgeMacros({
       </Badge>
       <Badge
         variant="secondary"
-        className="shrink-0 gap-0.5 px-1.5 bg-sky-50 text-sky-700 border-sky-100 font-semibold"
+        className={`shrink-0 gap-0.5 px-1.5 font-semibold ${MACRO_BADGE_CLASSES.carbs}`}
       >
         <span>У</span>
         <span className="tabular-nums">{animatedCarbs}</span>
@@ -179,7 +179,7 @@ function BadgeMacros({
       </Badge>
       <Badge
         variant="secondary"
-        className="shrink-0 gap-0.5 px-1.5 bg-emerald-50 text-emerald-700 border-emerald-100 font-semibold"
+        className={`shrink-0 gap-0.5 px-1.5 font-semibold ${MACRO_BADGE_CLASSES.fiber}`}
       >
         <span>К</span>
         <span className="tabular-nums">{animatedFiber}</span>

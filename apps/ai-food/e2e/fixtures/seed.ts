@@ -4,7 +4,7 @@ export function persistEnvelope<T extends object>(state: T): string {
 }
 
 /** Must be >= NEWS_CHANGELOG[0].date — see src/features/news/model/changelog.ts */
-export const DEFAULT_E2E_NEWS_SEEN_DATE = '2026-08-25';
+export const DEFAULT_E2E_NEWS_SEEN_DATE = '2026-09-24';
 
 export const DEFAULT_E2E_PROFILE = {
   gender: 'male' as const,

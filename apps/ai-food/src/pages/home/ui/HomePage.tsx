@@ -50,7 +50,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="relative flex h-svh min-h-0 flex-col overflow-hidden bg-zinc-50">
+    <div className="relative flex h-svh min-h-0 flex-col overflow-hidden bg-background">
       <DailyHeader
         selectedDate={selectedDate}
         weekOffset={weekOffset}

@@ -1,10 +1,9 @@
-const EMERALD = '#10B981';
-
+/** CSS-var tokens — same hues everywhere (rings, bars, badges). */
 export const RING_COLORS = {
-  kcal: EMERALD,
-  protein: '#FB7185',
-  fat: '#FBBF24',
-  carbs: '#0EA5E9',
+  kcal: 'hsl(var(--kbju-kcal))',
+  protein: 'hsl(var(--kbju-protein))',
+  fat: 'hsl(var(--kbju-fat))',
+  carbs: 'hsl(var(--kbju-carbs))',
 } as const;
 
 /** Header bars + meal Б/Ж/У/К chips. Matches RING_COLORS hues. */
@@ -12,14 +11,22 @@ export const MACRO_COLORS = {
   protein: RING_COLORS.protein,
   fat: RING_COLORS.fat,
   carbs: RING_COLORS.carbs,
-  fiber: EMERALD,
+  fiber: 'hsl(var(--kbju-fiber))',
 } as const;
 
 export const MACRO_BAR_CLASSES = {
-  protein: 'bg-rose-400',
-  fat: 'bg-amber-400',
-  carbs: 'bg-sky-500',
-  fiber: 'bg-emerald-500',
+  protein: 'bg-kbju-protein',
+  fat: 'bg-kbju-fat',
+  carbs: 'bg-kbju-carbs',
+  fiber: 'bg-kbju-fiber',
+} as const;
+
+export const MACRO_BADGE_CLASSES = {
+  kcal: 'bg-kbju-kcal-soft text-kbju-kcal-fg border-kbju-kcal-border',
+  protein: 'bg-kbju-protein-soft text-kbju-protein-fg border-kbju-protein-border',
+  fat: 'bg-kbju-fat-soft text-kbju-fat-fg border-kbju-fat-border',
+  carbs: 'bg-kbju-carbs-soft text-kbju-carbs-fg border-kbju-carbs-border',
+  fiber: 'bg-kbju-fiber-soft text-kbju-fiber-fg border-kbju-fiber-border',
 } as const;
 
 export type KbjuRingKey = keyof typeof RING_COLORS;
@@ -51,7 +58,7 @@ interface ProgressRingsProps {
   'aria-label'?: string;
 }
 
-const TRACK = 'rgba(0,0,0,0.08)';
+const TRACK = 'hsl(var(--kbju-track))';
 
 function clamp01(n: number): number {
   if (!Number.isFinite(n) || n <= 0) return 0;

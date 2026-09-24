@@ -5,6 +5,8 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthHydrated } from '@/features/auth';
 import { useProfileHydrated } from '@/features/onboarding';
+import { useThemeStore } from '@/features/settings';
+import { themeBackground, isDarkResolved } from '@/shared/lib/theme';
 import splashLogoUrl from '@/shared/assets/splash-logo.png';
 
 const EXIT_MS = 320;
@@ -19,6 +21,7 @@ export function BootSplash({ children }: BootSplashProps) {
   const profileHydrated = useProfileHydrated();
   const storesReady = authHydrated && profileHydrated;
   const [showOverlay, setShowOverlay] = useState(true);
+  const resolvedTheme = useThemeStore((s) => s.resolved);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,8 +64,11 @@ export function BootSplash({ children }: BootSplashProps) {
     let cancelled = false;
     async function restoreChrome() {
       try {
-        await StatusBar.setBackgroundColor({ color: '#ffffff' });
-        await StatusBar.setStyle({ style: Style.Light });
+        const bg = themeBackground(resolvedTheme);
+        await StatusBar.setBackgroundColor({ color: bg });
+        await StatusBar.setStyle({
+          style: isDarkResolved(resolvedTheme) ? Style.Dark : Style.Light,
+        });
       } catch {
         /* ignore */
       }
@@ -77,7 +83,7 @@ export function BootSplash({ children }: BootSplashProps) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [showOverlay]);
+  }, [showOverlay, resolvedTheme]);
 
   return (
     <>

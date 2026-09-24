@@ -206,6 +206,12 @@ describe('buildOverviewAnalytics', () => {
 
     expect(analytics.product.dau).toBe(2); // u-free + u-sub
     expect(analytics.product.wau).toBe(2);
+    expect(analytics.product.activity).toEqual({
+      today: 2,
+      last3Days: 2, // today + yesterday refine for u-free
+      last7Days: 2,
+      last30Days: 4, // + guest + retention cohort
+    });
     expect(analytics.product.usageMix30d.analyze_photo).toBeGreaterThan(0);
     expect(analytics.product.analyzeAuthShare30d.guestOnly).toBe(2);
     expect(analytics.product.quotaExhausted).toMatchObject({

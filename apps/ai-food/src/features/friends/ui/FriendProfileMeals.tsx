@@ -270,7 +270,7 @@ export function FriendProfileMeals({
                     {weekday}
                   </span>
                   {kcalHit ? (
-                    <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                    <span className="rounded-full bg-kbju-kcal-soft px-1.5 py-0.5 text-[10px] font-medium text-kbju-kcal-fg">
                       цель
                     </span>
                   ) : null}

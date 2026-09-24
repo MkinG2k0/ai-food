@@ -50,7 +50,7 @@ export function ConsentPage() {
   };
 
   return (
-    <main className="flex min-h-dvh flex-col bg-zinc-50 px-5 py-8">
+    <main className="flex min-h-dvh flex-col bg-background px-5 py-8">
       <div className="my-auto space-y-6">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">

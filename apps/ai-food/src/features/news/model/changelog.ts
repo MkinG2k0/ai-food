@@ -13,6 +13,33 @@ export interface NewsRelease {
 /** User-facing changelog; newest first. Update manually when shipping features. */
 export const NEWS_CHANGELOG: NewsRelease[] = [
   {
+    date: '2026-09-24',
+    title: 'Темы и добавки',
+    emoji: '🎨',
+    items: [
+      {
+        emoji: '🌓',
+        text: 'Тема оформления: светлая, тёмная, лес или как в системе — в настройках',
+      },
+      {
+        emoji: '💊',
+        text: 'Текстовый анализ витаминов и БАДов как приём: с конвертацией МЕ → µg/мг',
+      },
+      {
+        emoji: '✈️',
+        text: 'Стабильнее вход через Telegram на Android',
+      },
+      {
+        emoji: '🔁',
+        text: 'Кнопка «Повторить» при анализе больше не зависает при сбоях сети',
+      },
+      {
+        emoji: '🤖',
+        text: 'Android-сборка 1.0.14',
+      },
+    ],
+  },
+  {
     date: '2026-08-25',
     title: 'Поддержка и стабильность',
     emoji: '🛠️',

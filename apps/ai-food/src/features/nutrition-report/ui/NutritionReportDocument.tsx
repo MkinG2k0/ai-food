@@ -34,7 +34,7 @@ function profileSummary(data: NutritionReportData): string {
 }
 
 const METRICS = [
-  { key: 'kcal', label: 'Калории', unit: 'ккал', color: 'bg-emerald-500' },
+  { key: 'kcal', label: 'Калории', unit: 'ккал', color: 'bg-kbju-kcal' },
   { key: 'protein', label: 'Белки', unit: 'г', color: MACRO_BAR_CLASSES.protein },
   { key: 'fat', label: 'Жиры', unit: 'г', color: MACRO_BAR_CLASSES.fat },
   { key: 'carbs', label: 'Углеводы', unit: 'г', color: MACRO_BAR_CLASSES.carbs },
