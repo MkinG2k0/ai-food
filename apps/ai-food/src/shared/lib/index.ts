@@ -49,6 +49,7 @@ export {
   applyResolvedTheme,
   applyThemePreference,
   getSystemTheme,
+  isDarkResolved,
   isThemePreference,
   readStoredTheme,
   resolveTheme,

@@ -49,6 +49,12 @@ type OverviewAnalytics = {
   product: {
     dau: number;
     wau: number;
+    activity: {
+      today: number;
+      last3Days: number;
+      last7Days: number;
+      last30Days: number;
+    };
     usageMix30d: {
       analyze_photo: number;
       analyze_text: number;
@@ -326,6 +332,32 @@ export default function AdminPage() {
               label="Активные подписки"
               tone={activeSubs > 0 ? 'ok' : undefined}
               value={activeSubs}
+            />
+          </div>
+        </Card>
+      </Section>
+
+      <Section
+        description="Уникальные аккаунты и устройства с действиями в приложении"
+        title="Активность пользователей"
+      >
+        <Card className="admin-stat-card" loading={loading} size="small">
+          <div className="admin-metric-grid admin-metric-grid--4">
+            <Metric
+              label="Сегодня"
+              value={a?.product.activity.today ?? 0}
+            />
+            <Metric
+              label="За 3 дня"
+              value={a?.product.activity.last3Days ?? 0}
+            />
+            <Metric
+              label="За неделю"
+              value={a?.product.activity.last7Days ?? 0}
+            />
+            <Metric
+              label="За месяц"
+              value={a?.product.activity.last30Days ?? 0}
             />
           </div>
         </Card>

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const isNativePlatform = vi.fn(() => false);
-const browserOpen = vi.fn(async () => undefined);
+const browserOpen = vi.fn(async (_opts: { url: string }) => undefined);
 
 vi.mock('@capacitor/core', () => ({
   Capacitor: {
@@ -11,7 +11,7 @@ vi.mock('@capacitor/core', () => ({
 
 vi.mock('@capacitor/browser', () => ({
   Browser: {
-    open: (...args: unknown[]) => browserOpen(...args),
+    open: (opts: { url: string }) => browserOpen(opts),
   },
 }));
 

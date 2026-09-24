@@ -1,12 +1,16 @@
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import {
+  isDarkResolved,
   themeBackground,
   type ResolvedTheme,
 } from '@/shared/lib/theme';
 
 function resolveFromDom(): ResolvedTheme {
-  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  const root = document.documentElement;
+  if (root.classList.contains('theme-forest')) return 'forest';
+  if (root.classList.contains('dark')) return 'dark';
+  return 'light';
 }
 
 /**
@@ -21,7 +25,7 @@ export async function configureStatusBar(
     return;
   }
 
-  const style = resolved === 'dark' ? Style.Dark : Style.Light;
+  const style = isDarkResolved(resolved) ? Style.Dark : Style.Light;
   await StatusBar.setStyle({ style });
 
   try {

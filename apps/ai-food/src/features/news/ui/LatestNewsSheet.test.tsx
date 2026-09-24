@@ -100,7 +100,7 @@ describe('LatestNewsSheet', () => {
   });
 
   it('does not render when release was already dismissed', () => {
-    mocks.lastSeenDate = '2026-08-25';
+    mocks.lastSeenDate = '2026-09-24';
     render(
       <MemoryRouter>
         <LatestNewsSheet />

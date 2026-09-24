@@ -1,5 +1,6 @@
-export type ThemePreference = 'light' | 'dark' | 'system';
-export type ResolvedTheme = 'light' | 'dark';
+export type ThemePreference = 'light' | 'dark' | 'forest' | 'system';
+/** Concrete palette after resolving `system`. */
+export type ResolvedTheme = 'light' | 'dark' | 'forest';
 
 export const THEME_STORAGE_KEY = 'ai-food-theme';
 
@@ -10,15 +11,29 @@ export const THEME_OPTIONS: {
   { value: 'system', label: 'Система' },
   { value: 'light', label: 'Светлая' },
   { value: 'dark', label: 'Тёмная' },
+  { value: 'forest', label: 'Лес' },
 ];
 
 const THEME_BG: Record<ResolvedTheme, string> = {
   light: '#ffffff',
   dark: '#09090b',
+  /** Pine — matches `.theme-forest` --background */
+  forest: '#0c1411',
 };
 
+const THEME_CLASSES = ['dark', 'theme-forest'] as const;
+
 export function isThemePreference(value: unknown): value is ThemePreference {
-  return value === 'light' || value === 'dark' || value === 'system';
+  return (
+    value === 'light' ||
+    value === 'dark' ||
+    value === 'forest' ||
+    value === 'system'
+  );
+}
+
+export function isDarkResolved(resolved: ResolvedTheme): boolean {
+  return resolved === 'dark' || resolved === 'forest';
 }
 
 export function readStoredTheme(): ThemePreference {
@@ -38,7 +53,7 @@ export function writeStoredTheme(preference: ThemePreference): void {
   }
 }
 
-export function getSystemTheme(): ResolvedTheme {
+export function getSystemTheme(): Exclude<ResolvedTheme, 'forest'> {
   if (
     typeof window === 'undefined' ||
     typeof window.matchMedia !== 'function'
@@ -62,8 +77,17 @@ export function themeBackground(resolved: ResolvedTheme): string {
 /** Apply class + color-scheme + theme-color meta. Safe to call before React. */
 export function applyResolvedTheme(resolved: ResolvedTheme): void {
   const root = document.documentElement;
-  root.classList.toggle('dark', resolved === 'dark');
-  root.style.colorScheme = resolved;
+  for (const cls of THEME_CLASSES) {
+    root.classList.remove(cls);
+  }
+  if (resolved === 'dark') {
+    root.classList.add('dark');
+  } else if (resolved === 'forest') {
+    root.classList.add('dark', 'theme-forest');
+  }
+
+  const darkUi = isDarkResolved(resolved);
+  root.style.colorScheme = darkUi ? 'dark' : 'light';
 
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) {

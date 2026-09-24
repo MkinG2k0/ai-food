@@ -31,7 +31,7 @@ describe('configureStatusBar', () => {
     setBackgroundColor.mockReset();
     setStyle.mockResolvedValue(undefined);
     setBackgroundColor.mockResolvedValue(undefined);
-    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.remove('dark', 'theme-forest');
   });
 
   it('does nothing on web', async () => {
@@ -58,8 +58,26 @@ describe('configureStatusBar', () => {
     expect(setBackgroundColor).toHaveBeenCalledWith({ color: '#09090b' });
   });
 
+  it('sets Dark style and forest background for forest theme', async () => {
+    isNativePlatform.mockReturnValue(true);
+    const { configureStatusBar } = await import('./configureStatusBar');
+    await configureStatusBar('forest');
+    expect(setStyle).toHaveBeenCalledWith({ style: 'DARK' });
+    expect(setBackgroundColor).toHaveBeenCalledWith({ color: '#0c1411' });
+  });
+
+  it('reads html.theme-forest when theme arg omitted', async () => {
+    isNativePlatform.mockReturnValue(true);
+    document.documentElement.classList.add('dark', 'theme-forest');
+    const { configureStatusBar } = await import('./configureStatusBar');
+    await configureStatusBar();
+    expect(setStyle).toHaveBeenCalledWith({ style: 'DARK' });
+    expect(setBackgroundColor).toHaveBeenCalledWith({ color: '#0c1411' });
+  });
+
   it('reads html.dark when theme arg omitted', async () => {
     isNativePlatform.mockReturnValue(true);
+    document.documentElement.classList.remove('theme-forest');
     document.documentElement.classList.add('dark');
     const { configureStatusBar } = await import('./configureStatusBar');
     await configureStatusBar();

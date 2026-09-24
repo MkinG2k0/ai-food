@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthHydrated } from '@/features/auth';
 import { useProfileHydrated } from '@/features/onboarding';
 import { useThemeStore } from '@/features/settings';
-import { themeBackground } from '@/shared/lib/theme';
+import { themeBackground, isDarkResolved } from '@/shared/lib/theme';
 import splashLogoUrl from '@/shared/assets/splash-logo.png';
 
 const EXIT_MS = 320;
@@ -67,7 +67,7 @@ export function BootSplash({ children }: BootSplashProps) {
         const bg = themeBackground(resolvedTheme);
         await StatusBar.setBackgroundColor({ color: bg });
         await StatusBar.setStyle({
-          style: resolvedTheme === 'dark' ? Style.Dark : Style.Light,
+          style: isDarkResolved(resolvedTheme) ? Style.Dark : Style.Light,
         });
       } catch {
         /* ignore */

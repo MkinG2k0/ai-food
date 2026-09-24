@@ -20,6 +20,10 @@
       html.dark body {
         background: #09090b;
       }
+      html.theme-forest,
+      html.theme-forest body {
+        background: #0c1411;
+      }
     </style>
     <!-- Apply saved theme before paint to avoid light/dark flicker -->
     <script>
@@ -27,16 +31,28 @@
         try {
           var key = 'ai-food-theme';
           var pref = localStorage.getItem(key) || 'system';
-          var dark =
-            pref === 'dark' ||
-            (pref !== 'light' &&
-              window.matchMedia('(prefers-color-scheme: dark)').matches);
           var root = document.documentElement;
-          if (dark) root.classList.add('dark');
-          else root.classList.remove('dark');
-          root.style.colorScheme = dark ? 'dark' : 'light';
+          root.classList.remove('dark', 'theme-forest');
+          var resolved = pref;
+          if (pref === 'system') {
+            resolved = window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+          }
+          if (resolved === 'dark') root.classList.add('dark');
+          else if (resolved === 'forest') root.classList.add('dark', 'theme-forest');
+          var darkUi = resolved === 'dark' || resolved === 'forest';
+          root.style.colorScheme = darkUi ? 'dark' : 'light';
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', dark ? '#09090b' : '#09AF86');
+          if (meta) {
+            var bg =
+              resolved === 'forest'
+                ? '#0c1411'
+                : resolved === 'dark'
+                  ? '#09090b'
+                  : '#09AF86';
+            meta.setAttribute('content', bg);
+          }
         } catch (e) {}
       })();
     </script>

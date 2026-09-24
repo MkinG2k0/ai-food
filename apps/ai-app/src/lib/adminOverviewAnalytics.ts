@@ -34,6 +34,13 @@ export type OverviewAnalytics = {
   product: {
     dau: number;
     wau: number;
+    /** Unique actors (user or guest device) with any usage event in the window. */
+    activity: {
+      today: number;
+      last3Days: number;
+      last7Days: number;
+      last30Days: number;
+    };
     usageMix30d: {
       analyze_photo: number;
       analyze_text: number;
@@ -151,7 +158,9 @@ export function buildOverviewAnalytics(input: {
   const last30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const todayKey = utcDayKey(now);
+  const activity3StartKey = addUtcDays(todayKey, -2);
   const wauStartKey = addUtcDays(todayKey, -6);
+  const activity30StartKey = addUtcDays(todayKey, -29);
 
   const payingUsers = new Set(
     payments.filter((p) => p.status === 'confirmed').map((p) => p.userId),
@@ -206,6 +215,10 @@ export function buildOverviewAnalytics(input: {
   let analyzeGuestOnly = 0;
   const actorsToday = new Set<string>();
   const actorsWau = new Set<string>();
+  const activityToday = new Set<string>();
+  const activity3d = new Set<string>();
+  const activity7d = new Set<string>();
+  const activity30d = new Set<string>();
   const billableByUser = new Map<string, number>();
   const billableByDevice = new Map<string, number>();
   const analyzeByActorDay = new Map<string, Set<string>>();
@@ -219,6 +232,11 @@ export function buildOverviewAnalytics(input: {
     const key = actorKey(e.userId, e.deviceId);
     const day = utcDayKey(e.createdAt);
     const in30 = e.createdAt >= last30;
+
+    if (day === todayKey) activityToday.add(key);
+    if (day >= activity3StartKey && day <= todayKey) activity3d.add(key);
+    if (day >= wauStartKey && day <= todayKey) activity7d.add(key);
+    if (day >= activity30StartKey && day <= todayKey) activity30d.add(key);
 
     if (in30) {
       if (e.kind in mix30) {
@@ -305,6 +323,12 @@ export function buildOverviewAnalytics(input: {
     product: {
       dau: actorsToday.size,
       wau: actorsWau.size,
+      activity: {
+        today: activityToday.size,
+        last3Days: activity3d.size,
+        last7Days: activity7d.size,
+        last30Days: activity30d.size,
+      },
       usageMix30d: mix30,
       analyzeAuthShare30d: {
         withUser: analyzeWithUser,

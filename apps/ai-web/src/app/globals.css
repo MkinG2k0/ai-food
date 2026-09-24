@@ -89,6 +89,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-width: 1120px;
+  margin-inline: auto;
+  width: 100%;
 }
 
 .admin-stack {
@@ -399,10 +402,6 @@ body {
 
 .admin-mix__bar .ant-progress-inner {
   background: var(--ant-color-fill-secondary);
-}
-
-.admin-overview {
-  max-width: 1120px;
 }
 
 .admin-chart-card {

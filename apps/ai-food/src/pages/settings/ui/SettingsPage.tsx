@@ -481,10 +481,10 @@ export function SettingsPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-medium leading-none">Оформление</h2>
           <p className="text-sm text-muted-foreground">
-            Светлая, тёмная или как в системе.
+            Светлая, тёмная, лес или как в системе.
           </p>
           <div
-            className="flex rounded-lg border border-input p-1 gap-1"
+            className="grid grid-cols-2 rounded-lg border border-input p-1 gap-1"
             role="group"
             aria-label="Тема оформления"
           >
@@ -496,7 +496,7 @@ export function SettingsPage() {
                   type="button"
                   aria-pressed={selected}
                   className={cn(
-                    'flex-1 rounded-md px-2 py-2 text-sm font-medium transition-colors',
+                    'rounded-md px-2 py-2 text-sm font-medium transition-colors',
                     selected
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground',

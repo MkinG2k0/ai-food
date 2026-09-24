@@ -95,6 +95,52 @@
     --kbju-fiber-fg: 158 64% 70%;
     --kbju-fiber-border: 160 30% 22%;
   }
+
+  /* Лес — тёмная тема с хвойным зелёным подтоном */
+  .dark.theme-forest {
+    --background: 160 22% 6%;
+    --foreground: 140 18% 96%;
+    --card: 160 18% 9%;
+    --card-foreground: 140 18% 96%;
+    --popover: 160 18% 9%;
+    --popover-foreground: 140 18% 96%;
+    --primary: 152 55% 42%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 160 14% 14%;
+    --secondary-foreground: 140 18% 96%;
+    --muted: 160 12% 13%;
+    --muted-foreground: 150 10% 62%;
+    --accent: 155 20% 14%;
+    --accent-foreground: 140 18% 96%;
+    --destructive: 0 55% 42%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 160 14% 15%;
+    --input: 160 14% 15%;
+    --ring: 152 55% 42%;
+
+    --kbju-kcal: 152 55% 48%;
+    --kbju-protein: 347 85% 64%;
+    --kbju-fat: 38 88% 56%;
+    --kbju-carbs: 199 82% 58%;
+    --kbju-fiber: 152 55% 48%;
+    --kbju-track: 140 20% 100% / 0.1;
+
+    --kbju-kcal-soft: 152 28% 12%;
+    --kbju-kcal-fg: 152 50% 68%;
+    --kbju-kcal-border: 152 22% 20%;
+    --kbju-protein-soft: 350 32% 14%;
+    --kbju-protein-fg: 351 90% 76%;
+    --kbju-protein-border: 350 24% 22%;
+    --kbju-fat-soft: 40 36% 12%;
+    --kbju-fat-fg: 43 90% 66%;
+    --kbju-fat-border: 40 26% 20%;
+    --kbju-carbs-soft: 199 32% 12%;
+    --kbju-carbs-fg: 199 82% 70%;
+    --kbju-carbs-border: 199 24% 20%;
+    --kbju-fiber-soft: 152 28% 12%;
+    --kbju-fiber-fg: 152 50% 68%;
+    --kbju-fiber-border: 152 22% 20%;
+  }
 }
 
 @layer base {
