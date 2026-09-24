@@ -1,11 +1,11 @@
-import { test, expect } from './fixtures/test';
+import { test, expect, dismissBlockingSheets } from './fixtures/test';
 
 
 
 test.describe('meal edit', () => {
 
   test.beforeEach(async ({ editableMealPage: page }) => {
-
+    await dismissBlockingSheets(page);
     await page.getByRole('button', { name: /Бургер с салатом/ }).click();
 
     await expect(page).toHaveURL(/\/meal\/e2e-edit-meal/);

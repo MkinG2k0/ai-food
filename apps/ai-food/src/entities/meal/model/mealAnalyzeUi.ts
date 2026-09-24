@@ -1,11 +1,15 @@
 import type { Meal } from '@ai-food/shared-types';
 
+/** After this, an analyzing card is treated as stuck and shows «Повторить». */
+export const ANALYZING_STALE_MS = 20_000;
+
 const TERMINAL_ANALYZE_ERROR_CODES = new Set([
   'NO_FOOD_DETECTED',
   'QUOTA_EXCEEDED',
   'JOB_NOT_FOUND',
   'INVALID_INPUT',
   'INVALID_IMAGE',
+  'ANALYSIS_TIMEOUT',
 ]);
 
 export function isTerminalMealAnalyzeError(code?: string): boolean {

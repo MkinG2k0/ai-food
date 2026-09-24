@@ -54,6 +54,7 @@ export function useRetryAnalyzeMeal() {
     updateMeal(mealId, {
       status: 'analyzing',
       analyzeErrorCode: undefined,
+      analyzeJobId: undefined,
       aiModel,
     });
 
@@ -124,7 +125,7 @@ export function useRetryAnalyzeMeal() {
       if (signal.aborted) return;
       updateMeal(mealId, analyzeErrorPatch(error));
     } finally {
-      endMealAnalyze(mealId);
+      endMealAnalyze(mealId, signal);
     }
   };
 }

@@ -16,6 +16,10 @@ export interface BottomSheetProps {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  /** Applied to the fixed full-screen wrapper (e.g. z-index below a page FAB). */
+  containerClassName?: string;
+  /** When false, render inline instead of portaling to document.body. */
+  portal?: boolean;
 }
 
 export function BottomSheet({
@@ -23,6 +27,8 @@ export function BottomSheet({
   onClose,
   children,
   className,
+  containerClassName,
+  portal = true,
 }: BottomSheetProps) {
   const controls = useAnimationControls();
 
@@ -61,12 +67,15 @@ export function BottomSheet({
     });
   }
 
-  // Portal to body: sheets mount inside scroll/overflow parents (e.g. Home
-  // main), which clip `position: fixed` and leave header/safe-area undimmed.
-  return createPortal(
+  const sheet = (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div
+          className={cn(
+            'fixed inset-0 z-50 flex items-end justify-center',
+            containerClassName,
+          )}
+        >
           <motion.div
             className="absolute inset-0 bg-black/40"
             initial={{ opacity: 0 }}
@@ -99,7 +108,11 @@ export function BottomSheet({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>,
-    document.body,
+    </AnimatePresence>
   );
+
+  // Portal to body: sheets mount inside scroll/overflow parents (e.g. Home
+  // main), which clip `position: fixed` and leave header/safe-area undimmed.
+  if (portal) return createPortal(sheet, document.body);
+  return sheet;
 }

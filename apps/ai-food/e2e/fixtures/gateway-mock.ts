@@ -47,7 +47,11 @@ export type AnalyzeMockMode =
   | 'error429'
   | 'error500'
   | 'invalidInput'
-  | 'quota402';
+  | 'quota402'
+  | 'hang'
+  | 'slowSuccess'
+  | 'timeoutError'
+  | 'failThenSuccess';
 
 
 
@@ -60,6 +64,8 @@ export type GatewayMockState = {
   subscriptionActive: boolean;
 
   capturedAnalyzeBodies: unknown[];
+
+  analyzeRequestCount: number;
 
 };
 
@@ -74,6 +80,8 @@ const defaultState = (): GatewayMockState => ({
   subscriptionActive: false,
 
   capturedAnalyzeBodies: [],
+
+  analyzeRequestCount: 0,
 
 });
 
@@ -93,7 +101,9 @@ export function resetGatewayMockState(): void {
 
 export function configureGatewayMock(
 
-  patch: Partial<Omit<GatewayMockState, 'capturedAnalyzeBodies'>>,
+  patch: Partial<
+    Omit<GatewayMockState, 'capturedAnalyzeBodies' | 'analyzeRequestCount'>
+  >,
 
 ): void {
 
@@ -145,19 +155,24 @@ function json(route: Route, status: number, body: unknown): Promise<void> {
 
 
 
+function captureAnalyzeBody(route: Route): void {
+  const postData = route.request().postData();
+  if (!postData) return;
+  try {
+    state.capturedAnalyzeBodies.push(JSON.parse(postData));
+  } catch {
+    state.capturedAnalyzeBodies.push(postData);
+  }
+}
+
+
+
 async function fulfillAnalyzeWithMode(
   route: Route,
   mode: AnalyzeMockMode,
+  requestNumber = 1,
 ): Promise<void> {
-  const postData = route.request().postData();
-
-  if (postData) {
-    try {
-      state.capturedAnalyzeBodies.push(JSON.parse(postData));
-    } catch {
-      state.capturedAnalyzeBodies.push(postData);
-    }
-  }
+  captureAnalyzeBody(route);
 
   if (mode === 'quota402') {
     await json(route, 402, {
@@ -195,6 +210,43 @@ async function fulfillAnalyzeWithMode(
     return;
   }
 
+  if (mode === 'timeoutError') {
+    await json(route, 504, {
+      code: 'ANALYSIS_TIMEOUT',
+      message: 'Анализ занял слишком много времени.',
+      status: 504,
+    });
+    return;
+  }
+
+  if (mode === 'failThenSuccess' && requestNumber === 1) {
+    await json(route, 400, {
+      code: 'INVALID_INPUT',
+      message: 'Временная ошибка входных данных',
+      status: 400,
+    });
+    return;
+  }
+
+  if (mode === 'hang') {
+    // Playwright buffers fulfill bodies, so keep the intercepted response pending.
+    // After 120s, release an incomplete SSE keepalive without a final event.
+    await new Promise((resolve) => setTimeout(resolve, 120_000));
+    await route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'X-Analyze-Job-Id': 'e2e-job-hang',
+      },
+      body: ': keepalive\n\n',
+    });
+    return;
+  }
+
+  if (mode === 'slowSuccess') {
+    await new Promise((resolve) => setTimeout(resolve, 4_000));
+  }
+
   await route.fulfill({
     status: 200,
     headers: {
@@ -206,7 +258,12 @@ async function fulfillAnalyzeWithMode(
 }
 
 async function fulfillAnalyze(route: Route): Promise<void> {
-  await fulfillAnalyzeWithMode(route, state.analyzeMode);
+  state.analyzeRequestCount += 1;
+  await fulfillAnalyzeWithMode(
+    route,
+    state.analyzeMode,
+    state.analyzeRequestCount,
+  );
 }
 
 /** Page-scoped analyze override — closure mode avoids global state races in parallel workers. */
@@ -214,8 +271,71 @@ export async function overrideAnalyzeRoute(
   page: Page,
   mode: AnalyzeMockMode,
 ): Promise<void> {
+  let requestCount = 0;
   await page.route(`${GATEWAY}/v1/food/analyze`, async (route) => {
-    await fulfillAnalyzeWithMode(route, mode);
+    requestCount += 1;
+    await fulfillAnalyzeWithMode(route, mode, requestCount);
+  });
+}
+
+export type HeldAnalyzeRoute = {
+  waitForRequest: () => Promise<void>;
+  abort: () => Promise<void>;
+  uninstall: () => Promise<void>;
+};
+
+/**
+ * Hold the next page-scoped analyze request until the test explicitly aborts it.
+ * A deferred command keeps the route handler pending without relying on offline
+ * emulation, which can strand requests already intercepted by Playwright.
+ */
+export async function holdNextAnalyzeRoute(page: Page): Promise<HeldAnalyzeRoute> {
+  let resolveRequest!: () => void;
+  let resolveAbort!: () => void;
+  let resolveAbortComplete!: () => void;
+  const requestReceived = new Promise<void>((resolve) => {
+    resolveRequest = resolve;
+  });
+  const abortRequested = new Promise<void>((resolve) => {
+    resolveAbort = resolve;
+  });
+  const abortComplete = new Promise<void>((resolve) => {
+    resolveAbortComplete = resolve;
+  });
+  const handler = async (route: Route) => {
+    captureAnalyzeBody(route);
+    resolveRequest();
+    await abortRequested;
+    try {
+      await route.abort('internetdisconnected');
+    } finally {
+      resolveAbortComplete();
+    }
+  };
+
+  await page.route(`${GATEWAY}/v1/food/analyze`, handler);
+
+  return {
+    waitForRequest: () => requestReceived,
+    abort: async () => {
+      resolveAbort();
+      await abortComplete;
+    },
+    uninstall: () => page.unroute(`${GATEWAY}/v1/food/analyze`, handler),
+  };
+}
+
+/** Resolve a persisted gateway job deterministically after page reload. */
+export async function overrideAnalyzeJobRoute(
+  page: Page,
+  jobId: string,
+): Promise<void> {
+  await page.route(`${GATEWAY}/v1/food/analyze/${jobId}`, async (route) => {
+    await json(route, 200, {
+      jobId,
+      status: 'done',
+      content: state.analyzeXml,
+    });
   });
 }
 

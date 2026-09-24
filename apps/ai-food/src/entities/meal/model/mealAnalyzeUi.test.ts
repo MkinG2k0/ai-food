@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Meal } from '@ai-food/shared-types';
 import {
+  ANALYZING_STALE_MS,
   holdPendingAnalyzeStatus,
   mealShouldResumeAnalyze,
   mealShowsAnalyzeLoader,
@@ -16,6 +17,10 @@ const meal = (overrides: Partial<Meal> = {}): Meal => ({
 });
 
 describe('mealAnalyzeUi', () => {
+  it('exports ANALYZING_STALE_MS as 20 seconds', () => {
+    expect(ANALYZING_STALE_MS).toBe(20_000);
+  });
+
   it('shows loader while analyzing', () => {
     expect(mealShowsAnalyzeLoader(meal({ status: 'analyzing' }))).toBe(true);
     expect(mealShowsAnalyzeRetry(meal({ status: 'analyzing' }))).toBe(false);
@@ -45,6 +50,16 @@ describe('mealAnalyzeUi', () => {
 
     const gone = meal({ status: 'error', analyzeErrorCode: 'JOB_NOT_FOUND' });
     expect(mealShowsAnalyzeRetry(gone)).toBe(true);
+  });
+
+  it('shows retry for client analysis timeout without resume', () => {
+    const row = meal({
+      status: 'error',
+      analyzeErrorCode: 'ANALYSIS_TIMEOUT',
+    });
+    expect(mealShowsAnalyzeLoader(row)).toBe(false);
+    expect(mealShowsAnalyzeRetry(row)).toBe(true);
+    expect(mealShouldResumeAnalyze(row)).toBe(false);
   });
 
   it('shows retry for no-food even if a leftover analyzeJobId is still on the meal', () => {
