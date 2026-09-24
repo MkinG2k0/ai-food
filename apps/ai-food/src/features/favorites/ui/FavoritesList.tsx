@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Utensils, Trash2 } from 'lucide-react';
 import { motion, useMotionValue, animate, type PanInfo } from 'framer-motion';
 import { toast } from 'sonner';
@@ -42,8 +42,14 @@ function FavoriteCard({
   onSelect: (id: string) => void;
 }) {
   const imageSrc = useMealImage(favorite.imageUri);
+  const [imageBroken, setImageBroken] = useState(false);
+  const showPhoto = Boolean(imageSrc) && !imageBroken;
   const photoCount = resolveMealImageUris(favorite).length;
   const totals = favoriteTotals(favorite);
+
+  useEffect(() => {
+    setImageBroken(false);
+  }, [favorite.imageUri]);
 
   return (
     <Card
@@ -61,12 +67,17 @@ function FavoriteCard({
     >
       <CardContent className="relative z-10 flex justify-between flex-auto gap-3 p-2">
         <div className="relative h-20 w-20 rounded-md bg-kbju-kcal-soft flex items-center justify-center flex-shrink-0 overflow-hidden">
-          {imageSrc ? (
-            <img src={imageSrc} alt="" className="h-full w-full object-cover" />
+          {showPhoto ? (
+            <img
+              src={imageSrc!}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={() => setImageBroken(true)}
+            />
           ) : (
             <Utensils className="h-6 w-6 text-kbju-kcal" />
           )}
-          {photoCount > 1 && (
+          {showPhoto && photoCount > 1 && (
             <span className="absolute bottom-1 right-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white">
               {photoCount}
             </span>

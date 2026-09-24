@@ -27,10 +27,12 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
   const retry = useRetryAnalyzeMeal();
   const photoCount = resolveMealImageUris(meal).length;
   const imageSrc = useMealImage(meal.imageUri);
+  const [imageBroken, setImageBroken] = useState(false);
   const isAnalyzing = mealShowsAnalyzeLoader(meal);
   const isError = mealShowsAnalyzeRetry(meal);
+  const showPhoto = Boolean(imageSrc) && !imageBroken;
   const foodTypeUi =
-    !isAnalyzing && !isError && photoCount === 0
+    !isAnalyzing && !isError && !showPhoto
       ? mealFoodTypeUi(meal.foodType)
       : undefined;
   const FoodTypeIcon = foodTypeUi?.Icon;
@@ -50,6 +52,10 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
     }),
     { protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
+
+  useEffect(() => {
+    setImageBroken(false);
+  }, [meal.imageUri]);
 
   useEffect(() => {
     if (!isAnalyzing) {
@@ -145,8 +151,13 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
           aria-label={foodTypeUi?.label}
           role={foodTypeUi ? 'img' : undefined}
         >
-          {imageSrc ? (
-            <img src={imageSrc} alt="" className="h-full w-full object-cover" />
+          {showPhoto ? (
+            <img
+              src={imageSrc!}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={() => setImageBroken(true)}
+            />
           ) : showBorderLoader ? (
             <Loader2 className="h-6 w-6 text-kbju-kcal animate-spin" />
           ) : isError || analyzingStale ? (
@@ -159,7 +170,7 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
           ) : (
             <Utensils className="h-6 w-6 text-kbju-kcal" />
           )}
-          {photoCount > 1 && (
+          {showPhoto && photoCount > 1 && (
             <span className="absolute bottom-1 right-1 rounded bg-black/65 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white">
               {photoCount}
             </span>

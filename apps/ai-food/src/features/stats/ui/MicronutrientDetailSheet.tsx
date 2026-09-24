@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Utensils } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Utensils } from 'lucide-react';
 import type {
   Meal,
   MicronutrientEstimate,
@@ -10,11 +11,24 @@ import {
   formatMicronutrientUnit,
   getMicronutrientInfo,
   getMicronutrientStatus,
+  isVitaminMicronutrient,
   MICRONUTRIENT_LABELS,
 } from '@/entities/nutrition';
 import { mealDisplayName, useMealImage } from '@/entities/meal';
-import { BottomSheet } from '@/shared/ui';
+import { BottomSheet, Button } from '@/shared/ui';
+import {
+  parseMicronutrientAmountDraft,
+} from '../model/buildMicronutrientMeal';
 import { getRecentMealsWithMicronutrient } from '../model/getRecentMealsWithMicronutrient';
+import {
+  formatInputUnitLabel,
+  inputUnitsFor,
+  readStoredInputUnit,
+  toCanonicalMicronutrientAmount,
+  writeStoredInputUnit,
+  type MicronutrientInputUnit,
+} from '../model/micronutrientInputUnits';
+import { useAddMicronutrientMeal } from '../model/useAddMicronutrientMeal';
 
 /** Same scale as WeeklyMicronutrientsChart rows */
 const PROGRESS_CAP = 1.5;
@@ -78,7 +92,13 @@ function RecentMealRow({
   onOpen: () => void;
 }) {
   const imageSrc = useMealImage(meal.imageUri);
+  const [imageBroken, setImageBroken] = useState(false);
+  const showPhoto = Boolean(imageSrc) && !imageBroken;
   const title = mealDisplayName(meal);
+
+  useEffect(() => {
+    setImageBroken(false);
+  }, [meal.imageUri]);
 
   return (
     <li>
@@ -88,11 +108,12 @@ function RecentMealRow({
         className="flex w-full items-center gap-3 rounded-xl px-1 py-2 text-left transition-colors hover:bg-muted/60 active:bg-muted"
       >
         <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
-          {imageSrc ? (
+          {showPhoto ? (
             <img
-              src={imageSrc}
+              src={imageSrc!}
               alt=""
               className="size-full object-cover"
+              onError={() => setImageBroken(true)}
             />
           ) : (
             <Utensils className="size-4 text-muted-foreground" aria-hidden />
@@ -124,14 +145,30 @@ export function MicronutrientDetailSheet({
   norm,
 }: MicronutrientDetailSheetProps) {
   const navigate = useNavigate();
+  const addMicronutrientMeal = useAddMicronutrientMeal();
+  const [amountText, setAmountText] = useState('');
+  const [inputUnit, setInputUnit] = useState<MicronutrientInputUnit>(() =>
+    nutrientId ? readStoredInputUnit(nutrientId) : 'µg',
+  );
+
+  useEffect(() => {
+    if (!open) setAmountText('');
+  }, [open]);
+
+  useEffect(() => {
+    setAmountText('');
+    if (nutrientId) {
+      setInputUnit(readStoredInputUnit(nutrientId));
+    }
+  }, [nutrientId]);
 
   if (!nutrientId) return null;
 
   const info = getMicronutrientInfo(nutrientId);
   const label = MICRONUTRIENT_LABELS[nutrientId];
-  const unitLabel = formatMicronutrientUnit(
-    norm?.unit ?? MICRONUTRIENT_UNITS[nutrientId],
-  );
+  const unit = norm?.unit ?? MICRONUTRIENT_UNITS[nutrientId];
+  const unitLabel = formatMicronutrientUnit(unit);
+  const unitOptions = inputUnitsFor(nutrientId);
   const recent = getRecentMealsWithMicronutrient(meals, nutrientId, 3);
   const normAmount = norm?.amount ?? 0;
   const hasProgress = dailyAvg != null && dailyAvg > 0 && normAmount > 0;
@@ -139,10 +176,39 @@ export function MicronutrientDetailSheet({
   const status = getMicronutrientStatus(ratio);
   const widthPct = hasProgress ? progressWidthPct(dailyAvg, normAmount) : 0;
   const pctLabel = ratio != null ? Math.round(ratio * 100) : null;
+  const parsedAmount = parseMicronutrientAmountDraft(amountText);
+  const canonicalAmount =
+    parsedAmount != null
+      ? toCanonicalMicronutrientAmount(parsedAmount, inputUnit, nutrientId)
+      : null;
+  const addButtonLabel = isVitaminMicronutrient(nutrientId)
+    ? 'Добавить витамины'
+    : 'Добавить минерал';
 
   function openMeal(mealId: string) {
     onClose();
     navigate(`/meal/${mealId}`);
+  }
+
+  function handleInputUnitChange(next: MicronutrientInputUnit) {
+    if (!nutrientId) return;
+    setInputUnit(next);
+    writeStoredInputUnit(nutrientId, next);
+  }
+
+  function handleSubmitAmount() {
+    if (canonicalAmount == null || !nutrientId) return;
+    const draft = parseMicronutrientAmountDraft(amountText);
+    const displayName =
+      draft != null && inputUnit !== unit
+        ? `${label} ${formatAmount(draft)} ${formatInputUnitLabel(inputUnit)}`
+        : undefined;
+    const id = addMicronutrientMeal(nutrientId, canonicalAmount, {
+      unit,
+      displayName,
+    });
+    if (!id) return;
+    setAmountText('');
   }
 
   return (
@@ -234,17 +300,70 @@ export function MicronutrientDetailSheet({
           <h3 className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             Последние блюда
           </h3>
+
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="any"
+              min="0"
+              value={amountText}
+              onChange={(e) => setAmountText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSubmitAmount();
+                }
+              }}
+              placeholder="0"
+              aria-label={`Количество, ${formatInputUnitLabel(inputUnit)}`}
+              className="min-w-0 flex-1 bg-transparent text-base font-semibold tabular-nums text-foreground outline-none placeholder:text-muted-foreground/50"
+            />
+            <div className="relative shrink-0">
+              <select
+                value={inputUnit}
+                onChange={(e) =>
+                  handleInputUnitChange(
+                    e.target.value as MicronutrientInputUnit,
+                  )
+                }
+                aria-label="Единица измерения"
+                className="appearance-none rounded-md bg-transparent py-1 pl-1.5 pr-6 text-sm text-muted-foreground outline-none"
+              >
+                {unitOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {formatInputUnitLabel(opt)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-0 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/70"
+                aria-hidden
+              />
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-center gap-1.5"
+            disabled={canonicalAmount == null}
+            onClick={handleSubmitAmount}
+          >
+            <Plus className="size-4" aria-hidden />
+            {addButtonLabel}
+          </Button>
+
           {recent.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               За последний месяц нет приёмов с оценкой этого нутриента
             </p>
           ) : (
             <ul className="divide-y divide-border/60" role="list">
-              {recent.map(({ meal, amount, unit }) => (
+              {recent.map(({ meal, amount, unit: mealUnit }) => (
                 <RecentMealRow
                   key={meal.id}
                   meal={meal}
-                  amountLabel={`${formatAmount(amount)} ${formatMicronutrientUnit(unit)}`}
+                  amountLabel={`${formatAmount(amount)} ${formatMicronutrientUnit(mealUnit)}`}
                   onOpen={() => openMeal(meal.id)}
                 />
               ))}

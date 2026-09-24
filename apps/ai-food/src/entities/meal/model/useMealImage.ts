@@ -13,11 +13,15 @@ export function useMealImage(imageUri?: string): string | null {
     let cancelled = false;
     let objectUrl: string | null = null;
 
-    getMealImageSrc(imageUri).then((url) => {
-      if (cancelled) return;
-      objectUrl = url;
-      setSrc(url);
-    });
+    getMealImageSrc(imageUri)
+      .then((url) => {
+        if (cancelled) return;
+        objectUrl = url;
+        setSrc(url);
+      })
+      .catch(() => {
+        if (!cancelled) setSrc(null);
+      });
 
     return () => {
       cancelled = true;

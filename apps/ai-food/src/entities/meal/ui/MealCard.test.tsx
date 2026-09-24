@@ -5,8 +5,12 @@ import type { Meal } from '@ai-food/shared-types';
 import { ANALYZING_STALE_MS } from '../model/mealAnalyzeUi';
 import { MealCard } from './MealCard';
 
+const { useMealImage } = vi.hoisted(() => ({
+  useMealImage: vi.fn(() => undefined as string | null | undefined),
+}));
+
 vi.mock('../model/useMealImage', () => ({
-  useMealImage: () => undefined,
+  useMealImage,
 }));
 
 const retryAnalyzeMeal = vi.fn();
@@ -30,6 +34,28 @@ const analyzingMeal = (overrides: Partial<Meal> = {}): Meal => ({
   ...overrides,
 });
 
+const readyMeal = (overrides: Partial<Meal> = {}): Meal => ({
+  id: 'm1',
+  timestamp: '2026-08-15T15:00:00.000Z',
+  name: 'Мегаролл',
+  items: [
+    {
+      id: 'i1',
+      name: 'Мегаролл',
+      calories: 542,
+      protein: 25,
+      carbs: 48,
+      fat: 28,
+      fiber: 3,
+      grams: 200,
+    },
+  ],
+  totalCalories: 542,
+  status: 'ready',
+  foodType: 'sandwich',
+  ...overrides,
+});
+
 function renderMealCard(meal: Meal) {
   return render(
     <MemoryRouter>
@@ -41,6 +67,8 @@ function renderMealCard(meal: Meal) {
 describe('MealCard analyzing stale timer', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    useMealImage.mockReset();
+    useMealImage.mockReturnValue(undefined);
     retryAnalyzeMeal.mockReset();
     retryAnalyzeMeal.mockResolvedValue(undefined);
   });
@@ -126,5 +154,37 @@ describe('MealCard analyzing stale timer', () => {
 
     expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull();
     expect(screen.getByText('Овсянка')).toBeInTheDocument();
+  });
+});
+
+describe('MealCard photo fallback', () => {
+  beforeEach(() => {
+    useMealImage.mockReset();
+    useMealImage.mockReturnValue(undefined);
+  });
+
+  it('shows food-type icon when there is no photo', () => {
+    renderMealCard(readyMeal({ foodType: 'soup', name: 'Суп куриный' }));
+
+    expect(screen.getByRole('img', { name: 'Суп' })).toBeInTheDocument();
+  });
+
+  it('falls back to food-type icon when photo fails to load', () => {
+    useMealImage.mockReturnValue('capacitor://localhost/missing.jpg');
+
+    const { container } = renderMealCard(
+      readyMeal({
+        imageUri: 'meal-images/missing.jpg',
+        foodType: 'sandwich',
+      }),
+    );
+
+    const photo = container.querySelector('img');
+    expect(photo).toHaveAttribute('src', 'capacitor://localhost/missing.jpg');
+
+    fireEvent.error(photo!);
+
+    expect(screen.getByRole('img', { name: 'Сэндвич' })).toBeInTheDocument();
+    expect(container.querySelector('img')).toBeNull();
   });
 });

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const writeFile = vi.fn();
 const readFile = vi.fn();
 const getUri = vi.fn();
+const stat = vi.fn();
 let isNativePlatform = false;
 
 vi.mock('@capacitor/filesystem', () => ({
@@ -10,6 +11,7 @@ vi.mock('@capacitor/filesystem', () => ({
     writeFile: (...args: unknown[]) => writeFile(...args),
     readFile: (...args: unknown[]) => readFile(...args),
     getUri: (...args: unknown[]) => getUri(...args),
+    stat: (...args: unknown[]) => stat(...args),
   },
   Directory: { Data: 'DATA' },
 }));
@@ -30,6 +32,7 @@ describe('mealImage', () => {
     writeFile.mockReset();
     readFile.mockReset();
     getUri.mockReset();
+    stat.mockReset();
   });
 
   it('loadMealImageAsFile returns a JPEG File from base64 storage data', async () => {
@@ -88,11 +91,23 @@ describe('mealImage', () => {
 
   it('resolves a converted file src on native platforms', async () => {
     isNativePlatform = true;
+    stat.mockResolvedValue({ type: 'file', size: 12, ctime: 0, mtime: 0, uri: 'file://x' });
     getUri.mockResolvedValue({ uri: 'file:///var/mobile/meal-images/abc.jpg' });
 
     const src = await getMealImageSrc('meal-images/abc.jpg');
 
+    expect(stat).toHaveBeenCalledWith({ path: 'meal-images/abc.jpg', directory: 'DATA' });
     expect(getUri).toHaveBeenCalledWith({ path: 'meal-images/abc.jpg', directory: 'DATA' });
     expect(src).toBe('capacitor://file:///var/mobile/meal-images/abc.jpg');
+  });
+
+  it('rejects on native when the meal image file is missing', async () => {
+    isNativePlatform = true;
+    stat.mockRejectedValue(new Error('File does not exist'));
+
+    await expect(getMealImageSrc('meal-images/gone.jpg')).rejects.toThrow(
+      'File does not exist',
+    );
+    expect(getUri).not.toHaveBeenCalled();
   });
 });

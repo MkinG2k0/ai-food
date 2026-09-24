@@ -345,19 +345,19 @@ export default function AdminPage() {
           <div className="admin-metric-grid admin-metric-grid--4">
             <Metric
               label="Сегодня"
-              value={a?.product.activity.today ?? 0}
+              value={a?.product.activity?.today ?? 0}
             />
             <Metric
               label="За 3 дня"
-              value={a?.product.activity.last3Days ?? 0}
+              value={a?.product.activity?.last3Days ?? 0}
             />
             <Metric
               label="За неделю"
-              value={a?.product.activity.last7Days ?? 0}
+              value={a?.product.activity?.last7Days ?? 0}
             />
             <Metric
               label="За месяц"
-              value={a?.product.activity.last30Days ?? 0}
+              value={a?.product.activity?.last30Days ?? 0}
             />
           </div>
         </Card>

@@ -55,11 +55,15 @@ import {
 } from '@/shared/lib';
 import { BottomSheet, Button, Card, CardContent, Checkbox, SubpageShell, TextareaWithVoice } from '@/shared/ui';
 
-const CALENDAR_RING_TOGGLES: { key: CalendarRingKey; label: string }[] = [
-  { key: 'kcal', label: 'К' },
-  { key: 'protein', label: 'Б' },
-  { key: 'fat', label: 'Ж' },
-  { key: 'carbs', label: 'У' },
+const CALENDAR_RING_TOGGLES: {
+  key: CalendarRingKey;
+  label: string;
+  selectedClass: string;
+}[] = [
+  { key: 'kcal', label: 'К', selectedClass: 'bg-kbju-kcal text-white' },
+  { key: 'protein', label: 'Б', selectedClass: 'bg-kbju-protein text-white' },
+  { key: 'fat', label: 'Ж', selectedClass: 'bg-kbju-fat text-white' },
+  { key: 'carbs', label: 'У', selectedClass: 'bg-kbju-carbs text-white' },
 ];
 
 const GENDER_LABELS: Record<UserProfile['gender'], string> = {
@@ -669,14 +673,14 @@ export function SettingsPage() {
                   className={cn(
                     'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                     selected
-                      ? 'bg-primary text-primary-foreground'
+                      ? option.selectedClass
                       : 'text-muted-foreground hover:text-foreground',
                   )}
                   onClick={() => {
                     setCalendarRing(option.key, !selected);
                     queueSettingsSoon();
                   }}
-                >
+                  >
                   {option.label}
                 </button>
               );

@@ -46,6 +46,10 @@ export async function saveMealImageFromUrl(url: string): Promise<string | null> 
 
 export async function getMealImageSrc(path: string): Promise<string> {
   if (Capacitor.isNativePlatform()) {
+    // getUri always builds a path — it does not check the file exists.
+    // Missing blobs (e.g. sync stubs) would yield a capacitor:// URL that
+    // shows the browser broken-image glyph; Android WebView often skips onError.
+    await Filesystem.stat({ path, directory: Directory.Data });
     const { uri } = await Filesystem.getUri({ path, directory: Directory.Data });
     return Capacitor.convertFileSrc(uri);
   }

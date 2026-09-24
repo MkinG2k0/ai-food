@@ -56,4 +56,12 @@ describe('useMealImage', () => {
     expect(revokeSpy).toHaveBeenCalledWith('blob:temp-url');
     revokeSpy.mockRestore();
   });
+
+  it('returns null when getMealImageSrc rejects', async () => {
+    vi.mocked(getMealImageSrc).mockRejectedValue(new Error('missing'));
+
+    const { result } = renderHook(() => useMealImage('meal-images/gone.jpg'));
+
+    await waitFor(() => expect(result.current).toBeNull());
+  });
 });

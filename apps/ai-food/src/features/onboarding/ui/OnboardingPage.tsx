@@ -83,7 +83,7 @@ export function OnboardingPage() {
               <button
                 type="button"
                 onClick={back}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="-ml-3 inline-flex min-h-11 items-center px-3 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Назад"
               >
                 ← Назад
@@ -95,7 +95,7 @@ export function OnboardingPage() {
             <button
               type="button"
               onClick={() => void skip()}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="-mr-3 inline-flex min-h-11 items-center px-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Пропустить
             </button>
