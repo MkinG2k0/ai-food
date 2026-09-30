@@ -169,6 +169,21 @@ describe('MealCard photo fallback', () => {
     expect(screen.getByRole('img', { name: 'Суп' })).toBeInTheDocument();
   });
 
+  it('keeps utensils placeholder while a photo path is still loading', () => {
+    useMealImage.mockReturnValue(null);
+
+    const { container } = renderMealCard(
+      readyMeal({
+        imageUri: 'meal-images/loading.jpg',
+        foodType: 'sandwich',
+      }),
+    );
+
+    expect(screen.queryByRole('img', { name: 'Сэндвич' })).not.toBeInTheDocument();
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('svg')).toBeTruthy();
+  });
+
   it('falls back to food-type icon when photo fails to load', () => {
     useMealImage.mockReturnValue('capacitor://localhost/missing.jpg');
 
