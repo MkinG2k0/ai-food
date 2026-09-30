@@ -44,8 +44,10 @@ import {
   shouldShowSettingsPwaInstall,
   usePwaInstallSeenStore,
 } from '@/features/pwa-install';
+import { SettingsCheckUpdateButton } from '@/features/pwa-update';
 import {
   cn,
+  getAppVersion,
   getLegalUrl,
   useTripleTap,
   appDebugLog,
@@ -53,7 +55,7 @@ import {
   SUPPORT_TELEGRAM_URL,
   THEME_OPTIONS,
 } from '@/shared/lib';
-import { BottomSheet, Button, Card, CardContent, Checkbox, SubpageShell, TextareaWithVoice } from '@/shared/ui';
+import { BottomSheet, Button, Card, CardContent, Checkbox, SubpageShell } from '@/shared/ui';
 
 const CALENDAR_RING_TOGGLES: {
   key: CalendarRingKey;
@@ -126,9 +128,12 @@ export function SettingsPage() {
   const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
   const [editTargetsOpen, setEditTargetsOpen] = useState(false);
   const [targetDraft, setTargetDraft] = useState<TargetDraft | null>(null);
+  const [themeOpen, setThemeOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [calendarRingsOpen, setCalendarRingsOpen] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [pendingImport, setPendingImport] = useState<ReturnType<
     typeof parseAppDataExport
   > | null>(null);
@@ -145,8 +150,8 @@ export function SettingsPage() {
   const installDismissed = usePwaInstallSeenStore((s) => s.dismissed);
   const showInstallApp = shouldShowSettingsPwaInstall(installDismissed);
 
-  const customInstructions = useSettingsStore((s) => s.customInstructions);
-  const setCustomInstructions = useSettingsStore((s) => s.setCustomInstructions);
+  // const customInstructions = useSettingsStore((s) => s.customInstructions);
+  // const setCustomInstructions = useSettingsStore((s) => s.setCustomInstructions);
   const featureVitamins = useSettingsStore((s) => s.featureVitamins);
   const setFeatureVitamins = useSettingsStore((s) => s.setFeatureVitamins);
   const featureHealthiness = useSettingsStore((s) => s.featureHealthiness);
@@ -482,37 +487,11 @@ export function SettingsPage() {
           </Card>
         </section>
 
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium leading-none">Оформление</h2>
-          <p className="text-sm text-muted-foreground">
-            Светлая, тёмная, лес или как в системе.
-          </p>
-          <div
-            className="grid grid-cols-2 rounded-lg border border-input p-1 gap-1"
-            role="group"
-            aria-label="Тема оформления"
-          >
-            {THEME_OPTIONS.map((option) => {
-              const selected = themePreference === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={selected}
-                  className={cn(
-                    'rounded-md px-2 py-2 text-sm font-medium transition-colors',
-                    selected
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                  onClick={() => setThemePreference(option.value)}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        </section>
+        {showInstallApp ? (
+          <section className="space-y-3">
+            <SettingsInstallAppButton />
+          </section>
+        ) : null}
 
         <section className="space-y-3">
           <button
@@ -653,39 +632,103 @@ export function SettingsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-sm font-medium leading-none">Кольца календаря</h2>
-          <p className="text-sm text-muted-foreground">
-            Выберите, какие прогресс-кольца показывать вокруг даты на главной —
-            любая комбинация КБЖУ.
-          </p>
-          <div
-            className="flex rounded-lg border border-input p-1 gap-1"
-            role="group"
-            aria-label="Кольца календаря"
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 text-left"
+            aria-expanded={themeOpen}
+            onClick={() => setThemeOpen((open) => !open)}
           >
-            {CALENDAR_RING_TOGGLES.map((option) => {
-              const selected = calendarRings[option.key];
-              return (
-                <button
-                  key={option.key}
-                  type="button"
-                  aria-pressed={selected}
-                  className={cn(
-                    'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                    selected
-                      ? option.selectedClass
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                  onClick={() => {
-                    setCalendarRing(option.key, !selected);
-                    queueSettingsSoon();
-                  }}
-                  >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+            <h2 className="text-sm font-medium leading-none">Оформление</h2>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                themeOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          {themeOpen && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Светлая, тёмная, лес или как в системе.
+              </p>
+              <div
+                className="grid grid-cols-2 rounded-lg border border-input p-1 gap-1"
+                role="group"
+                aria-label="Тема оформления"
+              >
+                {THEME_OPTIONS.map((option) => {
+                  const selected = themePreference === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={selected}
+                      className={cn(
+                        'rounded-md px-2 py-2 text-sm font-medium transition-colors',
+                        selected
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:text-foreground',
+                      )}
+                      onClick={() => setThemePreference(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </section>
+
+        <section className="space-y-3">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 text-left"
+            aria-expanded={calendarRingsOpen}
+            onClick={() => setCalendarRingsOpen((open) => !open)}
+          >
+            <h2 className="text-sm font-medium leading-none">Кольца календаря</h2>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                calendarRingsOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          {calendarRingsOpen && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Выберите, какие прогресс-кольца показывать вокруг даты на главной —
+                любая комбинация КБЖУ.
+              </p>
+              <div
+                className="flex rounded-lg border border-input p-1 gap-1"
+                role="group"
+                aria-label="Кольца календаря"
+              >
+                {CALENDAR_RING_TOGGLES.map((option) => {
+                  const selected = calendarRings[option.key];
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      aria-pressed={selected}
+                      className={cn(
+                        'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                        selected
+                          ? option.selectedClass
+                          : 'text-muted-foreground hover:text-foreground',
+                      )}
+                      onClick={() => {
+                        setCalendarRing(option.key, !selected);
+                        queueSettingsSoon();
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </section>
 
         <RemindersSettingsSection
@@ -769,6 +812,7 @@ export function SettingsPage() {
                   </span>
                 </span>
               </label>
+              {/* Скрыто: кастомные инструкции (вернуть при необходимости)
               <div className="space-y-2">
                 <div className="space-y-0.5">
                   <p className="text-sm font-medium">Кастомные инструкции</p>
@@ -794,6 +838,7 @@ export function SettingsPage() {
                   {customInstructions.length}/2000
                 </p>
               </div>
+              */}
             </>
           )}
         </section>
@@ -873,18 +918,42 @@ export function SettingsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2
-            className="text-sm font-medium leading-none select-none"
-            onClick={handleAboutHeadingTap}
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 text-left"
+            aria-expanded={aboutOpen}
+            onClick={() => {
+              handleAboutHeadingTap();
+              setAboutOpen((open) => !open);
+            }}
           >
-            О приложении
-            {debugMode ? (
-              <span className="ml-2 text-xs font-normal text-amber-600">
-                debug
-              </span>
-            ) : null}
-          </h2>
-          {showInstallApp ? <SettingsInstallAppButton /> : null}
+            <h2 className="text-sm font-medium leading-none select-none">
+              О приложении
+              {debugMode ? (
+                <span className="ml-2 text-xs font-normal text-amber-600">
+                  debug
+                </span>
+              ) : null}
+            </h2>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                aboutOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          {aboutOpen ? (
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <p className="text-sm text-muted-foreground">
+                Версия {getAppVersion()}
+              </p>
+              {!Capacitor.isNativePlatform() ? (
+                <SettingsCheckUpdateButton variant="inline" />
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+
+        <section className="space-y-3">
           <Button
             variant="outline"
             className="w-full justify-between"

@@ -71,6 +71,7 @@ export {
   entranceListItem,
 } from './motionEntrance';
 export { getDeviceId } from './deviceId';
+export { getAppVersion } from './appVersion';
 export { getLegalUrl, type LegalPath } from './legalSiteUrl';
 export {
   ADD_FOOD_DEEP_LINK_ACTIONS,

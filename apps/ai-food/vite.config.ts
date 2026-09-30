@@ -22,7 +22,8 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       VitePWA({
-        registerType: 'autoUpdate',
+        // prompt: waiting SW activates only after user confirms (Settings → Обновить).
+        registerType: 'prompt',
         includeAssets: [
           'apple-touch-icon.png',
           'pwa-192x192.png',
