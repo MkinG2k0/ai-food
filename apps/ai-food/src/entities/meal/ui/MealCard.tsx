@@ -31,8 +31,10 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
   const isAnalyzing = mealShowsAnalyzeLoader(meal);
   const isError = mealShowsAnalyzeRetry(meal);
   const showPhoto = Boolean(imageSrc) && !imageBroken;
+  // Food-type tile only when there is no local photo path, or the <img> failed.
+  // Do not treat "still loading src" as missing — that hid real photos behind icons.
   const foodTypeUi =
-    !isAnalyzing && !isError && !showPhoto
+    !isAnalyzing && !isError && (photoCount === 0 || imageBroken)
       ? mealFoodTypeUi(meal.foodType)
       : undefined;
   const FoodTypeIcon = foodTypeUi?.Icon;

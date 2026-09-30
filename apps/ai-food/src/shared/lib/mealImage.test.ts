@@ -91,23 +91,22 @@ describe('mealImage', () => {
 
   it('resolves a converted file src on native platforms', async () => {
     isNativePlatform = true;
-    stat.mockResolvedValue({ type: 'file', size: 12, ctime: 0, mtime: 0, uri: 'file://x' });
     getUri.mockResolvedValue({ uri: 'file:///var/mobile/meal-images/abc.jpg' });
 
     const src = await getMealImageSrc('meal-images/abc.jpg');
 
-    expect(stat).toHaveBeenCalledWith({ path: 'meal-images/abc.jpg', directory: 'DATA' });
+    expect(stat).not.toHaveBeenCalled();
     expect(getUri).toHaveBeenCalledWith({ path: 'meal-images/abc.jpg', directory: 'DATA' });
     expect(src).toBe('capacitor://file:///var/mobile/meal-images/abc.jpg');
   });
 
-  it('rejects on native when the meal image file is missing', async () => {
+  it('still resolves a native src when the blob is missing (UI onError handles fallback)', async () => {
     isNativePlatform = true;
-    stat.mockRejectedValue(new Error('File does not exist'));
+    getUri.mockResolvedValue({ uri: 'file:///var/mobile/meal-images/gone.jpg' });
 
-    await expect(getMealImageSrc('meal-images/gone.jpg')).rejects.toThrow(
-      'File does not exist',
-    );
-    expect(getUri).not.toHaveBeenCalled();
+    const src = await getMealImageSrc('meal-images/gone.jpg');
+
+    expect(src).toBe('capacitor://file:///var/mobile/meal-images/gone.jpg');
+    expect(stat).not.toHaveBeenCalled();
   });
 });
