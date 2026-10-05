@@ -18,15 +18,25 @@ import {
 import { defaultMicronutrientTargets } from '@/features/onboarding';
 import { useSettingsStore } from '@/features/settings';
 import { Button } from '@/shared/ui';
-import { formatDateRangeLabel, formatMonthLabel } from '../model/chartScale';
+import { formatDateRangeLabel, formatMonthLabel, formatMonthSpanLabel } from '../model/chartScale';
 import { getWeeklyCalorieSeries } from '../model/getWeeklyCalorieSeries';
 import {
   getWeeklyMicronutrientSeries,
   weekHasMicronutrientData,
   type MicronutrientWeekPoint,
 } from '../model/getWeeklyMicronutrientSeries';
-import { getMonthlyMicronutrientSeries } from '../model/getMonthlyMicronutrientSeries';
-import { monthStartFor, type StatsPeriod } from '../model/monthPeriod';
+import {
+  getMonthlyMicronutrientSeries,
+  getSpanMicronutrientSeries,
+} from '../model/getMonthlyMicronutrientSeries';
+import {
+  STATS_PERIOD_MONTHS,
+  monthStartFor,
+  spanStartFor,
+  statsPeriodEmptyCopy,
+  statsPeriodSwipeLabel,
+  type StatsPeriod,
+} from '../model/monthPeriod';
 import { MicronutrientVisibilitySheet } from './MicronutrientVisibilitySheet';
 import { MicronutrientDetailSheet } from './MicronutrientDetailSheet';
 
@@ -81,6 +91,44 @@ function progressWidthPct(dailyAvg: number, normAmount: number): number {
   if (normAmount <= 0) return 0;
   const ratio = Math.min(dailyAvg / normAmount, PROGRESS_CAP);
   return Math.max(0, (ratio / PROGRESS_CAP) * 100);
+}
+
+function micronutrientSeriesFor(
+  meals: Meal[],
+  period: StatsPeriod,
+  offset: number,
+): MicronutrientWeekPoint[] {
+  if (period === 'week') return getWeeklyMicronutrientSeries(meals, offset);
+  if (period === 'month') return getMonthlyMicronutrientSeries(meals, offset);
+  return getSpanMicronutrientSeries(
+    meals,
+    STATS_PERIOD_MONTHS[period],
+    offset,
+  );
+}
+
+function micronutrientRangeLabel(
+  meals: Meal[],
+  period: StatsPeriod,
+  offset: number,
+): string {
+  if (period === 'week') {
+    const calorieDays = getWeeklyCalorieSeries(meals, offset);
+    return calorieDays.length >= 2
+      ? formatDateRangeLabel(
+          calorieDays[0].date,
+          calorieDays[calorieDays.length - 1].date,
+        )
+      : '';
+  }
+  if (period === 'month') {
+    return formatMonthLabel(monthStartFor(new Date(), offset));
+  }
+  const monthCount = STATS_PERIOD_MONTHS[period];
+  return formatMonthSpanLabel(
+    spanStartFor(new Date(), monthCount, offset),
+    monthCount,
+  );
 }
 
 function splitSeriesGroups(
@@ -238,29 +286,12 @@ function MicronutrientWeekPanel({
   onOpenSettings,
   onSelectNutrient,
 }: MicronutrientWeekPanelProps) {
-  const series =
-    period === 'month'
-      ? getMonthlyMicronutrientSeries(meals, offset)
-      : getWeeklyMicronutrientSeries(meals, offset);
+  const series = micronutrientSeriesFor(meals, period, offset);
   const hasData = weekHasMicronutrientData(series);
   const norms = resolveNorms(micronutrientTargets);
   const { vitamins, minerals } = splitSeriesGroups(series, showAll, preferredIds);
-  const rangeLabel =
-    period === 'month'
-      ? formatMonthLabel(monthStartFor(new Date(), offset))
-      : (() => {
-          const calorieDays = getWeeklyCalorieSeries(meals, offset);
-          return calorieDays.length >= 2
-            ? formatDateRangeLabel(
-                calorieDays[0].date,
-                calorieDays[calorieDays.length - 1].date,
-              )
-            : '';
-        })();
-  const emptyCopy =
-    period === 'month'
-      ? 'Нет данных за месяц — появятся после анализа фото'
-      : 'Нет данных за неделю — появятся после анализа фото';
+  const rangeLabel = micronutrientRangeLabel(meals, period, offset);
+  const emptyCopy = statsPeriodEmptyCopy(period);
 
   let rowIndex = 0;
 
@@ -388,10 +419,7 @@ export function WeeklyMicronutrientsChart({
   const norms = resolveNorms(micronutrientTargets);
   const detailPoint =
     detailId != null
-      ? (period === 'month'
-          ? getMonthlyMicronutrientSeries(meals, offset)
-          : getWeeklyMicronutrientSeries(meals, offset)
-        ).find((p) => p.id === detailId)
+      ? micronutrientSeriesFor(meals, period, offset).find((p) => p.id === detailId)
       : undefined;
 
   function openDetail(id: MicronutrientId) {
@@ -451,10 +479,7 @@ export function WeeklyMicronutrientsChart({
   }
 
   const offsets = [offset - 1, offset, offset + 1];
-  const swipeLabel =
-    period === 'month'
-      ? 'Витамины по месяцам, свайп для смены месяца'
-      : 'Витамины по неделям, свайп для смены недели';
+  const swipeLabel = statsPeriodSwipeLabel('Витамины', period);
 
   return (
     <section

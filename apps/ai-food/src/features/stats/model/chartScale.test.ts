@@ -5,6 +5,7 @@ import {
   formatCompactDayRange,
   formatDateRangeLabel,
   formatMonthLabel,
+  formatMonthSpanLabel,
   niceChartMax,
 } from './chartScale';
 
@@ -56,6 +57,19 @@ describe('formatMonthLabel', () => {
   it('prints month and year', () => {
     expect(formatMonthLabel(new Date(2026, 7, 1))).toMatch(/август/i);
     expect(formatMonthLabel(new Date(2026, 7, 1))).toMatch(/2026/);
+  });
+});
+
+describe('formatMonthSpanLabel', () => {
+  it('joins short months in the same year', () => {
+    expect(formatMonthSpanLabel(new Date(2026, 5, 1), 3)).toMatch(/2026/);
+    expect(formatMonthSpanLabel(new Date(2026, 5, 1), 3)).toContain('·');
+  });
+
+  it('keeps both years when the span crosses a year boundary', () => {
+    const label = formatMonthSpanLabel(new Date(2025, 8, 1), 12);
+    expect(label).toMatch(/2025/);
+    expect(label).toMatch(/2026/);
   });
 });
 

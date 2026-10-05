@@ -6,6 +6,7 @@ import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
 interface StepDietProps {
   onNext: (data: Pick<UserProfile, 'dietType'>) => void;
+  initial?: DietType;
 }
 
 const OPTIONS: { value: DietType; label: string; description: string; emoji: string }[] = [
@@ -35,8 +36,8 @@ const OPTIONS: { value: DietType; label: string; description: string; emoji: str
   },
 ];
 
-export function StepDiet({ onNext }: StepDietProps) {
-  const [selected, setSelected] = useState<DietType | null>(null);
+export function StepDiet({ onNext, initial }: StepDietProps) {
+  const [selected, setSelected] = useState<DietType | null>(initial ?? null);
 
   return (
     <div className="flex flex-col gap-6">

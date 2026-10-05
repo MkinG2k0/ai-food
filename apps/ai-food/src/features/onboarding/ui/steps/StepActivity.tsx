@@ -6,6 +6,7 @@ import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
 interface StepActivityProps {
   onNext: (data: Pick<UserProfile, 'activity'>) => void;
+  initial?: ActivityLevel;
 }
 
 const OPTIONS: { value: ActivityLevel; label: string; description: string; emoji: string }[] = [
@@ -14,8 +15,8 @@ const OPTIONS: { value: ActivityLevel; label: string; description: string; emoji
   { value: 'high', label: 'Высокая', description: 'Интенсивные тренировки 4+ раз в неделю', emoji: '🏋️' },
 ];
 
-export function StepActivity({ onNext }: StepActivityProps) {
-  const [selected, setSelected] = useState<ActivityLevel | null>(null);
+export function StepActivity({ onNext, initial }: StepActivityProps) {
+  const [selected, setSelected] = useState<ActivityLevel | null>(initial ?? null);
 
   return (
     <div className="flex flex-col gap-6">

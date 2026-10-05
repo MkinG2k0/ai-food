@@ -9,9 +9,10 @@ const MAX = 500;
 
 interface StepWeightProps {
   onNext: (data: Pick<UserProfile, 'weight'>) => void;
+  initial?: number;
 }
 
-export function StepWeight({ onNext }: StepWeightProps) {
+export function StepWeight({ onNext, initial }: StepWeightProps) {
   const {
     value,
     inputText,
@@ -19,7 +20,7 @@ export function StepWeight({ onNext }: StepWeightProps) {
     handleTextBlur,
     handleSliderChange,
     getCommittedValue,
-  } = useNumericRangeInput(MIN, MAX, 70);
+  } = useNumericRangeInput(MIN, MAX, initial ?? 70, { decimalPlaces: 1 });
 
   return (
     <div className="flex flex-col gap-6">
@@ -27,6 +28,7 @@ export function StepWeight({ onNext }: StepWeightProps) {
       <NumericRangeInput
         min={MIN}
         max={MAX}
+        step={0.1}
         value={value}
         inputText={inputText}
         unit="кг"

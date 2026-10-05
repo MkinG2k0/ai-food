@@ -90,6 +90,7 @@ function FavoriteCard({
           </div>
           <FoodMacrosBadges
             density="compact"
+            macroDecimals={0}
             calories={favorite.totalCalories}
             protein={totals.protein}
             fat={totals.fat}

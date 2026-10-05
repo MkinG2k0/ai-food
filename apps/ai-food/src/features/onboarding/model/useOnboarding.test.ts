@@ -47,6 +47,15 @@ describe('useOnboarding', () => {
     expect(result.current.step).toBe(1);
   });
 
+  it('back() keeps previously entered draft values', () => {
+    const { result } = renderHook(() => useOnboarding());
+    act(() => result.current.next({ gender: 'female' }));
+    act(() => result.current.next({ age: 36 }));
+    act(() => result.current.back());
+    expect(result.current.step).toBe(2);
+    expect(result.current.draft).toEqual({ gender: 'female', age: 36 });
+  });
+
   it('finish() calls setProfile, sets micronutrient targets, and navigates', async () => {
     const setProfileSpy = vi.fn();
     const setMicronutrientTargetsSpy = vi.fn();

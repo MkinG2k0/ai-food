@@ -6,6 +6,7 @@ import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
 interface StepGoalProps {
   onNext: (data: Pick<UserProfile, 'goal'>) => void;
+  initial?: Goal;
 }
 
 const OPTIONS: { value: Goal; label: string; description: string; emoji: string }[] = [
@@ -14,8 +15,8 @@ const OPTIONS: { value: Goal; label: string; description: string; emoji: string 
   { value: 'gain', label: 'Набрать массу', description: 'Профицит калорий для набора мышц', emoji: '💪' },
 ];
 
-export function StepGoal({ onNext }: StepGoalProps) {
-  const [selected, setSelected] = useState<Goal | null>(null);
+export function StepGoal({ onNext, initial }: StepGoalProps) {
+  const [selected, setSelected] = useState<Goal | null>(initial ?? null);
 
   return (
     <div className="flex flex-col gap-6">

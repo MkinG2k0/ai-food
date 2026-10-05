@@ -3,6 +3,7 @@ import type { Meal } from '@ai-food/shared-types';
 import {
   calorieBarRangeLabel,
   getMonthlyCalorieSeries,
+  getSpanCalorieSeries,
 } from './getMonthlyCalorieSeries';
 
 function localIso(y: number, m: number, d: number, h = 12): string {
@@ -115,5 +116,37 @@ describe('getMonthlyCalorieSeries', () => {
     expect(series.monthStart.getMonth()).toBe(6);
     expect(series.weeks[2].calories).toBe(800);
     expect(series.dailyAverage).toBe(800);
+  });
+});
+
+describe('getSpanCalorieSeries', () => {
+  it('returns one bar per month in a 3-month window', () => {
+    const meals = [
+      makeMeal({
+        id: 'july',
+        timestamp: localIso(2026, 7, 16),
+        totalCalories: 800,
+      }),
+      makeMeal({
+        id: 'august',
+        timestamp: localIso(2026, 8, 5),
+        totalCalories: 400,
+      }),
+    ];
+
+    const series = getSpanCalorieSeries(meals, 3, 0, TODAY);
+    expect(series.months).toHaveLength(3);
+    expect(series.spanStart.getMonth()).toBe(5);
+    expect(series.months[0].calories).toBe(0);
+    expect(series.months[1].calories).toBe(800);
+    expect(series.months[2].calories).toBe(400);
+    expect(series.dailyAverage).toBe(600);
+  });
+
+  it('returns 12 month bars for a year window', () => {
+    const series = getSpanCalorieSeries([], 12, 0, TODAY);
+    expect(series.months).toHaveLength(12);
+    expect(series.spanStart.getFullYear()).toBe(2025);
+    expect(series.spanStart.getMonth()).toBe(8);
   });
 });

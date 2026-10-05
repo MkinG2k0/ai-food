@@ -9,9 +9,10 @@ const MAX = 300;
 
 interface StepHeightProps {
   onNext: (data: Pick<UserProfile, 'height'>) => void;
+  initial?: number;
 }
 
-export function StepHeight({ onNext }: StepHeightProps) {
+export function StepHeight({ onNext, initial }: StepHeightProps) {
   const {
     value,
     inputText,
@@ -19,7 +20,7 @@ export function StepHeight({ onNext }: StepHeightProps) {
     handleTextBlur,
     handleSliderChange,
     getCommittedValue,
-  } = useNumericRangeInput(MIN, MAX, 170);
+  } = useNumericRangeInput(MIN, MAX, initial ?? 170);
 
   return (
     <div className="flex flex-col gap-6">

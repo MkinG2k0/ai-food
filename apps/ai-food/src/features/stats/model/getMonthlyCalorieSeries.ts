@@ -8,7 +8,10 @@ import {
   eachElapsedDay,
   getMonthWeekBuckets,
   monthElapsedDays,
+  monthEndFor,
   monthStartFor,
+  spanElapsedDays,
+  spanStartFor,
 } from './monthPeriod';
 
 export interface MonthlyCalorieSeries {
@@ -65,6 +68,44 @@ export function getMonthlyCalorieSeries(
   );
 
   return { monthStart, weeks, dailyAverage };
+}
+
+export interface SpanCalorieSeries {
+  spanStart: Date;
+  months: DailyCaloriePoint[];
+  dailyAverage: number | null;
+}
+
+/**
+ * Rolling N-month window ending on the reference month (`0` = current).
+ * Each bar is the daily average of logged days in that calendar month.
+ */
+export function getSpanCalorieSeries(
+  meals: Meal[],
+  monthCount: number,
+  spanOffset: number = 0,
+  referenceDate: Date = new Date(),
+): SpanCalorieSeries {
+  const spanStart = spanStartFor(referenceDate, monthCount, spanOffset);
+  const months = Array.from({ length: monthCount }, (_, i) => {
+    const monthStart = monthStartFor(spanStart, i);
+    const elapsed = monthElapsedDays(monthStart, referenceDate);
+    const end = elapsed.at(-1) ?? monthEndFor(monthStart);
+    return averageLoggedPoint(
+      getCaloriePointsForDays(meals, elapsed),
+      monthStart,
+      end,
+    );
+  });
+
+  const dailyAverage = averageLoggedCalories(
+    getCaloriePointsForDays(
+      meals,
+      spanElapsedDays(spanStart, monthCount, referenceDate),
+    ),
+  );
+
+  return { spanStart, months, dailyAverage };
 }
 
 export function calorieBarRangeLabel(point: DailyCaloriePoint): string {

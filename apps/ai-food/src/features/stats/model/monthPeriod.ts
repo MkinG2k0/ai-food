@@ -1,4 +1,78 @@
-export type StatsPeriod = 'week' | 'month';
+export type StatsPeriod = 'week' | 'month' | 'quarter' | 'halfYear' | 'year';
+
+export const STATS_PERIOD_OPTIONS: { value: StatsPeriod; label: string }[] = [
+  { value: 'week', label: 'Неделя' },
+  { value: 'month', label: 'Месяц' },
+  { value: 'quarter', label: '3 месяца' },
+  { value: 'halfYear', label: 'Полгода' },
+  { value: 'year', label: 'Год' },
+];
+
+export const STATS_PERIOD_MONTHS: Record<
+  Exclude<StatsPeriod, 'week'>,
+  number
+> = {
+  month: 1,
+  quarter: 3,
+  halfYear: 6,
+  year: 12,
+};
+
+/** First day of the first month in a rolling window that ends on the reference month. */
+export function spanStartFor(
+  referenceDate: Date,
+  monthCount: number,
+  spanOffset: number,
+): Date {
+  const endMonth = referenceDate.getMonth() + spanOffset * monthCount;
+  const startMonth = endMonth - (monthCount - 1);
+  const d = new Date(referenceDate.getFullYear(), startMonth, 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+export function spanElapsedDays(
+  spanStart: Date,
+  monthCount: number,
+  referenceDate: Date = new Date(),
+): Date[] {
+  return Array.from({ length: monthCount }, (_, i) =>
+    monthElapsedDays(monthStartFor(spanStart, i), referenceDate),
+  ).flat();
+}
+
+export function statsPeriodEmptyCopy(period: StatsPeriod): string {
+  switch (period) {
+    case 'week':
+      return 'Нет данных за неделю — появятся после анализа фото';
+    case 'month':
+      return 'Нет данных за месяц — появятся после анализа фото';
+    case 'quarter':
+      return 'Нет данных за 3 месяца — появятся после анализа фото';
+    case 'halfYear':
+      return 'Нет данных за полгода — появятся после анализа фото';
+    case 'year':
+      return 'Нет данных за год — появятся после анализа фото';
+  }
+}
+
+export function statsPeriodSwipeLabel(
+  subject: 'Калории' | 'Витамины',
+  period: StatsPeriod,
+): string {
+  switch (period) {
+    case 'week':
+      return `${subject} по неделям, свайп для смены недели`;
+    case 'month':
+      return `${subject} по месяцам, свайп для смены месяца`;
+    case 'quarter':
+      return `${subject} по 3 месяца, свайп для смены периода`;
+    case 'halfYear':
+      return `${subject} по полугодиям, свайп для смены периода`;
+    case 'year':
+      return `${subject} по годам, свайп для смены года`;
+  }
+}
 
 export function monthStartFor(referenceDate: Date, monthOffset: number): Date {
   const d = new Date(

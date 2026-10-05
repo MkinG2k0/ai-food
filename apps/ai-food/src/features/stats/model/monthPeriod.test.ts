@@ -3,10 +3,32 @@ import {
   getMonthWeekBuckets,
   monthElapsedDays,
   monthStartFor,
+  spanStartFor,
 } from './monthPeriod';
 
 /** Thursday 13 Aug 2026 */
 const TODAY = new Date(2026, 7, 13, 12, 0, 0, 0);
+
+describe('spanStartFor', () => {
+  it('starts two months before the reference month for a 3-month span', () => {
+    const start = spanStartFor(TODAY, 3, 0);
+    expect(start.getFullYear()).toBe(2026);
+    expect(start.getMonth()).toBe(5);
+    expect(start.getDate()).toBe(1);
+  });
+
+  it('shifts the window by whole spans', () => {
+    const start = spanStartFor(TODAY, 3, -1);
+    expect(start.getFullYear()).toBe(2026);
+    expect(start.getMonth()).toBe(2);
+  });
+
+  it('covers the previous 12 months for a year span', () => {
+    const start = spanStartFor(TODAY, 12, 0);
+    expect(start.getFullYear()).toBe(2025);
+    expect(start.getMonth()).toBe(8);
+  });
+});
 
 describe('monthStartFor', () => {
   it('returns the 1st of the current month for offset 0', () => {

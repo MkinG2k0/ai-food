@@ -53,6 +53,33 @@ export function formatMonthLabel(date: Date): string {
     .trim();
 }
 
+/** e.g. "авг" */
+export function formatShortMonth(date: Date): string {
+  return shortMonth(date);
+}
+
+/** e.g. "июн · авг 2026" or "сен 2025 · авг 2026" */
+export function formatMonthSpanLabel(
+  spanStart: Date,
+  monthCount: number,
+): string {
+  const last = new Date(
+    spanStart.getFullYear(),
+    spanStart.getMonth() + monthCount - 1,
+    1,
+  );
+  if (
+    spanStart.getFullYear() === last.getFullYear() &&
+    spanStart.getMonth() === last.getMonth()
+  ) {
+    return formatMonthLabel(spanStart);
+  }
+  if (spanStart.getFullYear() === last.getFullYear()) {
+    return `${shortMonth(spanStart)} · ${shortMonth(last)} ${last.getFullYear()}`;
+  }
+  return `${shortMonth(spanStart)} ${spanStart.getFullYear()} · ${shortMonth(last)} ${last.getFullYear()}`;
+}
+
 /** e.g. "8–13 авг" */
 export function formatCompactDayRange(start: Date, end: Date): string {
   const month = shortMonth(start);

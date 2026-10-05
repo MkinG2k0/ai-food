@@ -81,4 +81,44 @@ describe('useNumericRangeInput', () => {
     expect(result.current.value).toBe(40);
     expect(result.current.inputText).toBe('40');
   });
+
+  it('accepts one decimal place when enabled', () => {
+    const { result } = renderHook(() =>
+      useNumericRangeInput(1, 500, 70, { decimalPlaces: 1 }),
+    );
+
+    act(() => {
+      result.current.handleTextChange('61.5');
+    });
+
+    expect(result.current.inputText).toBe('61.5');
+    expect(result.current.value).toBe(61.5);
+    expect(result.current.getCommittedValue()).toBe(61.5);
+  });
+
+  it('accepts comma as decimal separator', () => {
+    const { result } = renderHook(() =>
+      useNumericRangeInput(1, 500, 70, { decimalPlaces: 1 }),
+    );
+
+    act(() => {
+      result.current.handleTextChange('65,2');
+    });
+
+    expect(result.current.inputText).toBe('65.2');
+    expect(result.current.value).toBe(65.2);
+  });
+
+  it('keeps a trailing decimal while typing', () => {
+    const { result } = renderHook(() =>
+      useNumericRangeInput(1, 500, 70, { decimalPlaces: 1 }),
+    );
+
+    act(() => {
+      result.current.handleTextChange('61.');
+    });
+
+    expect(result.current.inputText).toBe('61.');
+    expect(result.current.value).toBe(61);
+  });
 });

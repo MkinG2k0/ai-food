@@ -114,19 +114,21 @@ export function OnboardingPage() {
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {step === 1 && <StepGender onNext={next} />}
-        {step === 2 && <StepAge onNext={next} />}
-        {step === 3 && <StepHeight onNext={next} />}
-        {step === 4 && <StepWeight onNext={next} />}
-        {step === 5 && <StepActivity onNext={next} />}
-        {step === 6 && <StepGoal onNext={next} />}
+        {step === 1 && <StepGender onNext={next} initial={draft.gender} />}
+        {step === 2 && <StepAge onNext={next} initial={draft.age} />}
+        {step === 3 && <StepHeight onNext={next} initial={draft.height} />}
+        {step === 4 && <StepWeight onNext={next} initial={draft.weight} />}
+        {step === 5 && <StepActivity onNext={next} initial={draft.activity} />}
+        {step === 6 && <StepGoal onNext={next} initial={draft.goal} />}
         {step === 7 && (
           <StepTargetWeight
             onNext={next}
             currentWeight={draft.weight!}
+            initialTargetWeight={draft.targetWeight}
+            initialTargetWeightDate={draft.targetWeightDate}
           />
         )}
-        {step === 8 && <StepDiet onNext={next} />}
+        {step === 8 && <StepDiet onNext={next} initial={draft.dietType} />}
         {isResult && result && (
           <OnboardingResult
             targets={result.targets}

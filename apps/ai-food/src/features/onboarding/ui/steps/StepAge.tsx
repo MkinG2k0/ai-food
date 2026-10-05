@@ -9,9 +9,10 @@ const MAX = 120;
 
 interface StepAgeProps {
   onNext: (data: Pick<UserProfile, 'age'>) => void;
+  initial?: number;
 }
 
-export function StepAge({ onNext }: StepAgeProps) {
+export function StepAge({ onNext, initial }: StepAgeProps) {
   const {
     value,
     inputText,
@@ -19,7 +20,7 @@ export function StepAge({ onNext }: StepAgeProps) {
     handleTextBlur,
     handleSliderChange,
     getCommittedValue,
-  } = useNumericRangeInput(MIN, MAX, 25);
+  } = useNumericRangeInput(MIN, MAX, initial ?? 25);
 
   return (
     <div className="flex flex-col gap-6">

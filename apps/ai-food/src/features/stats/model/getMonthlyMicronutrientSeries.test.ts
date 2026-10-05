@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Meal } from '@ai-food/shared-types';
 import { weekHasMicronutrientData } from './getWeeklyMicronutrientSeries';
-import { getMonthlyMicronutrientSeries } from './getMonthlyMicronutrientSeries';
+import { getMonthlyMicronutrientSeries, getSpanMicronutrientSeries } from './getMonthlyMicronutrientSeries';
 
 function localIso(y: number, m: number, d: number, h = 12): string {
   return new Date(y, m - 1, d, h, 0, 0, 0).toISOString();
@@ -62,5 +62,28 @@ describe('getMonthlyMicronutrientSeries', () => {
     const iron = series.find((p) => p.id === 'iron');
     expect(iron?.dailyAvg).toBe(0);
     expect(weekHasMicronutrientData(series)).toBe(false);
+  });
+});
+
+describe('getSpanMicronutrientSeries', () => {
+  it('averages across months in the window', () => {
+    const meals = [
+      makeMeal({
+        id: 'july',
+        timestamp: localIso(2026, 7, 16),
+        totalCalories: 200,
+        micronutrients: [{ id: 'vitaminC', amount: 40, unit: 'mg' }],
+      }),
+      makeMeal({
+        id: 'august',
+        timestamp: localIso(2026, 8, 4),
+        totalCalories: 200,
+        micronutrients: [{ id: 'vitaminC', amount: 80, unit: 'mg' }],
+      }),
+    ];
+
+    const series = getSpanMicronutrientSeries(meals, 3, 0, TODAY);
+    const vitaminC = series.find((p) => p.id === 'vitaminC');
+    expect(vitaminC?.dailyAvg).toBeCloseTo((40 + 80) / 2, 5);
   });
 });

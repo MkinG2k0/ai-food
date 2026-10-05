@@ -22,6 +22,18 @@ vi.mock('sonner', () => ({
 }));
 
 describe('StepGender', () => {
+  it('restores a previously selected gender', () => {
+    render(
+      <MemoryRouter>
+        <StepGender onNext={vi.fn()} initial="female" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: /Женский/ })).toHaveClass(
+      'border-primary',
+    );
+  });
+
   it('shows Telegram login when the user is signed out', () => {
     render(
       <MemoryRouter>

@@ -2,7 +2,7 @@ import type { Meal, MicronutrientId } from '@ai-food/shared-types';
 import { MICRONUTRIENT_IDS, MICRONUTRIENT_UNITS } from '@ai-food/shared-types';
 import { isSameDay } from '@/shared/lib';
 import { isReadyMeal } from './readyMeals';
-import { monthElapsedDays, monthStartFor } from './monthPeriod';
+import { spanElapsedDays, spanStartFor } from './monthPeriod';
 import type { MicronutrientWeekPoint } from './getWeeklyMicronutrientSeries';
 
 function emptySums(): Record<MicronutrientId, number> {
@@ -19,17 +19,10 @@ function emptySeen(): Record<MicronutrientId, boolean> {
   >;
 }
 
-/**
- * Sums micronutrients across ready meals in the elapsed month, then
- * dailyAvg = sum / distinct days with a ready meal (logged-only).
- */
-export function getMonthlyMicronutrientSeries(
+function aggregateMicronutrientsForDays(
   meals: Meal[],
-  monthOffset: number = 0,
-  referenceDate: Date = new Date(),
+  days: Date[],
 ): MicronutrientWeekPoint[] {
-  const monthStart = monthStartFor(referenceDate, monthOffset);
-  const days = monthElapsedDays(monthStart, referenceDate);
   const readyMeals = meals.filter(isReadyMeal);
   const sums = emptySums();
   const seen = emptySeen();
@@ -61,4 +54,33 @@ export function getMonthlyMicronutrientSeries(
     unit: MICRONUTRIENT_UNITS[id],
     hasData: seen[id],
   }));
+}
+
+/**
+ * Rolling N-month window ending on the reference month (`0` = current).
+ * dailyAvg = sum / distinct days with a ready meal (logged-only).
+ */
+export function getSpanMicronutrientSeries(
+  meals: Meal[],
+  monthCount: number,
+  spanOffset: number = 0,
+  referenceDate: Date = new Date(),
+): MicronutrientWeekPoint[] {
+  const spanStart = spanStartFor(referenceDate, monthCount, spanOffset);
+  return aggregateMicronutrientsForDays(
+    meals,
+    spanElapsedDays(spanStart, monthCount, referenceDate),
+  );
+}
+
+/**
+ * Sums micronutrients across ready meals in the elapsed month, then
+ * dailyAvg = sum / distinct days with a ready meal (logged-only).
+ */
+export function getMonthlyMicronutrientSeries(
+  meals: Meal[],
+  monthOffset: number = 0,
+  referenceDate: Date = new Date(),
+): MicronutrientWeekPoint[] {
+  return getSpanMicronutrientSeries(meals, 1, monthOffset, referenceDate);
 }

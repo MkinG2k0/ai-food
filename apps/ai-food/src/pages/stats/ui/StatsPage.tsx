@@ -11,10 +11,11 @@ import {
   WeeklyCaloriesChart,
   WeeklyMicronutrientsChart,
   WeightProgressCard,
+  StatsPeriodSelect,
   type StatsPeriod,
 } from '@/features/stats';
 import { useSettingsStore } from '@/features/settings';
-import { Button, SubpageShell } from '@/shared/ui';
+import { SubpageShell } from '@/shared/ui';
 
 const FALLBACK_GOAL_KCAL = 2000;
 
@@ -31,8 +32,8 @@ export function StatsPage() {
   const [reportOpen, setReportOpen] = useState(false);
   const goalKcal = targets?.kcal ?? FALLBACK_GOAL_KCAL;
 
-  function togglePeriod() {
-    setPeriod((current) => (current === 'week' ? 'month' : 'week'));
+  function handlePeriodChange(next: StatsPeriod) {
+    setPeriod(next);
     setOffset(0);
   }
 
@@ -40,22 +41,10 @@ export function StatsPage() {
     <SubpageShell
       title="Статистика"
       onBack={() => navigate('/')}
-      headerClassName="sticky top-0 z-10 bg-background/90 backdrop-blur-sm"
+      headerClassName="sticky top-0 z-20 bg-background/90 backdrop-blur-sm"
       mainClassName="space-y-3 pb-10"
       actions={
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={togglePeriod}
-          aria-label={
-            period === 'week'
-              ? 'Показать статистику за месяц'
-              : 'Показать статистику за неделю'
-          }
-        >
-          {period === 'week' ? 'Месяц' : 'Неделя'}
-        </Button>
+        <StatsPeriodSelect value={period} onChange={handlePeriodChange} />
       }
     >
       {profile && (

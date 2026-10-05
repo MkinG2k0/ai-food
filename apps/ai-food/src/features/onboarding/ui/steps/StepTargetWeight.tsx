@@ -51,13 +51,17 @@ function defaultDeadlineDate(): string {
 interface StepTargetWeightProps {
   onNext: (data: Pick<UserProfile, 'targetWeight' | 'targetWeightDate'>) => void;
   currentWeight: number;
+  initialTargetWeight?: number;
+  initialTargetWeightDate?: string;
 }
 
 export function StepTargetWeight({
   onNext,
   currentWeight,
+  initialTargetWeight,
+  initialTargetWeightDate,
 }: StepTargetWeightProps) {
-  const initial = defaultTargetWeight(currentWeight);
+  const initial = initialTargetWeight ?? defaultTargetWeight(currentWeight);
 
   const {
     value,
@@ -66,9 +70,11 @@ export function StepTargetWeight({
     handleTextBlur,
     handleSliderChange,
     getCommittedValue,
-  } = useNumericRangeInput(MIN, MAX, initial);
+  } = useNumericRangeInput(MIN, MAX, initial, { decimalPlaces: 1 });
 
-  const [targetWeightDate, setTargetWeightDate] = useState(defaultDeadlineDate);
+  const [targetWeightDate, setTargetWeightDate] = useState(
+    () => initialTargetWeightDate ?? defaultDeadlineDate(),
+  );
   const parsedDate = parseDateInputValue(targetWeightDate);
   const dateValid = parsedDate !== null && isFutureDay(parsedDate);
   const pace =
@@ -91,6 +97,7 @@ export function StepTargetWeight({
       <NumericRangeInput
         min={MIN}
         max={MAX}
+        step={0.1}
         value={value}
         inputText={inputText}
         unit="кг"

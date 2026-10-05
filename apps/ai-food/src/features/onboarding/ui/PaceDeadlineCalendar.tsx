@@ -187,15 +187,17 @@ export function PaceDeadlineCalendar({
               aria-pressed={isSelected}
               className={[
                 'relative flex h-8 items-center justify-center rounded-md text-xs tabular-nums transition-shadow',
-                cell.inMonth ? 'opacity-100' : 'opacity-35',
+                cell.inMonth ? 'opacity-100' : 'opacity-40',
                 disabled
-                  ? 'cursor-not-allowed text-muted-foreground/50'
-                  : 'hover:ring-2 hover:ring-primary/40',
-                isSelected ? 'ring-2 ring-primary font-semibold' : '',
+                  ? 'cursor-not-allowed text-muted-foreground'
+                  : 'text-zinc-900 hover:ring-2 hover:ring-primary/50',
+                isSelected
+                  ? 'z-[1] font-bold ring-2 ring-primary ring-offset-2 ring-offset-background'
+                  : 'font-medium',
               ].join(' ')}
               style={
                 cell.bg && !disabled
-                  ? { backgroundColor: cell.bg }
+                  ? { backgroundColor: cell.bg, color: 'hsl(0 0% 12%)' }
                   : undefined
               }
             >

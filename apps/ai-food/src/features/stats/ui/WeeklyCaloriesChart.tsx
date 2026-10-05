@@ -17,14 +17,21 @@ import {
 import {
   calorieBarRangeLabel,
   getMonthlyCalorieSeries,
+  getSpanCalorieSeries,
 } from '../model/getMonthlyCalorieSeries';
-import type { StatsPeriod } from '../model/monthPeriod';
+import {
+  STATS_PERIOD_MONTHS,
+  statsPeriodSwipeLabel,
+  type StatsPeriod,
+} from '../model/monthPeriod';
 import {
   averageLoggedCalories,
   chartTicks,
   formatCompactDayRange,
   formatDateRangeLabel,
   formatMonthLabel,
+  formatMonthSpanLabel,
+  formatShortMonth,
   niceChartMax,
 } from '../model/chartScale';
 
@@ -57,7 +64,7 @@ interface ChartWeekPanelProps {
   series: DailyCaloriePoint[];
   rangeLabel: string;
   periodAverage: number | null;
-  axisKind: 'weekday' | 'dayRange';
+  axisKind: 'weekday' | 'dayRange' | 'monthName';
   goalKcal?: number;
   interactive: boolean;
   reduceMotion: boolean | null;
@@ -89,7 +96,9 @@ function ChartWeekPanel({
   const selectedLabel = selected
     ? axisKind === 'dayRange'
       ? formatCompactDayRange(selected.date, selected.endDate ?? selected.date)
-      : formatDayLabel(selected.date)
+      : axisKind === 'monthName'
+        ? formatMonthLabel(selected.date)
+        : formatDayLabel(selected.date)
     : '';
 
   const summaryLine = selected
@@ -193,14 +202,24 @@ function ChartWeekPanel({
                         prev === index ? null : index,
                       )
                     }
-                    aria-label={`${axisKind === 'dayRange' ? calorieBarRangeLabel(point) : formatDayLabel(point.date)}: ${formatCalories(point.calories)}, белки ${formatMacro(point.protein)}, жир ${formatMacro(point.fat)}, углеводы ${formatMacro(point.carbs)}`}
+                    aria-label={`${
+                      axisKind === 'dayRange'
+                        ? calorieBarRangeLabel(point)
+                        : axisKind === 'monthName'
+                          ? formatMonthLabel(point.date)
+                          : formatDayLabel(point.date)
+                    }: ${formatCalories(point.calories)}, белки ${formatMacro(point.protein)}, жир ${formatMacro(point.fat)}, углеводы ${formatMacro(point.carbs)}`}
                     aria-pressed={isSelected}
                   >
                     <div className="relative flex h-full w-full items-end justify-center">
                       {heightKcal > 0 ? (
                         <motion.div
-                          className={`flex w-[55%] min-w-[10px] origin-bottom flex-col-reverse overflow-hidden rounded-full ${
-                            axisKind === 'dayRange' ? 'max-w-[40px]' : 'max-w-[28px]'
+                          className={`flex w-[55%] min-w-[8px] origin-bottom flex-col-reverse overflow-hidden rounded-full ${
+                            axisKind === 'dayRange'
+                              ? 'max-w-[40px]'
+                              : axisKind === 'monthName'
+                                ? 'max-w-[22px]'
+                                : 'max-w-[28px]'
                           } ${
                             isSelected
                               ? 'ring-2 ring-primary/35 ring-offset-1 ring-offset-card'
@@ -243,8 +262,12 @@ function ChartWeekPanel({
                         </motion.div>
                       ) : (
                         <div
-                          className={`h-1 w-[55%] min-w-[10px] rounded-full bg-muted ${
-                            axisKind === 'dayRange' ? 'max-w-[40px]' : 'max-w-[28px]'
+                          className={`h-1 w-[55%] min-w-[8px] rounded-full bg-muted ${
+                            axisKind === 'dayRange'
+                              ? 'max-w-[40px]'
+                              : axisKind === 'monthName'
+                                ? 'max-w-[22px]'
+                                : 'max-w-[28px]'
                           }`}
                           aria-hidden
                         />
@@ -261,9 +284,7 @@ function ChartWeekPanel({
               <span
                 key={point.date.toISOString()}
                 className={`min-w-0 flex-1 text-center text-[10px] font-medium ${
-                  axisKind === 'dayRange'
-                    ? 'tracking-normal'
-                    : 'uppercase tracking-wide'
+                  axisKind === 'weekday' ? 'uppercase tracking-wide' : 'tracking-normal'
                 } ${
                   selectedIndex === index
                     ? 'text-foreground'
@@ -272,7 +293,9 @@ function ChartWeekPanel({
               >
                 {axisKind === 'dayRange'
                   ? calorieBarRangeLabel(point)
-                  : formatDayLabel(point.date)}
+                  : axisKind === 'monthName'
+                    ? formatShortMonth(point.date)
+                    : formatDayLabel(point.date)}
               </span>
             ))}
           </div>
@@ -286,6 +309,12 @@ function ChartWeekPanel({
       )}
     </div>
   );
+}
+
+function axisKindFor(period: StatsPeriod): 'weekday' | 'dayRange' | 'monthName' {
+  if (period === 'week') return 'weekday';
+  if (period === 'month') return 'dayRange';
+  return 'monthName';
 }
 
 function seriesForOffset(
@@ -303,6 +332,15 @@ function seriesForOffset(
       series: month.weeks,
       rangeLabel: formatMonthLabel(month.monthStart),
       periodAverage: month.dailyAverage,
+    };
+  }
+  if (period !== 'week') {
+    const monthCount = STATS_PERIOD_MONTHS[period];
+    const span = getSpanCalorieSeries(meals, monthCount, offset);
+    return {
+      series: span.months,
+      rangeLabel: formatMonthSpanLabel(span.spanStart, monthCount),
+      periodAverage: span.dailyAverage,
     };
   }
   const series = getWeeklyCalorieSeries(meals, offset);
@@ -379,10 +417,7 @@ export function WeeklyCaloriesChart({
   }
 
   const offsets = [offset - 1, offset, offset + 1];
-  const swipeLabel =
-    period === 'month'
-      ? 'Калории по месяцам, свайп для смены месяца'
-      : 'Калории по неделям, свайп для смены недели';
+  const swipeLabel = statsPeriodSwipeLabel('Калории', period);
 
   return (
     <section
@@ -418,7 +453,7 @@ export function WeeklyCaloriesChart({
                   series={panel.series}
                   rangeLabel={panel.rangeLabel}
                   periodAverage={panel.periodAverage}
-                  axisKind={period === 'month' ? 'dayRange' : 'weekday'}
+                  axisKind={axisKindFor(period)}
                   goalKcal={goalKcal}
                   interactive={isCurrent}
                   reduceMotion={reduceMotion}

@@ -6,8 +6,10 @@ export {
 } from './model/getWeeklyCalorieSeries';
 export {
   getMonthlyCalorieSeries,
+  getSpanCalorieSeries,
   calorieBarRangeLabel,
   type MonthlyCalorieSeries,
+  type SpanCalorieSeries,
 } from './model/getMonthlyCalorieSeries';
 export {
   getWeeklyMicronutrientSeries,
@@ -15,8 +17,15 @@ export {
   weekHasMicronutrientData,
   type MicronutrientWeekPoint,
 } from './model/getWeeklyMicronutrientSeries';
-export { getMonthlyMicronutrientSeries } from './model/getMonthlyMicronutrientSeries';
-export { type StatsPeriod } from './model/monthPeriod';
+export {
+  getMonthlyMicronutrientSeries,
+  getSpanMicronutrientSeries,
+} from './model/getMonthlyMicronutrientSeries';
+export {
+  STATS_PERIOD_OPTIONS,
+  STATS_PERIOD_MONTHS,
+  type StatsPeriod,
+} from './model/monthPeriod';
 export {
   useWeightStore,
   latestWeightKg,
@@ -32,6 +41,7 @@ export {
   WEIGHT_VIEW_DAYS,
   type WeightChartPoint,
 } from './model/weightProgress';
+export { StatsPeriodSelect } from './ui/StatsPeriodSelect';
 export { WeeklyCaloriesChart } from './ui/WeeklyCaloriesChart';
 export { WeeklyMicronutrientsChart } from './ui/WeeklyMicronutrientsChart';
 export { WeightProgressCard } from './ui/WeightProgressCard';

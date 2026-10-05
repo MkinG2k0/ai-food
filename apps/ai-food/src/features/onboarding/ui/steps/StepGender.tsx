@@ -14,6 +14,7 @@ import { OnboardingStepHeader } from '../OnboardingStepHeader';
 
 interface StepGenderProps {
   onNext: (data: Pick<UserProfile, 'gender'>) => void;
+  initial?: UserProfile['gender'];
 }
 
 const OPTIONS: { value: UserProfile['gender']; label: string; emoji: string }[] = [
@@ -21,10 +22,12 @@ const OPTIONS: { value: UserProfile['gender']; label: string; emoji: string }[] 
   { value: 'female', label: 'Женский', emoji: '👩' },
 ];
 
-export function StepGender({ onNext }: StepGenderProps) {
+export function StepGender({ onNext, initial }: StepGenderProps) {
   const navigate = useNavigate();
   const session = useAuthStore((state) => state.session);
-  const [selected, setSelected] = useState<UserProfile['gender'] | null>(null);
+  const [selected, setSelected] = useState<UserProfile['gender'] | null>(
+    initial ?? null,
+  );
 
   return (
     <div className="flex flex-col gap-6">

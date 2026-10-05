@@ -4,6 +4,7 @@ interface NumericRangeInputProps {
   value: number;
   inputText: string;
   unit?: string;
+  step?: number;
   onTextChange: (text: string) => void;
   onTextBlur: (text: string) => void;
   onSliderChange: (value: number) => void;
@@ -15,17 +16,20 @@ export function NumericRangeInput({
   value,
   inputText,
   unit,
+  step = 1,
   onTextChange,
   onTextBlur,
   onSliderChange,
 }: NumericRangeInputProps) {
+  const allowDecimal = step < 1;
+
   return (
     <div className="flex flex-col items-center gap-2.5">
       <div className="flex items-baseline gap-1">
         <input
           type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
+          inputMode={allowDecimal ? 'decimal' : 'numeric'}
+          pattern={allowDecimal ? '[0-9]*[.,]?[0-9]*' : '[0-9]*'}
           autoComplete="off"
           value={inputText}
           onChange={(e) => onTextChange(e.target.value)}
@@ -41,6 +45,7 @@ export function NumericRangeInput({
         type="range"
         min={min}
         max={max}
+        step={step}
         value={value}
         onChange={(e) => onSliderChange(Number(e.target.value))}
         className="w-full accent-primary"
