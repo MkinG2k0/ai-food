@@ -65,6 +65,22 @@ describe('friendsApi', () => {
     );
   });
 
+  it('DELETEs /user/friends/:userId', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'removed' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { removeFriend } = await import('./friendsApi');
+    const result = await removeFriend('user-b');
+    expect(result).toEqual({ status: 'removed' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://gw.test/user/friends/user-b',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+
   it('throws parsed ApiError when gateway rejects', async () => {
     vi.stubGlobal(
       'fetch',

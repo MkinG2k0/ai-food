@@ -66,19 +66,17 @@ test.describe('meal edit', () => {
 
 
 
-  test('исправление числа порций без изменения КБЖУ', async ({
+  test('ввод числа порций пересчитывает КБЖУ', async ({
 
     editableMealPage: page,
 
   }) => {
 
-    const kcalBefore = await page.getByLabel('Калории блюда').inputValue();
-
-    const portionsInput = page.getByLabel(
-
-      'Исправить число порций без изменения КБЖУ',
-
+    const kcalBefore = Number(
+      await page.getByLabel('Калории блюда').inputValue(),
     );
+
+    const portionsInput = page.getByLabel('Съеденные порции (меняет КБЖУ)');
 
     await portionsInput.click();
 
@@ -86,7 +84,11 @@ test.describe('meal edit', () => {
 
     await portionsInput.blur();
 
-    await expect(page.getByLabel('Калории блюда')).toHaveValue(kcalBefore);
+    const kcalAfter = Number(
+      await page.getByLabel('Калории блюда').inputValue(),
+    );
+
+    expect(kcalAfter).toBeGreaterThan(kcalBefore);
 
   });
 

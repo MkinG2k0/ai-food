@@ -191,6 +191,30 @@ export async function assertFriendship(
   return row !== null;
 }
 
+/** Mark accepted friendship as declined. Returns false if none found. */
+export async function removeFriendship(
+  prisma: PrismaClient,
+  userA: string,
+  userB: string,
+): Promise<boolean> {
+  const row = await prisma.friendRequest.findFirst({
+    where: {
+      status: 'accepted',
+      OR: [
+        { fromUserId: userA, toUserId: userB },
+        { fromUserId: userB, toUserId: userA },
+      ],
+    },
+    select: { id: true },
+  });
+  if (!row) return false;
+  await prisma.friendRequest.update({
+    where: { id: row.id },
+    data: { status: 'declined' },
+  });
+  return true;
+}
+
 function parseNutritionTargets(
   nutritionProfile: unknown,
 ): FriendProfile['targets'] {

@@ -168,6 +168,8 @@ export function friendsErrorMessage(code: string | undefined): string | null {
       return 'Заявка уже отправлена';
     case 'FRIENDS_ONLY':
       return 'Доступ только для друзей';
+    case 'NOT_FOUND':
+      return 'Дружба не найдена';
     default:
       return null;
   }

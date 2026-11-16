@@ -1,21 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { Filesystem } from '@capacitor/filesystem';
 import type { ApiError, Meal } from '@ai-food/shared-types';
 import { useDiaryStore } from '@/entities/meal';
 import { refineMealApi } from '@/features/analyze-food';
+import {
+  compressImageForAi,
+  fileToImageDataUrl,
+  loadMealImageAsFile,
+} from '@/shared/lib';
+import { REFINE_IMAGE_DATA_URL_MAX_CHARS } from './prepareRefineMealImage';
 import { useRefineMeal } from './useRefineMeal';
 
 vi.mock('@/features/analyze-food', () => ({
   refineMealApi: vi.fn(),
 }));
 
-vi.mock('@capacitor/filesystem', () => ({
-  Directory: { Data: 'DATA' },
-  Filesystem: {
-    readFile: vi.fn(),
-  },
-}));
+vi.mock('@/shared/lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/lib')>();
+  return {
+    ...actual,
+    compressImageForAi: vi.fn(),
+    fileToImageDataUrl: vi.fn(),
+    loadMealImageAsFile: vi.fn(),
+  };
+});
+
+const mealImageFile = new File(['img'], 'meal.jpg', { type: 'image/jpeg' });
+const compressedDataUrl = 'data:image/jpeg;base64,compressed';
 
 const baseMeal: Meal = {
   id: 'meal-1',
@@ -52,8 +63,12 @@ describe('useRefineMeal', () => {
   beforeEach(() => {
     useDiaryStore.setState({ meals: [{ ...baseMeal, items: [...baseMeal.items] }] });
     vi.mocked(refineMealApi).mockReset();
-    vi.mocked(Filesystem.readFile).mockReset();
-    vi.mocked(Filesystem.readFile).mockResolvedValue({ data: 'base64img' } as never);
+    vi.mocked(loadMealImageAsFile).mockReset();
+    vi.mocked(compressImageForAi).mockReset();
+    vi.mocked(fileToImageDataUrl).mockReset();
+    vi.mocked(loadMealImageAsFile).mockResolvedValue(mealImageFile);
+    vi.mocked(compressImageForAi).mockImplementation(async (file) => file);
+    vi.mocked(fileToImageDataUrl).mockResolvedValue(compressedDataUrl);
     vi.mocked(refineMealApi).mockResolvedValue({
       result: {
         foodName: 'Бургер (половина)',
@@ -100,7 +115,7 @@ describe('useRefineMeal', () => {
         correction: 'съел половину',
         customInstructions: '',
         dietType: 'none',
-        imageDataUrl: 'data:image/jpeg;base64,base64img',
+        imageDataUrl: compressedDataUrl,
         mealContext: expect.objectContaining({
           name: 'Бургер',
           items: expect.arrayContaining([
@@ -120,6 +135,45 @@ describe('useRefineMeal', () => {
     expect(meal.status).toBe('ready');
     expect(meal.healthiness).toBe(6);
     expect(meal.confidence).toBe(0.9);
+    expect(loadMealImageAsFile).toHaveBeenCalledWith('meal-images/burger.jpg');
+    expect(compressImageForAi).toHaveBeenCalledWith(mealImageFile);
+    expect(fileToImageDataUrl).toHaveBeenCalled();
+  });
+
+  it('omits image when compressed data URL exceeds soft limit', async () => {
+    const hugeUrl = `data:image/jpeg;base64,${'a'.repeat(REFINE_IMAGE_DATA_URL_MAX_CHARS)}`;
+    vi.mocked(fileToImageDataUrl).mockResolvedValue(hugeUrl);
+
+    const { result } = renderHook(() => useRefineMeal());
+
+    await act(async () => {
+      await result.current('meal-1', 'съел половину');
+    });
+
+    expect(compressImageForAi).toHaveBeenCalled();
+    expect(refineMealApi).toHaveBeenCalledWith(
+      expect.objectContaining({
+        correction: 'съел половину',
+        imageDataUrl: undefined,
+      }),
+    );
+  });
+
+  it('refines text-only when compress throws', async () => {
+    vi.mocked(compressImageForAi).mockRejectedValue(new Error('compress failed'));
+
+    const { result } = renderHook(() => useRefineMeal());
+
+    await act(async () => {
+      await result.current('meal-1', 'котлета мясная');
+    });
+
+    expect(refineMealApi).toHaveBeenCalledWith(
+      expect.objectContaining({
+        correction: 'котлета мясная',
+        imageDataUrl: undefined,
+      }),
+    );
   });
 
   it('does not call API when correction is empty', async () => {
@@ -187,8 +241,47 @@ describe('useRefineMeal', () => {
     useDiaryStore.setState({ updateMeal: realUpdate });
   });
 
+  it('maps payload too large API error to Russian message', async () => {
+    vi.mocked(refineMealApi).mockRejectedValue({
+      message: 'request entity too large',
+      code: 'ANALYSIS_FAILED',
+      status: 413,
+    } satisfies ApiError);
+
+    const { result } = renderHook(() => useRefineMeal());
+
+    await expect(
+      act(async () => {
+        await result.current('meal-1', 'съел половину');
+      }),
+    ).rejects.toMatchObject({
+      code: 'PAYLOAD_TOO_LARGE',
+      message:
+        'Фото слишком большое для уточнения — попробуйте ещё раз без фото или короче текст.',
+    });
+  });
+
+  it('maps timeout API error to Russian message', async () => {
+    vi.mocked(refineMealApi).mockRejectedValue({
+      message: 'timeout of 30000ms exceeded',
+      code: 'UNKNOWN',
+      status: 0,
+    } satisfies ApiError);
+
+    const { result } = renderHook(() => useRefineMeal());
+
+    await expect(
+      act(async () => {
+        await result.current('meal-1', 'съел половину');
+      }),
+    ).rejects.toMatchObject({
+      code: 'ANALYSIS_TIMEOUT',
+      message: 'Сервер не успел обработать уточнение. Попробуйте ещё раз.',
+    });
+  });
+
   it('continues text-only when image read fails', async () => {
-    vi.mocked(Filesystem.readFile).mockRejectedValue(new Error('read failed'));
+    vi.mocked(loadMealImageAsFile).mockResolvedValue(null);
 
     const { result } = renderHook(() => useRefineMeal());
 

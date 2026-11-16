@@ -11,6 +11,7 @@ import {
   buildFriendProfile,
   displayName,
   listAcceptedFriends,
+  removeFriendship,
   resolveFriendTarget,
   type FriendRequestItem,
 } from '../lib/friends.js';
@@ -111,18 +112,31 @@ userFriendsRouter.post(
       throw new ApiError(400, 'REQUEST_PENDING', 'Friend request is already pending.');
     }
 
-    const requestRow = await prisma.friendRequest.create({
-      data: {
-        fromUserId: payload.sub,
-        toUserId: target.id,
-        status: 'pending',
+    const includeFromUser = {
+      fromUser: {
+        select: { firstName: true, username: true },
       },
-      include: {
-        fromUser: {
-          select: { firstName: true, username: true },
-        },
-      },
-    });
+    } as const;
+
+    const requestRow =
+      existing?.status === 'declined'
+        ? await prisma.friendRequest.update({
+            where: { id: existing.id },
+            data: {
+              fromUserId: payload.sub,
+              toUserId: target.id,
+              status: 'pending',
+            },
+            include: includeFromUser,
+          })
+        : await prisma.friendRequest.create({
+            data: {
+              fromUserId: payload.sub,
+              toUserId: target.id,
+              status: 'pending',
+            },
+            include: includeFromUser,
+          });
 
     const senderName = displayName(requestRow.fromUser);
     if (!isSelfRequest) {
@@ -223,6 +237,19 @@ userFriendsRouter.post(
     });
 
     res.status(200).json({ status: 'declined' });
+  }),
+);
+
+userFriendsRouter.delete(
+  '/:userId',
+  asyncHandler(async (req, res) => {
+    const payload = await requireUser(req);
+    const prisma = requireDb();
+    const removed = await removeFriendship(prisma, payload.sub, req.params.userId);
+    if (!removed) {
+      throw new ApiError(404, 'NOT_FOUND', 'Friendship not found.');
+    }
+    res.status(200).json({ status: 'removed' });
   }),
 );
 

@@ -8,6 +8,7 @@ describe('friendsErrorMessage', () => {
     expect(friendsErrorMessage('ALREADY_FRIENDS')).toBe('Уже в друзьях');
     expect(friendsErrorMessage('REQUEST_PENDING')).toBe('Заявка уже отправлена');
     expect(friendsErrorMessage('FRIENDS_ONLY')).toBe('Доступ только для друзей');
+    expect(friendsErrorMessage('NOT_FOUND')).toBe('Дружба не найдена');
   });
 
   it('returns null for unknown codes', () => {

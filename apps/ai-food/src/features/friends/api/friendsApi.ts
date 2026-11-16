@@ -141,3 +141,15 @@ export async function fetchFriendProfile(userId: string): Promise<FriendProfile>
     weights: Array.isArray(data.weights) ? data.weights : [],
   };
 }
+
+export async function removeFriend(
+  userId: string,
+): Promise<{ status: 'removed' }> {
+  const headers = await getQuotaHeaders('other');
+  const res = await fetch(
+    `${gatewayBase()}/user/friends/${encodeURIComponent(userId)}`,
+    { method: 'DELETE', headers },
+  );
+  if (!res.ok) await parseError(res);
+  return (await res.json()) as { status: 'removed' };
+}

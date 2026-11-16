@@ -1,4 +1,3 @@
-import { Filesystem, Directory } from '@capacitor/filesystem';
 import type { ApiError, FoodItem, Meal } from '@ai-food/shared-types';
 import { resolveItemGrams, sumItemGrams, useDiaryStore } from '@/entities/meal';
 import { refineMealApi } from '@/features/analyze-food';
@@ -6,25 +5,12 @@ import { usageQueryKey } from '@/features/auth';
 import { useProfileStore } from '@/features/onboarding';
 import { getActiveCustomInstructions, getAnalyzeFeaturesFromSettings } from '@/features/settings';
 import { queryClient } from '@/shared/lib';
+import { rethrowRefineMealApiError } from './mapRefineMealApiError';
+import { prepareRefineMealImageDataUrl } from './prepareRefineMealImage';
 
 function rejectApiError(message: string, code: string, status: number): never {
   const apiError: ApiError = { message, code, status };
   throw apiError;
-}
-
-async function loadMealImageDataUrl(imageUri: string): Promise<string | undefined> {
-  try {
-    const { data } = await Filesystem.readFile({
-      path: imageUri,
-      directory: Directory.Data,
-    });
-    if (typeof data === 'string' && data.length > 0) {
-      return `data:image/jpeg;base64,${data}`;
-    }
-  } catch {
-    // D-05: image load failure → text-only refine
-  }
-  return undefined;
 }
 
 function mapResultToItems(
@@ -94,28 +80,33 @@ export function useRefineMeal() {
     }
 
     const imageDataUrl = meal.imageUri
-      ? await loadMealImageDataUrl(meal.imageUri)
+      ? await prepareRefineMealImageDataUrl(meal.imageUri)
       : undefined;
 
-    const response = await refineMealApi({
-      correction: trimmed,
-      customInstructions: getActiveCustomInstructions(),
-      dietType: useProfileStore.getState().profile?.dietType ?? 'none',
-      features: getAnalyzeFeaturesFromSettings(),
-      mealContext: {
-        name: meal.name,
-        items: meal.items.map((item) => ({
-          name: item.name,
-          calories: item.calories,
-          protein: item.protein,
-          carbs: item.carbs,
-          fat: item.fat,
-          fiber: item.fiber ?? 0,
-          grams: item.grams,
-        })),
-      },
-      imageDataUrl,
-    });
+    let response;
+    try {
+      response = await refineMealApi({
+        correction: trimmed,
+        customInstructions: getActiveCustomInstructions(),
+        dietType: useProfileStore.getState().profile?.dietType ?? 'none',
+        features: getAnalyzeFeaturesFromSettings(),
+        mealContext: {
+          name: meal.name,
+          items: meal.items.map((item) => ({
+            name: item.name,
+            calories: item.calories,
+            protein: item.protein,
+            carbs: item.carbs,
+            fat: item.fat,
+            fiber: item.fiber ?? 0,
+            grams: item.grams,
+          })),
+        },
+        imageDataUrl,
+      });
+    } catch (error) {
+      rethrowRefineMealApiError(error);
+    }
 
     const { result } = response;
     const { items, totalCalories } = mapResultToItems(

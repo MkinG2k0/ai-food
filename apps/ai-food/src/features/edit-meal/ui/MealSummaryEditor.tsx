@@ -70,7 +70,6 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
   const updateMeal = useDiaryStore((s) => s.updateMeal);
   const updateMealNutrition = useDiaryStore((s) => s.updateMealNutrition);
   const setMealPortions = useDiaryStore((s) => s.setMealPortions);
-  const redefineMealPortions = useDiaryStore((s) => s.redefineMealPortions);
   const setMealTotalGrams = useDiaryStore((s) => s.setMealTotalGrams);
   const setSelectedDate = useDiaryStore((s) => s.setSelectedDate);
   const featureHealthiness = useSettingsStore((s) => s.featureHealthiness);
@@ -101,11 +100,11 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
     { protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
 
-  function commitPortionsRedefine() {
+  function commitPortions() {
     if (portionsDraft === null) return;
     const parsed = Number(portionsDraft.replace(',', '.'));
     if (Number.isFinite(parsed)) {
-      redefineMealPortions(meal.id, parsed);
+      setMealPortions(meal.id, parsed);
     }
     setPortionsDraft(null);
   }
@@ -262,8 +261,8 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
                 ref={portionsInputRef}
                 type="text"
                 inputMode="decimal"
-                aria-label="Исправить число порций без изменения КБЖУ"
-                title="Исправить счёт порций (КБЖУ не меняется)"
+                aria-label="Съеденные порции (меняет КБЖУ)"
+                title="Сколько съели — пересчитать калории и БЖУ"
                 aria-live="polite"
                 className={cn(
                   inputClassName,
@@ -272,7 +271,7 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
                 value={portionsDraft ?? formatPortions(portions)}
                 onFocus={() => setPortionsDraft(formatPortions(portions))}
                 onChange={(e) => setPortionsDraft(e.target.value)}
-                onBlur={commitPortionsRedefine}
+                onBlur={commitPortions}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();

@@ -12,6 +12,7 @@ import {
   displayName,
   assertFriendship,
   buildFriendProfile,
+  removeFriendship,
 } from './friends.js';
 
 const mocks = vi.hoisted(() => ({
@@ -86,6 +87,37 @@ describe('resolveFriendTarget', () => {
 
     const result = await resolveFriendTarget(prismaMock(), 'dave');
     expect(result?.id).toBe('u3');
+  });
+});
+
+describe('removeFriendship', () => {
+  it('sets accepted row to declined', async () => {
+    const findFirst = vi.fn().mockResolvedValue({ id: 'fr-1' });
+    const update = vi.fn().mockResolvedValue({ status: 'declined' });
+    await expect(
+      removeFriendship(
+        { friendRequest: { findFirst, update } } as never,
+        'a',
+        'b',
+      ),
+    ).resolves.toBe(true);
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'fr-1' },
+      data: { status: 'declined' },
+    });
+  });
+
+  it('returns false when no accepted friendship', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null);
+    const update = vi.fn();
+    await expect(
+      removeFriendship(
+        { friendRequest: { findFirst, update } } as never,
+        'a',
+        'b',
+      ),
+    ).resolves.toBe(false);
+    expect(update).not.toHaveBeenCalled();
   });
 });
 

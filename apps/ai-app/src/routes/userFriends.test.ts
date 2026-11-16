@@ -170,6 +170,74 @@ describe('POST /user/friends/request', () => {
       expect.stringContaining('хочет добавить вас в друзья'),
     );
   });
+
+  it('201 re-requests after declined by updating existing row', async () => {
+    mocks.findFirst.mockResolvedValue({
+      id: 'req-old',
+      fromUserId: callerId,
+      toUserId: targetId,
+      status: 'declined',
+    });
+    mocks.update.mockResolvedValue({
+      id: 'req-old',
+      fromUser: { firstName: 'Alice', username: 'alice' },
+    });
+
+    const res = await request(createApp())
+      .post('/user/friends/request')
+      .set('x-user-token', 'jwt')
+      .send({ query: '@bob' });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ requestId: 'req-old', status: 'pending' });
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.update).toHaveBeenCalledWith({
+      where: { id: 'req-old' },
+      data: {
+        fromUserId: callerId,
+        toUserId: targetId,
+        status: 'pending',
+      },
+      include: {
+        fromUser: {
+          select: { firstName: true, username: true },
+        },
+      },
+    });
+  });
+
+  it('201 re-requests opposite-direction declined row', async () => {
+    mocks.findFirst.mockResolvedValue({
+      id: 'req-opposite',
+      fromUserId: targetId,
+      toUserId: callerId,
+      status: 'declined',
+    });
+    mocks.update.mockResolvedValue({
+      id: 'req-opposite',
+      fromUser: { firstName: 'Alice', username: 'alice' },
+    });
+
+    const res = await request(createApp())
+      .post('/user/friends/request')
+      .set('x-user-token', 'jwt')
+      .send({ query: '@bob' });
+
+    expect(res.status).toBe(201);
+    expect(mocks.update).toHaveBeenCalledWith({
+      where: { id: 'req-opposite' },
+      data: {
+        fromUserId: callerId,
+        toUserId: targetId,
+        status: 'pending',
+      },
+      include: {
+        fromUser: {
+          select: { firstName: true, username: true },
+        },
+      },
+    });
+  });
 });
 
 describe('GET /user/friends', () => {
@@ -275,6 +343,192 @@ describe('POST /user/friends/requests/:id/accept', () => {
       .set('x-user-token', 'jwt');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('accepted');
+  });
+});
+
+describe('DELETE /user/friends/:userId', () => {
+  beforeEach(() => {
+    mocks.isDatabaseConfigured.mockReturnValue(true);
+    mocks.getPrisma.mockReturnValue({
+      friendRequest: {
+        findFirst: mocks.findFirst,
+        update: mocks.update,
+      },
+    });
+    mocks.verifyUserToken.mockResolvedValue({ sub: callerId, telegramId: '1' });
+    mocks.findFirst.mockResolvedValue({
+      id: 'friend-1',
+      fromUserId: callerId,
+      toUserId: targetId,
+      status: 'accepted',
+    });
+    mocks.update.mockResolvedValue({ status: 'declined' });
+  });
+
+  afterEach(() => vi.clearAllMocks());
+
+  it('removes accepted friendship', async () => {
+    const res = await request(createApp())
+      .delete(`/user/friends/${targetId}`)
+      .set('x-user-token', 'jwt');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'removed' });
+    expect(mocks.update).toHaveBeenCalledWith({
+      where: { id: 'friend-1' },
+      data: { status: 'declined' },
+    });
+  });
+
+  it('404 when not friends', async () => {
+    mocks.findFirst.mockResolvedValue(null);
+    const res = await request(createApp())
+      .delete(`/user/friends/${targetId}`)
+      .set('x-user-token', 'jwt');
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('NOT_FOUND');
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  it('clears friendship for profile and friends list', async () => {
+    type StoredRow = {
+      id: string;
+      fromUserId: string;
+      toUserId: string;
+      status: string;
+    };
+    let row: StoredRow = {
+      id: 'friend-1',
+      fromUserId: callerId,
+      toUserId: targetId,
+      status: 'accepted',
+    };
+
+    mocks.findFirst.mockImplementation(
+      (args: { where?: { status?: string; OR?: unknown } }) => {
+        if (args?.where?.status === 'accepted') {
+          return row.status === 'accepted' ? Promise.resolve({ id: row.id }) : Promise.resolve(null);
+        }
+        if (args?.where?.OR) {
+          return Promise.resolve(row);
+        }
+        return Promise.resolve(null);
+      },
+    );
+    mocks.update.mockImplementation(
+      (args: { data: { status?: string } }) => {
+        if (args.data.status === 'declined') {
+          row = { ...row, status: 'declined' };
+        }
+        return Promise.resolve({ status: 'declined' });
+      },
+    );
+    mocks.assertFriendship.mockImplementation(async () => row.status === 'accepted');
+    mocks.listAcceptedFriends.mockImplementation(async () =>
+      row.status === 'accepted'
+        ? [
+            {
+              userId: targetId,
+              displayName: 'Bob',
+              username: 'bob',
+              streak: 0,
+              calorieStreak: 0,
+              goalKg: null,
+              weightKg: null,
+            },
+          ]
+        : [],
+    );
+
+    const { assertFriendship } = await import('../lib/friends.js');
+    const prisma = mocks.getPrisma();
+
+    const removeRes = await request(createApp())
+      .delete(`/user/friends/${targetId}`)
+      .set('x-user-token', 'jwt');
+    expect(removeRes.status).toBe(200);
+
+    await expect(assertFriendship(prisma, callerId, targetId)).resolves.toBe(false);
+
+    const listRes = await request(createApp())
+      .get('/user/friends')
+      .set('x-user-token', 'jwt');
+    expect(listRes.status).toBe(200);
+    expect(listRes.body.friends).toEqual([]);
+
+    const profileRes = await request(createApp())
+      .get(`/user/friends/${targetId}/profile`)
+      .set('x-user-token', 'jwt');
+    expect(profileRes.status).toBe(403);
+    expect(profileRes.body.code).toBe('FRIENDS_ONLY');
+  });
+
+  it('DELETE then POST re-request succeeds', async () => {
+    type StoredRow = {
+      id: string;
+      fromUserId: string;
+      toUserId: string;
+      status: string;
+    };
+    let row: StoredRow = {
+      id: 'friend-1',
+      fromUserId: callerId,
+      toUserId: targetId,
+      status: 'accepted',
+    };
+
+    mocks.findFirst.mockImplementation(
+      (args: { where?: { status?: string; OR?: unknown } }) => {
+        if (args?.where?.status === 'accepted') {
+          return row.status === 'accepted' ? Promise.resolve({ id: row.id }) : Promise.resolve(null);
+        }
+        if (args?.where?.OR) {
+          return Promise.resolve(row);
+        }
+        return Promise.resolve(null);
+      },
+    );
+    mocks.update.mockImplementation(
+      (args: {
+        data: { status?: string; fromUserId?: string; toUserId?: string };
+      }) => {
+        if (args.data.status === 'declined') {
+          row = { ...row, status: 'declined' };
+        }
+        if (args.data.status === 'pending') {
+          row = {
+            ...row,
+            fromUserId: args.data.fromUserId ?? row.fromUserId,
+            toUserId: args.data.toUserId ?? row.toUserId,
+            status: 'pending',
+          };
+        }
+        return Promise.resolve({
+          id: row.id,
+          fromUser: { firstName: 'Alice', username: 'alice' },
+        });
+      },
+    );
+    mocks.resolveFriendTarget.mockResolvedValue({
+      id: targetId,
+      username: 'bob',
+      firstName: 'Bob',
+      photoUrl: null,
+      telegramId: '777',
+    });
+
+    const removeRes = await request(createApp())
+      .delete(`/user/friends/${targetId}`)
+      .set('x-user-token', 'jwt');
+    expect(removeRes.status).toBe(200);
+
+    const requestRes = await request(createApp())
+      .post('/user/friends/request')
+      .set('x-user-token', 'jwt')
+      .send({ query: '@bob' });
+    expect(requestRes.status).toBe(201);
+    expect(requestRes.body).toEqual({ requestId: 'friend-1', status: 'pending' });
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(row.status).toBe('pending');
   });
 });
 
