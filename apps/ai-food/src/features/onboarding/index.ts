@@ -1,4 +1,6 @@
 export { OnboardingPage } from './ui/OnboardingPage';
+export { EditProfileSheet } from './ui/EditProfileSheet';
+export type { EditProfileSheetProps } from './ui/EditProfileSheet.types';
 export { useProfileStore } from './model/useProfileStore';
 export { useProfileHydrated } from './model/useProfileHydrated';
 export { defaultMicronutrientTargets } from './model/defaultMicronutrientTargets';

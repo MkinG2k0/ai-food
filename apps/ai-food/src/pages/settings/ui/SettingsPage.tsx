@@ -10,6 +10,7 @@ import { useBillingStatus } from '@/features/billing';
 import { ReferralCodeBlock } from '@/features/referral';
 import { useFavoritesStore } from '@/features/favorites';
 import {
+  EditProfileSheet,
   syncNutritionProfileToServer,
   useProfileStore,
 } from '@/features/onboarding';
@@ -127,6 +128,7 @@ export function SettingsPage() {
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
   const [editTargetsOpen, setEditTargetsOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [targetDraft, setTargetDraft] = useState<TargetDraft | null>(null);
   const [themeOpen, setThemeOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -611,6 +613,15 @@ export function SettingsPage() {
                   Профиль ещё не заполнен.
                 </p>
               )}
+              {profile ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setEditProfileOpen(true)}
+                >
+                  Изменить профиль
+                </Button>
+              ) : null}
               {targets && (
                 <Button
                   variant="outline"
@@ -1056,6 +1067,14 @@ export function SettingsPage() {
           </section>
         )}
     </SubpageShell>
+
+      {profile ? (
+        <EditProfileSheet
+          open={editProfileOpen}
+          profile={profile}
+          onClose={() => setEditProfileOpen(false)}
+        />
+      ) : null}
 
       <BottomSheet open={editTargetsOpen} onClose={handleCloseEditTargets}>
         <div className="w-full space-y-4 px-2 py-2">

@@ -100,6 +100,16 @@ describe('useProfileStore', () => {
     expect(useProfileStore.getState().profile).toEqual(mockProfile);
   });
 
+  it('updateProfile replaces profile and keeps targets', async () => {
+    const next = { ...mockProfile, age: 35, activity: 'high' as const };
+    await act(async () => {
+      useProfileStore.getState().setProfile(mockProfile, mockTargets);
+      useProfileStore.getState().updateProfile(next);
+    });
+    expect(useProfileStore.getState().profile).toEqual(next);
+    expect(useProfileStore.getState().targets).toEqual(mockTargets);
+  });
+
   it('updateDietType patches profile.dietType when profile exists', async () => {
     await act(async () => {
       useProfileStore.getState().setProfile(mockProfile, mockTargets);
