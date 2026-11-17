@@ -31,16 +31,37 @@ async function submitDescription(page: Page, description = 'куриный са�
 }
 
 test.describe('analyze resilience', () => {
-  test('E1: зависший анализ показывает stale Retry', async ({
+  test('E1: зависший анализ остаётся в loading без ложного Retry', async ({
     onboardedPage: page,
   }) => {
-    test.setTimeout(50_000);
+    test.setTimeout(40_000);
     await overrideAnalyzeRoute(page, 'hang');
     await submitDescription(page);
 
-    await expect(page.getByRole('button', { name: 'Повторить' })).toBeVisible({
-      timeout: 30_000,
+    await expect(page.getByLabel('Анализ еды').first()).toBeVisible({
+      timeout: 10_000,
     });
+    await expect(page.getByRole('button', { name: 'Повторить' })).toHaveCount(
+      0,
+    );
+    // Soft wait: premature 20s Retry must not appear while request is pending.
+    await page.waitForTimeout(22_000);
+    await expect(page.getByRole('button', { name: 'Повторить' })).toHaveCount(
+      0,
+    );
+    await expect(page.getByLabel('Анализ еды').first()).toBeVisible();
+  });
+
+  test('E1b: UPSTREAM_ERROR показывает Retry сразу без спиннера', async ({
+    onboardedPage: page,
+  }) => {
+    await overrideAnalyzeRoute(page, 'upstreamError');
+    await submitDescription(page);
+
+    await expect(page.getByRole('button', { name: 'Повторить' })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.locator('.meal-card-border-loader')).toHaveCount(0);
   });
 
   test('E2: Retry после ошибки завершает анализ', async ({

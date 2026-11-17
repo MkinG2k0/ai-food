@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import {
+  abortMealAnalyze,
   beginMealAnalyze,
   endMealAnalyze,
   useDiaryStore,
@@ -102,6 +103,7 @@ export function persistMealImages(
 
 /** Drop optimistic card when shutter encode fails (never reached AI). */
 export function cancelAnalyzingMeal(mealId: string): void {
+  abortMealAnalyze(mealId);
   endMealAnalyze(mealId);
   useDiaryStore.getState().recordPendingDelete(mealId);
   queueDiarySync({ mode: 'delete', mealIds: [mealId] });

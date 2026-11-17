@@ -145,6 +145,25 @@ describe('resumePendingAnalyzes', () => {
     expect(mealShowsAnalyzeRetry(meal)).toBe(true);
   });
 
+  it('turns a failed upstream job into Retry without leftover loader', async () => {
+    useDiaryStore.setState({ meals: [analyzingMeal()] });
+    waitForAnalyzeJob.mockRejectedValue({
+      code: 'UPSTREAM_ERROR',
+      status: 500,
+      message: 'Upstream request failed.',
+    });
+    const retry = vi.fn();
+
+    await resumePendingAnalyzes(retry);
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(retry).not.toHaveBeenCalled();
+    expect(meal.status).toBe('error');
+    expect(meal.analyzeErrorCode).toBe('UPSTREAM_ERROR');
+    expect(meal.analyzeJobId).toBeUndefined();
+    expect(mealShowsAnalyzeRetry(meal)).toBe(true);
+  });
+
   it('does not resume a terminal no-food meal even if analyzeJobId is leftover', async () => {
     useDiaryStore.setState({
       meals: [

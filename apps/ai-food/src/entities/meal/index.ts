@@ -29,7 +29,10 @@ export {
   mealShowsAnalyzeRetry,
   holdPendingAnalyzeStatus,
   mealShouldResumeAnalyze,
+  isResumableMealAnalyzeError,
   isTerminalMealAnalyzeError,
+  resolveAnalyzeUiPhase,
+  type AnalyzeUiPhase,
 } from './model/mealAnalyzeUi';
 export {
   sanitizeNutrient,

@@ -1,5 +1,8 @@
 import type { ApiError, Meal } from '@ai-food/shared-types';
-import { isTerminalMealAnalyzeError } from '@/entities/meal';
+import {
+  isResumableMealAnalyzeError,
+  isTerminalMealAnalyzeError,
+} from '@/entities/meal';
 
 export function analyzeErrorPatch(
   error: unknown,
@@ -11,15 +14,15 @@ export function analyzeErrorPatch(
     typeof (error as ApiError).code === 'string'
   ) {
     const analyzeErrorCode = (error as ApiError).code;
+    const keepJob = isResumableMealAnalyzeError(analyzeErrorCode);
     const clearJob =
-      isTerminalMealAnalyzeError(analyzeErrorCode) ||
-      analyzeErrorCode === 'ANALYSIS_TIMEOUT';
+      isTerminalMealAnalyzeError(analyzeErrorCode) || !keepJob;
     return {
       status: 'error',
       analyzeErrorCode,
-      // Drop durable job id so the card is not treated as still in-flight.
+      // Drop durable job id unless this is a soft interrupt that resume will poll.
       ...(clearJob ? { analyzeJobId: undefined } : {}),
     };
   }
-  return { status: 'error' };
+  return { status: 'error', analyzeJobId: undefined };
 }

@@ -51,7 +51,8 @@ export type AnalyzeMockMode =
   | 'hang'
   | 'slowSuccess'
   | 'timeoutError'
-  | 'failThenSuccess';
+  | 'failThenSuccess'
+  | 'upstreamError';
 
 
 
@@ -196,6 +197,15 @@ async function fulfillAnalyzeWithMode(
     await json(route, 500, {
       code: 'ANALYSIS_FAILED',
       message: 'Внутренняя ошибка сервера',
+      status: 500,
+    });
+    return;
+  }
+
+  if (mode === 'upstreamError') {
+    await json(route, 500, {
+      code: 'UPSTREAM_ERROR',
+      message: 'Upstream request failed. Please try again.',
       status: 500,
     });
     return;

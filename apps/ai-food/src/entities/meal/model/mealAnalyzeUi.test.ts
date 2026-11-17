@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Meal } from '@ai-food/shared-types';
 import {
-  ANALYZING_STALE_MS,
   holdPendingAnalyzeStatus,
   mealShouldResumeAnalyze,
   mealShowsAnalyzeLoader,
   mealShowsAnalyzeRetry,
+  resolveAnalyzeUiPhase,
 } from './mealAnalyzeUi';
 
 const meal = (overrides: Partial<Meal> = {}): Meal => ({
@@ -17,26 +17,45 @@ const meal = (overrides: Partial<Meal> = {}): Meal => ({
 });
 
 describe('mealAnalyzeUi', () => {
-  it('exports ANALYZING_STALE_MS as 20 seconds', () => {
-    expect(ANALYZING_STALE_MS).toBe(20_000);
-  });
-
   it('shows loader while analyzing', () => {
     expect(mealShowsAnalyzeLoader(meal({ status: 'analyzing' }))).toBe(true);
     expect(mealShowsAnalyzeRetry(meal({ status: 'analyzing' }))).toBe(false);
+    expect(resolveAnalyzeUiPhase(meal({ status: 'analyzing' }))).toBe('pending');
   });
 
-  it('shows loader while a gateway job id is present even if status is error', () => {
-    const row = meal({ status: 'error', analyzeJobId: 'job-1' });
-    expect(mealShowsAnalyzeLoader(row)).toBe(true);
-    expect(mealShowsAnalyzeRetry(row)).toBe(false);
-  });
-
-  it('shows loader for a leftover generic error until the gateway GET settles', () => {
-    const row = meal({ status: 'error', analyzeErrorCode: 'ANALYSIS_FAILED' });
+  it('shows loader while a soft-interrupt job id is present', () => {
+    const row = meal({
+      status: 'error',
+      analyzeErrorCode: 'STREAM_INTERRUPTED',
+      analyzeJobId: 'job-1',
+    });
     expect(mealShowsAnalyzeLoader(row)).toBe(true);
     expect(mealShowsAnalyzeRetry(row)).toBe(false);
     expect(mealShouldResumeAnalyze(row)).toBe(true);
+    expect(resolveAnalyzeUiPhase(row)).toBe('pending');
+  });
+
+  it('shows retry immediately for UPSTREAM_ERROR without leftover loader', () => {
+    const row = meal({
+      status: 'error',
+      analyzeErrorCode: 'UPSTREAM_ERROR',
+      analyzeJobId: 'job-1',
+    });
+    expect(mealShowsAnalyzeLoader(row)).toBe(false);
+    expect(mealShowsAnalyzeRetry(row)).toBe(true);
+    expect(mealShouldResumeAnalyze(row)).toBe(false);
+    expect(resolveAnalyzeUiPhase(row)).toBe('failed');
+  });
+
+  it('shows retry immediately for ANALYSIS_FAILED without leftover loader', () => {
+    const row = meal({
+      status: 'error',
+      analyzeErrorCode: 'ANALYSIS_FAILED',
+    });
+    expect(mealShowsAnalyzeLoader(row)).toBe(false);
+    expect(mealShowsAnalyzeRetry(row)).toBe(true);
+    expect(mealShouldResumeAnalyze(row)).toBe(false);
+    expect(resolveAnalyzeUiPhase(row)).toBe('failed');
   });
 
   it('shows retry for confirmed no-food / quota / job-gone errors', () => {
@@ -76,11 +95,31 @@ describe('mealAnalyzeUi', () => {
   it('does not show loader for a ready meal', () => {
     expect(mealShowsAnalyzeLoader(meal({ status: 'ready' }))).toBe(false);
     expect(mealShowsAnalyzeRetry(meal({ status: 'ready' }))).toBe(false);
+    expect(resolveAnalyzeUiPhase(meal({ status: 'ready' }))).toBe('ready');
   });
 
-  it('holdPendingAnalyzeStatus flips generic error to analyzing', () => {
+  it('resumes recovered crash errors that have no error code', () => {
+    const row = meal({ status: 'error' });
+    expect(mealShouldResumeAnalyze(row)).toBe(true);
+    expect(mealShowsAnalyzeLoader(row)).toBe(true);
+    expect(mealShowsAnalyzeRetry(row)).toBe(false);
+  });
+
+  it('holdPendingAnalyzeStatus keeps terminal failures as error', () => {
     const next = holdPendingAnalyzeStatus(
-      meal({ status: 'error', analyzeErrorCode: 'ANALYSIS_FAILED' }),
+      meal({ status: 'error', analyzeErrorCode: 'UPSTREAM_ERROR' }),
+    );
+    expect(next.status).toBe('error');
+    expect(next.analyzeErrorCode).toBe('UPSTREAM_ERROR');
+  });
+
+  it('holdPendingAnalyzeStatus flips soft interrupt to analyzing', () => {
+    const next = holdPendingAnalyzeStatus(
+      meal({
+        status: 'error',
+        analyzeErrorCode: 'STREAM_INTERRUPTED',
+        analyzeJobId: 'job-1',
+      }),
     );
     expect(next.status).toBe('analyzing');
     expect(next.analyzeErrorCode).toBeUndefined();
