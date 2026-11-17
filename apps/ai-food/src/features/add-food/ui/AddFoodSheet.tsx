@@ -167,7 +167,7 @@ export function AddFoodSheet({
       toast.message(`Можно выбрать не больше ${MAX_FOOD_IMAGES} фото`);
     }
     if (truncatedByQuota && limited.length > 0) {
-      toast.message(`Хватит на ${limited.length} из ${requestedCount}`);
+      toast.message(`Хватило на ${limited.length} из ${requestedCount}`);
     }
 
     if (limited.length === 0) {

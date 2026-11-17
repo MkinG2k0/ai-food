@@ -127,7 +127,7 @@ describe('AddFoodSheet gallery multi-select', () => {
     renderSheet();
     pickFiles(fileList(7));
 
-    expect(mocks.toastMessage).toHaveBeenCalledWith('Хватит на 3 из 7');
+    expect(mocks.toastMessage).toHaveBeenCalledWith('Хватило на 3 из 7');
     expect(mocks.submitFood).toHaveBeenCalledTimes(3);
   });
 
