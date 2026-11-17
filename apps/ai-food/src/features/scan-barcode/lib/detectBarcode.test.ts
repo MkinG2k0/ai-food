@@ -51,6 +51,8 @@ describe('detectBarcodeInVideo live mode', () => {
   it('uses cached BarcodeDetector across live calls', async () => {
     const detect = vi
       .fn()
+      // 1st live: video miss → scaled canvas miss; 2nd live: video hit
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ rawValue: '4600605021123' }]);
     const Detector = vi.fn().mockImplementation(() => ({ detect }));
@@ -62,7 +64,7 @@ describe('detectBarcodeInVideo live mode', () => {
       '4600605021123',
     );
     expect(Detector).toHaveBeenCalledTimes(1);
-    expect(detect).toHaveBeenCalledTimes(2);
+    expect(detect).toHaveBeenCalledTimes(3);
   });
 
   it('resetBarcodeFileScannerForTests clears detector cache', async () => {

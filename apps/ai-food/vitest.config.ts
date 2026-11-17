@@ -16,6 +16,12 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    // Explicit URL so jsdom Storage is not blocked by opaque origins on CI.
+    environmentOptions: {
+      jsdom: {
+        url: 'http://localhost/',
+      },
+    },
     setupFiles: ['./src/test/setup.ts'],
     globals: true,
     // Playwright specs live in e2e/ — do not collect them with Vitest.

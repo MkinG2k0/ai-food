@@ -1,5 +1,12 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
+
+import { installCanvasMocks } from './canvasMocks';
+import { ensureWebStorage } from './memoryStorage';
+
+const { prefsStore } = vi.hoisted(() => ({
+  prefsStore: new Map<string, string>(),
+}));
 
 vi.mock('@capacitor/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@capacitor/core')>();
@@ -9,15 +16,37 @@ vi.mock('@capacitor/core', async (importOriginal) => {
   };
 });
 
-// jsdom does not implement URL.createObjectURL / revokeObjectURL
-if (!global.URL.createObjectURL) {
-  global.URL.createObjectURL = (_blob: Blob) => `blob:mock-${Math.random()}`;
+/** Prefer in-memory Preferences over PreferencesWeb → localStorage. */
+vi.mock('@capacitor/preferences', () => ({
+  Preferences: {
+    clear: vi.fn(async () => {
+      prefsStore.clear();
+    }),
+    get: vi.fn(async ({ key }: { key: string }) => ({
+      value: prefsStore.has(key) ? prefsStore.get(key)! : null,
+    })),
+    keys: vi.fn(async () => ({ keys: [...prefsStore.keys()] })),
+    remove: vi.fn(async ({ key }: { key: string }) => {
+      prefsStore.delete(key);
+    }),
+    set: vi.fn(async ({ key, value }: { key: string; value: string }) => {
+      prefsStore.set(key, value);
+    }),
+  },
+}));
+
+ensureWebStorage('localStorage');
+ensureWebStorage('sessionStorage');
+installCanvasMocks();
+
+if (!globalThis.URL.createObjectURL) {
+  globalThis.URL.createObjectURL = (_blob: Blob) => `blob:mock-${Math.random()}`;
 }
-if (!global.URL.revokeObjectURL) {
-  global.URL.revokeObjectURL = () => {};
+if (!globalThis.URL.revokeObjectURL) {
+  globalThis.URL.revokeObjectURL = () => {};
 }
 
-if (typeof window.matchMedia !== 'function') {
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: (query: string) => ({
@@ -32,3 +61,11 @@ if (typeof window.matchMedia !== 'function') {
     }),
   });
 }
+
+beforeEach(() => {
+  prefsStore.clear();
+  // Re-apply after tests that call `vi.restoreAllMocks()`.
+  installCanvasMocks();
+  ensureWebStorage('localStorage');
+  ensureWebStorage('sessionStorage');
+});
