@@ -28,6 +28,10 @@ vi.mock('../model/syncNutritionProfileToServer', () => ({
   syncNutritionProfileToServer: vi.fn(),
 }));
 
+vi.mock('@/features/weight-sync', () => ({
+  queueWeightSync: vi.fn(),
+}));
+
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));

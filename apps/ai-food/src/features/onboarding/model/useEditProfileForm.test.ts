@@ -10,8 +10,12 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 const syncMock = vi.fn();
+const queueWeightSyncMock = vi.fn();
 vi.mock('./syncNutritionProfileToServer', () => ({
   syncNutritionProfileToServer: () => syncMock(),
+}));
+vi.mock('@/features/weight-sync', () => ({
+  queueWeightSync: (...args: unknown[]) => queueWeightSyncMock(...args),
 }));
 
 vi.mock('sonner', () => ({
@@ -44,6 +48,7 @@ const mockTargets = {
 
 beforeEach(async () => {
   syncMock.mockReset();
+  queueWeightSyncMock.mockReset();
   await act(async () => {
     await useProfileStore.persist.rehydrate();
   });
@@ -81,6 +86,7 @@ describe('useEditProfileForm', () => {
     });
     expect(useProfileStore.getState().targets).toEqual(mockTargets);
     expect(useWeightStore.getState().goalKg).toBe(57);
+    expect(queueWeightSyncMock).toHaveBeenCalledWith({ mode: 'full' });
     expect(syncMock).toHaveBeenCalledTimes(1);
     expect(onSaved).toHaveBeenCalledTimes(1);
   });

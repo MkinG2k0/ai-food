@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import type { UserProfile } from '@ai-food/shared-types';
 import { useWeightStore } from '@/features/stats';
+import { queueWeightSync } from '@/features/weight-sync';
 import {
   draftFromProfile,
   parseProfileDraft,
@@ -55,6 +56,7 @@ export function useEditProfileForm({
     }
     updateProfile(next);
     useWeightStore.getState().setGoalKg(next.targetWeight);
+    queueWeightSync({ mode: 'full' });
     syncNutritionProfileToServer();
     toast.success('Профиль обновлён');
     onSaved();
