@@ -2,11 +2,15 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { ApiError } from '../../lib/errors.js';
 import { asyncHandler } from '../middleware/error.js';
+import { requireApiKey } from '../middleware/auth.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import { verifyUserToken } from '../lib/jwt.js';
 import { ANALYZE_MEAL_CARD_FAILURE } from '../lib/analyzeFailureAnalytics.js';
+import { assertAnalyticsIngestionAllowed } from '../lib/analyticsIngestionLimit.js';
 
 export const analyticsRouter = Router();
+
+analyticsRouter.use(requireApiKey);
 
 const EventBodySchema = z.object({
   name: z.literal(ANALYZE_MEAL_CARD_FAILURE),
@@ -17,6 +21,8 @@ const EventBodySchema = z.object({
   payload: z.record(z.string(), z.unknown()).optional(),
 });
 
+const DEDUPE_WINDOW_MS = 5 * 60_000;
+
 analyticsRouter.post(
   '/events',
   asyncHandler(async (req, res) => {
@@ -24,6 +30,7 @@ analyticsRouter.post(
     if (!deviceId) {
       throw new ApiError(400, 'DEVICE_ID_REQUIRED', 'X-Device-Id header is required.');
     }
+    assertAnalyticsIngestionAllowed(deviceId);
 
     if (!isDatabaseConfigured()) {
       throw new ApiError(
@@ -63,6 +70,22 @@ analyticsRouter.post(
     }
 
     const { name, mealId, errorCode, inFlight, clientAt, payload } = parsed.data;
+    const recent = await prisma.clientAnalyticsEvent.findFirst({
+      where: {
+        name,
+        mealId,
+        deviceId,
+        inFlight,
+        errorCode: errorCode ?? null,
+        createdAt: { gte: new Date(Date.now() - DEDUPE_WINDOW_MS) },
+      },
+      select: { id: true },
+    });
+    if (recent) {
+      res.json({ ok: true, deduped: true });
+      return;
+    }
+
     await prisma.clientAnalyticsEvent.create({
       data: {
         name,

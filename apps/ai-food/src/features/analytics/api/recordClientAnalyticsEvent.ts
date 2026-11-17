@@ -19,11 +19,15 @@ export async function recordClientAnalyticsEvent(
   body: ClientAnalyticsEventBody,
 ): Promise<void> {
   const gatewayUrl = import.meta.env.VITE_AI_GATEWAY_URL as string | undefined;
+  const apiKey = import.meta.env.VITE_AI_GATEWAY_API_KEY as string | undefined;
   if (!gatewayUrl?.trim()) return;
 
   const name: ClientAnalyticsEventName = body.name;
   try {
     const headers = await getQuotaHeaders('other');
+    if (apiKey?.trim()) {
+      headers.Authorization = `Bearer ${apiKey.trim()}`;
+    }
     const response = await fetch(
       `${gatewayUrl.replace(/\/$/, '')}/analytics/events`,
       {

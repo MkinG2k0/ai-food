@@ -19,6 +19,7 @@ describe('recordClientAnalyticsEvent', () => {
   });
 
   it('posts analyze_meal_card_failure on 200 OK', async () => {
+    vi.stubEnv('VITE_AI_GATEWAY_API_KEY', 'gw-key');
     vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 200 }));
 
     await recordClientAnalyticsEvent({
@@ -33,6 +34,10 @@ describe('recordClientAnalyticsEvent', () => {
       'http://gateway.test/analytics/events',
       expect.objectContaining({
         method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer gw-key',
+          'X-Device-Id': 'test-device',
+        }),
         body: JSON.stringify({
           name: 'analyze_meal_card_failure',
           mealId: 'm1',
