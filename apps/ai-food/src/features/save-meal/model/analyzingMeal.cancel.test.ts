@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   isMealAnalyzeInFlight,
   resetMealAnalyzeInFlight,
-} from '@/entities/meal/model/analyzeInFlight';
-import { useDiaryStore } from '@/entities/meal';
+  useDiaryStore,
+} from '@/entities/meal';
 import { queueDiarySync } from '@/features/diary-sync';
 import {
   beginAnalyzingMeal,

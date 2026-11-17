@@ -16,6 +16,7 @@ export {
   beginMealAnalyze,
   endMealAnalyze,
   isMealAnalyzeInFlight,
+  resetMealAnalyzeInFlight,
 } from './model/analyzeInFlight';
 export { useMealImage } from './model/useMealImage';
 export { useMealImages } from './model/useMealImages';
