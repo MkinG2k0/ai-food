@@ -7,3 +7,6 @@ coverage/
 .vercel/
 
 /src/generated/prisma
+
+# Agent planning scratch
+.planning/tmp/
