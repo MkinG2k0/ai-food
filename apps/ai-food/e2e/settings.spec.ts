@@ -12,6 +12,15 @@ test.describe('settings', () => {
     await expect(page.getByText('Мужской')).toBeVisible();
     await expect(page.getByText('25 лет')).toBeVisible();
 
+    await page.getByRole('button', { name: 'Изменить профиль' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Изменить профиль' }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Отмена' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Изменить профиль' }),
+    ).toHaveCount(0);
+
     // Targets live further down — scroll and open if needed, or assert kcal rings section.
     await expect(page.getByText('Кольца календаря')).toBeVisible();
   });

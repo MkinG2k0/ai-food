@@ -16,6 +16,7 @@ interface ProfileState {
   suppressRemoteRestore: boolean;
   setProfile: (profile: UserProfile, targets: DailyTargets) => void;
   setMicronutrientTargets: (targets: MicronutrientEstimate[] | null) => void;
+  updateProfile: (profile: UserProfile) => void;
   updateTargets: (targets: DailyTargets) => void;
   updateDietType: (dietType: DietType) => void;
   updateTargetWeight: (targetWeight: number) => void;
@@ -33,6 +34,7 @@ export const useProfileStore = create<ProfileState>()(
       setProfile: (profile, targets) =>
         set({ profile, targets, suppressRemoteRestore: false }),
       setMicronutrientTargets: (micronutrientTargets) => set({ micronutrientTargets }),
+      updateProfile: (profile) => set({ profile }),
       updateTargets: (targets) => set({ targets }),
       updateDietType: (dietType) => {
         const { profile } = get();
