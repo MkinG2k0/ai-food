@@ -8,7 +8,7 @@ export function installCanvasMocks(): void {
 
   HTMLCanvasElement.prototype.getContext = function getContext(
     this: HTMLCanvasElement,
-  ): CanvasRenderingContext2D {
+  ): CanvasRenderingContext2D | null {
     return {
       canvas: this,
       clearRect() {},
@@ -23,16 +23,16 @@ export function installCanvasMocks(): void {
       putImageData() {},
       setTransform() {},
     } as unknown as CanvasRenderingContext2D;
-  } as typeof HTMLCanvasElement.prototype.getContext;
+  } as unknown as typeof HTMLCanvasElement.prototype.getContext;
 
   HTMLCanvasElement.prototype.toBlob = function toBlob(
     this: HTMLCanvasElement,
     callback: BlobCallback,
   ): void {
     callback(new Blob(['x'], { type: 'image/png' }));
-  } as typeof HTMLCanvasElement.prototype.toBlob;
+  } as unknown as typeof HTMLCanvasElement.prototype.toBlob;
 
   HTMLCanvasElement.prototype.toDataURL = function toDataURL(): string {
     return 'data:image/png;base64,AA==';
-  } as typeof HTMLCanvasElement.prototype.toDataURL;
+  } as unknown as typeof HTMLCanvasElement.prototype.toDataURL;
 }
