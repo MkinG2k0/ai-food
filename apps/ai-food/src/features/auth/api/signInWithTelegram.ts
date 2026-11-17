@@ -13,9 +13,6 @@ type TelegramGatewayUser = {
 const BMP_LETTER_OR_DIGIT = /^[A-Za-z0-9]$/;
 
 function stripLoneSurrogates(value: string): string {
-  if (typeof value.toWellFormed === 'function') {
-    return value.toWellFormed();
-  }
   return value.replace(/[\uD800-\uDFFF]/g, '');
 }
 
