@@ -130,7 +130,8 @@ export interface Meal {
   portions?: number;
   /**
    * Estimated total dish weight in grams.
-   * Editing redistributes item grams by share; does not change KBJU.
+   * Editing redistributes item grams by share and scales item KBJU
+   * by each item's grams ratio (meal totals roll up).
    * Omitted on legacy meals.
    */
   totalGrams?: number;

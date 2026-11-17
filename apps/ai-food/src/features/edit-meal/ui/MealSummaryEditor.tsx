@@ -222,8 +222,8 @@ export function MealSummaryEditor({ meal }: MealSummaryEditorProps) {
             <input
               type="text"
               inputMode="decimal"
-              aria-label="Граммовка всего блюда (масштабирует граммы состава)"
-              title="Меняет граммы всех ингредиентов по их долям; КБЖУ не трогает"
+              aria-label="Граммовка всего блюда (масштабирует граммы и КБЖУ состава)"
+              title="Меняет граммы всех ингредиентов по их долям и пересчитывает КБЖУ"
               className={cn(
                 inputClassName,
                 'h-9 text-center text-base font-semibold tabular-nums',

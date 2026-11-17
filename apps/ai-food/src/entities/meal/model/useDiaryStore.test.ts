@@ -397,7 +397,7 @@ describe('useDiaryStore', () => {
     expect(meal.totalCalories).toBe(250);
   });
 
-  it('setMealTotalGrams redistributes item grams by share without changing KBJU', async () => {
+  it('setMealTotalGrams redistributes grams and scales KBJU by weight', async () => {
     const { result } = renderHook(() => useDiaryStore());
     await act(async () => {
       result.current.addMeal({
@@ -414,11 +414,14 @@ describe('useDiaryStore', () => {
     expect(meal.totalGrams).toBe(400);
     expect(meal.items[0].grams).toBe(160);
     expect(meal.items[1].grams).toBe(240);
-    expect(meal.totalCalories).toBe(500);
-    expect(meal.items[0].calories).toBe(200);
+    expect(meal.items[0].calories).toBe(400);
+    expect(meal.items[1].calories).toBe(600);
+    expect(meal.totalCalories).toBe(1000);
+    expect(meal.items[0].protein).toBe(12);
+    expect(meal.items[1].protein).toBe(48);
   });
 
-  it('setMealTotalGrams round-trips to original grams', async () => {
+  it('setMealTotalGrams round-trips grams and KBJU', async () => {
     const { result } = renderHook(() => useDiaryStore());
     await act(async () => {
       result.current.addMeal({
@@ -436,9 +439,12 @@ describe('useDiaryStore', () => {
     expect(meal.totalGrams).toBe(200);
     expect(meal.items[0].grams).toBe(80);
     expect(meal.items[1].grams).toBe(120);
+    expect(meal.totalCalories).toBe(500);
+    expect(meal.items[0].calories).toBe(200);
+    expect(meal.items[1].calories).toBe(300);
   });
 
-  it('updateMealItem grams updates totalGrams and later scale uses new share', async () => {
+  it('updateMealItem grams scales item KBJU and later dish scale uses new share', async () => {
     const { result } = renderHook(() => useDiaryStore());
     await act(async () => {
       result.current.addMeal({
@@ -449,22 +455,26 @@ describe('useDiaryStore', () => {
           { ...multiItemMeal.items[1], id: 'veg', grams: 120 },
         ],
       });
-      result.current.updateMealItem('m1', 'chicken', { grams: 150 });
+      result.current.updateMealItem('m1', 'chicken', { grams: 160 });
     });
-    expect(result.current.meals[0].totalGrams).toBe(270);
-    expect(result.current.meals[0].items[0].grams).toBe(150);
+    expect(result.current.meals[0].totalGrams).toBe(280);
+    expect(result.current.meals[0].items[0].grams).toBe(160);
+    expect(result.current.meals[0].items[0].calories).toBe(400);
+    expect(result.current.meals[0].totalCalories).toBe(700);
 
     await act(async () => {
-      result.current.setMealTotalGrams('m1', 270);
-      result.current.setMealTotalGrams('m1', 135);
+      result.current.setMealTotalGrams('m1', 140);
     });
     const meal = result.current.meals[0];
-    expect(meal.totalGrams).toBe(135);
-    expect(meal.items[0].grams).toBe(75);
+    expect(meal.totalGrams).toBe(140);
+    expect(meal.items[0].grams).toBe(80);
     expect(meal.items[1].grams).toBe(60);
+    expect(meal.items[0].calories).toBe(200);
+    expect(meal.items[1].calories).toBe(150);
+    expect(meal.totalCalories).toBe(350);
   });
 
-  it('updateMealItem grams-only at 1g keeps nutrient values (density sticky in UI)', async () => {
+  it('updateMealItem grams-only scales nutrients by weight ratio', async () => {
     const { result } = renderHook(() => useDiaryStore());
     const tinyItemMeal: Meal = {
       id: 'tiny',
@@ -474,28 +484,30 @@ describe('useDiaryStore', () => {
         {
           id: 'spice',
           name: 'Salt',
-          calories: 2,
-          protein: 0,
-          carbs: 0,
-          fat: 0,
+          calories: 200,
+          protein: 10,
+          carbs: 20,
+          fat: 5,
           fiber: 0,
           grams: 100,
         },
       ],
-      totalCalories: 2,
+      totalCalories: 200,
       totalGrams: 100,
     };
     await act(async () => {
       result.current.addMeal(tinyItemMeal);
-      result.current.updateMealItem('tiny', 'spice', { grams: 1 });
+      result.current.updateMealItem('tiny', 'spice', { grams: 50 });
     });
     const item = result.current.meals[0].items[0];
-    expect(item.grams).toBe(1);
-    expect(item.calories).toBe(2);
-    expect(result.current.meals[0].totalGrams).toBe(1);
+    expect(item.grams).toBe(50);
+    expect(item.calories).toBe(100);
+    expect(item.protein).toBe(5);
+    expect(result.current.meals[0].totalCalories).toBe(100);
+    expect(result.current.meals[0].totalGrams).toBe(50);
   });
 
-  it('setMealTotalGrams with single 1g item preserves KBJU totals', async () => {
+  it('setMealTotalGrams with single item scales KBJU with weight', async () => {
     const { result } = renderHook(() => useDiaryStore());
     await act(async () => {
       result.current.addMeal({
@@ -522,8 +534,9 @@ describe('useDiaryStore', () => {
     const meal = result.current.meals[0];
     expect(meal.totalGrams).toBe(2);
     expect(meal.items[0].grams).toBe(2);
-    expect(meal.totalCalories).toBe(5);
-    expect(meal.items[0].calories).toBe(5);
+    expect(meal.totalCalories).toBe(10);
+    expect(meal.items[0].calories).toBe(10);
+    expect(meal.items[0].protein).toBe(2);
   });
 
   it('redefineMealPortions after setMealPortions keeps baseline macros', async () => {

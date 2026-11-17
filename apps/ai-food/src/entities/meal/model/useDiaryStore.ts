@@ -17,9 +17,12 @@ import {
 import {
   resolveMealTotalGrams,
   sanitizeGrams,
-  scaleItemsGramsToTotal,
   sumItemGrams,
 } from './mealGrams';
+import {
+  applyFoodItemPatch,
+  scaleMealItemsToTotalGrams,
+} from './scaleItemsByWeight';
 
 export interface MealNutritionPatch {
   calories?: number;
@@ -61,8 +64,8 @@ interface DiaryState {
   /** Change portion count label only — does not rescale nutrients (fix AI count). */
   redefineMealPortions: (mealId: string, portions: number) => void;
   /**
-   * Set dish totalGrams and redistribute item grams by current shares.
-   * Does not change KBJU.
+   * Set dish totalGrams, redistribute item grams by current shares,
+   * and scale each item's KBJU by its grams ratio (meal totals roll up).
    */
   setMealTotalGrams: (mealId: string, totalGrams: number) => void;
   clearDiary: () => void;
@@ -137,7 +140,7 @@ export const useDiaryStore = create<DiaryState>()(
 
           const safePatch = sanitizeFoodItemPatch(patch);
           const items = meal.items.map((item, i) =>
-            i === itemIndex ? { ...item, ...safePatch } : item
+            i === itemIndex ? applyFoodItemPatch(item, safePatch) : item
           );
 
           const meals = [...state.meals];
@@ -269,16 +272,18 @@ export const useDiaryStore = create<DiaryState>()(
             return state;
           }
 
-          const { items, totalGrams: scaledTotal } = scaleItemsGramsToTotal(
-            meal.items,
-            next,
-          );
+          const {
+            items,
+            totalGrams: scaledTotal,
+            totalCalories,
+          } = scaleMealItemsToTotalGrams(meal.items, next);
 
           const meals = [...state.meals];
           meals[mealIndex] = withClientClock({
             ...meal,
             items,
             totalGrams: scaledTotal,
+            totalCalories,
           });
           return { meals };
         }),

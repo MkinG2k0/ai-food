@@ -50,6 +50,12 @@ export {
   formatItemGrams,
 } from './model/mealGrams';
 export {
+  applyFoodItemPatch,
+  foodItemWithScaledGrams,
+  scaleMealItemsToTotalGrams,
+  sumItemMacros,
+} from './model/scaleItemsByWeight';
+export {
   DEFAULT_PORTIONS,
   PORTION_STEP,
   MIN_PORTIONS,
