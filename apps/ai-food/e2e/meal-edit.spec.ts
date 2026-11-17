@@ -76,7 +76,10 @@ test.describe('meal edit', () => {
       await page.getByLabel('Калории блюда').inputValue(),
     );
 
-    const portionsInput = page.getByLabel('Съеденные порции (меняет КБЖУ)');
+    // exact: +/- buttons also include this phrase in their aria-labels
+    const portionsInput = page.getByRole('textbox', {
+      name: 'Съеденные порции (меняет КБЖУ)',
+    });
 
     await portionsInput.click();
 

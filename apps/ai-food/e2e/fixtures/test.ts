@@ -72,9 +72,10 @@ export async function waitForNewsSheetSettled(page: Page): Promise<void> {
 /** Close remaining bottom sheets (streak celebration, etc.) that block clicks. */
 export async function dismissBlockingSheets(page: Page): Promise<void> {
   await dismissNewsSheetIfPresent(page);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     const sheet = page.locator('div.fixed.inset-0.z-50');
-    if ((await sheet.count()) === 0) break;
+    const hasSheetQuery = new URL(page.url()).searchParams.has('sheet');
+    if ((await sheet.count()) === 0 && !hasSheetQuery) break;
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
   }

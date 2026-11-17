@@ -70,6 +70,23 @@ chatRouter.post(
         const timer = startGatewayRequestTimer();
         let ok = false;
         let startedUpstream = false;
+        // Track client gone before/while waiting on the concurrency queue.
+        // Prefer socket/res close — req.aborted is often false after a finished body,
+        // and req.close fires on normal body completion (not a disconnect).
+        const socket = req.socket;
+        let disconnected =
+          Boolean(req.aborted) ||
+          res.destroyed ||
+          Boolean(socket?.destroyed) ||
+          res.writableEnded;
+        let completed = false;
+        const markDisconnected = () => {
+          if (completed) return;
+          disconnected = true;
+        };
+        req.once('aborted', markDisconnected);
+        res.once('close', markDisconnected);
+        socket?.once('close', markDisconnected);
 
         await runOpenAIHeld(async (client, release) => {
           const createAbort = new AbortController();
@@ -81,21 +98,29 @@ chatRouter.post(
                 >;
               }
             | undefined;
-          let disconnected = req.aborted || res.destroyed || res.writableEnded;
-          let completed = false;
           const isDisconnected = () =>
-            disconnected || req.aborted || res.destroyed || res.writableEnded;
+            disconnected ||
+            Boolean(req.aborted) ||
+            res.destroyed ||
+            Boolean(req.socket?.destroyed) ||
+            res.writableEnded;
           const onDisconnect = () => {
-            if (completed) return;
-            disconnected = true;
+            markDisconnected();
             createAbort.abort();
             stream?.controller.abort();
             release();
           };
+          req.off('aborted', markDisconnected);
+          res.off('close', markDisconnected);
+          socket?.off('close', markDisconnected);
           req.once('aborted', onDisconnect);
           res.once('close', onDisconnect);
+          req.socket?.once('close', onDisconnect);
 
           try {
+            // Flush close events if the client destroyed just before handler entry
+            // and acquire() resolved without yielding to the event loop.
+            await new Promise<void>((resolve) => setImmediate(resolve));
             if (isDisconnected()) {
               createAbort.abort();
               release();
@@ -143,6 +168,7 @@ chatRouter.post(
           } finally {
             req.off('aborted', onDisconnect);
             res.off('close', onDisconnect);
+            req.socket?.off('close', onDisconnect);
             release();
             if (startedUpstream) {
               void timer.finish({

@@ -53,6 +53,14 @@ export const DEMO_E2E_SESSION = {
   telegramId: 100000001,
 };
 
+/** Local YYYY-MM-DD — mirrors entities/streak localDateKey for e2e seeds. */
+export function e2eTodayLocalDateKey(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 /** Seed Capacitor Preferences (web) + legacy keys for zustand persist. */
 export function buildOnboardedStorage(options?: {
   meals?: unknown[];
@@ -70,6 +78,23 @@ export function buildOnboardedStorage(options?: {
     'ai-food-pwa-install-seen': persistEnvelope({ dismissed: true }),
     'ai-food-news-seen': persistEnvelope({
       lastSeenDate: options?.newsSeenDate ?? DEFAULT_E2E_NEWS_SEEN_DATE,
+    }),
+    // Prevent auto-opening ?sheet=streak after the first ready meal of the day.
+    'ai-food-streak': persistEnvelope({
+      currentLength: 0,
+      freezeCount: 0,
+      consumedFreezeDateKeys: [],
+      grantedMilestones: [],
+      lastCelebratedLocalDate: e2eTodayLocalDateKey(),
+      bestStreak: 0,
+      calorieStreak: {
+        currentLength: 0,
+        freezeCount: 0,
+        consumedFreezeDateKeys: [],
+        grantedMilestones: [],
+        bestStreak: 0,
+      },
+      clientUpdatedAt: '2026-08-22T00:00:00.000Z',
     }),
     'ai-food-settings': persistEnvelope({
       ...DEFAULT_E2E_SETTINGS,

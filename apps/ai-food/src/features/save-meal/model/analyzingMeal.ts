@@ -77,9 +77,12 @@ export function beginAnalyzingMeal(options?: {
   return { mealId, itemId, signal };
 }
 
-export function persistMealImages(mealId: string, imageList: File[]): void {
+export function persistMealImages(
+  mealId: string,
+  imageList: File[],
+): Promise<void> {
   const t0 = performance.now();
-  void Promise.all(imageList.map((file) => saveMealImage(file)))
+  return Promise.all(imageList.map((file) => saveMealImage(file)))
     .then((imageUris) => {
       appDebugLog('photo', 'persistImages', performance.now() - t0, {
         count: imageList.length,

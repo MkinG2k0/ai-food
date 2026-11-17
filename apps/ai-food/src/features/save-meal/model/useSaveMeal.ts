@@ -56,16 +56,20 @@ export function useSaveMeal() {
     }
 
     const handle = beginAnalyzingMeal({ description: trimmedDescription });
-    if (imageList.length > 0) {
-      persistMealImages(handle.mealId, imageList);
-    }
-    await runMealAnalyze(queryClient, handle, {
-      ...(imageList.length === 1
-        ? { image: imageList[0] }
-        : imageList.length > 1
-          ? { images: imageList }
-          : {}),
-      ...(trimmedDescription ? { description: trimmedDescription } : {}),
-    });
+    const persistPromise =
+      imageList.length > 0
+        ? persistMealImages(handle.mealId, imageList)
+        : Promise.resolve();
+    await Promise.all([
+      persistPromise,
+      runMealAnalyze(queryClient, handle, {
+        ...(imageList.length === 1
+          ? { image: imageList[0] }
+          : imageList.length > 1
+            ? { images: imageList }
+            : {}),
+        ...(trimmedDescription ? { description: trimmedDescription } : {}),
+      }),
+    ]);
   };
 }
