@@ -23,16 +23,18 @@ describe('foodItemWithScaledGrams', () => {
     expect(next.fat).toBe(28);
   });
 
-  it('zeros KBJU when weight becomes 0', () => {
-    const next = foodItemWithScaledGrams(glazedChicken[0]!, 0);
-    expect(next).toMatchObject({
-      grams: 0,
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-    });
+  it('at 0g stores per-100 density so later weight restores KBJU', () => {
+    const base = glazedChicken[0]!;
+    const zeroed = foodItemWithScaledGrams(base, 0);
+    expect(zeroed.grams).toBe(0);
+    // 360 kcal / 180g → 200 per 100g
+    expect(zeroed.calories).toBe(200);
+    expect(zeroed.protein).toBe(20);
+
+    const restored = foodItemWithScaledGrams(zeroed, 180);
+    expect(restored.grams).toBe(180);
+    expect(restored.calories).toBe(360);
+    expect(restored.protein).toBe(36);
   });
 });
 
@@ -109,5 +111,23 @@ describe('scaleMealItemsToTotalGrams', () => {
     expect(totalCalories).toBe(1310);
     expect(items[1]!.calories).toBe(640);
     expect(sumItemMacros(items).fat).toBe(4 + 48 + 22);
+  });
+
+  it('dish weight 0 then restore recovers shares and KBJU', () => {
+    const before = sumItemCalories(glazedChicken);
+    const zeroed = scaleMealItemsToTotalGrams(glazedChicken, 0);
+    expect(zeroed.totalGrams).toBe(0);
+    // Items kept so shares survive; dish totalCalories still reflects composition
+    expect(zeroed.items[0]!.grams).toBe(180);
+    expect(zeroed.items[0]!.calories).toBe(360);
+    expect(zeroed.totalCalories).toBe(before);
+
+    const restored = scaleMealItemsToTotalGrams(zeroed.items, 300);
+    expect(restored.totalGrams).toBe(300);
+    expect(restored.totalCalories).toBe(before);
+    expect(restored.items[0]!.grams).toBe(180);
+    expect(restored.items[0]!.calories).toBe(360);
+    expect(restored.items[1]!.grams).toBe(120);
+    expect(restored.items[1]!.calories).toBe(60);
   });
 });

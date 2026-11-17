@@ -1,10 +1,13 @@
 import type { FoodItem } from '@ai-food/shared-types';
-import { scaleItemsGramsToTotal } from './mealGrams';
+import { sanitizeGrams, scaleItemsGramsToTotal } from './mealGrams';
 import {
+  nutrientsFromPer100,
+  nutrientsPer100FromPortion,
   scalePortionNutrientsByGrams,
   sanitizeFoodItemPatch,
   sumItemCalories,
   type NutrientKey,
+  type PortionNutrients,
 } from './mealNutritionMath';
 
 const NUTRIENT_KEYS: NutrientKey[] = [
@@ -19,28 +22,52 @@ function patchHasNutrient(patch: Partial<FoodItem>): boolean {
   return NUTRIENT_KEYS.some((key) => key in patch);
 }
 
-/** Scale one item's KBJU with a new weight; grams=0 clears nutrients. */
+function portionFromItem(item: FoodItem): PortionNutrients {
+  return {
+    calories: item.calories,
+    protein: item.protein,
+    carbs: item.carbs,
+    fat: item.fat,
+    fiber: item.fiber ?? 0,
+  };
+}
+
+/**
+ * Scale one item's KBJU with a new weight.
+ * At grams=0, nutrient fields keep per-100 density so a later positive
+ * weight can restore KBJU (avoids 0→N stuck-at-zero round trip).
+ */
 export function foodItemWithScaledGrams(
   item: FoodItem,
   newGrams: number,
 ): FoodItem {
-  const safePatch = sanitizeFoodItemPatch({ grams: newGrams });
-  const grams = safePatch.grams ?? 0;
+  const grams = sanitizeGrams(newGrams);
+  const oldGrams = sanitizeGrams(item.grams);
+
   if (grams === 0) {
+    if (oldGrams === 0) {
+      return { ...item, grams: 0 };
+    }
     return {
       ...item,
       grams: 0,
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
+      ...nutrientsPer100FromPortion({ ...portionFromItem(item), grams: oldGrams }),
     };
   }
+
+  if (oldGrams === 0) {
+    // Nutrient fields hold per-100 density from a prior zeroing (or zeros).
+    return {
+      ...item,
+      grams,
+      ...nutrientsFromPer100(portionFromItem(item), grams),
+    };
+  }
+
   return {
     ...item,
     grams,
-    ...scalePortionNutrientsByGrams(item, item.grams, grams),
+    ...scalePortionNutrientsByGrams(portionFromItem(item), oldGrams, grams),
   };
 }
 
@@ -64,31 +91,35 @@ export function applyFoodItemPatch(
 /**
  * Redistribute composition to a new dish total and scale each item's KBJU
  * by its own grams ratio so meal totals roll up with weight.
+ *
+ * Target 0 keeps item grams/KBJU intact (only totalGrams becomes 0) so a
+ * later positive total can restore shares — zeroing every item would lose
+ * proportions and stick KBJU at 0 via scalePortionNutrientsByGrams.
  */
 export function scaleMealItemsToTotalGrams(
   items: FoodItem[],
   targetTotalGrams: number,
 ): { items: FoodItem[]; totalGrams: number; totalCalories: number } {
+  const safeTarget = sanitizeGrams(targetTotalGrams);
   if (items.length === 0) {
-    const { items: next, totalGrams } = scaleItemsGramsToTotal(
+    return { items, totalGrams: safeTarget, totalCalories: 0 };
+  }
+
+  if (safeTarget === 0) {
+    return {
       items,
-      targetTotalGrams,
-    );
-    return { items: next, totalGrams, totalCalories: 0 };
+      totalGrams: 0,
+      totalCalories: sumItemCalories(items),
+    };
   }
 
   const { items: gramScaled, totalGrams } = scaleItemsGramsToTotal(
     items,
-    targetTotalGrams,
+    safeTarget,
   );
-  const nextItems = gramScaled.map((item, index) => {
-    const prev = items[index]!;
-    if (item.grams === prev.grams) return item;
-    return {
-      ...item,
-      ...scalePortionNutrientsByGrams(prev, prev.grams, item.grams),
-    };
-  });
+  const nextItems = gramScaled.map((item, index) =>
+    foodItemWithScaledGrams(items[index]!, item.grams),
+  );
 
   return {
     items: nextItems,
