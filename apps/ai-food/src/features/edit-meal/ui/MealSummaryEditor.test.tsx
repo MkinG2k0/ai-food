@@ -95,5 +95,8 @@ describe('MealSummaryEditor portions input', () => {
     expect(meal?.totalCalories).toBe(1000);
     expect(meal?.items[0]?.calories).toBe(400);
     expect(meal?.items[1]?.calories).toBe(600);
+    expect(meal?.items[0]?.grams).toBe(160);
+    expect(meal?.items[1]?.grams).toBe(240);
+    expect(meal?.portions).toBe(1);
   });
 });
