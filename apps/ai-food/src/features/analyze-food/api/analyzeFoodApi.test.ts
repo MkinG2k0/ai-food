@@ -228,4 +228,90 @@ describe('analyzeFoodApi (food/analyze SSE)', () => {
     const { body } = lastFetch();
     expect(Array.isArray(body.images) && (body.images as string[]).length).toBe(2);
   });
+
+  it('polls analyze job when stream throws with embedded jobId', async () => {
+    const xml = nutritionResultToXml(validNutrition);
+    const encoder = new TextEncoder();
+    let readCount = 0;
+    const streamBody = {
+      getReader: () => ({
+        read: async () => {
+          readCount += 1;
+          if (readCount === 1) {
+            return {
+              done: false,
+              value: encoder.encode(
+                `data: ${JSON.stringify({ jobId: 'job-resume-1' })}\n\n`,
+              ),
+            };
+          }
+          throw new Error('connection lost');
+        },
+      }),
+    };
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'Content-Type': 'text/event-stream' }),
+        body: streamBody,
+      } as Response)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            jobId: 'job-resume-1',
+            status: 'done',
+            content: xml,
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const onJobId = vi.fn();
+    const result = await analyzeFoodApi(
+      { description: 'омлет' },
+      { onJobId },
+    );
+
+    expect(onJobId).toHaveBeenCalledWith('job-resume-1');
+    expect(result.result.foodName).toBe(validNutrition.foodName);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1][0])).toContain(
+      '/v1/food/analyze/job-resume-1',
+    );
+  });
+
+  it('polls analyze job when stream returns empty content but jobId is known', async () => {
+    const xml = nutritionResultToXml(validNutrition);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('data: [DONE]\n\n', {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'X-Analyze-Job-Id': 'job-empty-1',
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            jobId: 'job-empty-1',
+            status: 'done',
+            content: xml,
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await analyzeFoodApi({ description: 'борщ' });
+    expect(result.result.foodName).toBe(validNutrition.foodName);
+    expect(String(fetchMock.mock.calls[1][0])).toContain(
+      '/v1/food/analyze/job-empty-1',
+    );
+  });
 });

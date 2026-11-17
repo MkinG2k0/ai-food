@@ -74,6 +74,26 @@ describe('mergeMealsLww', () => {
     expect(merged[0].imageUris).toEqual(['meal-images/local.jpg']);
   });
 
+  it('keeps local imageUri when newer remote sends empty-string stub', () => {
+    const local = [
+      meal('a', '2026-08-13T10:00:00.000Z', {
+        imageUri: 'meal-images/local.jpg',
+        imageUris: ['meal-images/local.jpg'],
+      }),
+    ];
+    const remote = [
+      meal('a', '2026-08-13T12:00:00.000Z', {
+        name: 'С сервера',
+        imageUri: '',
+        imageUris: [],
+      }),
+    ];
+    const merged = mergeMealsLww(local, remote, []);
+    expect(merged[0].name).toBe('С сервера');
+    expect(merged[0].imageUri).toBe('meal-images/local.jpg');
+    expect(merged[0].imageUris).toEqual(['meal-images/local.jpg']);
+  });
+
   it('tombstone removes local meal when delete clock wins', () => {
     const local = [meal('a', '2026-08-13T10:00:00.000Z')];
     const merged = mergeMealsLww(local, [], [

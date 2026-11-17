@@ -36,7 +36,7 @@ vi.mock('../lib/prisma.js', () => ({
   isDatabaseConfigured: (...args: unknown[]) => mockIsDb(...args),
 }));
 
-import { enforceChatQuota } from './quota.js';
+import { enforceChatQuota, finalizeQuotaUsage } from './quota.js';
 
 function run(
   headers: Record<string, string>,
@@ -154,5 +154,62 @@ describe('enforceChatQuota', () => {
       shouldRecord: true,
       usageKind: 'analyze',
     });
+  });
+
+  it('allows active subscription without device and does not record usage', async () => {
+    mockVerifyUserToken.mockResolvedValue({ sub: 'u1', telegramId: '42' });
+    mockFindUnique.mockResolvedValue({
+      id: 'u1',
+      subscriptionStatus: 'active',
+      subscriptionExpiresAt: new Date(Date.now() + 86_400_000),
+    });
+    mockHasActiveSubscription.mockReturnValue(true);
+    const { err, req } = await run({
+      'x-usage-kind': 'analyze',
+      'x-user-token': 'jwt',
+    });
+    expect(err).toBeUndefined();
+    expect(req.quota).toMatchObject({
+      usageKind: 'analyze',
+      userId: 'u1',
+      shouldRecord: false,
+    });
+    expect(
+      (req.quota as { deviceRowId?: string } | undefined)?.deviceRowId,
+    ).toBeUndefined();
+    expect(mockEnsureDevice).not.toHaveBeenCalled();
+    expect(mockAssertGuest).not.toHaveBeenCalled();
+  });
+});
+
+describe('finalizeQuotaUsage', () => {
+  it('returns without hitting prisma when shouldRecord is false or device missing', async () => {
+    mockGetPrisma.mockClear();
+    await finalizeQuotaUsage({
+      quota: {
+        usageKind: 'analyze',
+        shouldRecord: false,
+        deviceRowId: 'd1',
+      },
+    });
+    await finalizeQuotaUsage({
+      quota: {
+        usageKind: 'analyze',
+        shouldRecord: true,
+      },
+    });
+    expect(mockGetPrisma).not.toHaveBeenCalled();
+  });
+
+  it('returns without hitting prisma for non-billable kind other', async () => {
+    mockGetPrisma.mockClear();
+    await finalizeQuotaUsage({
+      quota: {
+        usageKind: 'other',
+        shouldRecord: true,
+        deviceRowId: 'd1',
+      },
+    });
+    expect(mockGetPrisma).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  applyMealSync,
   lwwWins,
   mealSyncBodySchema,
   shouldApplyDelete,
@@ -82,5 +83,80 @@ describe('mealSyncBodySchema', () => {
       ],
     });
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe('applyMealSync ownership', () => {
+  const mocks = {
+    findFirst: vi.fn(),
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+  };
+
+  function prismaStub() {
+    return {
+      meal: {
+        findFirst: mocks.findFirst,
+        findUnique: mocks.findUnique,
+        findMany: mocks.findMany,
+        create: mocks.create,
+        update: mocks.update,
+      },
+    } as never;
+  }
+
+  const upsert = {
+    id: 'shared-id',
+    timestamp: '2026-08-13T10:00:00.000Z',
+    items: [],
+    totalCalories: 200,
+    clientUpdatedAt: '2026-08-13T12:00:00.000Z',
+  };
+
+  beforeEach(() => {
+    mocks.findFirst.mockResolvedValue(null);
+    mocks.findUnique.mockResolvedValue(null);
+    mocks.findMany.mockResolvedValue([]);
+    mocks.create.mockResolvedValue({});
+    mocks.update.mockResolvedValue({});
+  });
+
+  afterEach(() => vi.clearAllMocks());
+
+  it('skips upsert when meal id belongs to another user', async () => {
+    mocks.findUnique.mockResolvedValue({
+      id: 'shared-id',
+      userId: 'other-user',
+    });
+
+    await applyMealSync(prismaStub(), 'user-1', {
+      upserts: [upsert],
+      deletes: [],
+    });
+
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  it('ignores delete tombstone when meal id belongs to another user', async () => {
+    mocks.findUnique.mockResolvedValue({
+      id: 'shared-id',
+      userId: 'other-user',
+    });
+
+    await applyMealSync(prismaStub(), 'user-1', {
+      upserts: [],
+      deletes: [
+        {
+          id: 'shared-id',
+          clientUpdatedAt: '2026-08-13T12:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 });
