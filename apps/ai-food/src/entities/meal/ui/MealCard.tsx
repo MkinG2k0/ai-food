@@ -5,6 +5,7 @@ import { cn } from '@/shared/lib';
 import { Card, CardContent } from '@/shared/ui';
 import { useRetryAnalyzeMeal } from '@/features/save-meal';
 import { useAuthStore } from '@/features/auth';
+import { useTrackAnalyzeFailureUi } from '@/features/analytics';
 import { useMealImage } from '../model/useMealImage';
 import { resolveMealImageUris } from '../model/resolveMealImageUris';
 import { mealDisplayName } from '../model/mealDisplayName';
@@ -50,6 +51,13 @@ export function MealCard({ meal, entranceKey }: MealCardProps) {
   useEffect(() => {
     setImageBroken(false);
   }, [meal.imageUri]);
+
+  // Soft-stale Retry removed in analyze-flow harden; track terminal Retry UI only.
+  useTrackAnalyzeFailureUi({
+    meal,
+    showRetry: isError,
+    analyzingStale: false,
+  });
 
   function goToDetail() {
     if (!canOpenDetail) return;

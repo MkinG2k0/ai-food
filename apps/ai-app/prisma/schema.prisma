@@ -73,6 +73,7 @@ model User {
   sentFriendRequests     FriendRequest[] @relation("FriendRequestFrom")
   receivedFriendRequests FriendRequest[] @relation("FriendRequestTo")
   supportReports         SupportReport[]
+  clientAnalyticsEvents  ClientAnalyticsEvent[]
 }
 
 model Meal {
@@ -255,4 +256,24 @@ model SupportReport {
   @@index([createdAt])
   @@index([userId, createdAt])
   @@index([status, createdAt])
+}
+
+/** Client-reported product analytics (not billable UsageEvent). */
+model ClientAnalyticsEvent {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  deviceId  String?
+  mealId    String?
+  errorCode String?
+  inFlight  Boolean  @default(false)
+  clientAt  DateTime?
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([userId, createdAt])
+  @@index([deviceId, createdAt])
+  @@index([mealId, createdAt])
 }
