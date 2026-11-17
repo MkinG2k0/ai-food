@@ -7,6 +7,7 @@ import {
   BarChartOutlined,
   CloudOutlined,
   CreditCardOutlined,
+  ExclamationCircleOutlined,
   HeartOutlined,
   LogoutOutlined,
   MessageOutlined,
@@ -21,6 +22,11 @@ const { Content, Header, Sider } = Layout;
 const menuItems = [
   { icon: <BarChartOutlined />, key: '/admin', label: 'Обзор' },
   { icon: <ApiOutlined />, key: '/admin/requests', label: 'Запросы' },
+  {
+    icon: <ExclamationCircleOutlined />,
+    key: '/admin/analyze-failures',
+    label: 'Сбои анализа',
+  },
   { icon: <MessageOutlined />, key: '/admin/support-reports', label: 'Обращения' },
   { icon: <HeartOutlined />, key: '/admin/health', label: 'Стабильность' },
   { icon: <CloudOutlined />, key: '/admin/openrouter', label: 'OpenRouter' },
@@ -41,6 +47,7 @@ const menuItems = [
 const pageTitles: Record<string, string> = {
   '/admin': 'Обзор',
   '/admin/requests': 'Запросы',
+  '/admin/analyze-failures': 'Сбои анализа',
   '/admin/support-reports': 'Обращения',
   '/admin/health': 'Стабильность',
   '/admin/openrouter': 'OpenRouter',

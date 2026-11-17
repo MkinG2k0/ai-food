@@ -11,6 +11,7 @@ import { chatRouter } from './routes/chat.js';
 import { foodRouter } from './routes/food.js';
 import { authRouter } from './routes/auth.js';
 import { usageRouter } from './routes/usage.js';
+import { analyticsRouter } from './routes/analytics.js';
 import { billingRouter } from './routes/billing.js';
 import { adminRouter } from './routes/admin.js';
 import { telegramWebhookRouter } from './routes/telegramWebhook.js';
@@ -46,6 +47,7 @@ export function createApp() {
   app.use('/health', healthRouter);
   app.use('/auth', authRouter);
   app.use('/usage', usageRouter);
+  app.use('/analytics', analyticsRouter);
   app.use('/billing', billingRouter);
   app.use('/admin', adminRouter);
   app.use('/telegram/webhook', telegramWebhookRouter);

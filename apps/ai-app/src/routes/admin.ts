@@ -15,6 +15,11 @@ import {
   parseSupportReportListQuery,
   supportReportResponse,
 } from '../lib/supportReport.js';
+import {
+  ANALYZE_MEAL_CARD_FAILURE,
+  buildAnalyzeFailureSummary,
+  serializeAnalyzeFailureEvent,
+} from '../lib/analyzeFailureAnalytics.js';
 import { getPrisma, isDatabaseConfigured } from '../lib/prisma.js';
 import { getQuotaLimits } from '../lib/quota.js';
 import {
@@ -798,6 +803,71 @@ adminRouter.get(
         ...row,
         createdAt: row.createdAt.toISOString(),
       })),
+      total,
+      page,
+      pageSize,
+    });
+  }),
+);
+
+adminRouter.get(
+  '/analyze-failures',
+  asyncHandler(async (req, res) => {
+    const prisma = requireDb();
+    const pageRaw = Number(req.query.page ?? 1);
+    const pageSizeRaw = Number(req.query.pageSize ?? 20);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+    const pageSize =
+      Number.isFinite(pageSizeRaw) && pageSizeRaw > 0
+        ? Math.min(100, Math.floor(pageSizeRaw))
+        : 20;
+    const inFlightFilter =
+      req.query.inFlight === 'true'
+        ? true
+        : req.query.inFlight === 'false'
+          ? false
+          : undefined;
+    const where = {
+      name: ANALYZE_MEAL_CARD_FAILURE,
+      ...(inFlightFilter === undefined ? {} : { inFlight: inFlightFilter }),
+    };
+    const skip = (page - 1) * pageSize;
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [summaryRows, rows, total] = await Promise.all([
+      prisma.clientAnalyticsEvent.findMany({
+        where: { ...where, createdAt: { gte: since } },
+        select: {
+          userId: true,
+          deviceId: true,
+          errorCode: true,
+          inFlight: true,
+        },
+      }),
+      prisma.clientAnalyticsEvent.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        include: {
+          user: {
+            select: {
+              id: true,
+              telegramId: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      }),
+      prisma.clientAnalyticsEvent.count({ where }),
+    ]);
+
+    res.json({
+      summary: buildAnalyzeFailureSummary(summaryRows),
+      summaryWindowDays: 30,
+      items: rows.map(serializeAnalyzeFailureEvent),
       total,
       page,
       pageSize,
