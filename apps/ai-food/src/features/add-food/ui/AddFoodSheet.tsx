@@ -16,9 +16,10 @@ import { cn } from '@/shared/lib';
 import { useSaveMeal } from '@/features/save-meal';
 import { isGenerationQuotaAvailable, useUsage } from '@/features/auth';
 import { showGenerationQuotaPaywall } from '@/features/billing';
+import { limitGalleryMealFiles } from '../lib';
 
-/** Max photos per meal analysis — more angles rarely help. */
-export const MAX_FOOD_IMAGES = 3;
+/** Max photos per gallery pick — each photo becomes its own meal. */
+export const MAX_FOOD_IMAGES = 10;
 
 export type AddFoodAutoAction = 'gallery' | 'describe';
 
@@ -144,14 +145,40 @@ export function AddFoodSheet({
       return;
     }
     if (files.length === 0) return;
-    if (files.length > MAX_FOOD_IMAGES) {
+
+    const remaining =
+      !usage ||
+      usage.hasActiveSubscription ||
+      usage.remaining === null
+        ? null
+        : usage.remaining;
+
+    const {
+      files: limited,
+      truncatedByMax,
+      truncatedByQuota,
+      requestedCount,
+    } = limitGalleryMealFiles(files, {
+      max: MAX_FOOD_IMAGES,
+      remaining,
+    });
+
+    if (truncatedByMax) {
       toast.message(`Можно выбрать не больше ${MAX_FOOD_IMAGES} фото`);
     }
-    const limited = files.slice(0, MAX_FOOD_IMAGES);
+    if (truncatedByQuota && limited.length > 0) {
+      toast.message(`Хватит на ${limited.length} из ${requestedCount}`);
+    }
+
+    if (limited.length === 0) {
+      handleGenerationLocked();
+      return;
+    }
+
     handleClose();
-    void submitFood(
-      limited.length === 1 ? { image: limited[0] } : { images: limited },
-    );
+    for (const image of limited) {
+      void submitFood({ image });
+    }
   };
 
   const handleGalleryClick = () => {
@@ -287,7 +314,7 @@ export function AddFoodSheet({
               multiple
               onChange={handleGalleryChange}
               className="hidden"
-              aria-label="Выбор из галереи (до 3 ракурсов)"
+              aria-label="Выбор из галереи (до 10 фото, каждое — отдельное блюдо)"
             />
           </>
         ) : (
