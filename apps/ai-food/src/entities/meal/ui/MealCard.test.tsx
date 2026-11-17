@@ -1,8 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { Meal } from '@ai-food/shared-types';
-import { ANALYZING_STALE_MS } from '../model/mealAnalyzeUi';
 import { MealCard } from './MealCard';
 
 const { useMealImage } = vi.hoisted(() => ({
@@ -31,6 +30,16 @@ const analyzingMeal = (overrides: Partial<Meal> = {}): Meal => ({
   items: [],
   totalCalories: 0,
   status: 'analyzing',
+  ...overrides,
+});
+
+const errorMeal = (overrides: Partial<Meal> = {}): Meal => ({
+  id: 'm1',
+  timestamp: '2026-08-15T14:59:00.000Z',
+  items: [],
+  totalCalories: 0,
+  status: 'error',
+  analyzeErrorCode: 'UPSTREAM_ERROR',
   ...overrides,
 });
 
@@ -64,87 +73,62 @@ function renderMealCard(meal: Meal) {
   );
 }
 
-describe('MealCard analyzing stale timer', () => {
+describe('MealCard analyze lifecycle UI', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     useMealImage.mockReset();
     useMealImage.mockReturnValue(undefined);
     retryAnalyzeMeal.mockReset();
     retryAnalyzeMeal.mockResolvedValue(undefined);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('shows retry after ANALYZING_STALE_MS even when analyzeJobId is set', () => {
-    renderMealCard(
-      analyzingMeal({ analyzeJobId: 'job-1' }),
-    );
+  it('keeps loader while analyzing — no premature Retry', () => {
+    renderMealCard(analyzingMeal({ analyzeJobId: 'job-1' }));
 
     expect(screen.getByLabelText('Анализ еды')).toBeInTheDocument();
+    expect(screen.getByLabelText('Анализ еды')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
     expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull();
+  });
 
-    act(() => {
-      vi.advanceTimersByTime(ANALYZING_STALE_MS);
-    });
+  it('shows Retry immediately for terminal UPSTREAM_ERROR without spinner', () => {
+    const { container } = renderMealCard(errorMeal());
 
     expect(
       screen.getByRole('button', { name: 'Повторить' }),
     ).toBeInTheDocument();
     expect(screen.getByText(/Анализ не завершился/)).toBeInTheDocument();
+    expect(container.querySelector('.meal-card-border-loader')).toBeNull();
+    expect(container.querySelector('.animate-spin')).toBeNull();
   });
 
-  it('does not show retry while analyzing before the stale threshold', () => {
-    renderMealCard(analyzingMeal());
-
-    act(() => {
-      vi.advanceTimersByTime(ANALYZING_STALE_MS - 1);
-    });
-
-    expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull();
-    expect(screen.getByLabelText('Анализ еды')).toBeInTheDocument();
-  });
-
-  it('restarts the stale timer when retrying the same analyzing meal', () => {
-    renderMealCard(analyzingMeal({ name: 'Салат' }));
-
-    act(() => {
-      vi.advanceTimersByTime(ANALYZING_STALE_MS);
-    });
-    const retry = screen.getByRole('button', { name: 'Повторить' });
-
-    fireEvent.click(retry);
-
-    expect(retryAnalyzeMeal).toHaveBeenCalledWith('m1');
-    expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull();
-    expect(screen.getByLabelText('Анализ еды')).toHaveAttribute(
-      'aria-busy',
-      'true',
+  it('places time in the top-right of the failed card, not inline after error text', () => {
+    const expectedTime = new Date('2026-08-15T14:59:00.000Z').toLocaleTimeString(
+      [],
+      { hour: '2-digit', minute: '2-digit' },
     );
+    renderMealCard(errorMeal());
 
-    act(() => {
-      vi.advanceTimersByTime(ANALYZING_STALE_MS - 1);
-    });
-    expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull();
-
-    act(() => {
-      vi.advanceTimersByTime(1);
-    });
-    expect(
-      screen.getByRole('button', { name: 'Повторить' }),
-    ).toBeInTheDocument();
+    const errorText = screen.getByText('Анализ не завершился…');
+    const time = screen.getByText(expectedTime);
+    const row = errorText.parentElement;
+    expect(row).not.toBeNull();
+    expect(row).toContainElement(time);
+    expect(row!.className).toMatch(/justify-between/);
+    // Error label and time are siblings — time is not glued into the error <p>.
+    expect(errorText.textContent).toBe('Анализ не завершился…');
   });
 
-  it('clears stale state when analyzing finishes', () => {
-    const { rerender } = renderMealCard(analyzingMeal({ analyzeJobId: 'job-1' }));
+  it('retries from the failed card', () => {
+    renderMealCard(errorMeal());
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    expect(retryAnalyzeMeal).toHaveBeenCalledWith('m1');
+  });
 
-    act(() => {
-      vi.advanceTimersByTime(ANALYZING_STALE_MS);
-    });
-    expect(
-      screen.getByRole('button', { name: 'Повторить' }),
-    ).toBeInTheDocument();
+  it('clears error UI when analyzing finishes', () => {
+    const { rerender } = renderMealCard(errorMeal());
+    expect(screen.getByRole('button', { name: 'Повторить' })).toBeInTheDocument();
 
     rerender(
       <MemoryRouter>

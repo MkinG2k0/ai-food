@@ -29,8 +29,8 @@ describe('cancelAnalyzingMeal', () => {
     resetMealAnalyzeInFlight();
   });
 
-  it('ends in-flight analyze, records tombstone, and queues delete sync', () => {
-    const { mealId } = beginAnalyzingMeal({ description: 'тест' });
+  it('aborts in-flight analyze, records tombstone, and queues delete sync', () => {
+    const { mealId, signal } = beginAnalyzingMeal({ description: 'тест' });
     expect(isMealAnalyzeInFlight(mealId)).toBe(true);
     expect(useDiaryStore.getState().meals.some((m) => m.id === mealId)).toBe(
       true,
@@ -42,6 +42,7 @@ describe('cancelAnalyzingMeal', () => {
 
     cancelAnalyzingMeal(mealId);
 
+    expect(signal.aborted).toBe(true);
     expect(isMealAnalyzeInFlight(mealId)).toBe(false);
     expect(
       useDiaryStore.getState().pendingDeletes.some((d) => d.id === mealId),

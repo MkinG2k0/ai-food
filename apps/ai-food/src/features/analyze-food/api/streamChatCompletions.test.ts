@@ -116,6 +116,28 @@ describe('streamFoodAnalyze', () => {
     ).rejects.toMatchObject({ code: 'ANALYSIS_FAILED', status: 500 });
   });
 
+  it('preserves UPSTREAM_ERROR from JSON HTTP body', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({
+        code: 'UPSTREAM_ERROR',
+        message: 'Upstream request failed.',
+        status: 500,
+      }),
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+      body: null,
+    } as Response);
+
+    await expect(
+      streamFoodAnalyze({
+        gatewayUrl: GATEWAY_URL,
+        apiKey: GATEWAY_KEY,
+        body: { description: 'x' },
+      }),
+    ).rejects.toMatchObject({ code: 'UPSTREAM_ERROR', status: 500 });
+  });
+
   it('throws STREAM_INTERRUPTED when reader fails after jobId is known', async () => {
     const encoder = new TextEncoder();
     let readCount = 0;

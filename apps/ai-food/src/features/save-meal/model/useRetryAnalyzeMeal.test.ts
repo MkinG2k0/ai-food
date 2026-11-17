@@ -221,6 +221,33 @@ describe('useRetryAnalyzeMeal', () => {
     expect(useDiaryStore.getState().meals[0].status).toBe('error');
   });
 
+  it('UPSTREAM_ERROR on retry clears job id and leaves Retry-ready error', async () => {
+    vi.mocked(analyzeFoodApi).mockImplementation(async (_input, options) => {
+      options?.onJobId?.('job-retry');
+      throw {
+        message: 'Upstream request failed.',
+        code: 'UPSTREAM_ERROR',
+        status: 500,
+      };
+    });
+    useDiaryStore.setState({
+      meals: [errorMeal({ name: 'суп', analyzeJobId: 'job-old' })],
+    });
+
+    const { result } = renderHook(() => useRetryAnalyzeMeal(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current('meal-1');
+    });
+
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal.status).toBe('error');
+    expect(meal.analyzeErrorCode).toBe('UPSTREAM_ERROR');
+    expect(meal.analyzeJobId).toBeUndefined();
+  });
+
   it('does not call analyzeFoodApi for unknown meal id', async () => {
     const { result } = renderHook(() => useRetryAnalyzeMeal(), {
       wrapper: createWrapper(),

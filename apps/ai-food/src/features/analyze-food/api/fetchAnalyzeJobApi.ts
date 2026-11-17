@@ -20,6 +20,32 @@ function rejectApiError(message: string, code: string, status: number): never {
   throw apiError;
 }
 
+function errorCode(error: unknown): string | undefined {
+  if (error && typeof error === 'object' && 'code' in error) {
+    const code = (error as ApiError).code;
+    if (typeof code === 'string') return code;
+  }
+  return undefined;
+}
+
+function errorStatus(error: unknown): number | undefined {
+  if (error && typeof error === 'object' && 'status' in error) {
+    const status = (error as ApiError).status;
+    if (typeof status === 'number') return status;
+  }
+  return undefined;
+}
+
+/** Fatal for this poll loop — do not keep asking the gateway. */
+function isFatalPollError(error: unknown): boolean {
+  const code = errorCode(error);
+  if (code === 'JOB_NOT_FOUND') return true;
+  if (code === 'ANALYSIS_TIMEOUT') return true;
+  // Client abort / cancel (also mapped as ANALYSIS_FAILED + 499 in places).
+  if (code === 'ANALYSIS_FAILED' && errorStatus(error) === 499) return true;
+  return false;
+}
+
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
     if (signal?.aborted) {
@@ -118,7 +144,22 @@ export async function waitForAnalyzeJob(
       );
     }
 
-    const job = await fetchAnalyzeJobApi(jobId, signal);
+    let job: AnalyzeJobPublic;
+    try {
+      job = await fetchAnalyzeJobApi(jobId, signal);
+    } catch (error) {
+      if (signal?.aborted) {
+        rejectApiError('Анализ отменён.', 'ANALYSIS_FAILED', 499);
+      }
+      if (isFatalPollError(error)) {
+        throw error;
+      }
+      // Transient transport / 5xx on GET — job may still be running; keep the id
+      // by continuing to poll instead of surfacing ANALYSIS_FAILED upstream.
+      await sleep(pollMs, signal);
+      continue;
+    }
+
     if (job.status === 'done') {
       return job.content ?? '';
     }

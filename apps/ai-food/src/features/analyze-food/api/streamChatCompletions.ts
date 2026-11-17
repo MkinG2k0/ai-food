@@ -343,6 +343,7 @@ async function mapHttpError(response: Response): Promise<never> {
     'RATE_LIMITED',
     'ANALYSIS_TIMEOUT',
     'ANALYSIS_FAILED',
+    'UPSTREAM_ERROR',
     'QUOTA_EXCEEDED',
     'JOB_NOT_FOUND',
   ]);

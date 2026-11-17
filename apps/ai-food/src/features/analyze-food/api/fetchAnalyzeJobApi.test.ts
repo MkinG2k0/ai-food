@@ -103,4 +103,58 @@ describe('waitForAnalyzeJob', () => {
       status: 404,
     });
   });
+
+  it('retries transient GET network failures and still returns job content', async () => {
+    const xml = nutritionResultToXml(validNutrition);
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ jobId: 'job-1', status: 'done', content: xml }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const content = await waitForAnalyzeJob('job-1', {
+      deadlineAt: Date.now() + 10_000,
+      pollMs: 1,
+    });
+    expect(content).toBe(xml);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects terminal job failure UPSTREAM_ERROR without treating it as transport noise', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            jobId: 'job-1',
+            status: 'failed',
+            error: {
+              code: 'UPSTREAM_ERROR',
+              message: 'Upstream request failed.',
+              status: 500,
+            },
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      ),
+    );
+
+    await expect(
+      waitForAnalyzeJob('job-1', { deadlineAt: Date.now() + 5_000, pollMs: 1 }),
+    ).rejects.toMatchObject({
+      code: 'UPSTREAM_ERROR',
+      status: 500,
+    });
+  });
 });
