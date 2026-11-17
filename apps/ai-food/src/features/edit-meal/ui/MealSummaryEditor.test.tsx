@@ -73,4 +73,27 @@ describe('MealSummaryEditor portions input', () => {
     expect(useDiaryStore.getState().meals[0]?.portions).toBe(0.5);
     expect(useDiaryStore.getState().meals[0]?.totalCalories).toBe(250);
   });
+
+  it('dish weight change scales composition KBJU totals', () => {
+    render(<MealSummaryHarness mealId="m1" />);
+
+    const grams = screen.getByLabelText(
+      'Граммовка всего блюда (масштабирует граммы и КБЖУ состава)',
+    );
+    fireEvent.focus(grams);
+    fireEvent.change(grams, { target: { value: '400' } });
+    fireEvent.blur(grams);
+
+    expect(
+      (screen.getByLabelText('Калории блюда') as HTMLInputElement).value,
+    ).toBe('1000');
+    expect(
+      (screen.getByLabelText('Белки блюда') as HTMLInputElement).value,
+    ).toBe('60');
+    const meal = useDiaryStore.getState().meals[0];
+    expect(meal?.totalGrams).toBe(400);
+    expect(meal?.totalCalories).toBe(1000);
+    expect(meal?.items[0]?.calories).toBe(400);
+    expect(meal?.items[1]?.calories).toBe(600);
+  });
 });
