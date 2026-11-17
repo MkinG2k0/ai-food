@@ -8,6 +8,8 @@ import {
 } from 'framer-motion';
 import { cn } from '@/shared/lib';
 
+import { useBottomSheetDrag } from './useBottomSheetDrag';
+
 const DISMISS_OFFSET = 100;
 const DISMISS_VELOCITY = 500;
 
@@ -31,6 +33,15 @@ export function BottomSheet({
   portal = true,
 }: BottomSheetProps) {
   const controls = useAnimationControls();
+  const {
+    dragControls,
+    handleRef,
+    sheetRef,
+    onHandlePointerDown,
+    onSheetPointerDown,
+    onSheetPointerMove,
+    onSheetPointerUp,
+  } = useBottomSheetDrag();
 
   useEffect(() => {
     if (!open) return;
@@ -84,6 +95,7 @@ export function BottomSheet({
             onClick={onClose}
           />
           <motion.div
+            ref={sheetRef}
             className={cn(
               'relative w-full max-w-md rounded-t-2xl bg-background p-4 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))] shadow-lg',
               className,
@@ -93,14 +105,23 @@ export function BottomSheet({
             exit={{ y: '100%' }}
             transition={{ type: 'tween', duration: 0.25 }}
             drag="y"
+            dragControls={dragControls}
+            dragListener={false}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.55 }}
             dragMomentum={false}
             onDragEnd={handleDragEnd}
+            onPointerDown={onSheetPointerDown}
+            onPointerMove={onSheetPointerMove}
+            onPointerUp={onSheetPointerUp}
+            onPointerCancel={onSheetPointerUp}
           >
             <div
-              className="mx-auto mb-4 flex h-5 w-full cursor-grab items-center justify-center active:cursor-grabbing"
+              ref={handleRef}
+              className="mx-auto mb-4 flex h-5 w-full cursor-grab items-center justify-center touch-none active:cursor-grabbing"
               aria-hidden
+              data-bottom-sheet-handle
+              onPointerDown={onHandlePointerDown}
             >
               <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30" />
             </div>
