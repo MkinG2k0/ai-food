@@ -21,7 +21,7 @@ test.describe('analyze photo', () => {
     ).toBeVisible({ timeout: 30_000 });
   });
 
-  test('галерея 3 фото показывает badge количества', async ({
+  test('галерея 3 фото создаёт 3 отдельных приёма', async ({
     onboardedPage: page,
   }) => {
     await uploadFromAddFoodGallery(page, [
@@ -29,23 +29,25 @@ test.describe('analyze photo', () => {
       TEST_IMAGE_PATH,
       TEST_IMAGE_PATH,
     ]);
-    await expect(
-      page.getByText('Куриный салат с рисом').first(),
-    ).toBeVisible({ timeout: 30_000 });
-    await dismissBlockingSheets(page);
-    const mealCard = page.getByRole('button', { name: /Куриный салат с рисом/ });
-    const badge = mealCard.locator('span.absolute.bottom-1.right-1', {
-      hasText: '3',
-    });
+
     await expect
-      .poll(
-        async () => {
-          await dismissBlockingSheets(page);
-          return badge.isVisible().catch(() => false);
-        },
-        { timeout: 30_000 },
-      )
-      .toBe(true);
+      .poll(() => getCapturedAnalyzeBodies().length, { timeout: 30_000 })
+      .toBe(3);
+
+    for (const body of getCapturedAnalyzeBodies().slice(-3)) {
+      const payload = body as {
+        images?: string[];
+        image?: string;
+      };
+      const imageCount =
+        payload.images?.length ?? (payload.image ? 1 : 0);
+      expect(imageCount).toBe(1);
+    }
+
+    await dismissBlockingSheets(page);
+    await expect(
+      page.getByRole('button', { name: /Куриный салат с рисом/ }),
+    ).toHaveCount(3, { timeout: 30_000 });
   });
 
   test('scan: галерея без камеры возвращает на главную', async ({

@@ -25,7 +25,9 @@ export async function uploadFromAddFoodGallery(
 
   await page.getByLabel('Добавить еду').click();
 
-  const input = page.getByLabel('Выбор из галереи (до 3 ракурсов)');
+  const input = page.getByLabel(
+    'Выбор из галереи (до 10 фото, каждое — отдельное блюдо)',
+  );
 
   await input.setInputFiles(
     files.map((filePath, index) => ({
