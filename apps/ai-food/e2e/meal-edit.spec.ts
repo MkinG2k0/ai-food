@@ -39,14 +39,29 @@ test.describe('meal edit', () => {
       'Граммовка всего блюда (масштабирует граммы и КБЖУ состава)',
 
     );
+    const kcalInput = page.getByLabel('Калории блюда');
+    const portionsInput = page.getByRole('textbox', {
+      name: 'Съеденные порции (меняет КБЖУ)',
+    });
+
+    // Seed: items 200+100g / 420 kcal; stored totalGrams 350. Scale from composition.
+    await expect(kcalInput).toHaveValue('420');
+    await expect(portionsInput).toHaveValue('2');
 
     await gramsInput.click();
-
-    await gramsInput.fill('700');
-
+    await gramsInput.fill('600');
     await gramsInput.blur();
 
-    await expect(gramsInput).toHaveValue('700');
+    await expect(gramsInput).toHaveValue('600');
+    // Composition sum is 300g → scale 600/300; meal kcal 420→840; portions stay 2
+    await expect(kcalInput).toHaveValue('840');
+    await expect(page.getByLabel('Белки блюда')).toHaveValue('28');
+    await expect(page.getByLabel('Углеводы блюда')).toHaveValue('156');
+    await expect(page.getByLabel('Жиры блюда')).toHaveValue('14');
+    await expect(page.getByLabel('Клетчатка блюда')).toHaveValue('28');
+    await expect(portionsInput).toHaveValue('2');
+    await expect(page.getByText('400 г').first()).toBeVisible();
+    await expect(page.getByText('200 г').first()).toBeVisible();
 
   });
 

@@ -421,6 +421,30 @@ describe('useDiaryStore', () => {
     expect(meal.items[1].protein).toBe(48);
   });
 
+  it('setMealTotalGrams keeps portions unchanged while scaling composition', async () => {
+    const { result } = renderHook(() => useDiaryStore());
+    await act(async () => {
+      result.current.addMeal({
+        ...multiItemMeal,
+        portions: 2,
+        totalGrams: 200,
+        items: [
+          { ...multiItemMeal.items[0], grams: 80 },
+          { ...multiItemMeal.items[1], grams: 120 },
+        ],
+      });
+      result.current.setMealTotalGrams('m1', 100);
+    });
+    const meal = result.current.meals[0];
+    expect(meal.portions).toBe(2);
+    expect(meal.totalGrams).toBe(100);
+    expect(meal.totalCalories).toBe(250);
+    expect(meal.items[0].grams).toBe(40);
+    expect(meal.items[1].grams).toBe(60);
+    expect(meal.items[0].calories).toBe(100);
+    expect(meal.items[1].calories).toBe(150);
+  });
+
   it('setMealTotalGrams round-trips grams and KBJU', async () => {
     const { result } = renderHook(() => useDiaryStore());
     await act(async () => {
