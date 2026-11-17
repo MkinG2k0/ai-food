@@ -70,8 +70,8 @@ export function EditProfileSheet({
           <ProfileNumberField
             label="Желаемый вес"
             unit="кг"
-            min={1}
-            max={500}
+            min={20}
+            max={300}
             step={0.1}
             value={draft.targetWeight}
             onChange={(targetWeight) => setDraft({ targetWeight })}

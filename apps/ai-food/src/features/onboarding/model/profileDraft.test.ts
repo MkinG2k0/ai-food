@@ -55,6 +55,14 @@ describe('profileDraft', () => {
     ).toBeNull();
   });
 
+  it('parseProfileDraft rejects targetWeight outside 20–300 (stats clamp)', () => {
+    const draft = draftFromProfile(baseProfile);
+    draft.targetWeight = '350';
+    expect(
+      parseProfileDraft(draft, baseProfile, baseProfile.targetWeightDate),
+    ).toBeNull();
+  });
+
   it('isDeadlineAcceptable allows unchanged past date and future dates', () => {
     expect(isDeadlineAcceptable('2020-01-01', '2020-01-01')).toBe(true);
     expect(isDeadlineAcceptable('2099-01-01', '2020-01-01')).toBe(true);

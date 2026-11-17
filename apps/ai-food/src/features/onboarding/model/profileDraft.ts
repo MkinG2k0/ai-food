@@ -24,6 +24,9 @@ const HEIGHT_MIN = 50;
 const HEIGHT_MAX = 300;
 const WEIGHT_MIN = 1;
 const WEIGHT_MAX = 500;
+/** Matches useWeightStore.clampKg / UpdateGoalSheet (goal only). */
+const TARGET_WEIGHT_MIN = 20;
+const TARGET_WEIGHT_MAX = 300;
 
 function parseNumber(raw: string): number | null {
   const trimmed = raw.trim().replace(',', '.');
@@ -98,7 +101,12 @@ export function parseProfileDraft(
   if (age < AGE_MIN || age > AGE_MAX) return null;
   if (height < HEIGHT_MIN || height > HEIGHT_MAX) return null;
   if (weight < WEIGHT_MIN || weight > WEIGHT_MAX) return null;
-  if (targetWeight < WEIGHT_MIN || targetWeight > WEIGHT_MAX) return null;
+  if (
+    targetWeight < TARGET_WEIGHT_MIN ||
+    targetWeight > TARGET_WEIGHT_MAX
+  ) {
+    return null;
+  }
 
   return {
     ...base,
@@ -106,7 +114,12 @@ export function parseProfileDraft(
     age: clampRound(age, AGE_MIN, AGE_MAX, 0),
     height: clampRound(height, HEIGHT_MIN, HEIGHT_MAX, 0),
     weight: clampRound(weight, WEIGHT_MIN, WEIGHT_MAX, 1),
-    targetWeight: clampRound(targetWeight, WEIGHT_MIN, WEIGHT_MAX, 1),
+    targetWeight: clampRound(
+      targetWeight,
+      TARGET_WEIGHT_MIN,
+      TARGET_WEIGHT_MAX,
+      1,
+    ),
     targetWeightDate: draft.targetWeightDate,
     activity: draft.activity,
     goal: draft.goal,
