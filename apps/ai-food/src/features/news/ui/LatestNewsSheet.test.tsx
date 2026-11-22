@@ -50,6 +50,7 @@ vi.mock('@/shared/ui', async (importOriginal) => {
   };
 });
 
+import { getLatestNewsRelease } from '../model/changelog';
 import { LatestNewsSheet } from './LatestNewsSheet';
 
 describe('LatestNewsSheet', () => {
@@ -100,7 +101,7 @@ describe('LatestNewsSheet', () => {
   });
 
   it('does not render when release was already dismissed', () => {
-    mocks.lastSeenDate = '2026-09-24';
+    mocks.lastSeenDate = getLatestNewsRelease()?.date ?? null;
     render(
       <MemoryRouter>
         <LatestNewsSheet />
