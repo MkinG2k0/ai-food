@@ -1,0 +1,11 @@
+﻿{
+    "slug":  "weight-chart-ux-profile-weight-sync-1-ma",
+    "description":  "Weight chart UX + profile weight sync: (1) make weight chart points tappable so user can see exact weight/date for a point; (2) allow deleting a logged weight entry when entered by mistake; (3) fix profile settings weight showing wrong value — must reflect the latest logged weight.",
+    "taiga_url":  null,
+    "taiga_source":  null,
+    "taiga_kind":  null,
+    "date":  "2026-11-26",
+    "taiga_ref":  null,
+    "quick_id":  "261126-eba",
+    "timestamp":  "2026-11-26T07:18:21.510Z"
+}

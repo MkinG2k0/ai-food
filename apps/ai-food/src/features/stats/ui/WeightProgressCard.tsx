@@ -24,8 +24,26 @@ import {
 } from '../model/weightProgress';
 import { LogWeightSheet } from './LogWeightSheet';
 import { UpdateGoalSheet } from './UpdateGoalSheet';
+import { WeightEntryDetailSheet } from './WeightEntryDetailSheet';
 import { WeightTrendChart } from './WeightTrendChart';
+import {
+  syncNutritionProfileToServer,
+  useProfileStore,
+} from '@/features/onboarding';
 import { queueWeightSync } from '@/features/weight-sync';
+
+/** Keep profile.weight aligned with the latest dated log entry (D-04). */
+function alignProfileWeightToLog() {
+  const profile = useProfileStore.getState().profile;
+  if (!profile) return;
+  const nextKg = latestWeightKg(
+    useWeightStore.getState().entries,
+    profile.weight,
+  );
+  if (nextKg == null || !Number.isFinite(nextKg)) return;
+  useProfileStore.getState().updateProfile({ ...profile, weight: nextKg });
+  syncNutritionProfileToServer();
+}
 
 interface WeightProgressCardProps {
   profileWeight: number;
@@ -54,11 +72,13 @@ export function WeightProgressCard({
   const entries = useWeightStore((s) => s.entries);
   const goalKg = useWeightStore((s) => s.goalKg);
   const addEntry = useWeightStore((s) => s.addEntry);
+  const recordPendingDelete = useWeightStore((s) => s.recordPendingDelete);
   const setGoalKg = useWeightStore((s) => s.setGoalKg);
   const ensureGoalKg = useWeightStore((s) => s.ensureGoalKg);
   const seedFromOnboarding = useWeightStore((s) => s.seedFromOnboarding);
   const [logOpen, setLogOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const healedPlanStartKey = useRef<string | null>(null);
 
   const currentKg = latestWeightKg(entries, profileWeight) ?? profileWeight;
@@ -168,9 +188,15 @@ export function WeightProgressCard({
         .map((e) => ({
           date: parseLocalYmd(e.date) ?? new Date(),
           kg: e.kg,
+          id: e.id,
         })),
     [entries, effectiveViewStartYmd, clampedViewEnd],
   );
+
+  const selectedEntry =
+    selectedEntryId == null
+      ? null
+      : (entries.find((e) => e.id === selectedEntryId) ?? null);
 
   const idealPoints = useMemo(() => {
     if (
@@ -331,6 +357,9 @@ export function WeightProgressCard({
             clampViewEndYmd(next, range.startYmd, range.endYmd),
           );
         }}
+        onPointSelect={(point) => {
+          if (point.id) setSelectedEntryId(point.id);
+        }}
       />
 
       <LogWeightSheet
@@ -339,7 +368,20 @@ export function WeightProgressCard({
         initialKg={currentKg}
         onSave={(kg, date) => {
           addEntry(kg, date);
+          alignProfileWeightToLog();
           queueWeightSync({ mode: 'full' });
+        }}
+      />
+
+      <WeightEntryDetailSheet
+        open={selectedEntryId != null}
+        onClose={() => setSelectedEntryId(null)}
+        entry={selectedEntry}
+        onDelete={(id) => {
+          recordPendingDelete(id);
+          alignProfileWeightToLog();
+          queueWeightSync({ mode: 'full' });
+          setSelectedEntryId(null);
         }}
       />
 

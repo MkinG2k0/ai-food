@@ -10,6 +10,8 @@ interface WeightTrendChartProps {
   onPanDays?: (deltaDays: number) => void;
   /** When false, hide swipe hint and disable pan (read-only friend profile). */
   interactive?: boolean;
+  /** Tap a fact point (own stats) — not fired for ideal/plan points. */
+  onPointSelect?: (point: WeightChartPoint) => void;
 }
 
 const VB_W = 320;
@@ -19,6 +21,7 @@ const PLAN_STROKE = 'hsl(215 20% 45%)';
 const FACT_STROKE = 'hsl(160 84% 39%)';
 /** Inclusive day span matching WEIGHT_VIEW_DAYS (30). */
 const WEIGHT_VIEW_SPAN_DAYS = 30;
+const HIT_RADIUS = 16;
 
 function niceWeightDomain(values: number[]): { min: number; max: number } {
   if (values.length === 0) return { min: 50, max: 90 };
@@ -56,6 +59,20 @@ function buildPath(
   return '';
 }
 
+function clientToSvg(
+  svg: SVGSVGElement,
+  clientX: number,
+  clientY: number,
+): { x: number; y: number } | null {
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return null;
+  const pt = svg.createSVGPoint();
+  pt.x = clientX;
+  pt.y = clientY;
+  const local = pt.matrixTransform(ctm.inverse());
+  return { x: local.x, y: local.y };
+}
+
 export function WeightTrendChart({
   points,
   goalKg,
@@ -64,6 +81,7 @@ export function WeightTrendChart({
   viewEnd,
   onPanDays,
   interactive = true,
+  onPointSelect,
 }: WeightTrendChartProps) {
   const gradId = useId();
   const plotW = VB_W - PAD.left - PAD.right;
@@ -153,11 +171,12 @@ export function WeightTrendChart({
   const hasSeries = points.length > 0 || idealPoints.length > 0;
   const subtitle = `${formatAxisDay(viewStart)} – ${formatAxisDay(viewEnd)}`;
   const canPan = interactive && Boolean(onPanDays);
+  const canSelect = interactive && Boolean(onPointSelect);
 
   const daysPerPx = (WEIGHT_VIEW_SPAN_DAYS - 1) / plotW;
 
   function onPointerDown(e: PointerEvent<SVGSVGElement>) {
-    if (!canPan) return;
+    if (!canPan && !canSelect) return;
     pointerRef.current = {
       id: e.pointerId,
       x: e.clientX,
@@ -165,7 +184,7 @@ export function WeightTrendChart({
       locked: null,
       accDx: 0,
     };
-    e.currentTarget.setPointerCapture?.(e.pointerId);
+    if (canPan) e.currentTarget.setPointerCapture?.(e.pointerId);
   }
 
   function onPointerMove(e: PointerEvent<SVGSVGElement>) {
@@ -193,10 +212,37 @@ export function WeightTrendChart({
     }
   }
 
-  function onPointerUp(e: PointerEvent<SVGSVGElement>) {
-    if (pointerRef.current?.id === e.pointerId) {
-      pointerRef.current = null;
+  function finishPointer(
+    e: PointerEvent<SVGSVGElement>,
+    allowSelect: boolean,
+  ) {
+    const st = pointerRef.current;
+    if (!st || st.id !== e.pointerId) return;
+
+    if (allowSelect && canSelect && st.locked === null && onPointSelect) {
+      const local = clientToSvg(e.currentTarget, e.clientX, e.clientY);
+      if (local) {
+        let best: (typeof mapped)[number] | null = null;
+        let bestDist = HIT_RADIUS;
+        for (const p of mapped) {
+          if (!p.id) continue;
+          const dist = Math.hypot(p.x - local.x, p.y - local.y);
+          if (dist <= bestDist) {
+            bestDist = dist;
+            best = p;
+          }
+        }
+        if (best) {
+          onPointSelect({
+            date: best.date,
+            kg: best.kg,
+            id: best.id,
+          });
+        }
+      }
     }
+
+    pointerRef.current = null;
   }
 
   return (
@@ -219,8 +265,8 @@ export function WeightTrendChart({
           aria-label={`График веса, окно ${subtitle}`}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
+          onPointerUp={(e) => finishPointer(e, true)}
+          onPointerCancel={(e) => finishPointer(e, false)}
         >
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -301,7 +347,7 @@ export function WeightTrendChart({
 
             {mapped.map((p) => (
               <circle
-                key={p.date.toISOString()}
+                key={p.id ?? p.date.toISOString()}
                 cx={p.x}
                 cy={p.y}
                 r={3.5}
@@ -310,6 +356,21 @@ export function WeightTrendChart({
                 strokeWidth={1.5}
               />
             ))}
+
+            {canSelect &&
+              mapped.map(
+                (p) =>
+                  p.id && (
+                    <circle
+                      key={`hit-${p.id}`}
+                      cx={p.x}
+                      cy={p.y}
+                      r={HIT_RADIUS}
+                      fill="transparent"
+                      className="cursor-pointer"
+                    />
+                  ),
+              )}
 
             {xLabels.map((d) => {
               const t0 = viewStart.getTime();
@@ -365,4 +426,3 @@ export function WeightTrendChart({
     </section>
   );
 }
-
