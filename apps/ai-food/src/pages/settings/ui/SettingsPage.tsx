@@ -39,7 +39,7 @@ import {
   RemindersSettingsSection,
   queueRescheduleReminders,
 } from '@/features/reminders';
-import { useWeightStore } from '@/features/stats';
+import { latestWeightKg, useWeightStore } from '@/features/stats';
 import {
   SettingsInstallAppButton,
   shouldShowSettingsPwaInstall,
@@ -200,6 +200,10 @@ export function SettingsPage() {
   const targets = useProfileStore((s) => s.targets);
   const updateTargets = useProfileStore((s) => s.updateTargets);
   const resetProfile = useProfileStore((s) => s.resetProfile);
+  const weightEntries = useWeightStore((s) => s.entries);
+  const displayWeightKg = profile
+    ? (latestWeightKg(weightEntries, profile.weight) ?? profile.weight)
+    : null;
 
   const session = useAuthStore((s) => s.session);
   const userToken = useAuthStore((s) => s.userToken);
@@ -535,7 +539,7 @@ export function SettingsPage() {
                     <div className="flex justify-between gap-4">
                       <dt className="text-muted-foreground">Вес</dt>
                       <dd className="font-medium text-right">
-                        {profile.weight} кг
+                        {(displayWeightKg ?? profile.weight).toFixed(1)} кг
                       </dd>
                     </div>
                     {profile.targetWeight != null && (

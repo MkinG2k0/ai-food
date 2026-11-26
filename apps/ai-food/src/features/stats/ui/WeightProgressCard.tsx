@@ -26,7 +26,24 @@ import { LogWeightSheet } from './LogWeightSheet';
 import { UpdateGoalSheet } from './UpdateGoalSheet';
 import { WeightEntryDetailSheet } from './WeightEntryDetailSheet';
 import { WeightTrendChart } from './WeightTrendChart';
+import {
+  syncNutritionProfileToServer,
+  useProfileStore,
+} from '@/features/onboarding';
 import { queueWeightSync } from '@/features/weight-sync';
+
+/** Keep profile.weight aligned with the latest dated log entry (D-04). */
+function alignProfileWeightToLog() {
+  const profile = useProfileStore.getState().profile;
+  if (!profile) return;
+  const nextKg = latestWeightKg(
+    useWeightStore.getState().entries,
+    profile.weight,
+  );
+  if (nextKg == null || !Number.isFinite(nextKg)) return;
+  useProfileStore.getState().updateProfile({ ...profile, weight: nextKg });
+  syncNutritionProfileToServer();
+}
 
 interface WeightProgressCardProps {
   profileWeight: number;
@@ -351,6 +368,7 @@ export function WeightProgressCard({
         initialKg={currentKg}
         onSave={(kg, date) => {
           addEntry(kg, date);
+          alignProfileWeightToLog();
           queueWeightSync({ mode: 'full' });
         }}
       />
@@ -361,6 +379,7 @@ export function WeightProgressCard({
         entry={selectedEntry}
         onDelete={(id) => {
           recordPendingDelete(id);
+          alignProfileWeightToLog();
           queueWeightSync({ mode: 'full' });
           setSelectedEntryId(null);
         }}
