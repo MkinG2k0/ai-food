@@ -46,6 +46,7 @@ export { WeeklyCaloriesChart } from './ui/WeeklyCaloriesChart';
 export { WeeklyMicronutrientsChart } from './ui/WeeklyMicronutrientsChart';
 export { WeightProgressCard } from './ui/WeightProgressCard';
 export { WeightTrendChart } from './ui/WeightTrendChart';
+export { WeightEntryDetailSheet } from './ui/WeightEntryDetailSheet';
 export { LogWeightSheet } from './ui/LogWeightSheet';
 export { UpdateGoalSheet } from './ui/UpdateGoalSheet';
 export { MicronutrientVisibilitySheet } from './ui/MicronutrientVisibilitySheet';

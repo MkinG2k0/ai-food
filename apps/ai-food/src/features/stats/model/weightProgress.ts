@@ -78,6 +78,8 @@ export function formatWeightDeadlineCopy(
 export interface WeightChartPoint {
   date: Date;
   kg: number;
+  /** Fact log entry id — present for tappable own-weight points. */
+  id?: string;
 }
 
 /** Points for the last `dayCount` local days that have a log. */
@@ -99,6 +101,7 @@ export function getWeightTrendPoints(
     .map((e) => ({
       date: parseKey(e.date),
       kg: e.kg,
+      id: e.id,
     }));
 }
 
