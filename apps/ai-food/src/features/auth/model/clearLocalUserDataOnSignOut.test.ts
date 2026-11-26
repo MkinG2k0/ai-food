@@ -88,6 +88,9 @@ describe('clearLocalUserDataOnSignOut / signOut', () => {
       useWeightStore.setState({
         entries: [{ id: 'w1', date: '2026-08-13', kg: 70 }],
         goalKg: 65,
+        pendingDeletes: [
+          { id: 'w-old', clientUpdatedAt: '2026-08-13T09:00:00.000Z' },
+        ],
       });
       useProfileStore.getState().setProfile(
         {
@@ -119,6 +122,7 @@ describe('clearLocalUserDataOnSignOut / signOut', () => {
     expect(useFavoritesStore.getState().favorites).toEqual([]);
     expect(useWeightStore.getState().entries).toEqual([]);
     expect(useWeightStore.getState().goalKg).toBeNull();
+    expect(useWeightStore.getState().pendingDeletes).toEqual([]);
     expect(useProfileStore.getState().profile).toBeNull();
     expect(useProfileStore.getState().isComplete()).toBe(false);
     expect(clearLocalUserDataOnSignOut).toBeTypeOf('function');

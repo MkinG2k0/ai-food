@@ -44,9 +44,43 @@ describe('buildWeightSyncPayload', () => {
       mode: 'full',
       entries: [entry('a', '2026-08-13', 70, '2026-08-13T10:00:00.000Z')],
       goalKg: 65,
+      pendingDeletes: [],
     });
     expect(body.goalKg).toBe(65);
     expect(body.upserts[0].clientUpdatedAt).toBe('2026-08-13T10:00:00.000Z');
+    expect(body.deletes).toEqual([]);
+  });
+
+  it('full mode includes all pendingDeletes', () => {
+    const body = buildWeightSyncPayload({
+      mode: 'full',
+      entries: [entry('a', '2026-08-13', 70, '2026-08-13T10:00:00.000Z')],
+      goalKg: 65,
+      pendingDeletes: [
+        { id: 'gone', clientUpdatedAt: '2026-08-13T09:00:00.000Z' },
+      ],
+    });
+    expect(body.deletes).toEqual([
+      { id: 'gone', clientUpdatedAt: '2026-08-13T09:00:00.000Z' },
+    ]);
+    expect(body.upserts.map((e) => e.id)).toEqual(['a']);
+  });
+
+  it('upsert with entryIds filters pendingDeletes', () => {
+    const body = buildWeightSyncPayload({
+      mode: 'upsert',
+      entries: [entry('a', '2026-08-13', 70, '2026-08-13T10:00:00.000Z')],
+      goalKg: null,
+      entryIds: ['gone'],
+      pendingDeletes: [
+        { id: 'gone', clientUpdatedAt: '2026-08-13T09:00:00.000Z' },
+        { id: 'other', clientUpdatedAt: '2026-08-13T08:00:00.000Z' },
+      ],
+    });
+    expect(body.deletes).toEqual([
+      { id: 'gone', clientUpdatedAt: '2026-08-13T09:00:00.000Z' },
+    ]);
+    expect(body.upserts).toEqual([]);
   });
 });
 

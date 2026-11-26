@@ -3,7 +3,7 @@ import { latestWeightKg, useWeightStore } from './useWeightStore';
 
 describe('useWeightStore', () => {
   beforeEach(() => {
-    useWeightStore.setState({ entries: [], goalKg: null });
+    useWeightStore.setState({ entries: [], goalKg: null, pendingDeletes: [] });
   });
 
   it('adds a weight entry for a day and replaces same-day log', () => {
@@ -43,6 +43,60 @@ describe('useWeightStore', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({ date: '2026-08-12', kg: 70 });
     expect(goalKg).toBe(78);
+  });
+
+  it('recordPendingDelete removes entry and queues tombstone', () => {
+    useWeightStore.setState({
+      entries: [
+        {
+          id: 'w1',
+          date: '2026-08-13',
+          kg: 70,
+          clientUpdatedAt: '2026-08-13T10:00:00.000Z',
+        },
+        {
+          id: 'w2',
+          date: '2026-08-14',
+          kg: 71,
+          clientUpdatedAt: '2026-08-14T10:00:00.000Z',
+        },
+      ],
+      pendingDeletes: [],
+    });
+
+    useWeightStore.getState().recordPendingDelete('w1');
+
+    const { entries, pendingDeletes } = useWeightStore.getState();
+    expect(entries.map((e) => e.id)).toEqual(['w2']);
+    expect(pendingDeletes).toHaveLength(1);
+    expect(pendingDeletes[0].id).toBe('w1');
+    expect(pendingDeletes[0].clientUpdatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it('recordPendingDelete replaces same id in pendingDeletes', () => {
+    useWeightStore.setState({
+      entries: [
+        {
+          id: 'w1',
+          date: '2026-08-13',
+          kg: 70,
+          clientUpdatedAt: '2026-08-13T10:00:00.000Z',
+        },
+      ],
+      pendingDeletes: [
+        { id: 'w1', clientUpdatedAt: '2026-08-13T09:00:00.000Z' },
+      ],
+    });
+
+    useWeightStore
+      .getState()
+      .recordPendingDelete('w1', '2026-08-13T12:00:00.000Z');
+
+    const { entries, pendingDeletes } = useWeightStore.getState();
+    expect(entries).toEqual([]);
+    expect(pendingDeletes).toEqual([
+      { id: 'w1', clientUpdatedAt: '2026-08-13T12:00:00.000Z' },
+    ]);
   });
 });
 
