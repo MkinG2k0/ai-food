@@ -10,11 +10,17 @@ export interface WeightEntry {
   clientUpdatedAt?: string;
 }
 
+export type WeightPendingDelete = { id: string; clientUpdatedAt: string };
+
 interface WeightState {
   entries: WeightEntry[];
+  /** Soft-delete clocks awaiting server sync (D-03). */
+  pendingDeletes: WeightPendingDelete[];
   /** Target weight in kg; null until seeded from profile */
   goalKg: number | null;
   addEntry: (kg: number, date?: Date) => void;
+  /** Record tombstone clock then remove locally (confirm-delete). */
+  recordPendingDelete: (id: string, clientUpdatedAt?: string) => void;
   setGoalKg: (kg: number) => void;
   ensureGoalKg: (seed: number) => void;
   /** Write onboarding weight into the log for planStartDate and set goal. */
@@ -40,6 +46,7 @@ export const useWeightStore = create<WeightState>()(
   persist(
     (set, get) => ({
       entries: [],
+      pendingDeletes: [],
       goalKg: null,
       addEntry: (kg, date = new Date()) => {
         const dayKey = toLocalDateKey(date);
@@ -59,6 +66,18 @@ export const useWeightStore = create<WeightState>()(
           return { entries: next };
         });
       },
+      recordPendingDelete: (id, clientUpdatedAt) =>
+        set((state) => {
+          const clock = clientUpdatedAt ?? nowClock();
+          const pendingDeletes = [
+            ...state.pendingDeletes.filter((d) => d.id !== id),
+            { id, clientUpdatedAt: clock },
+          ];
+          return {
+            pendingDeletes,
+            entries: state.entries.filter((e) => e.id !== id),
+          };
+        }),
       setGoalKg: (kg) => set({ goalKg: clampKg(kg) }),
       ensureGoalKg: (seed) => {
         if (get().goalKg != null) return;

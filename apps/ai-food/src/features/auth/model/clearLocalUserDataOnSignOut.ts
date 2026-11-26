@@ -34,7 +34,7 @@ export function clearLocalUserDataOnSignOut(): void {
   useDiaryStore.setState({ selectedDate: new Date() });
 
   useFavoritesStore.setState({ favorites: [], pendingDeletes: [] });
-  useWeightStore.setState({ entries: [], goalKg: null });
+  useWeightStore.setState({ entries: [], goalKg: null, pendingDeletes: [] });
   useProfileStore.getState().resetProfile();
   useImageStore.getState().clear();
 

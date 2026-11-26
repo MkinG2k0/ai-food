@@ -52,18 +52,30 @@ export function buildWeightSyncPayload(args: {
   mode: 'full' | 'upsert';
   entries: WeightEntry[];
   goalKg: number | null;
+  pendingDeletes?: PendingDelete[];
   entryIds?: string[];
-}): { upserts: WeightEntry[]; goalKg: number | null } {
-  const { mode, entries, goalKg, entryIds } = args;
+}): {
+  upserts: WeightEntry[];
+  deletes: PendingDelete[];
+  goalKg: number | null;
+} {
+  const { mode, entries, goalKg, pendingDeletes = [], entryIds } = args;
   const list =
     mode === 'full'
       ? entries
       : entries.filter((e) => (entryIds ?? []).includes(e.id));
+  const deletes =
+    mode === 'full'
+      ? [...pendingDeletes]
+      : entryIds
+        ? pendingDeletes.filter((d) => entryIds.includes(d.id))
+        : [];
   return {
     upserts: list.map((e) => ({
       ...e,
       clientUpdatedAt: ensureClientUpdatedAt(e),
     })),
+    deletes,
     goalKg,
   };
 }

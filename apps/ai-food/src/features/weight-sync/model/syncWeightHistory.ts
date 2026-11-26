@@ -12,22 +12,31 @@ export async function syncWeightHistory(options: {
 }): Promise<void> {
   if (!useAuthStore.getState().userToken) return;
 
-  const { entries, goalKg } = useWeightStore.getState();
+  const { entries, goalKg, pendingDeletes } = useWeightStore.getState();
   const body = buildWeightSyncPayload({
     mode: options.mode,
     entries,
     goalKg,
+    pendingDeletes,
     entryIds: options.entryIds,
   });
 
   const response = await syncWeightsApi({
     upserts: body.upserts,
-    deletes: [],
+    deletes: body.deletes,
     goalKg: body.goalKg,
   });
 
+  const latest = useWeightStore.getState();
+  const clearedIds = new Set([
+    ...body.deletes.map((d) => d.id),
+    ...response.tombstones,
+  ]);
+  const nextPending = latest.pendingDeletes.filter((d) => !clearedIds.has(d.id));
+
   useWeightStore.setState({
-    entries: applyWeightSyncResponse(entries, response),
+    entries: applyWeightSyncResponse(latest.entries, response),
     goalKg: response.goalKg,
+    pendingDeletes: nextPending,
   });
 }
