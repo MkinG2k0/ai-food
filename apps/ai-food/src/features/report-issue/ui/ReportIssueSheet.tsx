@@ -3,9 +3,13 @@ import { Capacitor } from '@capacitor/core';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { compressImageForAi, cn, fileToImageDataUrl } from '@/shared/lib';
-import { BottomSheet, Button, TextareaWithVoice } from '@/shared/ui';
+import { BottomSheet, Button, Checkbox, TextareaWithVoice } from '@/shared/ui';
 import { pickSupportReportImagesFromGallery } from '../lib/pickSupportReportImages';
 import { submitSupportReportApi } from '../api/submitSupportReportApi';
+import {
+  collectClientDebugSnapshot,
+  MAX_CLIENT_DEBUG_SNAPSHOT_CHARS,
+} from '../model/clientDebugSnapshot';
 import {
   DEFAULT_SUPPORT_REPORT_TYPE,
   MAX_SUPPORT_REPORT_IMAGES,
@@ -27,12 +31,14 @@ export function ReportIssueSheet({ open, onClose }: ReportIssueSheetProps) {
   const [images, setImages] = useState<Array<{ id: string; preview: string }>>(
     [],
   );
+  const [shareData, setShareData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const resetForm = () => {
     setType(DEFAULT_SUPPORT_REPORT_TYPE);
     setMessage('');
     setImages([]);
+    setShareData(false);
   };
 
   const handleClose = () => {
@@ -113,10 +119,22 @@ export function ReportIssueSheet({ open, onClose }: ReportIssueSheetProps) {
 
     setIsSubmitting(true);
     try {
+      let clientSnapshot: Awaited<
+        ReturnType<typeof collectClientDebugSnapshot>
+      > | undefined;
+      if (shareData) {
+        clientSnapshot = await collectClientDebugSnapshot();
+        if (
+          JSON.stringify(clientSnapshot).length > MAX_CLIENT_DEBUG_SNAPSHOT_CHARS
+        ) {
+          throw new Error('Слишком много локальных данных для одного отчёта');
+        }
+      }
       await submitSupportReportApi({
         type,
         message: trimmed,
         images: images.map((item) => item.preview),
+        clientSnapshot,
       });
       toast.success('Обращение отправлено');
       resetForm();
@@ -227,6 +245,22 @@ export function ReportIssueSheet({ open, onClose }: ReportIssueSheetProps) {
           />
         </div>
 
+        <label className="flex items-start gap-3 cursor-pointer">
+          <Checkbox
+            className="mt-1"
+            checked={shareData}
+            disabled={isSubmitting}
+            onCheckedChange={(value) => setShareData(value === true)}
+          />
+          <span className="space-y-0.5">
+            <span className="block text-sm font-medium">Поделиться данными</span>
+            <span className="block text-sm text-muted-foreground">
+              Приложим localStorage, IndexedDB, файлы фото и данные аккаунта,
+              включая Telegram. Нужно, чтобы воспроизвести ошибку.
+            </span>
+          </span>
+        </label>
+
         <Button
           className={cn('w-full', isSubmitting && 'pointer-events-none')}
           disabled={isSubmitting}
@@ -235,7 +269,7 @@ export function ReportIssueSheet({ open, onClose }: ReportIssueSheetProps) {
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Отправка…
+              {shareData ? 'Сбор данных…' : 'Отправка…'}
             </>
           ) : (
             'Отправить'

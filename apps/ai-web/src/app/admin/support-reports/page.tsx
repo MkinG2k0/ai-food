@@ -42,6 +42,7 @@ type SupportReportListItem = {
   platform: string | null;
   status: SupportReportStatus;
   imageCount: number;
+  hasClientSnapshot: boolean;
   createdAt: string;
   updatedAt: string;
   user: SupportReportUser | null;
@@ -49,6 +50,7 @@ type SupportReportListItem = {
 
 type SupportReportDetail = SupportReportListItem & {
   images: string[];
+  clientSnapshot: unknown;
 };
 
 type SupportReportList = {
@@ -76,6 +78,73 @@ const STATUS_COLORS: Record<SupportReportStatus, string> = {
   read: 'gold',
   resolved: 'green',
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function snapshotSummary(snapshot: unknown): string | null {
+  if (!isRecord(snapshot)) return null;
+  const parts: string[] = [];
+  if (typeof snapshot.appVersion === 'string' && snapshot.appVersion) {
+    parts.push(`версия ${snapshot.appVersion}`);
+  }
+  if (typeof snapshot.platform === 'string' && snapshot.platform) {
+    parts.push(snapshot.platform);
+  }
+  if (isRecord(snapshot.localStorage)) {
+    parts.push(`localStorage: ${Object.keys(snapshot.localStorage).length}`);
+  }
+  if (isRecord(snapshot.preferences)) {
+    parts.push(`аккаунт: ${Object.keys(snapshot.preferences).length}`);
+  }
+  if (Array.isArray(snapshot.indexedDB)) {
+    parts.push(`IndexedDB: ${snapshot.indexedDB.length}`);
+  }
+  if (Array.isArray(snapshot.mealFiles)) {
+    parts.push(`фото: ${snapshot.mealFiles.length}`);
+  }
+  if (Array.isArray(snapshot.errors) && snapshot.errors.length > 0) {
+    parts.push(`ошибки сбора: ${snapshot.errors.length}`);
+  }
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+function snapshotForView(value: unknown): unknown {
+  if (typeof value === 'string' && value.length > 180) {
+    return `${value.slice(0, 48)}… (${value.length} символов)`;
+  }
+  if (Array.isArray(value)) return value.map(snapshotForView);
+  if (!isRecord(value)) return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (key === 'base64' && typeof item === 'string') {
+      out[key] = `(${item.length} символов)`;
+      continue;
+    }
+    out[key] = snapshotForView(item);
+  }
+  return out;
+}
+
+function snapshotPreview(snapshot: unknown): string {
+  const text = JSON.stringify(snapshotForView(snapshot), null, 2);
+  const limit = 200_000;
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit)}\n… обрезано на экране, полный файл — в скачивании`;
+}
+
+function downloadClientSnapshot(id: string, snapshot: unknown) {
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], {
+    type: 'application/json',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `support-report-${id}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 function formatUserLabel(user: SupportReportUser | null, deviceId: string | null) {
   if (user) {
@@ -159,6 +228,13 @@ export default function AdminSupportReportsPage() {
         title: 'Сообщение',
         dataIndex: 'message',
         ellipsis: true,
+      },
+      {
+        title: 'Данные',
+        dataIndex: 'hasClientSnapshot',
+        width: 90,
+        align: 'center',
+        render: (value: boolean) => (value ? 'да' : '—'),
       },
       {
         title: 'Фото',
@@ -283,6 +359,45 @@ export default function AdminSupportReportsPage() {
               <div className="support-report-detail__message">
                 {detailQuery.data.message}
               </div>
+            </section>
+
+            <section className="support-report-detail__section">
+              <div className="support-report-detail__heading">
+                <Typography.Text
+                  type="secondary"
+                  className="support-report-detail__label"
+                >
+                  Данные клиента
+                </Typography.Text>
+                {detailQuery.data.clientSnapshot ? (
+                  <Button
+                    onClick={() =>
+                      downloadClientSnapshot(
+                        detailQuery.data!.id,
+                        detailQuery.data!.clientSnapshot,
+                      )
+                    }
+                  >
+                    Скачать JSON
+                  </Button>
+                ) : null}
+              </div>
+              {detailQuery.data.clientSnapshot ? (
+                <>
+                  {snapshotSummary(detailQuery.data.clientSnapshot) ? (
+                    <Typography.Text type="secondary">
+                      {snapshotSummary(detailQuery.data.clientSnapshot)}
+                    </Typography.Text>
+                  ) : null}
+                  <pre className="support-report-detail__json">
+                    {snapshotPreview(detailQuery.data.clientSnapshot)}
+                  </pre>
+                </>
+              ) : (
+                <Typography.Text type="secondary">
+                  Пользователь не приложил данные
+                </Typography.Text>
+              )}
             </section>
 
             <section className="support-report-detail__section">

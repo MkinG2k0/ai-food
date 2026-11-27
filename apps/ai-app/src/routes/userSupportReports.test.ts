@@ -32,6 +32,8 @@ type MockSupportReport = {
   images: string[] | null;
   appVersion: string | null;
   platform: string | null;
+  clientSnapshot?: unknown;
+  hasClientSnapshot?: boolean;
   status: 'new' | 'read' | 'resolved';
   createdAt: Date;
   updatedAt: Date;
@@ -72,6 +74,8 @@ describe('user support reports', () => {
             images: (data.images as string[] | null) ?? null,
             appVersion: data.appVersion ?? null,
             platform: data.platform ?? null,
+            clientSnapshot: data.clientSnapshot ?? null,
+            hasClientSnapshot: data.hasClientSnapshot ?? false,
           };
           reports.push(row);
           return row;
@@ -131,6 +135,26 @@ describe('user support reports', () => {
     expect(res.status).toBe(201);
     expect(res.body.userId).toBeNull();
     expect(res.body.deviceId).toBe('device-abc');
+  });
+
+  it('POST /user/support-reports stores the client snapshot', async () => {
+    const app = createApp();
+    const res = await request(app)
+      .post('/user/support-reports')
+      .set('X-Device-Id', 'device-abc')
+      .send({
+        message: 'Пропали фото',
+        clientSnapshot: {
+          version: 1,
+          localStorage: { 'CapacitorStorage.ai-food-auth': '{"user":{"username":"kama"}}' },
+          indexedDB: [{ name: 'Disc', version: 1, stores: [] }],
+        },
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.hasClientSnapshot).toBe(true);
+    expect(res.body.clientSnapshot.indexedDB[0].name).toBe('Disc');
+    expect(reports[0]?.hasClientSnapshot).toBe(true);
   });
 
   it('POST /user/support-reports validates message', async () => {

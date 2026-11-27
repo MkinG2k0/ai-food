@@ -2,12 +2,14 @@ import { Capacitor } from '@capacitor/core';
 import { getDeviceId } from '@/shared/lib';
 import { getAppVersion } from '@/shared/lib/appVersion';
 import { useAuthStore } from '@/features/auth';
+import type { ClientDebugSnapshot } from '../model/clientDebugSnapshot';
 import type { SupportReportType } from '../model/supportReportTypes';
 
 export type SubmitSupportReportInput = {
   type: SupportReportType;
   message: string;
   images?: string[];
+  clientSnapshot?: ClientDebugSnapshot;
 };
 
 export type SubmitSupportReportResponse = {
@@ -47,6 +49,7 @@ export async function submitSupportReportApi(
         images: input.images ?? [],
         appVersion: getAppVersion(),
         platform: Capacitor.getPlatform(),
+        ...(input.clientSnapshot ? { clientSnapshot: input.clientSnapshot } : {}),
       }),
     },
   );

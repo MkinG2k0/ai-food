@@ -246,10 +246,12 @@ model SupportReport {
   deviceId   String?
   type       SupportReportType   @default(other)
   message    String
-  images     Json?
-  appVersion String?
-  platform   String?
-  status     SupportReportStatus @default(new)
+  images            Json?
+  appVersion        String?
+  platform          String?
+  clientSnapshot    Json?
+  hasClientSnapshot Boolean             @default(false)
+  status            SupportReportStatus @default(new)
   createdAt  DateTime            @default(now())
   updatedAt  DateTime            @updatedAt
 

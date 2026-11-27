@@ -34,7 +34,10 @@ export const createSupportReportBodySchema = z.object({
     .default([]),
   appVersion: z.string().trim().max(64).optional(),
   platform: z.string().trim().max(32).optional(),
+  clientSnapshot: z.record(z.string(), z.unknown()).optional(),
 });
+
+export const MAX_CLIENT_SNAPSHOT_CHARS = 24_000_000;
 
 export type CreateSupportReportBody = z.infer<
   typeof createSupportReportBodySchema
@@ -49,6 +52,8 @@ export function supportReportResponse(report: {
   images: unknown;
   appVersion: string | null;
   platform: string | null;
+  clientSnapshot?: unknown;
+  hasClientSnapshot?: boolean;
   status: SupportReportStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -74,6 +79,9 @@ export function supportReportResponse(report: {
     images,
     appVersion: report.appVersion,
     platform: report.platform,
+    clientSnapshot: report.clientSnapshot ?? null,
+    hasClientSnapshot:
+      report.hasClientSnapshot ?? report.clientSnapshot != null,
     status: report.status,
     createdAt: report.createdAt.toISOString(),
     updatedAt: report.updatedAt.toISOString(),

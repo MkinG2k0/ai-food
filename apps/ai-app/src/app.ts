@@ -42,7 +42,7 @@ export function createApp() {
       exposedHeaders: ['X-Analyze-Job-Id'],
     }),
   );
-  app.use(express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: '32mb' }));
 
   app.use('/health', healthRouter);
   app.use('/auth', authRouter);

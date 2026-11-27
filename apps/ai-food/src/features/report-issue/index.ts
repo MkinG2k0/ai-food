@@ -12,3 +12,4 @@ export {
   type SupportReportType,
 } from './model/supportReportTypes';
 export { ReportIssueSheet } from './ui/ReportIssueSheet';
+export { DevLoadClientSnapshotButton } from './ui/DevLoadClientSnapshotButton';

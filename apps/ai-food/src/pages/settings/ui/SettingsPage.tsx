@@ -34,7 +34,10 @@ import {
   SETTINGS_SYNC_DEBOUNCE_MS,
 } from '@/features/settings-sync';
 import { DebugLogsSheet } from '@/features/debug';
-import { ReportIssueSheet } from '@/features/report-issue';
+import {
+  DevLoadClientSnapshotButton,
+  ReportIssueSheet,
+} from '@/features/report-issue';
 import {
   RemindersSettingsSection,
   queueRescheduleReminders,
@@ -928,6 +931,15 @@ export function SettingsPage() {
                   Пока поддерживается CalZen (PDF-отчёт о питании).
                 </p>
               </div>
+              {userToken ? (
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => setDeleteAccountOpen(true)}
+                >
+                  Удалить аккаунт
+                </Button>
+              ) : null}
             </>
           )}
         </section>
@@ -1044,15 +1056,6 @@ export function SettingsPage() {
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </Button>
           ) : null}
-          {userToken ? (
-            <Button
-              variant="destructive"
-              className="w-full"
-              onClick={() => setDeleteAccountOpen(true)}
-            >
-              Удалить аккаунт
-            </Button>
-          ) : null}
         </section>
 
         {import.meta.env.DEV && (
@@ -1068,6 +1071,11 @@ export function SettingsPage() {
             >
               Тест моделей
             </Button>
+            <p className="text-sm text-muted-foreground">
+              JSON из админки заменит локальные данные, фото и сессию, затем
+              страница перезагрузится.
+            </p>
+            <DevLoadClientSnapshotButton />
           </section>
         )}
     </SubpageShell>

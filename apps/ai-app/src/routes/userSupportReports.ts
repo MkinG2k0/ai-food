@@ -1,8 +1,10 @@
 import { Router } from 'express';
+import type { Prisma } from '../generated/prisma/client.js';
 import { ApiError } from '../../lib/errors.js';
 import { notifyAdminNewSupportReport } from '../lib/notifyAdminSupportReport.js';
 import {
   createSupportReportBodySchema,
+  MAX_CLIENT_SNAPSHOT_CHARS,
   supportReportResponse,
 } from '../lib/supportReport.js';
 import { assertAuthConfigured, verifyUserToken } from '../lib/jwt.js';
@@ -83,6 +85,13 @@ userSupportReportsRouter.post(
 
     const reporter = await resolveReporter(req);
     const prisma = requireDb();
+    const clientSnapshot = parsed.data.clientSnapshot;
+    if (
+      clientSnapshot &&
+      JSON.stringify(clientSnapshot).length > MAX_CLIENT_SNAPSHOT_CHARS
+    ) {
+      throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Client snapshot is too large.');
+    }
 
     const created = await prisma.supportReport.create({
       data: {
@@ -93,6 +102,10 @@ userSupportReportsRouter.post(
         images: parsed.data.images,
         appVersion: parsed.data.appVersion ?? null,
         platform: parsed.data.platform ?? null,
+        clientSnapshot: clientSnapshot
+          ? (clientSnapshot as Prisma.InputJsonValue)
+          : undefined,
+        hasClientSnapshot: clientSnapshot != null,
       },
     });
 

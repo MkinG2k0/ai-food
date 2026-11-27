@@ -891,7 +891,19 @@ adminRouter.get(
         orderBy: { createdAt: 'desc' },
         skip,
         take: pageSize,
-        include: {
+        select: {
+          id: true,
+          userId: true,
+          deviceId: true,
+          type: true,
+          message: true,
+          images: true,
+          appVersion: true,
+          platform: true,
+          status: true,
+          hasClientSnapshot: true,
+          createdAt: true,
+          updatedAt: true,
           user: {
             select: {
               id: true,
@@ -910,8 +922,12 @@ adminRouter.get(
     res.json({
       items: rows.map((row) => {
         const response = supportReportResponse(row);
-        const { images, ...rest } = response;
-        return { ...rest, imageCount: images.length };
+        const { images, clientSnapshot, ...rest } = response;
+        return {
+          ...rest,
+          imageCount: images.length,
+          hasClientSnapshot: row.hasClientSnapshot || clientSnapshot != null,
+        };
       }),
       total,
       page,
