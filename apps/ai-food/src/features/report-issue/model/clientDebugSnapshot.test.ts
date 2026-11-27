@@ -50,7 +50,10 @@ vi.mock('@/shared/lib/appVersion', () => ({
 import {
   applyClientDebugSnapshot,
   collectClientDebugSnapshot,
+  photoBodiesWithinBudget,
+  pickMealPhotoSample,
   reviveJsonSafe,
+  toDebugJson,
   toJsonSafe,
   unwrapClientDebugSnapshot,
 } from './clientDebugSnapshot';
@@ -95,6 +98,62 @@ describe('clientDebugSnapshot', () => {
     expect(snapshot.mealFiles).toEqual([
       { path: 'meal-images/a.jpg', base64: 'aGVsbG8=' },
     ]);
+    expect(snapshot.mealFileIndex).toEqual([
+      { path: 'meal-images/a.jpg', bytes: 5 },
+    ]);
+  });
+
+  it('keeps two photos from the old, middle and new meals', async () => {
+    const meals = Array.from({ length: 9 }, (_, index) => ({
+      id: String(index),
+      timestamp: `2026-01-${String(index + 1).padStart(2, '0')}T12:00:00.000Z`,
+      imageUri: `meal-images/p${index}.jpg`,
+    }));
+    preferenceStore.set('ai-food-diary', JSON.stringify({ state: { meals } }));
+    for (let index = 0; index < 9; index += 1) {
+      mealFiles.set(`meal-images/p${index}.jpg`, 'YQ==');
+    }
+
+    const snapshot = await collectClientDebugSnapshot();
+
+    expect(snapshot.mealFileIndex).toHaveLength(9);
+    expect(snapshot.mealFiles.map((file) => file.path)).toEqual([
+      'meal-images/p0.jpg',
+      'meal-images/p3.jpg',
+      'meal-images/p6.jpg',
+      'meal-images/p2.jpg',
+      'meal-images/p5.jpg',
+      'meal-images/p8.jpg',
+    ]);
+  });
+
+  it('picks range edges and stops when the photo budget is full', () => {
+    const paths = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
+    expect(
+      pickMealPhotoSample(
+        paths,
+        paths.map((path, index) => ({ path, at: index })),
+      ),
+    ).toEqual(['a', 'd', 'g', 'c', 'f', 'i']);
+    expect(
+      photoBodiesWithinBudget(
+        ['a', 'c', 'e'],
+        new Map([
+          ['a', 5],
+          ['c', 5],
+          ['e', 5],
+        ]),
+        12,
+      ),
+    ).toEqual(['a', 'c']);
+  });
+
+  it('drops large indexedDB values', async () => {
+    const safe = await toDebugJson({ photo: 'x'.repeat(5000), name: 'soup' });
+    expect(safe).toEqual({
+      photo: { __type: 'omitted', bytes: 5000 },
+      name: 'soup',
+    });
   });
 
   it('unwraps a raw snapshot or an admin report', () => {
@@ -104,6 +163,7 @@ describe('clientDebugSnapshot', () => {
       sessionStorage: {},
       preferences: {},
       indexedDB: [],
+      mealFileIndex: [],
       mealFiles: [],
       errors: [],
     };

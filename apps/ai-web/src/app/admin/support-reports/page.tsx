@@ -101,8 +101,11 @@ function snapshotSummary(snapshot: unknown): string | null {
   if (Array.isArray(snapshot.indexedDB)) {
     parts.push(`IndexedDB: ${snapshot.indexedDB.length}`);
   }
+  if (Array.isArray(snapshot.mealFileIndex)) {
+    parts.push(`фото на устройстве: ${snapshot.mealFileIndex.length}`);
+  }
   if (Array.isArray(snapshot.mealFiles)) {
-    parts.push(`фото: ${snapshot.mealFiles.length}`);
+    parts.push(`фото в отчёте: ${snapshot.mealFiles.length}`);
   }
   if (Array.isArray(snapshot.errors) && snapshot.errors.length > 0) {
     parts.push(`ошибки сбора: ${snapshot.errors.length}`);

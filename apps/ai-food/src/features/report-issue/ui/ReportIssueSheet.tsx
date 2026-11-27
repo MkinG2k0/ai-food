@@ -255,8 +255,9 @@ export function ReportIssueSheet({ open, onClose }: ReportIssueSheetProps) {
           <span className="space-y-0.5">
             <span className="block text-sm font-medium">Поделиться данными</span>
             <span className="block text-sm text-muted-foreground">
-              Приложим localStorage, IndexedDB, файлы фото и данные аккаунта,
-              включая Telegram. Нужно, чтобы воспроизвести ошибку.
+              Приложим дневник, настройки и аккаунт, включая Telegram. Из фото —
+              по паре из старых, средних и новых приёмов, плюс список всех
+              файлов без содержимого.
             </span>
           </span>
         </label>

@@ -1072,8 +1072,8 @@ export function SettingsPage() {
               Тест моделей
             </Button>
             <p className="text-sm text-muted-foreground">
-              JSON из админки заменит локальные данные, фото и сессию, затем
-              страница перезагрузится.
+              JSON из админки заменит локальные данные и сессию. Восстановятся
+              только фото, которые попали в отчёт. Затем страница перезагрузится.
             </p>
             <DevLoadClientSnapshotButton />
           </section>

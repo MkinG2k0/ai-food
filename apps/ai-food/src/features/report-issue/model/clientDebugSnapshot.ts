@@ -8,9 +8,21 @@ export const CLIENT_DEBUG_SNAPSHOT_VERSION = 1 as const;
 /** Stay under the gateway JSON body limit (32mb) with room for the report text. */
 export const MAX_CLIENT_DEBUG_SNAPSHOT_CHARS = 24_000_000;
 
+/** Oldest, middle, and newest meals. Two photos from each, when they exist. */
+export const MEAL_PHOTO_RANGE_COUNT = 3;
+export const MEAL_PHOTOS_PER_RANGE = 2;
+/** Base64 chars for sampled photos. The diary and file list stay complete. */
+export const MEAL_PHOTO_BASE64_BUDGET = 8_000_000;
+const OMIT_IDB_STRING_CHARS = 4_096;
+
 export type ClientDebugMealFile = {
   path: string;
   base64: string;
+};
+
+export type ClientDebugMealFileIndex = {
+  path: string;
+  bytes?: number;
 };
 
 type IdKeyPath = string | string[];
@@ -48,7 +60,9 @@ export type ClientDebugSnapshot = {
   /** Capacitor Preferences, including the persisted auth/Telegram session. */
   preferences: Record<string, string>;
   indexedDB: ClientDebugIdbDatabase[];
-  /** Files under meal-images/. On web these also live in IndexedDB. */
+  /** Every meal-images file, without the bytes. */
+  mealFileIndex: ClientDebugMealFileIndex[];
+  /** A few photos from different date ranges. Enough to look at, not the whole library. */
   mealFiles: ClientDebugMealFile[];
   errors: string[];
 };
@@ -128,6 +142,35 @@ export async function toJsonSafe(value: unknown): Promise<unknown> {
   return value;
 }
 
+/** IndexedDB file bodies are omitted. The diary and the sampled photos carry the useful bytes. */
+export async function toDebugJson(value: unknown): Promise<unknown> {
+  if (typeof Blob !== 'undefined' && value instanceof Blob) {
+    return { __type: 'omitted', mime: value.type, bytes: value.size };
+  }
+  if (value instanceof ArrayBuffer) {
+    return { __type: 'omitted', bytes: value.byteLength };
+  }
+  if (ArrayBuffer.isView(value) && !(value instanceof DataView)) {
+    return { __type: 'omitted', bytes: value.byteLength };
+  }
+  if (typeof value === 'string' && value.length > OMIT_IDB_STRING_CHARS) {
+    return { __type: 'omitted', bytes: value.length };
+  }
+  if (Array.isArray(value)) {
+    const next: unknown[] = [];
+    for (const item of value) next.push(await toDebugJson(item));
+    return next;
+  }
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value)) {
+      out[key] = await toDebugJson(item);
+    }
+    return out;
+  }
+  return value;
+}
+
 export function reviveJsonSafe(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(reviveJsonSafe);
   if (!value || typeof value !== 'object') return value;
@@ -179,8 +222,114 @@ async function readPreferences(): Promise<Record<string, string>> {
   return out;
 }
 
-async function readMealFiles(): Promise<{
+function base64DecodedBytes(base64: string): number {
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
+}
+
+function diaryPhotoRefs(
+  preferences: Record<string, string>,
+  storage: Record<string, string>,
+): Array<{ path: string; at: number }> {
+  const raw =
+    preferences['ai-food-diary'] ??
+    storage['CapacitorStorage.ai-food-diary'] ??
+    storage['ai-food-diary'];
+  if (!raw) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  const root =
+    parsed && typeof parsed === 'object' && 'state' in parsed
+      ? (parsed as { state?: unknown }).state
+      : parsed;
+  const meals =
+    root && typeof root === 'object' && 'meals' in root
+      ? (root as { meals?: unknown }).meals
+      : null;
+  if (!Array.isArray(meals)) return [];
+  const refs: Array<{ path: string; at: number }> = [];
+  for (const meal of meals) {
+    if (!meal || typeof meal !== 'object') continue;
+    const record = meal as { timestamp?: unknown; imageUri?: unknown; imageUris?: unknown };
+    const at = typeof record.timestamp === 'string' ? Date.parse(record.timestamp) : NaN;
+    const time = Number.isFinite(at) ? at : 0;
+    const paths = new Set<string>();
+    if (typeof record.imageUri === 'string' && record.imageUri) paths.add(record.imageUri);
+    if (Array.isArray(record.imageUris)) {
+      for (const path of record.imageUris) {
+        if (typeof path === 'string' && path) paths.add(path);
+      }
+    }
+    for (const path of paths) refs.push({ path, at: time });
+  }
+  return refs;
+}
+
+/** Oldest, middle, newest. One photo from each range first, then a second if the range has more. */
+export function pickMealPhotoSample(
+  paths: string[],
+  refs: Array<{ path: string; at: number }>,
+): string[] {
+  const onDisk = new Set(paths);
+  const dated = new Map<string, number>();
+  for (const ref of refs) {
+    if (!onDisk.has(ref.path)) continue;
+    const prev = dated.get(ref.path);
+    if (prev == null || ref.at < prev) dated.set(ref.path, ref.at);
+  }
+  const ordered = [...onDisk].sort((a, b) => {
+    const left = dated.get(a);
+    const right = dated.get(b);
+    if (left != null && right != null && left !== right) return left - right;
+    if (left != null && right == null) return -1;
+    if (left == null && right != null) return 1;
+    return a.localeCompare(b);
+  });
+  if (ordered.length <= MEAL_PHOTO_RANGE_COUNT * MEAL_PHOTOS_PER_RANGE) return ordered;
+
+  const primary: string[] = [];
+  const extra: string[] = [];
+  const rangeSize = ordered.length / MEAL_PHOTO_RANGE_COUNT;
+  for (let range = 0; range < MEAL_PHOTO_RANGE_COUNT; range += 1) {
+    const start = Math.floor(range * rangeSize);
+    const end =
+      range === MEAL_PHOTO_RANGE_COUNT - 1
+        ? ordered.length
+        : Math.floor((range + 1) * rangeSize);
+    const slice = ordered.slice(start, Math.max(end, start + 1));
+    if (slice.length === 0) continue;
+    primary.push(slice[0]);
+    if (slice.length > 1) extra.push(slice[slice.length - 1]);
+  }
+  return [...new Set([...primary, ...extra])];
+}
+
+export function photoBodiesWithinBudget(
+  orderedPaths: string[],
+  sizes: Map<string, number>,
+  budget: number,
+): string[] {
+  const chosen: string[] = [];
+  let used = 0;
+  for (const path of orderedPaths) {
+    const size = sizes.get(path) ?? 0;
+    if (chosen.length > 0 && used + size > budget) continue;
+    chosen.push(path);
+    used += size;
+  }
+  return chosen;
+}
+
+async function readMealFiles(
+  preferences: Record<string, string>,
+  storage: Record<string, string>,
+): Promise<{
   files: ClientDebugMealFile[];
+  index: ClientDebugMealFileIndex[];
   error?: string;
 }> {
   try {
@@ -188,21 +337,52 @@ async function readMealFiles(): Promise<{
       path: 'meal-images',
       directory: Directory.Data,
     });
-    const files: ClientDebugMealFile[] = [];
-    for (const entry of listed.files) {
-      if (entry.type === 'directory') continue;
-      const path = `meal-images/${entry.name}`;
+    const paths = listed.files
+      .filter((entry) => entry.type !== 'directory')
+      .map((entry) => `meal-images/${entry.name}`);
+    const picked = pickMealPhotoSample(paths, diaryPhotoRefs(preferences, storage));
+    const loaded: ClientDebugMealFile[] = [];
+    for (const path of picked) {
       const { data } = await Filesystem.readFile({
         path,
         directory: Directory.Data,
       });
-      const base64 =
-        typeof data === 'string' ? data : await blobToBase64(data);
-      files.push({ path, base64 });
+      const base64 = typeof data === 'string' ? data : await blobToBase64(data);
+      loaded.push({ path, base64 });
     }
-    return { files };
+    const sizes = new Map(loaded.map((file) => [file.path, file.base64.length]));
+    const keep = new Set(
+      photoBodiesWithinBudget(
+        loaded.map((file) => file.path),
+        sizes,
+        MEAL_PHOTO_BASE64_BUDGET,
+      ),
+    );
+    const files = loaded.filter((file) => keep.has(file.path));
+    const knownBytes = new Map(
+      loaded.map((file) => [file.path, base64DecodedBytes(file.base64)]),
+    );
+    const index: ClientDebugMealFileIndex[] = [];
+    for (const path of paths) {
+      const bytes = knownBytes.get(path);
+      if (bytes != null) {
+        index.push({ path, bytes });
+        continue;
+      }
+      try {
+        const stat = await Filesystem.stat({ path, directory: Directory.Data });
+        index.push({ path, bytes: stat.size });
+      } catch {
+        index.push({ path });
+      }
+    }
+    return { files, index };
   } catch (error) {
-    return { files: [], error: error instanceof Error ? error.message : String(error) };
+    return {
+      files: [],
+      index: [],
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -331,8 +511,8 @@ async function readIndexedDb(): Promise<{
           ...store,
           records: await Promise.all(
             store.records.map(async (record) => ({
-              key: await toJsonSafe(record.key),
-              value: await toJsonSafe(record.value),
+              key: await toDebugJson(record.key),
+              value: await toDebugJson(record.value),
             })),
           ),
         })),
@@ -359,7 +539,8 @@ export async function collectClientDebugSnapshot(): Promise<ClientDebugSnapshot>
     );
   }
 
-  const meal = await readMealFiles();
+  const storage = readStorage(localStorage);
+  const meal = await readMealFiles(preferences, storage);
   if (meal.error) errors.push(`meal-images: ${meal.error}`);
 
   const idb = await readIndexedDb();
@@ -372,10 +553,11 @@ export async function collectClientDebugSnapshot(): Promise<ClientDebugSnapshot>
     platform: Capacitor.getPlatform(),
     userAgent: navigator.userAgent,
     href: location.href,
-    localStorage: readStorage(localStorage),
+    localStorage: storage,
     sessionStorage: readStorage(sessionStorage),
     preferences,
     indexedDB: idb.databases,
+    mealFileIndex: meal.index,
     mealFiles: meal.files,
     errors,
   };
@@ -504,6 +686,7 @@ export function unwrapClientDebugSnapshot(input: unknown): ClientDebugSnapshot {
     sessionStorage: snapshot.sessionStorage ?? {},
     preferences: snapshot.preferences ?? {},
     indexedDB: snapshot.indexedDB ?? [],
+    mealFileIndex: snapshot.mealFileIndex ?? [],
     mealFiles: snapshot.mealFiles ?? [],
     errors: snapshot.errors ?? [],
   };
