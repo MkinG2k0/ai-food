@@ -13,6 +13,21 @@ export interface NewsRelease {
 /** User-facing changelog; newest first. Update manually when shipping features. */
 export const NEWS_CHANGELOG: NewsRelease[] = [
   {
+    date: '2026-11-27',
+    title: 'Сообщения об ошибках',
+    emoji: '📮',
+    items: [
+      {
+        emoji: '📎',
+        text: 'В «Сообщить об ошибке» можно приложить данные приложения: дневник, настройки и несколько фото из разных дней',
+      },
+      {
+        emoji: '🤖',
+        text: 'Android-сборка 1.0.18',
+      },
+    ],
+  },
+  {
     date: '2026-11-23',
     title: 'Дневник и профиль',
     emoji: '📒',
